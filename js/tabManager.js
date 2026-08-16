@@ -191,6 +191,14 @@ export class TabManager {
     const idx = this.tabs.findIndex(t => t.id === tabId);
     if (idx === -1) return;
 
+    const closingTab = this.tabs[idx];
+    if (closingTab && closingTab.type === 'browser' && this.app.browserEngine) {
+      this.app.browserEngine.terminateMediaStream();
+      if (this.app.browserEngine.container) {
+        this.app.browserEngine.container.classList.add('hidden');
+      }
+    }
+
     this.tabs.splice(idx, 1);
 
     // If active tab was closed, switch to adjacent tab

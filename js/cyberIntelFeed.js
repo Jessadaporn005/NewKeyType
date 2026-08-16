@@ -297,7 +297,8 @@ export class CyberIntelFeed {
   // --- REAL-TIME LIVE CRYPTO & STOCKS API FETCH ---
   async fetchRealMarkets() {
     try {
-      const res = await fetch('https://api.binance.com/api/v3/ticker/24hr?symbols=[%22BTCUSDT%22,%22ETHUSDT%22,%22SOLUSDT%22]', { cache: 'no-store' });
+      const signal = typeof AbortSignal !== 'undefined' && AbortSignal.timeout ? AbortSignal.timeout(4000) : undefined;
+      const res = await fetch('https://api.binance.com/api/v3/ticker/24hr?symbols=[%22BTCUSDT%22,%22ETHUSDT%22,%22SOLUSDT%22]', { cache: 'no-store', signal });
       if (res.ok) {
         const data = await res.json();
         const btcData = data.find(d => d.symbol === 'BTCUSDT');
@@ -351,14 +352,16 @@ export class CyberIntelFeed {
   // --- REAL-TIME LIVE HACKER NEWS & TECH WIRE API FETCH ---
   async fetchRealNews() {
     try {
-      const topRes = await fetch('https://hacker-news.firebaseio.com/v0/topstories.json');
+      const signal = typeof AbortSignal !== 'undefined' && AbortSignal.timeout ? AbortSignal.timeout(4000) : undefined;
+      const topRes = await fetch('https://hacker-news.firebaseio.com/v0/topstories.json', { signal });
       if (topRes.ok) {
         const topIds = await topRes.json();
         const firstBatch = topIds.slice(0, 8);
 
         const stories = await Promise.all(
           firstBatch.map(async (id) => {
-            const itemRes = await fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`);
+            const itemSignal = typeof AbortSignal !== 'undefined' && AbortSignal.timeout ? AbortSignal.timeout(2500) : undefined;
+            const itemRes = await fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`, { signal: itemSignal });
             return itemRes.ok ? await itemRes.json() : null;
           })
         );
