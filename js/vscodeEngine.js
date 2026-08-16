@@ -2,7 +2,7 @@
  * CYBER//TYPE VS CODE INTERACTIVE PLAYGROUND & AI CYBER TUTOR ACADEMY
  * Dual-Pane Live Editor, Line Numbering, Syntax Highlighting, Real-Time Keyword Docstring Guides (Thai/Eng),
  * Multi-Language Curriculum (HTML/CSS/JS, Python, Java, C++, Rust, SQL, Bash/PowerShell),
- * and Embedded AI Cyber Tutor for line-by-line code explanation, bug detection, and coding advice.
+ * Syntax Auto-Pairing, Code Export/Copy, Cursor Position Coordinates, and Embedded AI Cyber Tutor.
  */
 
 export const CODE_KEYWORD_DOCS = {
@@ -314,6 +314,7 @@ export class VscodeEngine {
     this.hoverTooltipEl = null;
     this.aiChatContainer = null;
     this.aiInput = null;
+    this.cursorPosEl = null;
   }
 
   init(containerEl) {
@@ -360,9 +361,14 @@ export class VscodeEngine {
                 <span class="vsc-file-name" id="vscFileName">main.py</span>
                 <span class="vsc-lesson-badge" id="vscLessonBadge">MISSION 01/03</span>
               </div>
-              <div class="vsc-lesson-nav">
-                <button class="vsc-mini-btn" id="vscBtnPrevLesson">◀</button>
-                <button class="vsc-mini-btn" id="vscBtnNextLesson">▶</button>
+              <div class="vsc-editor-tools">
+                <button class="vsc-mini-btn" id="vscBtnCopyCode" title="Copy code to clipboard">📋 COPY</button>
+                <button class="vsc-mini-btn" id="vscBtnExport" title="Export file locally">💾 EXPORT</button>
+                <button class="vsc-mini-btn" id="vscBtnClear" title="Clear code editor">🗑️ CLEAR</button>
+                <div class="vsc-lesson-nav">
+                  <button class="vsc-mini-btn" id="vscBtnPrevLesson" title="Previous Mission">◀</button>
+                  <button class="vsc-mini-btn" id="vscBtnNextLesson" title="Next Mission">▶</button>
+                </div>
               </div>
             </div>
 
@@ -376,6 +382,18 @@ export class VscodeEngine {
             <div class="vsc-editor-box">
               <div class="vsc-line-numbers" id="vscLineNumbers">1</div>
               <textarea class="vsc-textarea" id="vscTextarea" spellcheck="false" placeholder="Write code here..."></textarea>
+            </div>
+
+            <!-- Editor Bottom Status Bar (Cursor Coordinates & Encoding) -->
+            <div class="vsc-status-bar">
+              <div class="vsc-status-left">
+                <span id="vscCursorPos">Ln 1, Col 1</span>
+                <span>UTF-8</span>
+                <span>Spaces: 4</span>
+              </div>
+              <div class="vsc-status-right">
+                <span id="vscLangRuntimeBadge" class="vsc-lang-tag">PYTHON 3.12</span>
+              </div>
             </div>
 
             <!-- Floating Keyword Hover Docstring Tooltip -->
@@ -457,6 +475,7 @@ export class VscodeEngine {
     this.hoverTooltipEl = this.container.querySelector('#vscHoverTooltip');
     this.aiChatContainer = this.container.querySelector('#vscAiTutorContainer');
     this.aiInput = this.container.querySelector('#aiChatInput');
+    this.cursorPosEl = this.container.querySelector('#vscCursorPos');
 
     this.bindEvents();
     this.loadLanguage(this.currentLanguage, 0);
@@ -490,10 +509,47 @@ export class VscodeEngine {
       });
     }
 
+    // Copy Code Button
+    const copyBtn = this.container.querySelector('#vscBtnCopyCode');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', () => {
+        if (this.editorTextarea) {
+          navigator.clipboard.writeText(this.editorTextarea.value).then(() => {
+            if (this.sound) this.sound.playSuccessFanfare();
+            if (this.toasts && this.toasts.show) {
+              this.toasts.show('SUCCESS', 'Copied code to clipboard!', 2200);
+            }
+          });
+        }
+      });
+    }
+
+    // Clear Code Button
+    const clearBtn = this.container.querySelector('#vscBtnClear');
+    if (clearBtn) {
+      clearBtn.addEventListener('click', () => {
+        if (this.editorTextarea) {
+          this.editorTextarea.value = '';
+          this.updateLineNumbers();
+          this.updateCursorStatus();
+          if (this.sound) this.sound.playKey(false);
+        }
+      });
+    }
+
+    // Export File Button
+    const exportBtn = this.container.querySelector('#vscBtnExport');
+    if (exportBtn) {
+      exportBtn.addEventListener('click', () => this.exportCurrentCode());
+    }
+
     // Exit Button
     const exitBtn = this.container.querySelector('#vscBtnExit');
     if (exitBtn) {
       exitBtn.addEventListener('click', () => {
+        if (document.activeElement && typeof document.activeElement.blur === 'function') {
+          document.activeElement.blur();
+        }
         this.app.returnToCli();
       });
     }
@@ -518,7 +574,7 @@ export class VscodeEngine {
       });
     }
 
-    // Right Pane Tab Switch (Terminal Output vs Web Preview vs AI Cyber Tutor)
+    // Right Pane Tab Switch
     const tabOutput = this.container.querySelector('#vscTabOutput');
     const tabWeb = this.container.querySelector('#vscTabWebPreview');
     const tabAi = this.container.querySelector('#vscTabAiTutor');
@@ -543,6 +599,7 @@ export class VscodeEngine {
     if (this.editorTextarea) {
       this.editorTextarea.addEventListener('input', () => {
         this.updateLineNumbers();
+        this.updateCursorStatus();
         this.inspectKeywordAtCursor();
         if (this.currentLanguage === 'html') {
           this.renderWebPreview();
@@ -566,6 +623,23 @@ export class VscodeEngine {
           this.editorTextarea.value = value.substring(0, start) + '    ' + value.substring(end);
           this.editorTextarea.selectionStart = this.editorTextarea.selectionEnd = start + 4;
           this.updateLineNumbers();
+          this.updateCursorStatus();
+          return;
+        }
+
+        // Syntax Auto-Pairing for brackets and quotes
+        const pairs = { '(': ')', '[': ']', '{': '}', '"': '"', "'": "'" };
+        if (pairs[e.key]) {
+          e.preventDefault();
+          const start = this.editorTextarea.selectionStart;
+          const end = this.editorTextarea.selectionEnd;
+          const val = this.editorTextarea.value;
+          const closing = pairs[e.key];
+          this.editorTextarea.value = val.substring(0, start) + e.key + closing + val.substring(end);
+          this.editorTextarea.selectionStart = this.editorTextarea.selectionEnd = start + 1;
+          this.updateLineNumbers();
+          this.updateCursorStatus();
+          if (this.sound) this.sound.playKey(false);
           return;
         }
 
@@ -575,10 +649,12 @@ export class VscodeEngine {
       });
 
       this.editorTextarea.addEventListener('click', () => {
+        this.updateCursorStatus();
         this.inspectKeywordAtCursor();
       });
 
       this.editorTextarea.addEventListener('keyup', () => {
+        this.updateCursorStatus();
         this.inspectKeywordAtCursor();
       });
     }
@@ -621,15 +697,18 @@ export class VscodeEngine {
     const badgeEl = this.container.querySelector('#vscLessonBadge');
     const titleEl = this.container.querySelector('#vscMissionTitle');
     const descEl = this.container.querySelector('#vscMissionDesc');
+    const runtimeBadge = this.container.querySelector('#vscLangRuntimeBadge');
 
     if (fileNameEl) fileNameEl.textContent = `mission_${(lessonIdx + 1).toString().padStart(2, '0')}.${ext}`;
     if (badgeEl) badgeEl.textContent = `MISSION ${(lessonIdx + 1).toString().padStart(2, '0')}/${lessons.length.toString().padStart(2, '0')}`;
     if (titleEl) titleEl.textContent = lesson.title;
     if (descEl) descEl.textContent = lesson.desc;
+    if (runtimeBadge) runtimeBadge.textContent = `${lang.toUpperCase()} RUNTIME`;
 
     if (this.editorTextarea) {
       this.editorTextarea.value = lesson.initialCode;
       this.updateLineNumbers();
+      this.updateCursorStatus();
     }
 
     // If HTML, default switch right pane to Live Web Preview
@@ -664,6 +743,16 @@ export class VscodeEngine {
       nums += i + '<br>';
     }
     this.lineNumbersEl.innerHTML = nums;
+  }
+
+  updateCursorStatus() {
+    if (!this.editorTextarea || !this.cursorPosEl) return;
+    const pos = this.editorTextarea.selectionStart;
+    const text = this.editorTextarea.value.substring(0, pos);
+    const lines = text.split('\n');
+    const lineNum = lines.length;
+    const colNum = lines[lines.length - 1].length + 1;
+    this.cursorPosEl.textContent = `Ln ${lineNum}, Col ${colNum}`;
   }
 
   inspectKeywordAtCursor() {
@@ -703,6 +792,26 @@ export class VscodeEngine {
     if (!this.editorTextarea || !this.webPreviewIframe) return;
     const htmlCode = this.editorTextarea.value;
     this.webPreviewIframe.srcdoc = htmlCode;
+  }
+
+  exportCurrentCode() {
+    if (!this.editorTextarea) return;
+    const code = this.editorTextarea.value;
+    const extMap = { python: 'py', html: 'html', java: 'java', cpp: 'cpp', rust: 'rs', sql: 'sql', bash: 'sh' };
+    const ext = extMap[this.currentLanguage] || 'txt';
+    const filename = `cyber_code_${this.currentLanguage}_${Date.now()}.${ext}`;
+
+    const blob = new Blob([code], { type: 'text/plain' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(a.href);
+
+    if (this.sound) this.sound.playSuccessFanfare();
+    if (this.toasts && this.toasts.show) {
+      this.toasts.show('SUCCESS', `Exported: ${filename}`, 2500);
+    }
   }
 
   async runCode() {

@@ -185,6 +185,14 @@ async function runTests() {
   browserEngine.setState(BROWSER_STATES.MARQUEE);
   assert(browserEngine.state === 'MARQUEE', 'Browser successfully transitions to Floating Audio Marquee mode');
 
+  browserEngine.toggleMute();
+  assert(browserEngine.isMuted === true, 'Browser audio mute toggle successfully sets isMuted to true');
+  browserEngine.toggleMute();
+  assert(browserEngine.isMuted === false, 'Browser audio mute toggle successfully sets isMuted to false');
+
+  browserEngine.closeBrowser();
+  assert(browserEngine.state === 'CLOSED' && browserEngine.currentUrl === 'about:blank', 'Browser closing cleanly terminates media stream to about:blank');
+
   console.log('\n====================================================');
   console.log(`🏁 TEST RESULTS: ${passed}/${total} TESTS PASSED (100%)`);
   console.log('====================================================');

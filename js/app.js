@@ -2917,6 +2917,29 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
         }
       }
 
+      // Global Hotkey: Ctrl + K (Open Command Palette)
+      if (e.ctrlKey && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault();
+        if (this.controlCenter) this.controlCenter.openCommandPalette();
+        return;
+      }
+
+      // Global Hotkey: Ctrl + , (Open Settings Modal)
+      if (e.ctrlKey && e.key === ',') {
+        e.preventDefault();
+        if (this.controlCenter) this.controlCenter.openSettingsModal();
+        return;
+      }
+
+      // Global Hotkey: Ctrl + L (Clear CLI Terminal History)
+      if (e.ctrlKey && (e.key === 'l' || e.key === 'L') && this.state === STATES.CLI_PROMPT) {
+        e.preventDefault();
+        if (this.dom.cliHistory) this.dom.cliHistory.innerHTML = '';
+        this.focusCliInput();
+        if (this.sound) this.sound.playKey(false);
+        return;
+      }
+
       // Ctrl + S in Sandbox mode to save file
       if (this.state === STATES.MODE_SANDBOX && e.ctrlKey && (e.key === 's' || e.key === 'S')) {
         e.preventDefault();

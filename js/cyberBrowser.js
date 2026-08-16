@@ -5,6 +5,7 @@
  *   1. FULL: Full workspace browser.
  *   2. PIP: Floating Picture-in-Picture window (440x275px) that persists across all game modes.
  *   3. MARQUEE: Floating compact audio ticker pill (280x44px) with animated Equalizer waves for background music.
+ * Clean Audio Stream Lifecycle Termination on Close & Mute/Unmute toggle.
  */
 
 export const BROWSER_BOOKMARKS = [
@@ -33,11 +34,14 @@ export class CyberBrowserEngine {
     this.container = null;
     this.currentUrl = 'https://www.google.com';
     this.state = BROWSER_STATES.CLOSED;
+    this.isMuted = false;
 
     this.webviewEl = null;
     this.urlInput = null;
     this.statusIndicator = null;
     this.marqueeTitle = null;
+    this.btnMute = null;
+    this.mBtnMute = null;
   }
 
   init(containerEl) {
@@ -86,10 +90,11 @@ export class CyberBrowserEngine {
 
           <!-- Window Mode Controls -->
           <div class="browser-window-controls">
+            <button class="b-btn b-btn-mute" id="bBtnMute" title="Toggle Audio Mute">🔊 MUTE</button>
             <button class="b-btn b-btn-marquee" id="bBtnMarquee" title="Minimize to Audio Marquee Bar">➖ BAR</button>
             <button class="b-btn b-btn-pip" id="bBtnPip" title="Picture-in-Picture Floating Mode">🗗 PIP</button>
             <button class="b-btn b-btn-full" id="bBtnFull" title="Expand Fullscreen">🗖 FULL</button>
-            <button class="b-btn b-btn-close" id="bBtnClose" title="Close Browser [ESC]">✖</button>
+            <button class="b-btn b-btn-close" id="bBtnClose" title="Close Browser & Stop Audio [ESC]">✖</button>
           </div>
         </div>
 
@@ -124,9 +129,10 @@ export class CyberBrowserEngine {
             <span class="marquee-title" id="marqueeMediaTitle">YouTube / CyberDeck Media</span>
           </div>
           <div class="marquee-actions">
+            <button class="m-btn m-btn-mute" id="mBtnMute" title="Toggle Audio Mute">🔊</button>
             <button class="m-btn" id="mBtnPip" title="Expand to Floating PIP Window">🗗 PIP</button>
             <button class="m-btn" id="mBtnFull" title="Expand to Fullscreen Browser">🗖 FULL</button>
-            <button class="m-btn m-btn-close" id="mBtnClose" title="Close Media Player">✖</button>
+            <button class="m-btn m-btn-close" id="mBtnClose" title="Close Media Player & Stop Audio">✖</button>
           </div>
         </div>
       </div>
@@ -135,6 +141,8 @@ export class CyberBrowserEngine {
     this.urlInput = this.container.querySelector('#browserAddressInput');
     this.statusIndicator = this.container.querySelector('#bStatusTxt');
     this.marqueeTitle = this.container.querySelector('#marqueeMediaTitle');
+    this.btnMute = this.container.querySelector('#bBtnMute');
+    this.mBtnMute = this.container.querySelector('#mBtnMute');
 
     this.bindEvents();
     this.createWebView(this.currentUrl);
@@ -211,11 +219,13 @@ export class CyberBrowserEngine {
     const btnReload = this.container.querySelector('#bBtnReload');
     const btnHome = this.container.querySelector('#bBtnHome');
     const btnGo = this.container.querySelector('#bBtnGo');
+    const btnMute = this.container.querySelector('#bBtnMute');
     const btnMarquee = this.container.querySelector('#bBtnMarquee');
     const btnPip = this.container.querySelector('#bBtnPip');
     const btnFull = this.container.querySelector('#bBtnFull');
     const btnClose = this.container.querySelector('#bBtnClose');
 
+    const mBtnMute = this.container.querySelector('#mBtnMute');
     const mBtnPip = this.container.querySelector('#mBtnPip');
     const mBtnFull = this.container.querySelector('#mBtnFull');
     const mBtnClose = this.container.querySelector('#mBtnClose');
@@ -268,6 +278,10 @@ export class CyberBrowserEngine {
       });
     }
 
+    // Audio Mute Toggle
+    if (btnMute) btnMute.addEventListener('click', () => this.toggleMute());
+    if (mBtnMute) mBtnMute.addEventListener('click', () => this.toggleMute());
+
     // State Transitions
     if (btnMarquee) btnMarquee.addEventListener('click', () => this.setState(BROWSER_STATES.MARQUEE));
     if (btnPip) btnPip.addEventListener('click', () => this.setState(BROWSER_STATES.PIP));
@@ -287,6 +301,29 @@ export class CyberBrowserEngine {
         if (this.sound) this.sound.playKey(false);
       });
     });
+  }
+
+  toggleMute() {
+    this.isMuted = !this.isMuted;
+    if (this.webviewEl && this.webviewEl.setAudioMuted) {
+      this.webviewEl.setAudioMuted(this.isMuted);
+    }
+
+    if (this.container) {
+      const btnMute = this.container.querySelector('#bBtnMute');
+      const mBtnMute = this.container.querySelector('#mBtnMute');
+
+      if (btnMute) {
+        btnMute.textContent = this.isMuted ? '🔇 UNMUTE' : '🔊 MUTE';
+        btnMute.classList.toggle('muted-active', this.isMuted);
+      }
+      if (mBtnMute) {
+        mBtnMute.textContent = this.isMuted ? '🔇' : '🔊';
+        mBtnMute.classList.toggle('muted-active', this.isMuted);
+      }
+    }
+
+    if (this.sound) this.sound.playKey(false);
   }
 
   navigate(rawInput) {
@@ -321,8 +358,41 @@ export class CyberBrowserEngine {
     if (this.sound) this.sound.playSuccessFanfare();
   }
 
+  terminateMediaStream() {
+    if (this.webviewEl) {
+      if (this.webviewEl.stop) {
+        try { this.webviewEl.stop(); } catch(e) {}
+      }
+      this.webviewEl.src = 'about:blank';
+    }
+    this.currentUrl = 'about:blank';
+    if (this.urlInput) this.urlInput.value = '';
+    if (this.marqueeTitle) this.marqueeTitle.textContent = 'Media Terminated';
+    if (this.statusIndicator) this.statusIndicator.textContent = 'DISCONNECTED // AUDIO TERMINATED';
+  }
+
   setState(newState) {
     this.state = newState;
+
+    if (newState === BROWSER_STATES.CLOSED) {
+      this.terminateMediaStream(); // 100% kill all audio and video playback
+
+      if (this.container) {
+        this.container.classList.add('hidden');
+      }
+      if (this.app.state === 'MODE_BROWSER') {
+        this.app.state = 'CLI_PROMPT';
+      }
+      if (typeof document !== 'undefined' && document.activeElement && typeof document.activeElement.blur === 'function') {
+        document.activeElement.blur();
+      }
+      if (typeof window !== 'undefined' && typeof window.focus === 'function') {
+        window.focus();
+      }
+      if (this.app.focusCliInput) this.app.focusCliInput();
+      return;
+    }
+
     if (!this.container) return;
 
     const win = this.container.querySelector('#cyberBrowserWindow');
@@ -348,33 +418,24 @@ export class CyberBrowserEngine {
         this.app.state = 'CLI_PROMPT';
       }
 
-      if (document.activeElement && typeof document.activeElement.blur === 'function') {
+      if (typeof document !== 'undefined' && document.activeElement && typeof document.activeElement.blur === 'function') {
         document.activeElement.blur();
       }
-      window.focus();
+      if (typeof window !== 'undefined' && typeof window.focus === 'function') {
+        window.focus();
+      }
 
       if (this.app.state === 'CLI_PROMPT') {
         this.app.focusCliInput();
       }
-    } else if (newState === BROWSER_STATES.CLOSED) {
-      this.container.classList.add('hidden');
-      if (this.app.state === 'MODE_BROWSER') {
-        this.app.state = 'CLI_PROMPT';
-      }
-      if (document.activeElement && typeof document.activeElement.blur === 'function') {
-        document.activeElement.blur();
-      }
-      window.focus();
-      this.app.focusCliInput();
     }
   }
 
   openBrowser(initialUrl = 'https://www.google.com', targetState = BROWSER_STATES.FULL) {
     if (!this.container) return;
     this.setState(targetState);
-    if (initialUrl && initialUrl !== this.currentUrl) {
-      this.navigate(initialUrl);
-    }
+    const destination = (initialUrl && initialUrl !== 'about:blank') ? initialUrl : 'https://www.google.com';
+    this.navigate(destination);
   }
 
   closeBrowser() {
@@ -382,10 +443,12 @@ export class CyberBrowserEngine {
     if (this.app.state === 'MODE_BROWSER') {
       this.app.returnToCli();
     } else {
-      if (document.activeElement && typeof document.activeElement.blur === 'function') {
+      if (typeof document !== 'undefined' && document.activeElement && typeof document.activeElement.blur === 'function') {
         document.activeElement.blur();
       }
-      window.focus();
+      if (typeof window !== 'undefined' && typeof window.focus === 'function') {
+        window.focus();
+      }
       if (this.app.focusCliInput) this.app.focusCliInput();
     }
   }
