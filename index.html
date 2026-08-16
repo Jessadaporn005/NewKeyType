@@ -775,7 +775,7 @@
             <!-- PAPER TRADING ORDER FORM -->
             <div class="paper-trading-card">
               <div class="paper-header">
-                <span>PAPER EXECUTION DECK</span>
+                <span>MANUAL PAPER EXECUTION DECK</span>
                 <span class="paper-bal">CAPITAL: <strong id="paperCapitalDisplay">$100,000.00</strong></span>
               </div>
 
@@ -787,6 +787,57 @@
               <!-- Active Positions -->
               <div class="active-positions-container" id="activePositionsContainer">
                 <div class="no-positions-hint">No open paper positions. Click BUY/SELL to simulate execution.</div>
+              </div>
+            </div>
+
+            <!-- AI AGENT TRAINING GYM & POST-MORTEM LEARNING JOURNAL -->
+            <div class="ai-gym-card" id="aiGymCard">
+              <div class="ai-gym-header">
+                <div class="gym-title-group">
+                  <span class="gym-icon">🧠</span>
+                  <div>
+                    <div class="gym-title">AI AGENT TRAINING GYM</div>
+                    <div class="gym-sub">CONTINUOUS LEARNING & POST-MORTEM JOURNAL</div>
+                  </div>
+                </div>
+                <div class="gym-actions">
+                  <button class="gym-btn btn-fast-train" id="btnAIFastTrain" title="Simulate 25 rapid training scenarios">⚡ FAST-TRAIN (25)</button>
+                  <button class="gym-btn btn-reset-mem" id="btnAIResetMem" title="Reset AI Memory">🔄 RESET</button>
+                </div>
+              </div>
+
+              <!-- AI Real-Time Performance Stats Grid -->
+              <div class="ai-stats-grid">
+                <div class="ai-stat-box">
+                  <span class="lbl">WIN RATE</span>
+                  <strong class="val glow-cmd" id="aiWinRateDisplay">77.8%</strong>
+                </div>
+                <div class="ai-stat-box">
+                  <span class="lbl">RECORD (W / L)</span>
+                  <strong class="val" id="aiRecordDisplay">14 W - 4 L</strong>
+                </div>
+                <div class="ai-stat-box">
+                  <span class="lbl">NET PROFIT</span>
+                  <strong class="val glow-cyan" id="aiNetPnlDisplay">+$8,420.50</strong>
+                </div>
+                <div class="ai-stat-box">
+                  <span class="lbl">ADAPTATION</span>
+                  <strong class="val" id="aiAdaptationLevel">LEVEL 5</strong>
+                </div>
+              </div>
+
+              <!-- AI Auto-Trading Status Strip -->
+              <div class="ai-auto-toggle-strip">
+                <label class="toggle-chip">
+                  <input type="checkbox" id="chkAIAutoTrader" checked>
+                  <span style="font-weight: 700; color: #00ff88;">🟢 AUTONOMOUS PAPER TRADER & JOURNALING</span>
+                </label>
+                <span class="ai-status-pulse">● LIVE LEARNING</span>
+              </div>
+
+              <!-- AI Post-Mortem Trade Journal Stream -->
+              <div class="ai-journal-feed" id="aiJournalFeed">
+                <!-- Dynamically rendered by AITradingEngine -->
               </div>
             </div>
           </div>

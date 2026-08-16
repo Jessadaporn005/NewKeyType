@@ -429,6 +429,14 @@ class WindowsTerminalApp {
       tradingNewsSource: document.getElementById('tradingNewsSource'),
       tradingNewsHeadline: document.getElementById('tradingNewsHeadline'),
       tradingNewsSentimentBadge: document.getElementById('tradingNewsSentimentBadge'),
+      btnAIFastTrain: document.getElementById('btnAIFastTrain'),
+      btnAIResetMem: document.getElementById('btnAIResetMem'),
+      aiWinRateDisplay: document.getElementById('aiWinRateDisplay'),
+      aiRecordDisplay: document.getElementById('aiRecordDisplay'),
+      aiNetPnlDisplay: document.getElementById('aiNetPnlDisplay'),
+      aiAdaptationLevel: document.getElementById('aiAdaptationLevel'),
+      chkAIAutoTrader: document.getElementById('chkAIAutoTrader'),
+      aiJournalFeed: document.getElementById('aiJournalFeed'),
 
       // Academy Mission Grid Modal
       academyGridModal: document.getElementById('academyGridModal'),
@@ -656,10 +664,24 @@ class WindowsTerminalApp {
             this.updateTradingNewsUI(news);
           };
 
+          this.tradingEngine.onAIStatsUpdate = (stats) => {
+            this.updateAIStatsUI(stats);
+          };
+
+          this.tradingEngine.onAIJournalUpdate = (journal) => {
+            this.updateAIJournalUI(journal);
+          };
+
           this.tradingEngine.init();
           this.bindTradingUIEvents();
           if (this.tradingEngine.activeNews) {
             this.updateTradingNewsUI(this.tradingEngine.activeNews);
+          }
+          if (this.tradingEngine.aiStats) {
+            this.updateAIStatsUI(this.tradingEngine.aiStats);
+          }
+          if (this.tradingEngine.aiJournal) {
+            this.updateAIJournalUI(this.tradingEngine.aiJournal);
           }
         }
         break;
@@ -830,6 +852,66 @@ class WindowsTerminalApp {
         if (this.tradingEngine) this.tradingEngine.openPosition('SHORT', 2000);
       });
     }
+
+    // AI Gym Controls
+    if (this.dom.btnAIFastTrain) {
+      this.dom.btnAIFastTrain.addEventListener('click', () => {
+        if (this.tradingEngine) this.tradingEngine.runFastTrainingDrill(25);
+      });
+    }
+    if (this.dom.btnAIResetMem) {
+      this.dom.btnAIResetMem.addEventListener('click', () => {
+        if (this.tradingEngine) this.tradingEngine.resetAIMemory();
+      });
+    }
+    if (this.dom.chkAIAutoTrader) {
+      this.dom.chkAIAutoTrader.addEventListener('change', (e) => {
+        if (this.tradingEngine) this.tradingEngine.toggleAutoTrading(e.target.checked);
+      });
+    }
+  }
+
+  updateAIStatsUI(stats) {
+    if (!stats) return;
+    if (this.dom.aiWinRateDisplay) this.dom.aiWinRateDisplay.textContent = `${stats.winRate}%`;
+    if (this.dom.aiRecordDisplay) this.dom.aiRecordDisplay.textContent = `${stats.wins} W - ${stats.losses} L`;
+    if (this.dom.aiNetPnlDisplay) {
+      const isPos = stats.netPnlUSD >= 0;
+      this.dom.aiNetPnlDisplay.textContent = `${isPos ? '+' : ''}$${stats.netPnlUSD.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      this.dom.aiNetPnlDisplay.className = 'val ' + (isPos ? 'glow-cmd' : 'glow-danger');
+    }
+    if (this.dom.aiAdaptationLevel) this.dom.aiAdaptationLevel.textContent = `LEVEL ${stats.adaptationLevel}`;
+  }
+
+  updateAIJournalUI(journal) {
+    if (!this.dom.aiJournalFeed || !Array.isArray(journal)) return;
+    this.dom.aiJournalFeed.innerHTML = '';
+
+    if (journal.length === 0) {
+      this.dom.aiJournalFeed.innerHTML = '<div style="color: #64748b; font-size: 10px; text-align: center; padding: 12px;">No training logs recorded yet. Run Fast-Train or let AI trade live.</div>';
+      return;
+    }
+
+    journal.slice(0, 15).forEach(tr => {
+      const item = document.createElement('div');
+      item.className = `journal-item ${tr.isWin ? 'win' : 'loss'}`;
+
+      const pnlColor = tr.isWin ? '#00ff66' : '#ff2244';
+      const badgeClass = tr.isWin ? 'journal-badge-win' : 'journal-badge-loss';
+      const badgeText = tr.isWin ? `WIN (+${tr.pnlPercent}%)` : `LOSS (${tr.pnlPercent}%)`;
+
+      item.innerHTML = `
+        <div class="journal-item-top">
+          <span class="journal-asset">🤖 [AI ${tr.side}] ${tr.assetId}</span>
+          <span class="${badgeClass}">${badgeText} • <span style="color: ${pnlColor};">${tr.isWin ? '+' : ''}$${tr.pnlUSD.toFixed(2)}</span></span>
+        </div>
+        <div class="journal-setup-tag">SETUP: ${tr.setupName} (${tr.closeTime})</div>
+        <div class="journal-post-mortem">${tr.postMortem}</div>
+        <div class="journal-lesson-box ${tr.isWin ? 'win' : 'loss'}">${tr.learningLesson}</div>
+      `;
+
+      this.dom.aiJournalFeed.appendChild(item);
+    });
   }
 
   launchTradingMode(assetArg) {

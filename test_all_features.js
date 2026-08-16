@@ -520,6 +520,24 @@ async function runTests() {
   const newsSignal = generateAISignal(mockCandles, TRADING_ASSETS[0], patterns, LIVE_MARKET_NEWS_FEED[0]);
   assert(newsSignal.activeNews && newsSignal.rationale.includes('ปัจจัยข่าวกระทบสด'), 'AI Copilot dynamically incorporated real-time news impact into trade advice');
 
+  // AI Autonomous Learning Gym & Post-Mortem Journal Engine
+  assert(tradingEngine.isAutoTrading === true, 'AI Auto-Trading Gym enabled by default');
+  assert(tradingEngine.aiJournal.length >= 3, 'AI Learning Journal seeded with realistic post-mortem reflections');
+  assert(tradingEngine.aiStats.winRate > 0, `AI Baseline Win Rate tracked: ${tradingEngine.aiStats.winRate}%`);
+
+  const sampleJournal = tradingEngine.aiJournal[0];
+  assert(sampleJournal.postMortem.length > 20, 'AI Journal contains root-cause post-mortem analysis');
+  assert(sampleJournal.learningLesson.includes('น้ำหนัก') || sampleJournal.learningLesson.includes('บทเรียน'), 'AI Journal records actionable Thai self-improvement lesson');
+
+  const prevTrades = tradingEngine.aiStats.totalTrades;
+  tradingEngine.runFastTrainingDrill(25);
+  assert(tradingEngine.aiStats.totalTrades === prevTrades + 25, `Fast-Training Drill executed 25 simulated trades (Total: ${tradingEngine.aiStats.totalTrades})`);
+  assert(tradingEngine.aiStats.wins > 0 && tradingEngine.aiStats.losses > 0, `Win/Loss record updated: ${tradingEngine.aiStats.wins} W - ${tradingEngine.aiStats.losses} L`);
+  assert(typeof tradingEngine.aiStats.winRate === 'number', `Dynamic Win Rate calculated: ${tradingEngine.aiStats.winRate}%`);
+
+  tradingEngine.resetAIMemory();
+  assert(tradingEngine.aiStats.totalTrades === 0, 'AI Agent memory and stats reset to baseline');
+
   console.log('\n====================================================');
   console.log(`🏁 TEST RESULTS: ${passed}/${total} TESTS PASSED (100%)`);
   console.log('====================================================');

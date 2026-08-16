@@ -4784,6 +4784,226 @@ html, body {
   color: #ffffff;
 }
 
+/* AI AGENT TRAINING GYM & POST-MORTEM LEARNING JOURNAL */
+.ai-gym-card {
+  background: rgba(9, 15, 23, 0.90);
+  border: 1px solid rgba(0, 255, 136, 0.25);
+  border-radius: 4px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+}
+
+.ai-gym-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 8px;
+}
+
+.gym-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gym-icon {
+  font-size: 18px;
+  filter: drop-shadow(0 0 8px #00ff88);
+}
+
+.gym-title {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #00ff88;
+}
+
+.gym-sub {
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  color: #64748b;
+  letter-spacing: 0.5px;
+}
+
+.gym-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.gym-btn {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 4px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-fast-train {
+  background: rgba(0, 229, 255, 0.15);
+  border: 1px solid #00e5ff;
+  color: #00e5ff;
+}
+
+.btn-fast-train:hover {
+  background: #00e5ff;
+  color: #000000;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.5);
+}
+
+.btn-reset-mem {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #94a3b8;
+}
+
+.btn-reset-mem:hover {
+  background: rgba(255, 34, 68, 0.2);
+  border-color: #ff2244;
+  color: #ff2244;
+}
+
+.ai-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.ai-stat-box {
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 6px 6px;
+  border-radius: 3px;
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+}
+
+.ai-stat-box .lbl {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.ai-stat-box .val {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 800;
+  margin-top: 2px;
+}
+
+.ai-auto-toggle-strip {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(0, 255, 102, 0.05);
+  border: 1px solid rgba(0, 255, 102, 0.15);
+  border-radius: 3px;
+  padding: 4px 8px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+}
+
+.ai-status-pulse {
+  color: #00ff66;
+  font-size: 9px;
+  font-weight: 800;
+  animation: pulseNews 1s infinite alternate;
+}
+
+.ai-journal-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 260px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.journal-item {
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: 3px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.journal-item.win {
+  border-left: 3px solid #00ff66;
+  border-top: 1px solid rgba(0, 255, 102, 0.15);
+  border-right: 1px solid rgba(0, 255, 102, 0.15);
+  border-bottom: 1px solid rgba(0, 255, 102, 0.15);
+}
+
+.journal-item.loss {
+  border-left: 3px solid #ff2244;
+  border-top: 1px solid rgba(255, 34, 68, 0.15);
+  border-right: 1px solid rgba(255, 34, 68, 0.15);
+  border-bottom: 1px solid rgba(255, 34, 68, 0.15);
+}
+
+.journal-item-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
+.journal-asset {
+  font-weight: 800;
+  color: #e2e8f0;
+}
+
+.journal-badge-win {
+  color: #00ff66;
+  font-weight: 800;
+}
+
+.journal-badge-loss {
+  color: #ff2244;
+  font-weight: 800;
+}
+
+.journal-setup-tag {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: #ffaa00;
+  font-weight: 700;
+}
+
+.journal-post-mortem {
+  font-family: var(--font-thai);
+  font-size: 10.5px;
+  color: #94a3b8;
+  line-height: 1.35;
+}
+
+.journal-lesson-box {
+  font-family: var(--font-thai);
+  font-size: 10px;
+  padding: 4px 6px;
+  border-radius: 2px;
+  line-height: 1.3;
+}
+
+.journal-lesson-box.win {
+  background: rgba(0, 255, 102, 0.08);
+  color: #86efac;
+}
+
+.journal-lesson-box.loss {
+  background: rgba(255, 34, 68, 0.08);
+  color: #fca5a5;
+}
+
 
 
 
