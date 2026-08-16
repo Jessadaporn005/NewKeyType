@@ -98,7 +98,7 @@ async function runTests() {
   // 2. Achievements Engine
   console.log('\n[2] Testing Achievement Engine...');
   const achUnlocked = profileStore.unlockAchievement('Anan', 'first_blood');
-  assert(achUnlocked && achUnlocked.id === 'first_blood', 'Unlocked "First Breach" achievement');
+  assert(achUnlocked && achUnlocked.id === 'first_blood', 'Unlocked "SEC-AUDIT: Initial Physical Handshake" security milestone');
   assert(prof.achievements.includes('first_blood'), 'Achievement persisted in profile');
 
   // 3. Real Weak Keys Tracking

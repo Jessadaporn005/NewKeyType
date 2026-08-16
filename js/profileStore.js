@@ -7,18 +7,18 @@
 const STORAGE_KEY = 'CYBERTYPE_OPERATOR_PROFILES_V1';
 
 export const ACHIEVEMENTS_LIST = [
-  { id: 'first_blood', title: 'First Breach', desc: 'Complete your first touch typing lesson', icon: '⚡', rewardBtc: 100 },
-  { id: 'speed_demon_60', title: 'Speed Demon', desc: 'Reach 60+ WPM in any speed benchmark', icon: '🏃', rewardBtc: 250 },
-  { id: 'speed_demon_100', title: 'Quantum Velocity', desc: 'Surpass 100+ WPM in a benchmark', icon: '🚀', rewardBtc: 1000 },
-  { id: 'flawless_run', title: 'Flawless Synchronization', desc: 'Achieve 100% Accuracy with at least 50 WPM', icon: '🎯', rewardBtc: 500 },
-  { id: 'hacker_initiate', title: 'Ghost Protocol', desc: 'Complete all 6 Hollywood Hacker missions', icon: '🕵️', rewardBtc: 600 },
-  { id: 'roguelite_first_node', title: 'Cyberspace Infiltrator', desc: 'Hack your first Roguelite Cyberspace Node', icon: '🔓', rewardBtc: 150 },
-  { id: 'roguelite_boss_down', title: 'Core Extractor', desc: 'Defeat a Cyberspace Boss Node & Extract', icon: '👑', rewardBtc: 1500 },
-  { id: 'wordle_cracker', title: 'Brute-Force Master', desc: 'Crack a password in under 3 attempts', icon: '🔐', rewardBtc: 300 },
-  { id: 'memory_dump_ace', title: 'Hexadecimal Forensics', desc: 'Complete a Memory Dump with 0 mistakes', icon: '💾', rewardBtc: 350 },
-  { id: 'cyberware_collector', title: 'Augmented Operator', desc: 'Purchase 3 or more darknet cyberware items', icon: '💎', rewardBtc: 500 },
-  { id: 'marathon_runner', title: 'Endless Flow', desc: 'Survive 3+ minutes in Endless Marathon', icon: '⏱️', rewardBtc: 400 },
-  { id: 'level_10_master', title: 'Quantum Netrunner', desc: 'Reach Operator Level 10', icon: '🌟', rewardBtc: 2000 }
+  { id: 'first_blood', title: 'SEC-AUDIT: Initial Physical Handshake', desc: 'Verify and calibrate initial keystroke actuation matrix', icon: '⚡', rewardBtc: 100 },
+  { id: 'speed_demon_60', title: 'VELOCITY: 60+ WPM Kinematic Actuation', desc: 'Attain 60+ WPM continuous keystroke throughput', icon: '⚡', rewardBtc: 250 },
+  { id: 'speed_demon_100', title: 'OVERCLOCK: 100+ WPM Synaptic Vector', desc: 'Surpass 100+ WPM high-bandwidth keystroke transfer', icon: '⚡', rewardBtc: 1000 },
+  { id: 'flawless_run', title: 'INTEGRITY: 100% Zero-Fault Parity', desc: 'Achieve 100% accuracy with at least 50 WPM throughput', icon: '🛡️', rewardBtc: 500 },
+  { id: 'hacker_initiate', title: 'SIGINT: Full Satellite Protocol Cleared', desc: 'Complete all 6 SIGINT Electronic Warfare missions', icon: '📡', rewardBtc: 600 },
+  { id: 'roguelite_first_node', title: 'ROUTING: AS Node Ingress Verified', desc: 'Infiltrate first Autonomous System network node', icon: '🔓', rewardBtc: 150 },
+  { id: 'roguelite_boss_down', title: 'ROOT-BREACH: Core Mainframe Compromised', desc: 'Successfully bypass Core Mainframe and extract payload', icon: '👑', rewardBtc: 1500 },
+  { id: 'wordle_cracker', title: 'CRYPTANALYSIS: Sub-3 Hash Collision', desc: 'Resolve encrypted cipher in under 3 brute-force rounds', icon: '🔐', rewardBtc: 300 },
+  { id: 'memory_dump_ace', title: 'FORENSICS: Zero-Mistake Memory Dump', desc: 'Audit and stream raw memory buffer with 0 parity errors', icon: '💾', rewardBtc: 350 },
+  { id: 'cyberware_collector', title: 'SYS-UPGRADE: Multi-Module Hardening', desc: 'Deploy 3 or more kernel hardware acceleration modules', icon: '💎', rewardBtc: 500 },
+  { id: 'marathon_runner', title: 'STABILITY: 3+ Min High-G Marathon', desc: 'Maintain unbroken typing throughput for over 180 seconds', icon: '⏱️', rewardBtc: 400 },
+  { id: 'level_10_master', title: 'ACCREDITATION: Level 10 Principal Architect', desc: 'Attain Level 10 Root Clearance in the Security Enclave', icon: '🌟', rewardBtc: 2000 }
 ];
 
 const DEFAULT_PROFILE = {
