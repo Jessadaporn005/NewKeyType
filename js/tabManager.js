@@ -304,11 +304,23 @@ export class TabManager {
     menu.querySelectorAll('.dropdown-item').forEach(item => {
       item.addEventListener('click', (e) => {
         e.stopPropagation();
-        const typeKey = item.dataset.type.toUpperCase();
-        const tabType = TAB_TYPES[typeKey] || TAB_TYPES.CLI;
-        this.tabCounter++;
-        this.createTab(tabType, `${tabType.name} (${this.tabCounter})`, true);
+        const typeKey = item.dataset.type;
         this.closeDropdownMenu();
+
+        if (typeKey === 'browser') {
+          if (this.app.launchBrowserMode) this.app.launchBrowserMode('https://www.google.com');
+        } else if (typeKey === 'vscode') {
+          if (this.app.launchVscodeMode) this.app.launchVscodeMode();
+        } else if (typeKey === 'roguelite') {
+          if (this.app.launchRogueliteMode) this.app.launchRogueliteMode();
+        } else if (typeKey === 'academy') {
+          if (this.app.launchAcademyMode) this.app.launchAcademyMode(1);
+        } else if (typeKey === 'speed') {
+          if (this.app.launchSpeedMode) this.app.launchSpeedMode(30);
+        } else {
+          this.tabCounter++;
+          this.createTab(TAB_TYPES.CLI, `CyberDeck (${this.tabCounter})`, true);
+        }
         if (this.sound && typeof this.sound.playSuccessFanfare === 'function') this.sound.playSuccessFanfare();
       });
     });

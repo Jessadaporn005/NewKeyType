@@ -2174,8 +2174,20 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
     this.kb.clearTargetKeys();
     this.hands.clearTargetGuide();
 
+    let targetTab = null;
     if (this.tabManager) {
-      this.tabManager.updateActiveTabInfo('vscode', `VS Code [${targetLang.toUpperCase()}]`, '⚡');
+      const activeTab = this.tabManager.tabs.find(t => t.id === this.tabManager.activeTabId);
+      if (!activeTab || activeTab.type !== 'vscode') {
+        this.tabManager.tabCounter++;
+        targetTab = this.tabManager.createTab(TAB_TYPES.VSCODE, `VS Code [${targetLang.toUpperCase()}] (${this.tabManager.tabCounter})`, false);
+        if (targetTab) {
+          this.tabManager.activeTabId = targetTab.id;
+          this.tabManager.renderTabs();
+        }
+      } else {
+        this.tabManager.updateActiveTabInfo('vscode', `VS Code [${targetLang.toUpperCase()}]`, '⚡');
+        targetTab = activeTab;
+      }
     }
 
     this.playCyberTransition(
@@ -2189,6 +2201,10 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
           if (this.vscodeEngine.editorTextarea) {
             this.vscodeEngine.editorTextarea.focus();
           }
+        }
+        if (this.tabManager && targetTab) {
+          this.tabManager.activeTabId = targetTab.id;
+          this.tabManager.renderTabs();
         }
         setTimeout(() => this.hands.updatePositions(), 50);
       }
@@ -2212,17 +2228,28 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
       }
     } catch (e) {}
 
+    let targetTab = null;
     if (this.tabManager) {
       const activeTab = this.tabManager.tabs.find(t => t.id === this.tabManager.activeTabId);
       if (!activeTab || activeTab.type !== 'browser') {
-        // Create new dedicated browser tab to prevent overwriting terminal tab
+        // Create new dedicated browser tab without activating switchTab until transition completes
         this.tabManager.tabCounter++;
-        const newTab = this.tabManager.createTab(TAB_TYPES.BROWSER, `${domainTitle} (${this.tabManager.tabCounter})`, true);
-        if (newTab) newTab.url = urlArg;
+        targetTab = this.tabManager.createTab(TAB_TYPES.BROWSER, `${domainTitle} (${this.tabManager.tabCounter})`, false);
+        if (targetTab) {
+          targetTab.url = urlArg;
+          this.tabManager.activeTabId = targetTab.id;
+          this.tabManager.renderTabs();
+        }
       } else {
         this.tabManager.updateActiveTabInfo('browser', domainTitle, '🌐');
         activeTab.url = urlArg;
+        targetTab = activeTab;
       }
+    }
+
+    // Hide browser container during transition so it DOES NOT pop up prematurely!
+    if (this.browserEngine && this.browserEngine.container) {
+      this.browserEngine.container.classList.add('hidden');
     }
 
     this.playCyberTransition(
@@ -2233,6 +2260,10 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
       () => {
         if (this.browserEngine) {
           this.browserEngine.openBrowser(urlArg || 'https://www.google.com', 'FULL');
+        }
+        if (this.tabManager && targetTab) {
+          this.tabManager.activeTabId = targetTab.id;
+          this.tabManager.renderTabs();
         }
         setTimeout(() => this.hands.updatePositions(), 50);
       }
