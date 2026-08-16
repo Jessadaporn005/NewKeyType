@@ -114,9 +114,20 @@ class WindowsTerminalApp {
     this.skipCurrentTransition = null;
 
     this.isGhostMode = new URLSearchParams(window.location.search).get('ghost') === '1';
+    this.workstationEnginesInitialized = false;
     
     // DOM Elements
     this.dom = {};
+  }
+
+  ensureWorkstationEngines() {
+    if (this.workstationEnginesInitialized) return;
+    this.workstationEnginesInitialized = true;
+    this.initEngines();
+    this.initC2TelemetryFeatures();
+    this.syncProfileToHud();
+    this.applyUserSettings(this.username || 'Anan');
+    this.startHudTelemetry();
   }
 
   async init() {
@@ -145,6 +156,7 @@ class WindowsTerminalApp {
       if (this.audio && typeof this.audio.unlockBootAudio === 'function') {
         this.audio.unlockBootAudio();
       }
+      this.ensureWorkstationEngines();
     } else {
       // Start unskippable cinematic 20s boot sequence immediately
       if (this.audio && typeof this.audio.lockBootAudio === 'function') {
@@ -156,18 +168,16 @@ class WindowsTerminalApp {
     try {
       await profileStore.initStore();
       this.profile = profileStore.getProfile('Anan');
-      this.initEngines();
       await this.sys.init();
       this.registerServiceWorker();
       this.bindEvents();
-      this.initC2TelemetryFeatures();
-      this.syncProfileToHud();
-      this.applyUserSettings('Anan');
 
-      if (targetMode === 'browser' || targetMode === 'web') {
-        setTimeout(() => this.launchBrowserMode(targetUrl || 'https://www.google.com'), 100);
-      } else if (targetMode === 'vscode' || targetMode === 'code') {
-        setTimeout(() => this.launchVscodeMode(targetUrl || 'python'), 100);
+      if (skipBoot) {
+        if (targetMode === 'browser' || targetMode === 'web') {
+          setTimeout(() => this.launchBrowserMode(targetUrl || 'https://www.google.com'), 100);
+        } else if (targetMode === 'vscode' || targetMode === 'code') {
+          setTimeout(() => this.launchVscodeMode(targetUrl || 'python'), 100);
+        }
       }
     } catch (err) {
       console.error('[!] Subsystem initialization error:', err);
@@ -912,11 +922,12 @@ class WindowsTerminalApp {
       logs,
       'cli',
       () => {
+        this.ensureWorkstationEngines();
         this.focusCliInput();
         this.executeCyberrc();
         this.syncProfileToHud();
         this.applyUserSettings(this.username);
-        setTimeout(() => this.hands.updatePositions(), 50);
+        setTimeout(() => { if (this.hands) this.hands.updatePositions(); }, 50);
       }
     );
   }
