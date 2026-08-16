@@ -1,5 +1,5 @@
 /* ==========================================================================
-   CYBER//TYPE FILE EXPLORER & STORAGE MATRIX STYLES
+   CYBER//TYPE LIVE DESKTOP MATRIX & FILE EXPLORER STYLES
    ========================================================================== */
 
 .cyber-explorer-window {
@@ -15,7 +15,7 @@
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.95);
 }
 
-/* 1. Explorer Header Navigation Bar */
+/* 1. Explorer Header Navigation & View Switcher Bar */
 .explorer-header-bar {
   display: flex;
   align-items: center;
@@ -24,6 +24,63 @@
   background: rgba(2, 6, 4, 0.96);
   border-bottom: 1px solid rgba(0, 255, 102, 0.2);
   user-select: none;
+}
+
+/* View Mode Switcher Group */
+.exp-mode-toggle-group {
+  display: flex;
+  align-items: center;
+  background: rgba(0, 255, 102, 0.05);
+  border: 1px solid rgba(0, 255, 102, 0.2);
+  border-radius: 5px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.exp-view-mode-btn {
+  background: transparent;
+  border: none;
+  color: #72a382;
+  font-family: 'Consolas', monospace;
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.exp-view-mode-btn:hover {
+  color: #c0ffda;
+  background: rgba(0, 255, 102, 0.1);
+}
+
+.exp-view-mode-btn.active {
+  background: rgba(0, 255, 102, 0.22);
+  color: #00ff66;
+  box-shadow: 0 0 10px rgba(0, 255, 102, 0.3);
+}
+
+.desktop-telemetry-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Consolas', monospace;
+  font-size: 10.5px;
+  color: #72a382;
+  background: rgba(0, 255, 102, 0.05);
+  border: 1px solid rgba(0, 255, 102, 0.18);
+  padding: 4px 10px;
+  border-radius: 5px;
+}
+
+.pulse-green-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #00ff66;
+  box-shadow: 0 0 8px #00ff66;
+  animation: blinkFast 0.8s infinite alternate;
 }
 
 .explorer-nav-controls {
@@ -107,7 +164,7 @@
   border: 1px solid rgba(0, 255, 102, 0.2);
   border-radius: 5px;
   padding: 4px 10px;
-  width: 180px;
+  width: 200px;
 }
 
 .exp-search-input {
@@ -124,14 +181,243 @@
   color: #557762;
 }
 
-/* 2. Explorer Body Split */
+/* ==========================================================================
+   2. MODE A: LIVE CYBER DESKTOP MATRIX (Hologram Cards View)
+   ========================================================================== */
+
+.desktop-matrix-stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: radial-gradient(circle at 50% 20%, rgba(0, 255, 102, 0.06) 0%, rgba(2, 6, 4, 0.95) 100%);
+  overflow: hidden;
+}
+
+.desktop-hud-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: rgba(0, 255, 102, 0.03);
+  border-bottom: 1px solid rgba(0, 255, 102, 0.15);
+}
+
+.hud-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hud-tag {
+  font-family: 'Consolas', monospace;
+  font-size: 11px;
+  font-weight: 800;
+  color: #00ff66;
+  letter-spacing: 1px;
+}
+
+.hud-sub {
+  font-size: 9.5px;
+  color: #72a382;
+  letter-spacing: 0.5px;
+}
+
+.btn-desktop-refresh {
+  background: rgba(0, 255, 102, 0.08);
+  border: 1px solid rgba(0, 255, 102, 0.25);
+  color: #00ff66;
+  font-family: 'Consolas', monospace;
+  font-size: 9.5px;
+  font-weight: bold;
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.btn-desktop-refresh:hover {
+  background: rgba(0, 255, 102, 0.25);
+  border-color: #00ff66;
+}
+
+.desktop-categories-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.desktop-category-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.desktop-category-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 10px;
+  border-left: 3px solid #00ff66;
+  background: rgba(0, 255, 102, 0.04);
+  border-radius: 0 4px 4px 0;
+}
+
+.cat-title {
+  font-family: 'Consolas', monospace;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+}
+
+.cat-badge {
+  font-size: 9px;
+  color: #72a382;
+  font-family: 'Consolas', monospace;
+}
+
+/* App Cards Grid */
+.desktop-apps-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.desktop-app-card {
+  background: rgba(4, 12, 8, 0.88);
+  border: 1px solid rgba(0, 255, 102, 0.2);
+  border-radius: 7px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.7);
+}
+
+.desktop-app-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: var(--card-glow, #00ff66);
+  opacity: 0.7;
+}
+
+.desktop-app-card:hover {
+  background: rgba(6, 18, 12, 0.95);
+  border-color: var(--card-glow, #00ff66);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.9), 0 0 15px var(--card-glow, #00ff66)44;
+}
+
+.desktop-app-card.selected {
+  border-color: #00ff66;
+  background: rgba(0, 255, 102, 0.12);
+  box-shadow: 0 0 20px rgba(0, 255, 102, 0.4);
+}
+
+.app-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.app-card-icon {
+  font-size: 24px;
+  filter: drop-shadow(0 0 6px rgba(0, 255, 102, 0.4));
+}
+
+.app-card-badge {
+  font-size: 8.5px;
+  font-family: 'Consolas', monospace;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: rgba(0, 255, 102, 0.1);
+  color: #72a382;
+  border: 1px solid rgba(0, 255, 102, 0.2);
+}
+
+.app-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.app-card-name {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #ffffff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-card-path {
+  font-size: 9px;
+  color: #557762;
+  font-family: 'Consolas', monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-card-actions {
+  margin-top: 4px;
+  display: flex;
+}
+
+.btn-hologram-launch {
+  width: 100%;
+  background: rgba(0, 255, 102, 0.08);
+  border: 1px solid rgba(0, 255, 102, 0.3);
+  color: #00ff66;
+  font-family: 'Consolas', monospace;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 5px 0;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  transition: all 0.15s ease;
+}
+
+.btn-hologram-launch:hover {
+  background: rgba(0, 255, 102, 0.25);
+  border-color: #00ff66;
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(0, 255, 102, 0.5);
+}
+
+.desktop-empty-state {
+  text-align: center;
+  padding: 40px;
+  font-family: 'Consolas', monospace;
+  font-size: 12px;
+  color: #557762;
+}
+
+/* ==========================================================================
+   3. MODE B: DEEP STORAGE BROWSER (Dual-Pane File Matrix)
+   ========================================================================== */
+
 .explorer-body-split {
   flex: 1;
   display: flex;
   overflow: hidden;
 }
 
-/* Sidebar */
 .explorer-sidebar {
   width: 220px;
   background: rgba(2, 8, 4, 0.9);
@@ -295,7 +581,7 @@
   font-weight: 700;
 }
 
-/* 3. Bottom Status Bar */
+/* 4. Bottom Status Bar */
 .explorer-status-bar {
   display: flex;
   align-items: center;

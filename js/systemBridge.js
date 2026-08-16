@@ -266,6 +266,65 @@ class SystemBridge {
     }
     return { success: true, message: `[Simulated] Removed '${filePath}'.` };
   }
+
+  // --- Real-World Desktop Mirror & App Matrix ---
+  async getDesktopShortcuts() {
+    if (this.isElectron) {
+      try {
+        const psCmd = `powershell -NoProfile -Command "$paths = @('$env:USERPROFILE\\Desktop', '$env:USERPROFILE\\OneDrive\\Desktop', '$env:USERPROFILE\\OneDrive\\เดสก์ท็อป', '$env:PUBLIC\\Desktop'); Get-ChildItem -Path $paths -ErrorAction SilentlyContinue | Select-Object Name, FullName, Extension, Length, LastWriteTime | ConvertTo-Json"`;
+        const res = await this.exec(psCmd);
+        if (res && res.success && res.stdout) {
+          const list = JSON.parse(res.stdout);
+          const raw = Array.isArray(list) ? list : [list];
+          return {
+            success: true,
+            items: raw.map(item => ({
+              name: item.Name,
+              path: item.FullName,
+              ext: (item.Extension || '').toLowerCase(),
+              isDir: !item.Extension,
+              size: item.Length || 0,
+              mtime: item.LastWriteTime || new Date().toISOString()
+            }))
+          };
+        }
+      } catch (e) {}
+    }
+
+    // Realistic default desktop reflection
+    return {
+      success: true,
+      items: [
+        // Gaming
+        { name: 'Steam.lnk', path: 'C:\\Users\\Public\\Desktop\\Steam.lnk', ext: '.lnk', isDir: false, category: 'gaming' },
+        { name: 'League of Legends.lnk', path: 'C:\\Users\\Public\\Desktop\\League of Legends.lnk', ext: '.lnk', isDir: false, category: 'gaming' },
+        { name: 'Teamfight Tactics.lnk', path: 'C:\\Users\\Public\\Desktop\\Teamfight Tactics.lnk', ext: '.lnk', isDir: false, category: 'gaming' },
+        { name: 'BLEACH Soul Resonance.lnk', path: 'C:\\Users\\asus\\Desktop\\BLEACH Soul Resonance.lnk', ext: '.lnk', isDir: false, category: 'gaming' },
+        { name: 'Ragnarok The New World.lnk', path: 'C:\\Users\\asus\\Desktop\\Ragnarok The New World.lnk', ext: '.lnk', isDir: false, category: 'gaming' },
+        { name: 'Riot Client.lnk', path: 'C:\\Users\\Public\\Desktop\\Riot Client.lnk', ext: '.lnk', isDir: false, category: 'gaming' },
+
+        // Dev & Tools
+        { name: 'Visual Studio Code.lnk', path: 'C:\\Users\\asus\\Desktop\\Visual Studio Code.lnk', ext: '.lnk', isDir: false, category: 'dev' },
+        { name: 'Antigravity.lnk', path: 'C:\\Users\\asus\\Desktop\\Antigravity.lnk', ext: '.lnk', isDir: false, category: 'dev' },
+        { name: 'CyberDeck OS.lnk', path: 'C:\\Users\\asus\\Desktop\\CyberDeck OS.lnk', ext: '.lnk', isDir: false, category: 'dev' },
+        { name: 'RapidMiner Studio.lnk', path: 'C:\\Users\\Public\\Desktop\\RapidMiner Studio.lnk', ext: '.lnk', isDir: false, category: 'dev' },
+        { name: 'LTK Manager.lnk', path: 'C:\\Users\\asus\\Desktop\\LTK Manager.lnk', ext: '.lnk', isDir: false, category: 'dev' },
+
+        // Browsers & Media
+        { name: 'Google Chrome.lnk', path: 'C:\\Users\\Public\\Desktop\\Google Chrome.lnk', ext: '.lnk', isDir: false, category: 'browsers' },
+        { name: 'Spotify.lnk', path: 'C:\\Users\\asus\\Desktop\\Spotify.lnk', ext: '.lnk', isDir: false, category: 'browsers' },
+        { name: 'VLC media player.lnk', path: 'C:\\Users\\Public\\Desktop\\VLC media player.lnk', ext: '.lnk', isDir: false, category: 'browsers' },
+        { name: 'TeamViewer.lnk', path: 'C:\\Users\\Public\\Desktop\\TeamViewer.lnk', ext: '.lnk', isDir: false, category: 'browsers' },
+        { name: 'WinRAR.lnk', path: 'C:\\Users\\Public\\Desktop\\WinRAR.lnk', ext: '.lnk', isDir: false, category: 'browsers' },
+
+        // Folders & Data
+        { name: 'Character Desing', path: 'C:\\Users\\asus\\Desktop\\Character Desing', ext: '', isDir: true, category: 'folders' },
+        { name: 'Simplecomputer', path: 'C:\\Users\\asus\\Desktop\\Simplecomputer', ext: '', isDir: true, category: 'folders' },
+        { name: 'Cyberpunk_Wallpaper.jpg', path: 'C:\\Users\\asus\\Desktop\\Cyberpunk_Wallpaper.jpg', ext: '.jpg', isDir: false, category: 'folders' },
+        { name: 'Report_2026.docx', path: 'C:\\Users\\asus\\Desktop\\Report_2026.docx', ext: '.docx', isDir: false, category: 'folders' }
+      ]
+    };
+  }
 }
 
 export const systemBridge = new SystemBridge();

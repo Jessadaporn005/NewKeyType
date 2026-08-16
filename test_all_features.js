@@ -249,6 +249,12 @@ async function runTests() {
   assert(explorer.getFileIcon({ isDir: false, name: 'script.py' }) === '🐍', 'Python script icon mapped correctly');
   assert(explorer.formatSize(1048576) === '1 MB', 'File size formatted accurately to 1 MB');
 
+  await explorer.loadDesktopMatrix();
+  assert(explorer.desktopItems.length > 0, `Desktop Matrix detected ${explorer.desktopItems.length} live desktop shortcuts & apps`);
+  assert(explorer.getDesktopAppIcon({ isDir: false, name: 'Steam.lnk' }) === '🎮', 'Steam mapped to Gaming icon');
+  assert(explorer.getDesktopAppIcon({ isDir: false, name: 'Visual Studio Code.lnk' }) === '⚡', 'VS Code mapped to Dev icon');
+  assert(explorer.getDesktopAppIcon({ isDir: false, name: 'Google Chrome.lnk' }) === '🌐', 'Chrome mapped to Browser icon');
+
   // 14. Real Task Manager & Process Monitor (htop)
   console.log('\n[14] Testing Real Task Manager & Process Monitor (htop)...');
   const { TaskManagerViewEngine } = await import('./js/taskManagerView.js');

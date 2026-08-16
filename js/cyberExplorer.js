@@ -1,10 +1,10 @@
 /**
- * CYBER//TYPE REAL-WORLD FILE EXPLORER & STORAGE MATRIX ENGINE
- * Connects directly to host Windows/Linux filesystem.
+ * CYBER//TYPE REAL-WORLD FILE EXPLORER & DESKTOP MIRROR MATRIX ENGINE
+ * Connects directly to host Windows/Linux Desktop & Filesystem.
  * Features:
- *   - Browse real drives (C:\, D:\, Desktop, Documents, Downloads).
- *   - Breadcrumb directory navigation with path history.
- *   - Interactive actions: Launch .exe programs, preview hologram images, stream audio, edit code in VS Code Studio.
+ *   - [🖥️ LIVE DESKTOP MATRIX]: Live reflection of real desktop shortcuts, games, tools, and files with 1-click launch.
+ *   - [💽 STORAGE BROWSER]: Deep drive and folder browser for C:\, D:\, Documents, Downloads.
+ *   - Interactive actions: Launch .exe/.lnk apps, preview hologram images, stream audio, edit code in VS Code Studio.
  *   - File management: Create folder, delete, encrypt file (AES-256), search filter.
  */
 
@@ -17,10 +17,12 @@ export class CyberExplorerEngine {
     this.toasts = toastManager;
 
     this.container = null;
+    this.viewMode = 'desktop_matrix'; // 'desktop_matrix' | 'storage_browser'
     this.currentPath = 'C:\\Users\\asus';
     this.history = ['C:\\Users\\asus'];
     this.historyIdx = 0;
     this.files = [];
+    this.desktopItems = [];
     this.drives = [];
     this.searchQuery = '';
     this.selectedFile = null;
@@ -40,6 +42,7 @@ export class CyberExplorerEngine {
 
     this.renderLayout();
     await this.loadDrives();
+    await this.loadDesktopMatrix();
     await this.navigateTo(this.currentPath, false);
   }
 
@@ -48,29 +51,60 @@ export class CyberExplorerEngine {
 
     this.container.innerHTML = `
       <div class="cyber-explorer-window" id="cyberExplorerWindow">
-        <!-- 1. Top Navigation Bar -->
+        <!-- 1. Top Navigation & View Switcher Bar -->
         <div class="explorer-header-bar">
-          <div class="explorer-nav-controls">
+          <!-- View Mode Toggle -->
+          <div class="exp-mode-toggle-group">
+            <button class="exp-view-mode-btn ${this.viewMode === 'desktop_matrix' ? 'active' : ''}" id="expModeDesktop" title="Live reflection of your Windows Desktop apps">🖥️ DESKTOP MATRIX</button>
+            <button class="exp-view-mode-btn ${this.viewMode === 'storage_browser' ? 'active' : ''}" id="expModeStorage" title="Deep file and storage drive browser">💽 STORAGE BROWSER</button>
+          </div>
+
+          <!-- Storage Nav Controls (Visible in Storage Browser mode) -->
+          <div class="explorer-nav-controls ${this.viewMode === 'desktop_matrix' ? 'hidden' : ''}" id="expStorageNavControls">
             <button class="exp-nav-btn" id="expBtnBack" title="Back (Alt+Left)">◀</button>
             <button class="exp-nav-btn" id="expBtnForward" title="Forward (Alt+Right)">▶</button>
             <button class="exp-nav-btn" id="expBtnUp" title="Up to Parent Directory">▲</button>
             <button class="exp-nav-btn" id="expBtnRefresh" title="Refresh Directory">🔄</button>
           </div>
 
-          <div class="explorer-breadcrumbs" id="expBreadcrumbs">
-            <!-- Breadcrumbs path items rendered dynamically -->
+          <!-- Breadcrumbs (Visible in Storage Browser mode) -->
+          <div class="explorer-breadcrumbs ${this.viewMode === 'desktop_matrix' ? 'hidden' : ''}" id="expBreadcrumbs"></div>
+
+          <!-- Desktop Telemetry Pill (Visible in Desktop Matrix mode) -->
+          <div class="desktop-telemetry-pill ${this.viewMode === 'storage_browser' ? 'hidden' : ''}" id="expDesktopPill">
+            <span class="pulse-green-dot"></span>
+            <span>DESKTOP MIRROR: <strong id="desktopItemCounter">0 APPS DETECTED</strong></span>
           </div>
 
           <div class="explorer-search-box">
             <span class="search-icon">🔍</span>
-            <input type="text" class="exp-search-input" id="expSearchInput" placeholder="Filter files..." />
+            <input type="text" class="exp-search-input" id="expSearchInput" placeholder="Filter apps & files..." />
           </div>
 
           <button class="exp-nav-btn exp-btn-exit" id="expBtnExit" title="Return to CLI Terminal">✕</button>
         </div>
 
-        <!-- 2. Main Dual-Pane Explorer Body -->
-        <div class="explorer-body-split">
+        <!-- 2. MODE A: LIVE CYBER DESKTOP MATRIX (Flagship Hologram View) -->
+        <div class="desktop-matrix-stage ${this.viewMode === 'desktop_matrix' ? '' : 'hidden'}" id="expDesktopMatrixStage">
+          <!-- Desktop Telemetry Banner -->
+          <div class="desktop-hud-banner">
+            <div class="hud-left">
+              <span class="hud-tag">[ OPERATOR DESKTOP LINK ]</span>
+              <span class="hud-sub">REFLECTING PHYSICAL WINDOWS WORKSTATION SHORTCUTS</span>
+            </div>
+            <div class="hud-right">
+              <button class="btn-desktop-refresh" id="btnRefreshDesktop">🔄 RESCAN DESKTOP</button>
+            </div>
+          </div>
+
+          <!-- Categorized Hologram Grid Sections -->
+          <div class="desktop-categories-scroll" id="desktopCategoriesScroll">
+            <!-- Categories rendered dynamically -->
+          </div>
+        </div>
+
+        <!-- 3. MODE B: DEEP STORAGE BROWSER (Dual-Pane File Matrix View) -->
+        <div class="explorer-body-split ${this.viewMode === 'storage_browser' ? '' : 'hidden'}" id="expStorageBodySplit">
           <!-- Sidebar: Quick Access & Drives -->
           <div class="explorer-sidebar">
             <div class="sidebar-section-title">⚡ QUICK ACCESS</div>
@@ -100,13 +134,13 @@ export class CyberExplorerEngine {
           </div>
         </div>
 
-        <!-- 3. Bottom Status Bar -->
+        <!-- 4. Bottom Status Bar -->
         <div class="explorer-status-bar">
           <span id="expItemCount">0 items</span>
           <span class="status-sep">|</span>
-          <span id="expSelectedInfo">No file selected</span>
+          <span id="expSelectedInfo">Ready</span>
           <span class="status-sep">|</span>
-          <span class="status-glow">CYBER//FS DRIVER [ACTIVE]</span>
+          <span class="status-glow">CYBER//OS DESKTOP BRIDGE [ONLINE]</span>
         </div>
       </div>
 
@@ -130,6 +164,25 @@ export class CyberExplorerEngine {
   bindEvents() {
     if (!this.container) return;
 
+    // View Mode Switcher
+    const btnModeDesktop = this.container.querySelector('#expModeDesktop');
+    const btnModeStorage = this.container.querySelector('#expModeStorage');
+
+    if (btnModeDesktop) {
+      btnModeDesktop.addEventListener('click', () => this.switchViewMode('desktop_matrix'));
+    }
+    if (btnModeStorage) {
+      btnModeStorage.addEventListener('click', () => this.switchViewMode('storage_browser'));
+    }
+
+    const btnRefreshDesktop = this.container.querySelector('#btnRefreshDesktop');
+    if (btnRefreshDesktop) {
+      btnRefreshDesktop.addEventListener('click', () => {
+        this.loadDesktopMatrix();
+        if (this.sound) this.sound.playSuccessFanfare();
+      });
+    }
+
     const btnBack = this.container.querySelector('#expBtnBack');
     const btnFwd = this.container.querySelector('#expBtnForward');
     const btnUp = this.container.querySelector('#expBtnUp');
@@ -152,7 +205,11 @@ export class CyberExplorerEngine {
     if (searchInput) {
       searchInput.addEventListener('input', (e) => {
         this.searchQuery = e.target.value.toLowerCase().trim();
-        this.renderFilesList();
+        if (this.viewMode === 'desktop_matrix') {
+          this.renderDesktopMatrix();
+        } else {
+          this.renderFilesList();
+        }
       });
     }
 
@@ -219,6 +276,211 @@ export class CyberExplorerEngine {
     }
   }
 
+  switchViewMode(mode) {
+    this.viewMode = mode;
+
+    const btnDesktop = this.container.querySelector('#expModeDesktop');
+    const btnStorage = this.container.querySelector('#expModeStorage');
+    const desktopStage = this.container.querySelector('#expDesktopMatrixStage');
+    const storageSplit = this.container.querySelector('#expStorageBodySplit');
+    const storageNav = this.container.querySelector('#expStorageNavControls');
+    const breadcrumbs = this.container.querySelector('#expBreadcrumbs');
+    const desktopPill = this.container.querySelector('#expDesktopPill');
+
+    if (btnDesktop) btnDesktop.classList.toggle('active', mode === 'desktop_matrix');
+    if (btnStorage) btnStorage.classList.toggle('active', mode === 'storage_browser');
+
+    if (desktopStage) desktopStage.classList.toggle('hidden', mode !== 'desktop_matrix');
+    if (storageSplit) storageSplit.classList.toggle('hidden', mode !== 'storage_browser');
+
+    if (storageNav) storageNav.classList.toggle('hidden', mode === 'desktop_matrix');
+    if (breadcrumbs) breadcrumbs.classList.toggle('hidden', mode === 'desktop_matrix');
+    if (desktopPill) desktopPill.classList.toggle('hidden', mode === 'storage_browser');
+
+    if (this.sound) this.sound.playKey(false);
+    if (mode === 'desktop_matrix') {
+      this.renderDesktopMatrix();
+    } else {
+      this.renderFilesList();
+    }
+  }
+
+  // --- LIVE DESKTOP MATRIX LOADING & RENDERING ---
+  async loadDesktopMatrix() {
+    const res = await systemBridge.getDesktopShortcuts();
+    if (res && res.items) {
+      this.desktopItems = res.items;
+    }
+
+    if (this.container) {
+      const counter = this.container.querySelector('#desktopItemCounter');
+      if (counter) {
+        counter.textContent = `${this.desktopItems.length} APPS & SHORTCUTS DETECTED`;
+      }
+      this.renderDesktopMatrix();
+    }
+  }
+
+  renderDesktopMatrix() {
+    if (!this.container) return;
+    const scrollContainer = this.container.querySelector('#desktopCategoriesScroll');
+    if (!scrollContainer) return;
+
+    let items = this.desktopItems;
+    if (this.searchQuery) {
+      items = items.filter(i => i.name.toLowerCase().includes(this.searchQuery) || (i.path && i.path.toLowerCase().includes(this.searchQuery)));
+    }
+
+    // Categorization logic
+    const categories = {
+      gaming: { title: '🎮 GAMING & ENTERTAINMENT DECK', color: '#ff007f', items: [] },
+      dev: { title: '💻 DEV & PROFESSIONAL CODE TOOLS', color: '#00ff66', items: [] },
+      browsers: { title: '🌐 BROWSERS & MEDIA COMMUNICATIONS', color: '#00e5ff', items: [] },
+      folders: { title: '📁 DESKTOP FOLDERS & DATA FILES', color: '#ffaa00', items: [] }
+    };
+
+    items.forEach(item => {
+      const name = item.name.toLowerCase();
+      if (item.category === 'gaming' || name.includes('steam') || name.includes('league') || name.includes('riot') || name.includes('tft') || name.includes('bleach') || name.includes('ragnarok') || name.includes('game')) {
+        categories.gaming.items.push(item);
+      } else if (item.category === 'dev' || name.includes('code') || name.includes('visual studio') || name.includes('antigravity') || name.includes('cyberdeck') || name.includes('rapidminer') || name.includes('ltk') || name.includes('python') || name.includes('node') || name.includes('git')) {
+        categories.dev.items.push(item);
+      } else if (item.category === 'browsers' || name.includes('chrome') || name.includes('spotify') || name.includes('vlc') || name.includes('teamviewer') || name.includes('winrar') || name.includes('browser') || name.includes('discord') || name.includes('edge')) {
+        categories.browsers.items.push(item);
+      } else {
+        categories.folders.items.push(item);
+      }
+    });
+
+    let html = '';
+    Object.keys(categories).forEach(catKey => {
+      const cat = categories[catKey];
+      if (cat.items.length === 0) return;
+
+      html += `
+        <div class="desktop-category-section">
+          <div class="desktop-category-header" style="border-left-color: ${cat.color};">
+            <span class="cat-title" style="color: ${cat.color};">${cat.title}</span>
+            <span class="cat-badge">${cat.items.length} Shortcuts</span>
+          </div>
+          <div class="desktop-apps-grid">
+            ${cat.items.map(item => this.renderAppCardHtml(item, cat.color)).join('')}
+          </div>
+        </div>
+      `;
+    });
+
+    if (!html) {
+      html = `<div class="desktop-empty-state">No desktop shortcuts matching query: '${this.searchQuery}'</div>`;
+    }
+
+    scrollContainer.innerHTML = html;
+
+    // Click and Double-click bindings for app cards
+    scrollContainer.querySelectorAll('.desktop-app-card').forEach(card => {
+      const path = card.dataset.path;
+      const isDir = card.dataset.isdir === 'true';
+      const name = card.dataset.name;
+      const itemObj = this.desktopItems.find(i => i.path === path || i.name === name);
+
+      const launchBtn = card.querySelector('.btn-hologram-launch');
+      if (launchBtn) {
+        launchBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.executeDesktopLaunch(itemObj || { name, path, isDir });
+        });
+      }
+
+      card.addEventListener('dblclick', () => {
+        this.executeDesktopLaunch(itemObj || { name, path, isDir });
+      });
+
+      card.addEventListener('click', () => {
+        scrollContainer.querySelectorAll('.desktop-app-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        const selectedInfo = this.container.querySelector('#expSelectedInfo');
+        if (selectedInfo) selectedInfo.textContent = `Selected: ${name}`;
+        if (this.sound) this.sound.playKey(false);
+      });
+    });
+  }
+
+  renderAppCardHtml(item, glowColor) {
+    const icon = this.getDesktopAppIcon(item);
+    const cleanName = item.name.replace(/\.(lnk|exe|url)$/i, '');
+
+    return `
+      <div class="desktop-app-card" data-name="${item.name}" data-path="${item.path || ''}" data-isdir="${item.isDir}" style="--card-glow: ${glowColor};">
+        <div class="app-card-top">
+          <span class="app-card-icon">${icon}</span>
+          <span class="app-card-badge">${item.isDir ? 'FOLDER' : 'EXE / LNK'}</span>
+        </div>
+        <div class="app-card-info">
+          <div class="app-card-name" title="${item.name}">${cleanName}</div>
+          <div class="app-card-path" title="${item.path || ''}">${item.path ? item.path.slice(0, 32) + '...' : 'Physical Desktop'}</div>
+        </div>
+        <div class="app-card-actions">
+          <button class="btn-hologram-launch" title="Launch ${cleanName} on PC">
+            <span class="btn-icon">⚡</span> ${item.isDir ? 'EXPLORE' : 'LAUNCH APP'}
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  getDesktopAppIcon(item) {
+    if (item.isDir) return '📁';
+    const n = item.name.toLowerCase();
+    if (n.includes('steam')) return '🎮';
+    if (n.includes('league') || n.includes('riot') || n.includes('tft')) return '⚔️';
+    if (n.includes('bleach') || n.includes('ragnarok')) return '🗡️';
+    if (n.includes('chrome') || n.includes('browser')) return '🌐';
+    if (n.includes('spotify')) return '🎵';
+    if (n.includes('vlc')) return '🎬';
+    if (n.includes('code') || n.includes('visual studio')) return '⚡';
+    if (n.includes('antigravity') || n.includes('cyberdeck')) return '🌌';
+    if (n.includes('rapidminer') || n.includes('ltk')) return '🛠️';
+    if (n.includes('teamviewer')) return '📡';
+    if (n.includes('winrar') || n.includes('zip')) return '📦';
+    if (n.endsWith('.jpg') || n.endsWith('.png') || n.endsWith('.jpeg')) return '🖼️';
+    if (n.endsWith('.docx') || n.endsWith('.pdf')) return '📄';
+    return '⚡';
+  }
+
+  async executeDesktopLaunch(item) {
+    if (!item) return;
+
+    if (item.isDir) {
+      // Enter directory in storage browser mode
+      if (item.path) {
+        this.switchViewMode('storage_browser');
+        await this.navigateTo(item.path, true);
+        if (this.toasts) this.toasts.show('SUCCESS', `Opened Desktop Folder: ${item.name}`, 2000);
+      }
+      return;
+    }
+
+    const n = item.name.toLowerCase();
+
+    // Check image preview
+    if (n.endsWith('.jpg') || n.endsWith('.png') || n.endsWith('.jpeg') || n.endsWith('.svg')) {
+      if (item.path) {
+        this.showHologramImage(item.name, `file:///${item.path.replace(/\\/g, '/')}`);
+        return;
+      }
+    }
+
+    // Launch application via Windows System Bridge
+    if (this.toasts) {
+      this.toasts.show('SUCCESS', `Executing Desktop Target: ${item.name}...`, 2500);
+    }
+    if (this.sound) this.sound.playSuccessFanfare();
+
+    const targetPath = item.path || item.name;
+    await systemBridge.launch(targetPath);
+  }
+
+  // --- STORAGE BROWSER OPERATIONS ---
   async loadDrives() {
     const res = await systemBridge.getDrives();
     if (res && res.drives) {
@@ -360,7 +622,6 @@ export class CyberExplorerEngine {
 
     listEl.innerHTML = html;
 
-    // Click and Double Click Bindings
     listEl.querySelectorAll('.file-row').forEach(row => {
       const name = row.dataset.name;
       const isDir = row.dataset.isdir === 'true';
@@ -387,7 +648,6 @@ export class CyberExplorerEngine {
     const fullPath = `${this.currentPath}${sep}${fileObj.name}`;
 
     if (fileObj.isDir) {
-      // Enter directory
       this.navigateTo(fullPath, true);
       if (this.sound) this.sound.playSuccessFanfare();
       return;
@@ -395,7 +655,6 @@ export class CyberExplorerEngine {
 
     const nameLower = fileObj.name.toLowerCase();
 
-    // 1. Executable / App ➔ Launch via Windows System Bridge
     if (nameLower.endsWith('.exe') || nameLower.endsWith('.bat') || nameLower.endsWith('.cmd') || nameLower.endsWith('.lnk')) {
       if (this.toasts) this.toasts.show('SUCCESS', `Executing binary: ${fileObj.name}...`, 2000);
       systemBridge.launch(fullPath);
@@ -403,13 +662,11 @@ export class CyberExplorerEngine {
       return;
     }
 
-    // 2. Images ➔ Hologram Zoom Preview Modal
     if (nameLower.endsWith('.png') || nameLower.endsWith('.jpg') || nameLower.endsWith('.jpeg') || nameLower.endsWith('.svg') || nameLower.endsWith('.gif')) {
       this.showHologramImage(fileObj.name, `file:///${fullPath.replace(/\\/g, '/')}`);
       return;
     }
 
-    // 3. Audio ➔ Stream into CyberBrowser / Player
     if (nameLower.endsWith('.mp3') || nameLower.endsWith('.wav') || nameLower.endsWith('.ogg')) {
       if (this.toasts) this.toasts.show('SUCCESS', `Streaming Cyber Audio: ${fileObj.name}`, 2500);
       if (this.app.launchBrowserMode) {
@@ -418,7 +675,6 @@ export class CyberExplorerEngine {
       return;
     }
 
-    // 4. Code & Scripts ➔ Open in built-in VS Code Studio
     if (nameLower.endsWith('.py') || nameLower.endsWith('.js') || nameLower.endsWith('.html') || nameLower.endsWith('.css') || nameLower.endsWith('.json') || nameLower.endsWith('.cpp') || nameLower.endsWith('.rs') || nameLower.endsWith('.sql') || nameLower.endsWith('.txt')) {
       systemBridge.readFile(fullPath).then(res => {
         if (res && res.content !== undefined) {
@@ -443,7 +699,6 @@ export class CyberExplorerEngine {
       return;
     }
 
-    // 5. Default Fallback ➔ Launch with OS default
     systemBridge.launch(fullPath);
     if (this.toasts) this.toasts.show('SUCCESS', `Opened with OS default: ${fileObj.name}`, 2000);
   }
@@ -493,7 +748,7 @@ export class CyberExplorerEngine {
     if (f.isDir) return '📁';
     const ext = f.name.split('.').pop().toLowerCase();
     switch (ext) {
-      case 'exe': case 'bat': case 'cmd': return '⚡';
+      case 'exe': case 'bat': case 'cmd': case 'lnk': return '⚡';
       case 'png': case 'jpg': case 'jpeg': case 'svg': case 'gif': return '🖼️';
       case 'mp3': case 'wav': case 'ogg': return '🎵';
       case 'py': return '🐍';
