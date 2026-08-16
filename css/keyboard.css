@@ -6,7 +6,8 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  background: #090e15;
+  background: rgba(8, 14, 21, 0.72);
+  backdrop-filter: blur(3px);
   border: 1px solid rgba(0, 229, 255, 0.25);
   border-top: 2px solid #00e5ff;
   padding: 12px;
@@ -20,7 +21,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 6px 14px;
-  background: #060a0f;
+  background: rgba(6, 10, 15, 0.75);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 3px;
   flex-wrap: wrap;

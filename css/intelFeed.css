@@ -226,7 +226,8 @@
   flex-direction: column;
   height: 100%;
   width: 100%;
-  background: #0b1219;
+  background: rgba(8, 14, 22, 0.72);
+  backdrop-filter: blur(3px);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 4px;
   box-shadow: 0 10px 35px rgba(0, 0, 0, 0.88);

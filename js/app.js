@@ -917,7 +917,6 @@ class WindowsTerminalApp {
     this.state = STATES.CLI_PROMPT;
 
     this.dom.hackerLoginOverlay.classList.add('hidden');
-    this.dom.mainTerminalContainer.classList.remove('hidden');
 
     const logs = generateLoginLogs(this.username);
     this.playCyberTransition(
@@ -1020,6 +1019,10 @@ class WindowsTerminalApp {
     this.audio.ensureContext();
     this.audio.startLogStreamDrone();
 
+    if (this.dom.mainTerminalContainer) {
+      this.dom.mainTerminalContainer.classList.add('hidden');
+    }
+
     this.dom.universalTransitionOverlay.classList.remove('hidden');
     this.dom.transBadge.textContent = `[ ${badgeText.toUpperCase()} ]`;
     this.dom.transHeadline.textContent = headlineText;
@@ -1077,6 +1080,9 @@ class WindowsTerminalApp {
 
       setTimeout(() => {
         this.dom.universalTransitionOverlay.classList.add('hidden');
+        if (this.dom.mainTerminalContainer) {
+          this.dom.mainTerminalContainer.classList.remove('hidden');
+        }
         this.isTransitioning = false;
         this.skipCurrentTransition = null;
         if (onComplete) onComplete();
