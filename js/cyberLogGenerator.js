@@ -9,7 +9,77 @@ const randHex = () => Math.floor(Math.random() * 256).toString(16).padStart(2, '
 const randPort = () => Math.floor(1024 + Math.random() * 64000);
 const randIP = () => `192.168.${Math.floor(Math.random()*254)}.${Math.floor(Math.random()*254)}`;
 
+export function generateTradingEntranceLogs(asset = 'BTC/USDT') {
+  const lines = [];
+  const cleanAsset = (asset || 'BTC/USDT').toUpperCase();
+  const rawSymbol = cleanAsset.replace('/', '');
+
+  lines.push(`========================================================================================`);
+  lines.push(`[⚡] ESTABLISHING QUANTUM FINANCIAL INTERFACE // ASSET: ${cleanAsset} [LIVE STREAM]`);
+  lines.push(`========================================================================================`);
+
+  // Section 1: Exchange WebSocket & Kline Stream Handshake
+  lines.push(`[ 0.001240] [EXCHANGE_BRIDGE] Initializing TLS v1.3 WebSocket to wss://stream.binance.com:9443/ws`);
+  lines.push(`[ 0.002810] [REST_API] Querying Kline Endpoint: https://api.binance.com/api/v3/klines?symbol=${rawSymbol}&limit=80`);
+  lines.push(`[ 0.004120] [REST_API] HTTP/2 200 OK — Ingested 80 Candlestick OHLCV Data Vectors [LATENCY: 14.2ms]`);
+  lines.push(`[ 0.006900] [FEED_VALIDATOR] Parsed Timestamp Stream: Epoch Integrity Match [0 Gaps Detected]`);
+  lines.push(`[ 0.008400] [BOOK_STREAM] Subscribed to L2 Depth Stream @${rawSymbol.toLowerCase()}@depth20@100ms [OK]`);
+
+  // Section 2: Order Book Liquidity & Real-Time Depth Ticks (30 lines)
+  const isBtc = cleanAsset.includes('BTC');
+  const isEth = cleanAsset.includes('ETH');
+  const isSol = cleanAsset.includes('SOL');
+  const basePrice = isBtc ? 96420 : (isEth ? 3540 : (isSol ? 204 : 138));
+
+  for (let i = 0; i < 30; i++) {
+    const bidPrice = (basePrice - i * (basePrice * 0.00035)).toFixed(2);
+    const askPrice = (basePrice + (i + 1) * (basePrice * 0.00035)).toFixed(2);
+    const bidVol = (0.25 + Math.random() * 4.5).toFixed(4);
+    const askVol = (0.25 + Math.random() * 4.5).toFixed(4);
+    lines.push(`>> [L2_ORDERBOOK] BID: $${bidPrice} (${bidVol} ${cleanAsset.split('/')[0]}) | ASK: $${askPrice} (${askVol}) | SPREAD: 0.01% [MATCHED]`);
+  }
+
+  // Section 3: Smart Money Concepts (SMC) & Liquidity Scanner (15 lines)
+  lines.push(`>> [SMC_ALGO] Scanning Institutional Order Blocks (OB) on 5m / 15m / 1h Structure...`);
+  lines.push(`>> [SMC_ALGO] Detected Fair Value Gap (FVG): Imbalance Range [UNFILLED DEMAND ZONE]`);
+  lines.push(`>> [SMC_ALGO] Liquidity Pool Sweep Detected: $18.4M Sell Stops cleared below local key low`);
+  lines.push(`>> [SMC_ALGO] Market Structure Shift (MSS): Break of Structure (BOS) Confirmed on 15m Frame`);
+  lines.push(`>> [SMC_ALGO] Premium vs Discount Array: Price currently trading in High-Probability Discount Zone`);
+
+  // Section 4: Quantitative Momentum & Indicator Formulas (20 lines)
+  lines.push(`>> [QUANT_MATH] Calculating Exponential Moving Averages (EMA 20 / EMA 50 Ribbon)...`);
+  lines.push(`>> [QUANT_MATH] EMA Ribbon Confluence verified: EMA(20) > EMA(50) [GOLDEN TREND ALIGNMENT]`);
+  lines.push(`>> [QUANT_MATH] Computing Bollinger Bands (Period: 20, StdDev: 2.0) -> Volatility Expansion Active`);
+  lines.push(`>> [QUANT_MATH] Relative Strength Index (RSI 14) Vector Calculated: 64.2 [BULLISH MOMENTUM]`);
+  lines.push(`>> [QUANT_MATH] MACD Line = +142.50 | Signal = +118.20 | Histogram = +24.30 [ACCELERATING]`);
+  lines.push(`>> [QUANT_MATH] Volume Profile Point of Control (POC): High-Volume Node at $${(basePrice * 0.995).toFixed(2)}`);
+
+  // Section 5: Real-Time Macro News NLP Sentiment Stream
+  lines.push(`>> [NLP_FEED] Parsing Bloomberg / CoinDesk Real-Time Macro Intelligence Stream...`);
+  lines.push(`>> [NLP_FEED] Headline Ingested: "US Federal Reserve Signals Liquidity Easing" [BULLISH CATALYST +20]`);
+  lines.push(`>> [NLP_FEED] Headline Ingested: "Institutional Spot ETF Inflows Reach Weekly Record" [BULLISH +18]`);
+  lines.push(`>> [NLP_FEED] Aggregate Market Sentiment Score: +38 (STRONG POSITIVE MACRO MOMENTUM)`);
+
+  // Section 6: AI Autonomous Strategy Engine Calibration
+  lines.push(`>> [AI_COPILOT] Neural Strategy Playbook: Trend Following with Pullback Confluence`);
+  lines.push(`>> [AI_COPILOT] Risk/Reward Matrix Calculated: Entry Target Configured (Target R:R = 1:3.14)`);
+  lines.push(`>> [AI_COPILOT] Model Confidence Assessment: 94.2% [STRONG BUY CONVICTION]`);
+  lines.push(`>> [AI_GYM] Autonomous Paper Trading Sandbox Synchronized: 50+ Post-Mortem Epochs Loaded`);
+  lines.push(`>> [PAPER_ENGINE] Paper Trading Capital Allocated: $100,000.00 USD [LEVERAGE 10x ARMED]`);
+  lines.push(`>> [RETINA_CANVAS] Initializing 4K HiDPI Hardware Accelerated Candlestick Surface...`);
+  lines.push(`========================================================================================`);
+  lines.push(`[✓] QUANTUM FINANCIAL PIPELINE SYNCHRONIZATION COMPLETE (100%)`);
+  lines.push(`[+] LAUNCHING AI QUANTUM TRADING TERMINAL...`);
+  lines.push(`========================================================================================`);
+
+  return lines;
+}
+
 export function generateEntranceLogs(mode, arg = '') {
+  if (mode === 'trading') {
+    return generateTradingEntranceLogs(arg || 'BTC/USDT');
+  }
+
   const lines = [];
 
   lines.push(`========================================================================================`);
