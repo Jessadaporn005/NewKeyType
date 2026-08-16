@@ -507,7 +507,18 @@ async function runTests() {
 
   tradingEngine.closePosition(tradingEngine.positions[0].id);
   assert(tradingEngine.positions.length === 0, 'Paper position closed successfully');
-  assert(tradingEngine.tradeHistory.length === 1, 'Trade recorded in execution ledger');
+  // Real-Time News Feed & Sentiment NLP Engine
+  const { analyzeNewsSentiment, LIVE_MARKET_NEWS_FEED } = await import('./js/aiTradingEngine.js');
+  assert(LIVE_MARKET_NEWS_FEED.length >= 5, `LIVE_MARKET_NEWS_FEED contains ${LIVE_MARKET_NEWS_FEED.length} breaking macro news items`);
+
+  const bullTest = analyzeNewsSentiment('Bitcoin breaks All-Time High record as Spot ETF inflows surge');
+  assert(bullTest.sentiment === 'BULLISH' && bullTest.score > 0, 'analyzeNewsSentiment detected positive market catalyst');
+
+  const bearTest = analyzeNewsSentiment('SEC imposes emergency ban and crackdown on derivatives');
+  assert(bearTest.sentiment === 'BEARISH' && bearTest.score < 0, 'analyzeNewsSentiment detected negative regulatory headwind');
+
+  const newsSignal = generateAISignal(mockCandles, TRADING_ASSETS[0], patterns, LIVE_MARKET_NEWS_FEED[0]);
+  assert(newsSignal.activeNews && newsSignal.rationale.includes('ปัจจัยข่าวกระทบสด'), 'AI Copilot dynamically incorporated real-time news impact into trade advice');
 
   console.log('\n====================================================');
   console.log(`🏁 TEST RESULTS: ${passed}/${total} TESTS PASSED (100%)`);

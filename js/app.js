@@ -426,6 +426,9 @@ class WindowsTerminalApp {
       btnOrderLong: document.getElementById('btnOrderLong'),
       btnOrderShort: document.getElementById('btnOrderShort'),
       activePositionsContainer: document.getElementById('activePositionsContainer'),
+      tradingNewsSource: document.getElementById('tradingNewsSource'),
+      tradingNewsHeadline: document.getElementById('tradingNewsHeadline'),
+      tradingNewsSentimentBadge: document.getElementById('tradingNewsSentimentBadge'),
 
       // Academy Mission Grid Modal
       academyGridModal: document.getElementById('academyGridModal'),
@@ -649,10 +652,28 @@ class WindowsTerminalApp {
             this.updateTradingPositionsUI(positions);
           };
 
+          this.tradingEngine.onNewsUpdate = (news) => {
+            this.updateTradingNewsUI(news);
+          };
+
           this.tradingEngine.init();
           this.bindTradingUIEvents();
+          if (this.tradingEngine.activeNews) {
+            this.updateTradingNewsUI(this.tradingEngine.activeNews);
+          }
         }
         break;
+    }
+  }
+
+  updateTradingNewsUI(news) {
+    if (!news) return;
+    if (this.dom.tradingNewsSource) this.dom.tradingNewsSource.textContent = `[ ${news.source} • ${news.time} ]`;
+    if (this.dom.tradingNewsHeadline) this.dom.tradingNewsHeadline.textContent = news.headline;
+    if (this.dom.tradingNewsSentimentBadge) {
+      const isBullish = news.sentiment === 'BULLISH';
+      this.dom.tradingNewsSentimentBadge.className = 'news-sentiment-badge ' + (isBullish ? 'sentiment-bullish' : 'sentiment-bearish');
+      this.dom.tradingNewsSentimentBadge.textContent = `${news.sentiment} (${news.sentimentScore > 0 ? '+' : ''}${news.sentimentScore})`;
     }
   }
 
