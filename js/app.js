@@ -974,12 +974,22 @@ class WindowsTerminalApp {
     // Lazily initialize engine for the target view if needed
     this.ensureViewEngineInitialized(targetMode);
 
+    // Toggle body.mode-trading to hide the physical keyboard dock when in Trading view
+    const isTrading = targetMode === 'trading';
+    document.body.classList.toggle('mode-trading', isTrading);
+
     // Show target view container
     const targetEl = this.dom.views[targetMode];
     if (targetEl) {
       targetEl.classList.remove('hidden');
     } else if (this.dom.views.cli) {
       this.dom.views.cli.classList.remove('hidden');
+    }
+
+    if (isTrading && this.tradingEngine) {
+      setTimeout(() => {
+        this.tradingEngine.resizeCanvas();
+      }, 50);
     }
   }
 

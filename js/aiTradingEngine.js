@@ -635,6 +635,8 @@ export class AITradingEngine {
   async init() {
     await this.loadCandles();
     this.setupCanvasInteractions();
+    this.resizeCanvas();
+    window.addEventListener('resize', () => this.resizeCanvas());
     this.startLiveTickStream();
     this.startNewsStream();
   }
@@ -979,6 +981,24 @@ export class AITradingEngine {
       this.isHovering = false;
       this.render();
     });
+  }
+
+  resizeCanvas() {
+    if (this.canvas && this.canvas.parentElement) {
+      const rect = this.canvas.parentElement.getBoundingClientRect();
+      if (rect.width > 50 && rect.height > 50) {
+        this.canvas.width = Math.floor(rect.width);
+        this.canvas.height = Math.floor(rect.height);
+      }
+    }
+    if (this.subCanvas && this.subCanvas.parentElement) {
+      const subRect = this.subCanvas.parentElement.getBoundingClientRect();
+      if (subRect.width > 50) {
+        this.subCanvas.width = Math.floor(subRect.width);
+        this.subCanvas.height = Math.floor(Math.max(50, subRect.height - 24));
+      }
+    }
+    this.render();
   }
 
   render() {
