@@ -15,6 +15,7 @@ import { CyberHandsController } from './hands.js';
 import { MatrixVisualEngine } from './matrix.js';
 import { LESSONS_DATA, SPEED_TEST_TEXTS } from './lessons.js';
 import { TypingEngine } from './typingEngine.js';
+import { MonkeySpeedEngine } from './monkeySpeedEngine.js';
 import { HackerTyperEngine } from './hackerTyper.js';
 import { BreachProtocolEngine } from './breachProtocol.js';
 import { CyberThreatGlobeEngine } from './threatGlobe.js';
@@ -295,19 +296,21 @@ class WindowsTerminalApp {
       hackerStreamCode: document.getElementById('hackerStreamCode'),
       hackerBreachModal: document.getElementById('hackerBreachModal'),
 
-      // Speed Elements
-      speedModeTitle: document.getElementById('speedModeTitle'),
-      speedTimer: document.getElementById('speedTimer'),
-      speedLiveWpm: document.getElementById('speedLiveWpm'),
-      speedLiveAcc: document.getElementById('speedLiveAcc'),
-      speedLiveStreak: document.getElementById('speedLiveStreak'),
-      speedBatchHud: document.getElementById('speedBatchHud'),
-      speedLiveBatches: document.getElementById('speedLiveBatches'),
-      speedBatchNotice: document.getElementById('speedBatchNotice'),
-      speedSpeedoNeedle: document.getElementById('speedSpeedoNeedle'),
-      speedSpeedoText: document.getElementById('speedSpeedoText'),
-      speedTypingCanvas: document.getElementById('speedTypingCanvas'),
-      speedTextContainer: document.getElementById('speedTextContainer'),
+      // MonkeyType Speed Elements
+      monkeyConfigBar: document.getElementById('monkeyConfigBar'),
+      monkeyLiveHud: document.getElementById('monkeyLiveHud'),
+      monkeyCounterDisplay: document.getElementById('monkeyCounterDisplay'),
+      monkeyLiveWpm: document.getElementById('monkeyLiveWpm'),
+      monkeyLiveRawWpm: document.getElementById('monkeyLiveRawWpm'),
+      monkeyLiveAcc: document.getElementById('monkeyLiveAcc'),
+      monkeyLiveStreak: document.getElementById('monkeyLiveStreak'),
+      monkeyWordsWrapper: document.getElementById('monkeyWordsWrapper'),
+      monkeyWordsContainer: document.getElementById('monkeyWordsContainer'),
+      monkeyCaret: document.getElementById('monkeyCaret'),
+      btnTogglePunctuation: document.getElementById('btnTogglePunctuation'),
+      btnToggleNumbers: document.getElementById('btnToggleNumbers'),
+      selectSpeedDictionary: document.getElementById('selectSpeedDictionary'),
+      btnQuickRestartSpeed: document.getElementById('btnQuickRestartSpeed'),
 
       // Sandbox Elements
       sandboxTextarea: document.getElementById('sandboxTextarea'),
@@ -384,13 +387,15 @@ class WindowsTerminalApp {
       modalCloseBtn: document.getElementById('modalCloseBtn'),
       modalRetryBtn: document.getElementById('modalRetryBtn'),
       modalNextLessonBtn: document.getElementById('modalNextLessonBtn'),
+      modalCloseScoreBtn: document.getElementById('modalCloseScoreBtn'),
       resultRank: document.getElementById('resultRank'),
       modalFinalWpm: document.getElementById('modalFinalWpm'),
-      modalFinalCpm: document.getElementById('modalFinalCpm'),
+      modalFinalRaw: document.getElementById('modalFinalRaw'),
       modalFinalAcc: document.getElementById('modalFinalAcc'),
-      modalFinalErrors: document.getElementById('modalFinalErrors'),
-      modalFinalCombo: document.getElementById('modalFinalCombo'),
+      modalFinalConsistency: document.getElementById('modalFinalConsistency'),
+      modalFinalChars: document.getElementById('modalFinalChars'),
       modalFinalTime: document.getElementById('modalFinalTime'),
+      modalTestConfigTag: document.getElementById('modalTestConfigTag'),
       modalMessage: document.getElementById('modalMessage'),
       modalChartContainer: document.getElementById('modalChartContainer'),
       modalSpeedChartSvg: document.getElementById('modalSpeedChartSvg'),
@@ -462,62 +467,44 @@ class WindowsTerminalApp {
       this.showScoreModal(stats, 'academy');
     };
 
-    this.speedEngine = new TypingEngine(
-      this.dom.speedTextContainer,
-      this.kb,
-      this.hands,
-      this.audio
-    );
+    this.speedEngine = new MonkeySpeedEngine({
+      wordsContainer: this.dom.monkeyWordsContainer,
+      caretEl: this.dom.monkeyCaret,
+      hudEl: this.dom.monkeyLiveHud,
+      kb: this.kb,
+      hands: this.hands,
+      sound: this.audio,
+      toasts: this.toasts
+    });
     this.speedEngine.onErrorKey = (char) => profileStore.recordWeakKey(this.username, char);
     this.speedEngine.onCorrectKey = (span) => {
       if (this.particles && span) this.particles.emitAtElement(span, 4);
     };
-    this.speedEngine.onErrorTrigger = () => {
-      if (this.particles) this.particles.triggerGlitchShake();
-    };
-    this.speedEngine.onHardcoreFailed = (stats) => {
+    this.speedEngine.onHardcoreFail = (stats) => {
       this.audio.playAlarmSiren();
-      if (this.dom.speedTimer) this.dom.speedTimer.textContent = 'FAIL';
+      if (this.dom.monkeyCounterDisplay) this.dom.monkeyCounterDisplay.textContent = 'FAIL';
       this.showScoreModal(stats, 'speed_fail');
     };
     this.speedEngine.onUpdateMetrics = (stats) => {
-      this.dom.speedLiveWpm.textContent = `${stats.wpm} WPM`;
-      this.dom.speedLiveAcc.textContent = `${stats.accuracy}%`;
-      this.dom.speedLiveStreak.textContent = `${stats.streak}x 🔥`;
-      if (this.dom.speedLiveBatches) {
-        this.dom.speedLiveBatches.textContent = stats.batchesCleared;
-      }
-      this.updateSpeedometer(this.dom.speedSpeedoNeedle, this.dom.speedSpeedoText, stats.wpm);
-    };
-    this.speedEngine.onBatchCompleted = (stats) => {
-      const boosterMult = profileStore.hasItem(this.username, 'synaptic_booster') ? 1.2 : 1.0;
-      this.addExp(Math.round(80 * boosterMult), 'Batch Script Executed');
-      profileStore.addCredits(this.username, 30);
-      if (this.dom.speedBatchNotice) {
-        this.dom.speedBatchNotice.classList.remove('hidden');
-      }
-      setTimeout(() => {
-        if (this.dom.speedBatchNotice) {
-          this.dom.speedBatchNotice.classList.add('hidden');
-        }
-        const texts = SPEED_TEST_TEXTS[this.currentLayout] || SPEED_TEST_TEXTS.en;
-        const nextText = texts[Math.floor(Math.random() * texts.length)];
-        this.speedEngine.loadText(nextText, true);
-      }, 1000);
+      if (this.dom.monkeyLiveWpm) this.dom.monkeyLiveWpm.textContent = stats.wpm;
+      if (this.dom.monkeyLiveRawWpm) this.dom.monkeyLiveRawWpm.textContent = stats.rawWpm;
+      if (this.dom.monkeyLiveAcc) this.dom.monkeyLiveAcc.textContent = `${stats.accuracy}%`;
+      if (this.dom.monkeyLiveStreak) this.dom.monkeyLiveStreak.textContent = `${stats.streak}x 🔥`;
+      if (this.dom.monkeyCounterDisplay) this.dom.monkeyCounterDisplay.textContent = stats.counterText;
     };
     this.speedEngine.onCompleted = (stats) => {
       const boosterMult = profileStore.hasItem(this.username, 'synaptic_booster') ? 1.2 : 1.0;
       this.addExp(Math.round(250 * boosterMult), 'Speed Benchmark Completed');
       profileStore.addCredits(this.username, Math.round(stats.wpm * 1.5));
 
-      const modeKey = this.speedDuration === 0 ? 'marathon' : `speed${this.speedDuration}`;
+      const modeKey = stats.config.mode === 'time' ? `speed${stats.config.timeLimit}` : `words${stats.config.wordCount}`;
       profileStore.recordSpeedBest(this.username, modeKey, stats.wpm);
 
       profileStore.recordSessionStats(this.username, {
         wpm: stats.wpm,
         accuracy: stats.accuracy,
         keystrokes: stats.totalKeystrokes,
-        batches: stats.batchesCleared
+        batches: 1
       });
       this.showScoreModal(stats, 'speed');
     };
@@ -2579,48 +2566,120 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
     }
   }
 
-  launchSpeedMode(durationArg) {
-    const isZero = durationArg === '0' || durationArg === 0;
-    const isHardcore = durationArg === 'hardcore' || durationArg === 'hard';
-    const logs = generateEntranceLogs('speed', isHardcore ? 'Hardcore Sudden Death' : isZero ? '0 (Endless)' : `${durationArg || 30}s`);
-    this.state = STATES.MODE_SPEED;
+  syncConfigBarUI() {
+    if (!this.dom.monkeyConfigBar || !this.speedEngine) return;
+    const cfg = this.speedEngine.config;
 
-    this.speedEngine.isHardcore = isHardcore;
-
-    const isValidDuration = durationArg && [15, 30, 60, 120].includes(parseInt(durationArg, 10));
-
-    if (isHardcore) {
-      this.speedDuration = 45;
-      this.speedTimeLeft = 45;
-      this.dom.speedModeTitle.textContent = '[ MODE: HARDCORE SUDDEN DEATH (3 ERRORS = FAIL) ]';
-      this.dom.speedTimer.textContent = '45s';
-      if (this.dom.speedBatchHud) this.dom.speedBatchHud.classList.add('hidden');
-    } else if (isZero) {
-      this.speedDuration = 0;
-      this.dom.speedModeTitle.textContent = '[ MODE: SPEED RUSH // ENDLESS MARATHON ]';
-      this.dom.speedTimer.textContent = '∞ ENDLESS';
-      if (this.dom.speedBatchHud) this.dom.speedBatchHud.classList.remove('hidden');
-      if (this.dom.speedLiveBatches) this.dom.speedLiveBatches.textContent = '0';
-    } else {
-      this.speedDuration = isValidDuration ? parseInt(durationArg, 10) : 30;
-      this.speedTimeLeft = this.speedDuration;
-      this.dom.speedModeTitle.textContent = '[ MODE: SPEED RUSH WPM BENCHMARK ]';
-      this.dom.speedTimer.textContent = `${this.speedTimeLeft}s`;
-      if (this.dom.speedBatchHud) this.dom.speedBatchHud.classList.add('hidden');
+    // 1. Modifiers
+    if (this.dom.btnTogglePunctuation) {
+      this.dom.btnTogglePunctuation.classList.toggle('active', !!cfg.hasPunctuation);
+    }
+    if (this.dom.btnToggleNumbers) {
+      this.dom.btnToggleNumbers.classList.toggle('active', !!cfg.hasNumbers);
     }
 
-    const texts = SPEED_TEST_TEXTS[this.currentLayout] || SPEED_TEST_TEXTS.en;
-    const randomText = texts[Math.floor(Math.random() * texts.length)];
-    this.speedEngine.loadText(randomText, isZero);
+    // 2. Mode buttons
+    const modeBtns = this.dom.monkeyConfigBar.querySelectorAll('#configModeGroup button');
+    modeBtns.forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.mode === cfg.mode);
+    });
+
+    // 3. Sub-Option buttons
+    const subGroup = document.getElementById('configSubOptionGroup');
+    if (subGroup) {
+      subGroup.innerHTML = '';
+      let options = [];
+      if (cfg.mode === 'time') {
+        options = [15, 30, 60, 120];
+      } else if (cfg.mode === 'words') {
+        options = [10, 25, 50, 100];
+      } else if (cfg.mode === 'quote') {
+        options = ['short', 'medium', 'long'];
+      }
+
+      options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = 'config-btn';
+        btn.dataset.sub = opt;
+        btn.textContent = opt;
+        const isActive = (cfg.mode === 'time' && cfg.timeLimit === opt) ||
+                         (cfg.mode === 'words' && cfg.wordCount === opt) ||
+                         (cfg.mode === 'quote' && opt === 'short');
+        if (isActive) btn.classList.add('active');
+
+        btn.addEventListener('click', () => {
+          if (cfg.mode === 'time') {
+            this.speedEngine.setConfig({ timeLimit: parseInt(opt, 10) });
+          } else if (cfg.mode === 'words') {
+            this.speedEngine.setConfig({ wordCount: parseInt(opt, 10) });
+          } else if (cfg.mode === 'quote') {
+            this.speedEngine.setConfig({ mode: 'quote' });
+          }
+          this.syncConfigBarUI();
+          if (this.audio && this.audio.playKey) this.audio.playKey(false);
+          if (this.dom.monkeyWordsWrapper) this.dom.monkeyWordsWrapper.focus();
+        });
+
+        subGroup.appendChild(btn);
+      });
+    }
+
+    // 4. Dictionary Select
+    if (this.dom.selectSpeedDictionary) {
+      this.dom.selectSpeedDictionary.value = cfg.dictionary || 'english200';
+    }
+  }
+
+  launchSpeedMode(arg1, arg2) {
+    let mode = 'time';
+    let timeLimit = 30;
+    let wordCount = 25;
+    let isHardcore = false;
+    let dictionary = this.currentLayout === 'th' ? 'thai200' : 'english200';
+
+    if (arg1 === 'hardcore' || arg1 === 'hard') {
+      isHardcore = true;
+      timeLimit = 45;
+    } else if (arg1 === 'words' || arg1 === 'w') {
+      mode = 'words';
+      wordCount = arg2 && !isNaN(parseInt(arg2, 10)) ? parseInt(arg2, 10) : 25;
+    } else if (arg1 === 'quote' || arg1 === 'quotes') {
+      mode = 'quote';
+    } else if (arg1 === 'zen' || arg1 === '0' || arg1 === 0) {
+      mode = 'zen';
+    } else if (arg1 === 'thai' || arg1 === 'th') {
+      dictionary = 'thai200';
+    } else if (arg1 === 'code' || arg1 === 'dev') {
+      dictionary = 'code';
+    } else if (arg1 === 'cyber' || arg1 === 'hacker') {
+      dictionary = 'cyber';
+    } else if (arg1 && !isNaN(parseInt(arg1, 10))) {
+      timeLimit = parseInt(arg1, 10);
+    }
+
+    const logs = generateEntranceLogs('speed', `${mode.toUpperCase()} [${mode === 'time' ? timeLimit + 's' : mode === 'words' ? wordCount + ' words' : mode}]`);
+    this.state = STATES.MODE_SPEED;
+
+    this.speedEngine.setConfig({
+      mode,
+      timeLimit,
+      wordCount,
+      dictionary,
+      isHardcore
+    });
+
+    this.syncConfigBarUI();
 
     this.playCyberTransition(
-      'SPEED RUSH BENCHMARK',
+      'MONKEYTYPE CYBER SPEED BENCHMARK',
       'COMPILING HIGH-FREQUENCY TELEMETRY...',
       logs,
       'speed',
       () => {
-        this.dom.speedTypingCanvas.focus();
-        setTimeout(() => this.hands.updatePositions(), 50);
+        if (this.dom.monkeyWordsWrapper) {
+          this.dom.monkeyWordsWrapper.focus();
+        }
+        setTimeout(() => { if (this.hands) this.hands.updatePositions(); }, 50);
       }
     );
   }
@@ -3119,19 +3178,26 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
       msg = '"Solid execution. Continue touch typing practice."';
     }
 
-    this.dom.resultRank.textContent = rank;
-    this.dom.modalFinalWpm.textContent = stats.wpm;
-    this.dom.modalFinalCpm.textContent = `${stats.cpm} CPM`;
-    this.dom.modalFinalAcc.textContent = `${stats.accuracy}%`;
-    this.dom.modalFinalErrors.textContent = `${stats.errors} Errors`;
-    this.dom.modalFinalCombo.textContent = `${stats.maxStreak}x`;
-    this.dom.modalFinalTime.textContent = `${stats.elapsedSeconds}s`;
-    this.dom.modalMessage.textContent = msg;
+    if (this.dom.resultRank) this.dom.resultRank.textContent = rank;
+    if (this.dom.modalFinalWpm) this.dom.modalFinalWpm.textContent = stats.wpm;
+    if (this.dom.modalFinalRaw) this.dom.modalFinalRaw.textContent = `raw: ${stats.rawWpm || stats.wpm}`;
+    if (this.dom.modalFinalAcc) this.dom.modalFinalAcc.textContent = `${stats.accuracy}%`;
+    if (this.dom.modalFinalConsistency) this.dom.modalFinalConsistency.textContent = `consistency: ${stats.consistency || 100}%`;
+    if (this.dom.modalFinalChars) {
+      this.dom.modalFinalChars.textContent = `${stats.correctKeystrokes || 0} / ${stats.incorrectKeystrokes || 0} / ${stats.extraKeystrokes || 0} / ${stats.missedKeystrokes || 0}`;
+    }
+    if (this.dom.modalFinalTime) this.dom.modalFinalTime.textContent = `${stats.elapsedSeconds}s`;
+    if (this.dom.modalTestConfigTag) {
+      const m = stats.config?.mode || 'time';
+      const lim = stats.config?.mode === 'time' ? stats.config?.timeLimit + 's' : stats.config?.mode === 'words' ? stats.config?.wordCount + 'w' : m;
+      this.dom.modalTestConfigTag.textContent = `${m} ${lim} | ${stats.config?.dictionary || 'english'}`;
+    }
+    if (this.dom.modalMessage) this.dom.modalMessage.textContent = msg;
 
     // Render Monkeytype-Style Telemetry Velocity Chart
     this.renderSpeedChart(stats.wpmHistory);
 
-    this.dom.scoreModal.classList.remove('hidden');
+    if (this.dom.scoreModal) this.dom.scoreModal.classList.remove('hidden');
   }
 
   renderSpeedChart(wpmHistory = []) {
@@ -3142,17 +3208,17 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
     if (!wpmHistory || wpmHistory.length < 2) {
       const finalWpm = parseInt(this.dom.modalFinalWpm.textContent, 10) || 60;
       wpmHistory = [
-        { time: 0, wpm: 0, acc: 100 },
-        { time: 10, wpm: Math.round(finalWpm * 0.75), acc: 98 },
-        { time: 20, wpm: finalWpm, acc: 99 }
+        { time: 0, wpm: 0, rawWpm: 0, acc: 100, errors: 0 },
+        { time: 10, wpm: Math.round(finalWpm * 0.75), rawWpm: Math.round(finalWpm * 0.85), acc: 98, errors: 0 },
+        { time: 20, wpm: finalWpm, rawWpm: Math.round(finalWpm * 1.1), acc: 99, errors: 0 }
       ];
     }
 
     const width = 500;
-    const height = 95;
+    const height = 110;
     const padding = 15;
 
-    const maxWpm = Math.max(80, ...wpmHistory.map(p => p.wpm + 10));
+    const maxWpm = Math.max(80, ...wpmHistory.map(p => Math.max(p.wpm, p.rawWpm || 0) + 10));
     const maxTime = Math.max(1, ...wpmHistory.map(p => p.time));
 
     // 1. Grid Lines
@@ -3175,9 +3241,10 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
       return `${x.toFixed(1)},${y.toFixed(1)}`;
     });
 
-    const accPoints = wpmHistory.map(p => {
+    const rawPoints = wpmHistory.map(p => {
+      const raw = p.rawWpm || p.wpm;
       const x = padding + (p.time / maxTime) * (width - padding * 2);
-      const y = height - padding - (p.acc / 100) * (height - padding * 2);
+      const y = height - padding - (raw / maxWpm) * (height - padding * 2);
       return `${x.toFixed(1)},${y.toFixed(1)}`;
     });
 
@@ -3192,13 +3259,6 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
     polygon.setAttribute('fill', 'rgba(0, 255, 102, 0.15)');
     svg.appendChild(polygon);
 
-    // 4. Accuracy Polyline (Cyan)
-    const accPoly = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
-    accPoly.setAttribute('points', accPoints.join(' '));
-    accPoly.setAttribute('fill', 'none');
-    accPoly.setAttribute('stroke', '#00e5ff');
-    accPoly.setAttribute('stroke-width', '1.5');
-    accPoly.setAttribute('stroke-dasharray', '2,2');
     svg.appendChild(accPoly);
 
     // 5. WPM Polyline (Green)
@@ -3631,22 +3691,74 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
       });
     }
 
+    // MonkeyType Config Bar Events
+    if (this.dom.btnTogglePunctuation) {
+      this.dom.btnTogglePunctuation.addEventListener('click', () => {
+        this.speedEngine.setConfig({ hasPunctuation: !this.speedEngine.config.hasPunctuation });
+        this.syncConfigBarUI();
+        this.audio.playKey(false);
+      });
+    }
+    if (this.dom.btnToggleNumbers) {
+      this.dom.btnToggleNumbers.addEventListener('click', () => {
+        this.speedEngine.setConfig({ hasNumbers: !this.speedEngine.config.hasNumbers });
+        this.syncConfigBarUI();
+        this.audio.playKey(false);
+      });
+    }
+    if (this.dom.monkeyConfigBar) {
+      const modeBtns = this.dom.monkeyConfigBar.querySelectorAll('#configModeGroup button');
+      modeBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const m = btn.dataset.mode;
+          this.speedEngine.setConfig({ mode: m });
+          this.syncConfigBarUI();
+          this.audio.playKey(false);
+          if (this.dom.monkeyWordsWrapper) this.dom.monkeyWordsWrapper.focus();
+        });
+      });
+    }
+    if (this.dom.selectSpeedDictionary) {
+      this.dom.selectSpeedDictionary.addEventListener('change', () => {
+        this.speedEngine.setConfig({ dictionary: this.dom.selectSpeedDictionary.value });
+        this.syncConfigBarUI();
+        if (this.dom.monkeyWordsWrapper) this.dom.monkeyWordsWrapper.focus();
+      });
+    }
+    if (this.dom.btnQuickRestartSpeed) {
+      this.dom.btnQuickRestartSpeed.addEventListener('click', () => {
+        this.speedEngine.resetTest();
+        this.audio.playKey(false);
+        if (this.dom.monkeyWordsWrapper) this.dom.monkeyWordsWrapper.focus();
+      });
+    }
+
     this.dom.modalCloseBtn.addEventListener('click', () => {
       this.dom.scoreModal.classList.add('hidden');
       this.returnToCli();
     });
+    if (this.dom.modalCloseScoreBtn) {
+      this.dom.modalCloseScoreBtn.addEventListener('click', () => {
+        this.dom.scoreModal.classList.add('hidden');
+        this.returnToCli();
+      });
+    }
     this.dom.modalRetryBtn.addEventListener('click', () => {
       this.dom.scoreModal.classList.add('hidden');
       if (this.state === STATES.MODE_ACADEMY) {
         this.launchAcademyMode(this.currentLessonNum || 1);
       } else if (this.state === STATES.MODE_SPEED) {
-        this.launchSpeedMode(this.speedDuration);
+        this.speedEngine.resetTest();
       }
     });
     this.dom.modalNextLessonBtn.addEventListener('click', () => {
       this.dom.scoreModal.classList.add('hidden');
-      const nextNum = (this.currentLessonNum || 1) + 1;
-      this.launchAcademyMode(nextNum);
+      if (this.state === STATES.MODE_ACADEMY) {
+        const nextNum = (this.currentLessonNum || 1) + 1;
+        this.launchAcademyMode(nextNum);
+      } else if (this.state === STATES.MODE_SPEED) {
+        this.speedEngine.resetTest();
+      }
     });
 
     // Academy Mission Grid Modal Events
@@ -4054,10 +4166,12 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
         return;
       }
 
-      // 3. Speed Rush Mode
+      // 3. MonkeyType Speed Mode
       if (this.state === STATES.MODE_SPEED) {
-        if (!this.speedEngine.isActive && !['Control', 'Shift', 'Alt', 'Meta'].includes(e.key)) {
-          this.startSpeedCountdown();
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          this.returnToCli();
+          return;
         }
         this.speedEngine.handleKeyDown(e);
         return;

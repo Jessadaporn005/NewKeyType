@@ -523,36 +523,76 @@
         </div>
       </div>
 
-      <!-- PRECISION VELOCITY & KINEMATIC AVIONICS BENCHMARK -->
+      <!-- PRECISION VELOCITY & MONKEYTYPE CYBER SPEED BENCHMARK -->
       <div class="terminal-view hidden" id="viewSpeed">
-        <div class="mode-header-bar">
-          <span class="mode-tag" id="speedModeTitle">[ SUBSYSTEM: PRECISION KINEMATIC VELOCITY BENCHMARK ]</span>
-          <span class="mode-sub-tag">COUNTDOWN: <strong id="speedTimer" class="glow-cmd">30s</strong> (Type 'exit' to abort)</span>
-          <span class="mode-exp-badge">CALIBRATION: ACTIVE</span>
-        </div>
-        <div class="academy-metrics-hud">
-          <span>VELOCITY: <strong id="speedLiveWpm">0 WPM</strong></span>
-          <span>ACCURACY: <strong id="speedLiveAcc">100%</strong></span>
-          <span>STREAK: <strong id="speedLiveStreak" class="flame-streak">0x</strong></span>
-          <span id="speedBatchHud" class="hidden">BATCHES: <strong id="speedLiveBatches">0</strong></span>
-          <div class="mini-speedometer-container">
-            <svg class="speedo-gauge" viewBox="0 0 60 35">
-              <path d="M 10 30 A 20 20 0 0 1 50 30" fill="none" stroke="#162e1e" stroke-width="4" stroke-linecap="round"/>
-              <path class="speedo-bar" id="speedSpeedoBar" d="M 10 30 A 20 20 0 0 1 50 30" fill="none" stroke="#00e5ff" stroke-width="4" stroke-dasharray="62.8" stroke-dashoffset="62.8" stroke-linecap="round"/>
-              <circle cx="30" cy="30" r="3" fill="#ffaa00"/>
-              <line class="speedo-needle" id="speedSpeedoNeedle" x1="30" y1="30" x2="30" y2="14" stroke="#ffaa00" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-            <span class="speedo-text" id="speedSpeedoText">0 WPM</span>
+        <!-- MONKEYTYPE CYBER CONFIGURATION BAR -->
+        <div class="monkey-config-bar" id="monkeyConfigBar">
+          <div class="config-cluster">
+            <!-- Modifiers: Punctuation & Numbers -->
+            <div class="config-group" id="configPunctuationGroup">
+              <button class="config-btn" id="btnTogglePunctuation" title="Toggle Punctuation Marks">@ punctuation</button>
+              <button class="config-btn" id="btnToggleNumbers" title="Toggle Numeric Digits"># numbers</button>
+            </div>
+
+            <div class="config-divider"></div>
+
+            <!-- Mode Selector: Time / Words / Quote / Zen -->
+            <div class="config-group" id="configModeGroup">
+              <button class="config-btn active" data-mode="time">time</button>
+              <button class="config-btn" data-mode="words">words</button>
+              <button class="config-btn" data-mode="quote">quote</button>
+              <button class="config-btn" data-mode="zen">zen</button>
+            </div>
+
+            <div class="config-divider"></div>
+
+            <!-- Sub-Option Selectors (Time limits or Word counts) -->
+            <div class="config-group" id="configSubOptionGroup">
+              <button class="config-btn" data-sub="15">15</button>
+              <button class="config-btn active" data-sub="30">30</button>
+              <button class="config-btn" data-sub="60">60</button>
+              <button class="config-btn" data-sub="120">120</button>
+            </div>
+
+            <div class="config-divider"></div>
+
+            <!-- Language & Dictionary Selector -->
+            <div class="config-group" id="configLangGroup">
+              <select class="config-select" id="selectSpeedDictionary" title="Select Typing Vocabulary / Dictionary">
+                <option value="english200">english 200</option>
+                <option value="english1k">english 1k</option>
+                <option value="code">code / dev</option>
+                <option value="thai200">thai 200</option>
+                <option value="cyber">cyber matrix</option>
+              </select>
+            </div>
+
+            <div class="config-divider"></div>
+
+            <!-- Quick Restart Hint Button -->
+            <div class="config-group">
+              <button class="config-btn restart-btn" id="btnQuickRestartSpeed" title="Quick Restart [Tab + Enter]">↺ restart <kbd>Tab</kbd></button>
+            </div>
           </div>
         </div>
-        <div class="batch-execution-banner hidden" id="speedBatchNotice">
-          [⚡ TRANSMITTING HIGH-VELOCITY BATCH STREAM TO BUFFER POOL...]
+
+        <!-- LIVE FLOATING HUD (Telemetry Bar) -->
+        <div class="monkey-live-hud" id="monkeyLiveHud">
+          <div class="hud-item counter-item"><span class="hud-label">TARGET:</span> <strong id="monkeyCounterDisplay" class="glow-cmd">30s</strong></div>
+          <div class="hud-item"><span class="hud-label">WPM:</span> <strong id="monkeyLiveWpm">0</strong></div>
+          <div class="hud-item"><span class="hud-label">RAW:</span> <span id="monkeyLiveRawWpm">0</span></div>
+          <div class="hud-item"><span class="hud-label">ACC:</span> <strong id="monkeyLiveAcc">100%</strong></div>
+          <div class="hud-item"><span class="hud-label">STREAK:</span> <strong id="monkeyLiveStreak" class="flame-streak">0x</strong></div>
         </div>
-        <div class="academy-typing-canvas" id="speedTypingCanvas" tabindex="0">
-          <div class="typing-target-stream" id="speedTextContainer"></div>
-          <div class="typing-prompt-hint">
-            <span class="cursor-block">█</span> [HIGH-SPEED SYNAPSE READY] Type the characters to measure key actuation throughput.
-          </div>
+
+        <!-- MONKEYTYPE 3-LINE ROLLING WORDS CAROUSEL -->
+        <div class="monkey-words-wrapper" id="monkeyWordsWrapper" tabindex="0">
+          <div class="monkey-caret" id="monkeyCaret"></div>
+          <div class="monkey-words-container" id="monkeyWordsContainer"></div>
+        </div>
+
+        <div class="monkey-footer-hint">
+          <span><kbd>Tab</kbd> or <kbd>Tab</kbd> + <kbd>Enter</kbd> to restart</span> • <span><kbd>Esc</kbd> or type <code>exit</code> to return to CLI</span>
         </div>
       </div>
 
@@ -853,40 +893,41 @@
   <!-- Score Summary Modal -->
   <div class="cyber-modal hidden" id="scoreModal">
     <div class="modal-backdrop"></div>
-    <div class="modal-card">
+    <div class="modal-card monkey-results-card">
       <div class="modal-header">
-        <div class="modal-glitch" data-text="MISSION ACCOMPLISHED">MISSION ACCOMPLISHED</div>
+        <div class="modal-glitch" data-text="SPEED BENCHMARK COMPLETE">[ SPEED BENCHMARK COMPLETE ]</div>
         <button class="modal-close-btn" id="modalCloseBtn">✕</button>
       </div>
       <div class="modal-body">
         <div class="result-rank-badge" id="resultRank">RANK: S [CYBER DEITY]</div>
-        <div class="modal-stats-grid">
+        <div class="modal-stats-grid monkey-stats-grid">
           <div class="modal-stat-box">
-            <span class="lbl">FINAL SPEED</span>
-            <span class="val" id="modalFinalWpm">85</span>
-            <span class="sub" id="modalFinalCpm">425 CPM</span>
+            <span class="lbl">WPM</span>
+            <span class="val glow-cmd" id="modalFinalWpm">85</span>
+            <span class="sub" id="modalFinalRaw">raw: 92</span>
           </div>
           <div class="modal-stat-box">
             <span class="lbl">ACCURACY</span>
-            <span class="val" id="modalFinalAcc">98.5%</span>
-            <span class="sub" id="modalFinalErrors">2 Errors</span>
+            <span class="val glow-cyan" id="modalFinalAcc">98.5%</span>
+            <span class="sub" id="modalFinalConsistency">consistency: 88%</span>
           </div>
           <div class="modal-stat-box">
-            <span class="lbl">MAX COMBO</span>
-            <span class="val" id="modalFinalCombo">142x</span>
-            <span class="sub">Keystrokes</span>
+            <span class="lbl">CHARACTERS</span>
+            <span class="val" id="modalFinalChars" style="font-size: 1.2rem;">240 / 2 / 0 / 1</span>
+            <span class="sub">cor / inc / ext / miss</span>
           </div>
           <div class="modal-stat-box">
-            <span class="lbl">TIME ELAPSED</span>
-            <span class="val" id="modalFinalTime">45.2s</span>
-            <span class="sub">Total Duration</span>
+            <span class="lbl">TIME</span>
+            <span class="val" id="modalFinalTime">30.0s</span>
+            <span class="sub" id="modalTestConfigTag">time 30 | english</span>
           </div>
         </div>
+
         <!-- Live Monkeytype-Style Telemetry Velocity Curve -->
         <div class="modal-chart-container" id="modalChartContainer">
           <div class="chart-header">
-            <span>PERFORMANCE VELOCITY CURVE</span>
-            <span class="chart-legend"><span class="leg-dot wpm-dot"></span> WPM <span class="leg-dot acc-dot"></span> ACCURACY</span>
+            <span>VELOCITY CURVE TELEMETRY</span>
+            <span class="chart-legend"><span class="leg-dot wpm-dot"></span> WPM <span class="leg-dot raw-dot"></span> RAW <span class="leg-dot err-dot"></span> ERRORS</span>
           </div>
           <svg class="speed-chart-svg" id="modalSpeedChartSvg" viewBox="0 0 500 120" preserveAspectRatio="none">
             <!-- Dynamic Grid Lines & Smooth Bezier Curves inserted by JS -->
@@ -897,9 +938,10 @@
           "Exemplary touch typing speed. Neural pathway synchronization optimal."
         </div>
       </div>
-      <div class="modal-actions">
-        <button class="cmd-btn" id="modalNextLessonBtn">NEXT LESSON →</button>
-        <button class="cmd-btn primary-cmd-btn" id="modalRetryBtn">↺ RETRY MISSION</button>
+      <div class="modal-actions monkey-modal-actions">
+        <button class="cmd-btn primary-cmd-btn" id="modalNextLessonBtn">NEXT TEST (TAB) →</button>
+        <button class="cmd-btn" id="modalRetryBtn">↺ REPEAT TEST</button>
+        <button class="cmd-btn" id="modalCloseScoreBtn">RETURN TO CLI (ESC)</button>
       </div>
     </div>
   </div>

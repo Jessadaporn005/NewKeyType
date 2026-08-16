@@ -26,6 +26,7 @@ global.window = {
   innerWidth: 1920,
   innerHeight: 1080
 };
+global.requestAnimationFrame = (fn) => setTimeout(fn, 0);
 global.document = {
   body: { classList: { add: () => {}, remove: () => {}, toggle: () => {} }, appendChild: () => {} },
   getElementById: (id) => ({
@@ -37,14 +38,18 @@ global.document = {
     querySelector: () => null,
     querySelectorAll: () => []
   }),
+  createDocumentFragment: () => ({
+    appendChild: () => {}
+  }),
   createElement: (tag) => ({
     tagName: tag,
     dataset: {},
-    classList: { add: () => {}, remove: () => {}, toggle: () => {} },
+    classList: { add: () => {}, remove: () => {}, toggle: () => {}, contains: () => false },
     style: {},
     appendChild: () => {},
     addEventListener: () => {},
-    innerHTML: ''
+    innerHTML: '',
+    textContent: ''
   })
 };
 
@@ -382,6 +387,51 @@ async function runTests() {
   assert(appSource.includes("case 'iptables':") && appSource.includes("case 'systemctl':"), 'iptables and systemctl commands registered');
   assert(appSource.includes("case 'crypto':") && appSource.includes("case 'siem':"), 'crypto accelerator benchmark and SOC incident command registered');
   assert(appSource.includes("case 'iotop':") && appSource.includes("case 'strace':") && appSource.includes("case 'lsof':"), 'iotop, strace, and lsof diagnostics registered');
+
+  // 25. MonkeyType Cyber Speed Benchmark Engine & Wordlists
+  console.log('\n[25] Testing MonkeyType Cyber Speed Benchmark Engine & Wordlists...');
+  const { generateSpeedWords, WORDLIST_ENGLISH_200, WORDLIST_THAI_200, WORDLIST_CODE } = await import('./js/speedWordlists.js');
+  const { MonkeySpeedEngine } = await import('./js/monkeySpeedEngine.js');
+
+  const enBatch = generateSpeedWords({ mode: 'words', wordCount: 25, dictionary: 'english200' });
+  assert(enBatch.words.length === 25, 'Procedural generator created 25 English words');
+
+  const thBatch = generateSpeedWords({ mode: 'words', wordCount: 15, dictionary: 'thai200' });
+  assert(thBatch.words.length === 15, 'Procedural generator created 15 Thai words');
+
+  const quoteBatch = generateSpeedWords({ mode: 'quote' });
+  assert(quoteBatch.words.length > 0 && typeof quoteBatch.quoteAuthor === 'string', 'Quote mode returned valid quote and author citation');
+
+  const codeBatch = generateSpeedWords({ mode: 'words', wordCount: 10, dictionary: 'code', hasNumbers: true, hasPunctuation: true });
+  assert(codeBatch.words.length === 10, 'Code dictionary with numbers & punctuation assembled successfully');
+
+  const mockContainer = {
+    innerHTML: '',
+    style: {},
+    appendChild: () => {},
+    dataset: {}
+  };
+  const mockCaret = { style: {} };
+
+  const monkeyEngine = new MonkeySpeedEngine({
+    wordsContainer: mockContainer,
+    caretEl: mockCaret,
+    sound: mockSound
+  });
+
+  monkeyEngine.setConfig({ mode: 'words', wordCount: 10, dictionary: 'english200' });
+  assert(monkeyEngine.words.length === 10, 'MonkeySpeedEngine initialized 10 words');
+  assert(monkeyEngine.wordIndex === 0 && monkeyEngine.charIndex === 0, 'Caret start position initialized to (0,0)');
+
+  // Simulate typing first word
+  const firstWord = monkeyEngine.words[0];
+  for (let c of firstWord) {
+    monkeyEngine.handleKeyDown({ key: c, code: `Key${c.toUpperCase()}`, preventDefault: () => {} });
+  }
+  monkeyEngine.handleKeyDown({ key: ' ', code: 'Space', preventDefault: () => {} });
+
+  assert(monkeyEngine.wordIndex === 1, 'Advanced to next word after typing space');
+  assert(monkeyEngine.correctKeystrokes >= firstWord.length, 'Recorded correct keystrokes accurately');
 
   console.log('\n====================================================');
   console.log(`🏁 TEST RESULTS: ${passed}/${total} TESTS PASSED (100%)`);
