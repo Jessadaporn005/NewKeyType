@@ -4430,9 +4430,70 @@ html, body {
 .trading-signal-column {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.trading-sidebar-tabs {
+  display: flex;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 4px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+.trading-side-tab {
+  flex: 1;
+  background: transparent;
+  border: 1px solid transparent;
+  color: #8b9cb0;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 6px 4px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.trading-side-tab:hover {
+  color: #e2e8f0;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.trading-side-tab.active {
+  background: rgba(0, 229, 255, 0.15);
+  border-color: rgba(0, 229, 255, 0.4);
+  color: #00e5ff;
+  font-weight: 800;
+  box-shadow: 0 0 8px rgba(0, 229, 255, 0.2);
+}
+
+.tab-winrate-tag {
+  color: #00ff88;
+  font-weight: 800;
+  font-size: 9px;
+}
+
+.trading-panel-view {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
   min-height: 0;
   overflow-y: auto;
+}
+
+.trading-panel-view.hidden {
+  display: none !important;
 }
 
 .ai-signal-card {

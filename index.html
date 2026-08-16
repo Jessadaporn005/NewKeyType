@@ -700,144 +700,157 @@
 
           <!-- RIGHT COLUMN: AI TRADING COPILOT & DECISION SUPPORT SYSTEM -->
           <div class="trading-signal-column">
-            <!-- AI COPILOT RECOMMENDATION CARD -->
-            <div class="ai-signal-card" id="aiSignalCard">
-              <div class="signal-card-header">
-                <div class="copilot-identity">
-                  <span class="copilot-avatar-icon">🤖</span>
-                  <div>
-                    <div class="signal-title">NEXUS-QUANT // AI TRADING COPILOT</div>
-                    <div class="copilot-sub">DECISION SUPPORT SYSTEM & CHART SENSEI</div>
+            <!-- SIDEBAR TAB SWITCHER -->
+            <div class="trading-sidebar-tabs" id="tradingSidebarTabs">
+              <button class="trading-side-tab active" data-tab="copilot">🤖 AI COPILOT</button>
+              <button class="trading-side-tab" data-tab="gym">🧠 AI GYM <span class="tab-winrate-tag" id="tabWinrateTag">(77.8%)</span></button>
+              <button class="trading-side-tab" data-tab="paper">💼 PAPER DECK</button>
+            </div>
+
+            <!-- PANEL 1: AI COPILOT RECOMMENDATION CARD -->
+            <div class="trading-panel-view" id="panelTradingCopilot">
+              <div class="ai-signal-card" id="aiSignalCard">
+                <div class="signal-card-header">
+                  <div class="copilot-identity">
+                    <span class="copilot-avatar-icon">🤖</span>
+                    <div>
+                      <div class="signal-title">NEXUS-QUANT // AI TRADING COPILOT</div>
+                      <div class="copilot-sub">DECISION SUPPORT SYSTEM & CHART SENSEI</div>
+                    </div>
+                  </div>
+                  <span class="signal-badge" id="aiSignalBadge">CALCULATING...</span>
+                </div>
+
+                <!-- Market Regime & Strategy Pill -->
+                <div class="copilot-regime-bar">
+                  <span class="regime-lbl">MARKET REGIME:</span>
+                  <strong class="regime-val" id="aiMarketRegime">BULLISH EXPANSION (ขาขึ้นแข็งแกร่ง)</strong>
+                </div>
+
+                <div class="signal-metrics-row">
+                  <div class="sig-stat">
+                    <span class="lbl">NEURAL CONFIDENCE</span>
+                    <span class="val glow-cyan" id="aiConfidenceVal">94.2%</span>
+                  </div>
+                  <div class="sig-stat">
+                    <span class="lbl">RISK / REWARD RATIO</span>
+                    <span class="val glow-cmd" id="aiRrVal">1 : 3.14</span>
                   </div>
                 </div>
-                <span class="signal-badge" id="aiSignalBadge">CALCULATING...</span>
-              </div>
 
-              <!-- Market Regime & Strategy Pill -->
-              <div class="copilot-regime-bar">
-                <span class="regime-lbl">MARKET REGIME:</span>
-                <strong class="regime-val" id="aiMarketRegime">BULLISH EXPANSION (ขาขึ้นแข็งแกร่ง)</strong>
-              </div>
-
-              <div class="signal-metrics-row">
-                <div class="sig-stat">
-                  <span class="lbl">NEURAL CONFIDENCE</span>
-                  <span class="val glow-cyan" id="aiConfidenceVal">94.2%</span>
+                <div class="signal-levels-matrix">
+                  <div class="level-row entry-row">
+                    <span class="lvl-name">RECOMMENDED ENTRY:</span>
+                    <strong class="lvl-val" id="aiEntryVal">$96,420.00</strong>
+                  </div>
+                  <div class="level-row tp-row">
+                    <span class="lvl-name">TARGET 1 (TP1):</span>
+                    <strong class="lvl-val glow-cmd" id="aiTp1Val">$98,200.00</strong>
+                  </div>
+                  <div class="level-row tp-row">
+                    <span class="lvl-name">TARGET 2 (TP2):</span>
+                    <strong class="lvl-val glow-cmd" id="aiTp2Val">$101,500.00</strong>
+                  </div>
+                  <div class="level-row sl-row">
+                    <span class="lvl-name">STOP LOSS (SL):</span>
+                    <strong class="lvl-val glow-danger" id="aiSlVal">$94,800.00</strong>
+                  </div>
                 </div>
-                <div class="sig-stat">
-                  <span class="lbl">RISK / REWARD RATIO</span>
-                  <span class="val glow-cmd" id="aiRrVal">1 : 3.14</span>
-                </div>
-              </div>
 
-              <div class="signal-levels-matrix">
-                <div class="level-row entry-row">
-                  <span class="lvl-name">RECOMMENDED ENTRY:</span>
-                  <strong class="lvl-val" id="aiEntryVal">$96,420.00</strong>
+                <!-- AI Detected Patterns -->
+                <div class="ai-pattern-tags" id="aiPatternTags">
+                  <span class="pattern-pill">[ Double Bottom W-Pattern ]</span>
                 </div>
-                <div class="level-row tp-row">
-                  <span class="lvl-name">TARGET 1 (TP1):</span>
-                  <strong class="lvl-val glow-cmd" id="aiTp1Val">$98,200.00</strong>
+
+                <!-- Strategy Playbook Box -->
+                <div class="copilot-strategy-box">
+                  <span class="strat-lbl">🎯 กลยุทธ์ที่ AI แนะนำ:</span>
+                  <span class="strat-val" id="aiStrategyPlaybook">Trend Following & Buy on Dip</span>
                 </div>
-                <div class="level-row tp-row">
-                  <span class="lvl-name">TARGET 2 (TP2):</span>
-                  <strong class="lvl-val glow-cmd" id="aiTp2Val">$101,500.00</strong>
+
+                <!-- Risk Warning Alert -->
+                <div class="copilot-risk-box">
+                  <span class="risk-lbl">⚠️ จุดเสี่ยง & ข้อควรระวัง:</span>
+                  <span class="risk-val" id="aiRiskWarning">RSI เข้าใกล้ Overbought ระวังแรงเทขายทำกำไรระยะสั้น</span>
                 </div>
-                <div class="level-row sl-row">
-                  <span class="lvl-name">STOP LOSS (SL):</span>
-                  <strong class="lvl-val glow-danger" id="aiSlVal">$94,800.00</strong>
+
+                <!-- Thai AI Reasoning Box -->
+                <div class="ai-rationale-box" id="aiRationaleBox">
+                  "อัลกอริทึมตรวจพบโมเมนตัมขาขึ้นที่มีนัยสำคัญบนคู่เทรดนี้..."
                 </div>
-              </div>
-
-              <!-- AI Detected Patterns -->
-              <div class="ai-pattern-tags" id="aiPatternTags">
-                <span class="pattern-pill">[ Double Bottom W-Pattern ]</span>
-              </div>
-
-              <!-- Strategy Playbook Box -->
-              <div class="copilot-strategy-box">
-                <span class="strat-lbl">🎯 กลยุทธ์ที่ AI แนะนำ:</span>
-                <span class="strat-val" id="aiStrategyPlaybook">Trend Following & Buy on Dip</span>
-              </div>
-
-              <!-- Risk Warning Alert -->
-              <div class="copilot-risk-box">
-                <span class="risk-lbl">⚠️ จุดเสี่ยง & ข้อควรระวัง:</span>
-                <span class="risk-val" id="aiRiskWarning">RSI เข้าใกล้ Overbought ระวังแรงเทขายทำกำไรระยะสั้น</span>
-              </div>
-
-              <!-- Thai AI Reasoning Box -->
-              <div class="ai-rationale-box" id="aiRationaleBox">
-                "อัลกอริทึมตรวจพบโมเมนตัมขาขึ้นที่มีนัยสำคัญบนคู่เทรดนี้..."
               </div>
             </div>
 
-            <!-- PAPER TRADING ORDER FORM -->
-            <div class="paper-trading-card">
-              <div class="paper-header">
-                <span>MANUAL PAPER EXECUTION DECK</span>
-                <span class="paper-bal">CAPITAL: <strong id="paperCapitalDisplay">$100,000.00</strong></span>
-              </div>
+            <!-- PANEL 2: AI AGENT TRAINING GYM & POST-MORTEM LEARNING JOURNAL -->
+            <div class="trading-panel-view hidden" id="panelTradingGym">
+              <div class="ai-gym-card" id="aiGymCard">
+                <div class="ai-gym-header">
+                  <div class="gym-title-group">
+                    <span class="gym-icon">🧠</span>
+                    <div>
+                      <div class="gym-title">AI AGENT TRAINING GYM</div>
+                      <div class="gym-sub">CONTINUOUS LEARNING & POST-MORTEM JOURNAL</div>
+                    </div>
+                  </div>
+                  <div class="gym-actions">
+                    <button class="gym-btn btn-fast-train" id="btnAIFastTrain" title="Simulate 25 rapid training scenarios">⚡ FAST-TRAIN (25)</button>
+                    <button class="gym-btn btn-reset-mem" id="btnAIResetMem" title="Reset AI Memory">🔄 RESET</button>
+                  </div>
+                </div>
 
-              <div class="order-action-buttons">
-                <button class="order-btn btn-long" id="btnOrderLong">▲ LONG / BUY</button>
-                <button class="order-btn btn-short" id="btnOrderShort">▼ SHORT / SELL</button>
-              </div>
+                <!-- AI Real-Time Performance Stats Grid -->
+                <div class="ai-stats-grid">
+                  <div class="ai-stat-box">
+                    <span class="lbl">WIN RATE</span>
+                    <strong class="val glow-cmd" id="aiWinRateDisplay">77.8%</strong>
+                  </div>
+                  <div class="ai-stat-box">
+                    <span class="lbl">RECORD (W / L)</span>
+                    <strong class="val" id="aiRecordDisplay">14 W - 4 L</strong>
+                  </div>
+                  <div class="ai-stat-box">
+                    <span class="lbl">NET PROFIT</span>
+                    <strong class="val glow-cyan" id="aiNetPnlDisplay">+$8,420.50</strong>
+                  </div>
+                  <div class="ai-stat-box">
+                    <span class="lbl">ADAPTATION</span>
+                    <strong class="val" id="aiAdaptationLevel">LEVEL 5</strong>
+                  </div>
+                </div>
 
-              <!-- Active Positions -->
-              <div class="active-positions-container" id="activePositionsContainer">
-                <div class="no-positions-hint">No open paper positions. Click BUY/SELL to simulate execution.</div>
+                <!-- AI Auto-Trading Status Strip -->
+                <div class="ai-auto-toggle-strip">
+                  <label class="toggle-chip">
+                    <input type="checkbox" id="chkAIAutoTrader" checked>
+                    <span style="font-weight: 700; color: #00ff88;">🟢 AUTONOMOUS TRADER & JOURNALING</span>
+                  </label>
+                  <span class="ai-status-pulse">● LIVE LEARNING</span>
+                </div>
+
+                <!-- AI Post-Mortem Trade Journal Stream -->
+                <div class="ai-journal-feed" id="aiJournalFeed">
+                  <!-- Dynamically rendered by AITradingEngine -->
+                </div>
               </div>
             </div>
 
-            <!-- AI AGENT TRAINING GYM & POST-MORTEM LEARNING JOURNAL -->
-            <div class="ai-gym-card" id="aiGymCard">
-              <div class="ai-gym-header">
-                <div class="gym-title-group">
-                  <span class="gym-icon">🧠</span>
-                  <div>
-                    <div class="gym-title">AI AGENT TRAINING GYM</div>
-                    <div class="gym-sub">CONTINUOUS LEARNING & POST-MORTEM JOURNAL</div>
-                  </div>
+            <!-- PANEL 3: MANUAL PAPER TRADING EXECUTION DECK -->
+            <div class="trading-panel-view hidden" id="panelTradingPaper">
+              <div class="paper-trading-card">
+                <div class="paper-header">
+                  <span>MANUAL PAPER EXECUTION DECK</span>
+                  <span class="paper-bal">CAPITAL: <strong id="paperCapitalDisplay">$100,000.00</strong></span>
                 </div>
-                <div class="gym-actions">
-                  <button class="gym-btn btn-fast-train" id="btnAIFastTrain" title="Simulate 25 rapid training scenarios">⚡ FAST-TRAIN (25)</button>
-                  <button class="gym-btn btn-reset-mem" id="btnAIResetMem" title="Reset AI Memory">🔄 RESET</button>
-                </div>
-              </div>
 
-              <!-- AI Real-Time Performance Stats Grid -->
-              <div class="ai-stats-grid">
-                <div class="ai-stat-box">
-                  <span class="lbl">WIN RATE</span>
-                  <strong class="val glow-cmd" id="aiWinRateDisplay">77.8%</strong>
+                <div class="order-action-buttons">
+                  <button class="order-btn btn-long" id="btnOrderLong">▲ LONG / BUY</button>
+                  <button class="order-btn btn-short" id="btnOrderShort">▼ SHORT / SELL</button>
                 </div>
-                <div class="ai-stat-box">
-                  <span class="lbl">RECORD (W / L)</span>
-                  <strong class="val" id="aiRecordDisplay">14 W - 4 L</strong>
-                </div>
-                <div class="ai-stat-box">
-                  <span class="lbl">NET PROFIT</span>
-                  <strong class="val glow-cyan" id="aiNetPnlDisplay">+$8,420.50</strong>
-                </div>
-                <div class="ai-stat-box">
-                  <span class="lbl">ADAPTATION</span>
-                  <strong class="val" id="aiAdaptationLevel">LEVEL 5</strong>
-                </div>
-              </div>
 
-              <!-- AI Auto-Trading Status Strip -->
-              <div class="ai-auto-toggle-strip">
-                <label class="toggle-chip">
-                  <input type="checkbox" id="chkAIAutoTrader" checked>
-                  <span style="font-weight: 700; color: #00ff88;">🟢 AUTONOMOUS PAPER TRADER & JOURNALING</span>
-                </label>
-                <span class="ai-status-pulse">● LIVE LEARNING</span>
-              </div>
-
-              <!-- AI Post-Mortem Trade Journal Stream -->
-              <div class="ai-journal-feed" id="aiJournalFeed">
-                <!-- Dynamically rendered by AITradingEngine -->
+                <!-- Active Positions -->
+                <div class="active-positions-container" id="activePositionsContainer">
+                  <div class="no-positions-hint">No open paper positions. Click BUY/SELL to simulate execution.</div>
+                </div>
               </div>
             </div>
           </div>

@@ -437,6 +437,11 @@ class WindowsTerminalApp {
       aiAdaptationLevel: document.getElementById('aiAdaptationLevel'),
       chkAIAutoTrader: document.getElementById('chkAIAutoTrader'),
       aiJournalFeed: document.getElementById('aiJournalFeed'),
+      tradingSidebarTabs: document.getElementById('tradingSidebarTabs'),
+      panelTradingCopilot: document.getElementById('panelTradingCopilot'),
+      panelTradingGym: document.getElementById('panelTradingGym'),
+      panelTradingPaper: document.getElementById('panelTradingPaper'),
+      tabWinrateTag: document.getElementById('tabWinrateTag'),
 
       // Academy Mission Grid Modal
       academyGridModal: document.getElementById('academyGridModal'),
@@ -853,6 +858,23 @@ class WindowsTerminalApp {
       });
     }
 
+    // Sidebar Sub-Tabs Switcher (Copilot / Gym / Paper Deck)
+    if (this.dom.tradingSidebarTabs) {
+      this.dom.tradingSidebarTabs.querySelectorAll('.trading-side-tab').forEach(btn => {
+        btn.addEventListener('click', () => {
+          this.dom.tradingSidebarTabs.querySelectorAll('.trading-side-tab').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          const targetTab = btn.dataset.tab;
+
+          if (this.dom.panelTradingCopilot) this.dom.panelTradingCopilot.classList.toggle('hidden', targetTab !== 'copilot');
+          if (this.dom.panelTradingGym) this.dom.panelTradingGym.classList.toggle('hidden', targetTab !== 'gym');
+          if (this.dom.panelTradingPaper) this.dom.panelTradingPaper.classList.toggle('hidden', targetTab !== 'paper');
+
+          if (this.audio && this.audio.playKey) this.audio.playKey(false);
+        });
+      });
+    }
+
     // AI Gym Controls
     if (this.dom.btnAIFastTrain) {
       this.dom.btnAIFastTrain.addEventListener('click', () => {
@@ -874,6 +896,7 @@ class WindowsTerminalApp {
   updateAIStatsUI(stats) {
     if (!stats) return;
     if (this.dom.aiWinRateDisplay) this.dom.aiWinRateDisplay.textContent = `${stats.winRate}%`;
+    if (this.dom.tabWinrateTag) this.dom.tabWinrateTag.textContent = `(${stats.winRate}%)`;
     if (this.dom.aiRecordDisplay) this.dom.aiRecordDisplay.textContent = `${stats.wins} W - ${stats.losses} L`;
     if (this.dom.aiNetPnlDisplay) {
       const isPos = stats.netPnlUSD >= 0;
