@@ -24,232 +24,187 @@
   <link rel="stylesheet" href="css/wifi.css">
 </head>
 <body class="crt-scanlines">
-  <!-- Initial Boot Sequence Screen (Aerospace Quantum Flight Terminal) -->
-  <div id="bootScreenOverlay" class="boot-screen diegetic-terminal">
-    <!-- 4 Heavy Angled Aerospace Chassis Corner Bezels -->
-    <div class="chassis-bezel-corner tl"></div>
-    <div class="chassis-bezel-corner tr"></div>
-    <div class="chassis-bezel-corner bl"></div>
-    <div class="chassis-bezel-corner br"></div>
-
-    <!-- Cyberpunk Top HUD Telemetry Brackets -->
-    <div class="boot-hud-topbar">
-      <div class="boot-hud-tl">
-        <span class="hud-indicator-dot pulse-red"></span>
-        <span class="hud-txt-primary">[ DEFCON-1 // QUANTUM MAINFRAME GENESIS ]</span>
+  <!-- STAGE 0: UEFI HARDWARE INITIALIZATION & KERNEL POST TERMINAL -->
+  <div id="bootScreenOverlay" class="boot-screen c2-enterprise-terminal">
+    <!-- Top System Diagnostic Polybar -->
+    <div class="c2-post-topbar">
+      <div class="c2-bar-item">
+        <span class="status-indicator live"></span>
+        <span class="c2-label">SYSTEM STATE:</span>
+        <strong class="c2-val-green">FIRMWARE_POST_INITIALIZING</strong>
       </div>
-      <div class="boot-hud-tc">
-        <span class="hud-txt-dim">NEURAL CLOCK: </span>
-        <span class="hud-txt-cyan">14.25 GHz [ALL-CORE LOCKED]</span>
+      <div class="c2-bar-item">
+        <span class="c2-label">CPU ARCH:</span>
+        <strong class="c2-val-cyan">x86_64-quantum-linux-gnu</strong>
       </div>
-      <div class="boot-hud-tr">
-        <span class="hud-txt-dim">CIPHER: </span>
-        <span class="hud-txt-primary">RSA-8192 / AES-256-GCM</span>
+      <div class="c2-bar-item">
+        <span class="c2-label">SECURITY MODULE:</span>
+        <strong class="c2-val-amber">TPM 2.0 / PCR-ENCRYPTED</strong>
       </div>
     </div>
 
-    <!-- Center Stage: 3D Holographic Quantum Reactor & Glitch Title -->
-    <div id="bootScreenLogo" class="boot-logo">
-      <div class="boot-holo-stage">
-        <canvas id="bootHoloCanvas" width="220" height="220" class="boot-holo-canvas"></canvas>
-        <div class="skull-scanner-beam"></div>
-        <div class="holo-orbital-ring ring-1"></div>
-        <div class="holo-orbital-ring ring-2"></div>
+    <!-- Center Stage: Minimalist Wireframe Reactor & POST Diagnostics Checklist -->
+    <div id="bootScreenLogo" class="c2-post-center-stage">
+      <div class="c2-canvas-wrapper">
+        <canvas id="bootHoloCanvas" width="160" height="160" class="c2-vector-canvas"></canvas>
       </div>
 
-      <div class="boot-title-glitch" data-text="CYBERDECK">CYBERDECK</div>
-      <div class="boot-sub-version">MILITARY-GRADE INFILTRATION SYSTEM // OS V3.0</div>
+      <div class="c2-post-header">
+        <h1 class="c2-os-title">QUANTUM-OS C2 WORKSTATION</h1>
+        <div class="c2-os-sub">ENTERPRISE COMMAND &amp; TELEMETRY RUNTIME // RELEASE 6.8.9-LTS</div>
+      </div>
       
-      <!-- Hexagonal Hardware POST Telemetry Hub -->
-      <div class="boot-hardware-telemetry">
-        <div class="hw-gauge-item"><span class="hw-lbl">CPU CLOCK:</span> <strong class="hw-val">14.25 GHz [OVERCLOCKED]</strong></div>
-        <div class="hw-gauge-item"><span class="hw-lbl">RAM BANK:</span> <strong class="hw-val">64 GB DDR5 [CHECKED]</strong></div>
-        <div class="hw-gauge-item"><span class="hw-lbl">NEURAL LINK:</span> <strong class="hw-val">STABLE [0.12ms]</strong></div>
-        <div class="hw-gauge-item"><span class="hw-lbl">SECURITY ENCLAVE:</span> <strong class="hw-val">RSA-8192 [ENCRYPTED]</strong></div>
+      <!-- Hardware POST Telemetry Table -->
+      <div class="c2-post-table">
+        <div class="c2-post-row"><span class="c2-k">[ CPU CLOCK ]</span> <span class="c2-v">AMD EPYC 9654 96-CORE @ 14.25 GHz <span class="c2-tag-ok">[OK]</span></span></div>
+        <div class="c2-post-row"><span class="c2-k">[ SYSTEM MEMORY ]</span> <span class="c2-v">67,108,864 KB DDR5-5600 ECC <span class="c2-tag-ok">[OK]</span></span></div>
+        <div class="c2-post-row"><span class="c2-k">[ PCIE ROOT BUS ]</span> <span class="c2-v">PCIe 5.0 x16 Controller @ 128 GB/s <span class="c2-tag-ok">[OK]</span></span></div>
+        <div class="c2-post-row"><span class="c2-k">[ HARDWARE CRYPTO ]</span> <span class="c2-v">AES-NI / SHA-512 Accelerator <span class="c2-tag-ok">[OK]</span></span></div>
       </div>
 
-      <div id="bootScreenReady" class="boot-ready hidden">[ SYSTEM READY... UNLOCKING AIR-GAPPED VAULT ]</div>
+      <div id="bootScreenReady" class="c2-post-ready-tag hidden">[ FIRMWARE POST COMPLETED // RELEASING CONTROL TO KERNEL ]</div>
     </div>
 
-    <!-- Full-Width Procedural Terminal Log Stream -->
-    <div class="boot-logs-wrapper">
-      <div class="boot-logs-header">
-        <span>[ QUANTUM BOOTSTRAP &amp; KERNEL TELEMETRY LOG STREAM ]</span>
-        <span class="log-baud" id="bootBaudRate">RATE: 1000 Hz // ULTRA-BANDWIDTH</span>
+    <!-- Procedural Kernel Bootstrap Ring Buffer -->
+    <div class="c2-post-log-deck">
+      <div class="c2-log-header">
+        <span>[ KERNEL BOOTSTRAP RING BUFFER (dmesg) ]</span>
+        <span class="c2-baud-rate" id="bootBaudRate">POLLING: 1000 Hz // SYNC: ATOMIC</span>
       </div>
-      <div id="bootScreenLogs" class="boot-logs"></div>
-      <div class="boot-progress-container">
-        <div class="boot-progress-bar">
-          <div class="boot-progress-fill" id="bootProgressFill"></div>
+      <div id="bootScreenLogs" class="c2-post-logs"></div>
+      
+      <!-- System Loading Status Bar -->
+      <div class="c2-progress-wrapper">
+        <div class="c2-progress-track">
+          <div class="c2-progress-fill" id="bootProgressFill"></div>
         </div>
-        <div class="boot-progress-stats">
+        <div class="c2-progress-metrics">
           <span id="bootProgressPct">0%</span>
-          <span id="bootProgressTime">0.0s / 20.0s</span>
-          <span id="bootProgressStage">STAGE: [ UEFI_HARDWARE_POST ]</span>
+          <span id="bootProgressTime">0.00s / 20.00s</span>
+          <span id="bootProgressStage">PHASE: [ UEFI_HARDWARE_POST ]</span>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Matrix Digital Rain Canvas Background -->
+  <!-- Background Matrix Noise Canvas -->
   <canvas id="matrixCanvas"></canvas>
   <canvas id="particleCanvas"></canvas>
   
   <!-- =========================================================================
-       0. CLASSIFIED BIOMETRIC / SECRET MASTER PASSCODE GATE SCREEN (HEAVY BLAST DOORS)
+       STAGE 1: HARDWARE SECURITY MODULE (HSM) ENCLAVE TOKEN GATE
        ========================================================================= -->
   <div class="secret-gate-overlay hidden" id="secretGateOverlay">
-    <!-- Heavy Titanium Vault Blast Doors that Split Horizontally -->
-    <div class="vault-blast-door left-door">
-      <div class="hazard-stripe top"></div>
-      <div class="door-bolt b1"></div>
-      <div class="door-bolt b2"></div>
-      <div class="door-bolt b3"></div>
-      <div class="hazard-stripe bottom"></div>
-    </div>
-    <div class="vault-blast-door right-door">
-      <div class="hazard-stripe top"></div>
-      <div class="door-bolt b1"></div>
-      <div class="door-bolt b2"></div>
-      <div class="door-bolt b3"></div>
-      <div class="hazard-stripe bottom"></div>
-    </div>
-
-    <div class="secret-gate-card">
-      <div class="gate-security-badge">// DEFCON-1 TOP SECRET FACILITY //</div>
-      
-      <!-- Rotating Biometric Laser Reticle Scanner -->
-      <div class="gate-biometric-reticle">
-        <svg class="reticle-svg" viewBox="0 0 100 100">
-          <circle cx="50" cy="50" r="45" class="reticle-ring r-outer"/>
-          <circle cx="50" cy="50" r="32" class="reticle-ring r-inner"/>
-          <line x1="50" y1="5" x2="50" y2="20" class="reticle-cross"/>
-          <line x1="50" y1="80" x2="50" y2="95" class="reticle-cross"/>
-          <line x1="5" y1="50" x2="20" y2="50" class="reticle-cross"/>
-          <line x1="80" y1="50" x2="95" y2="50" class="reticle-cross"/>
-        </svg>
-        <div class="reticle-laser-line"></div>
-        <div class="biometric-fingerprint-icon">🧬</div>
+    <div class="c2-hsm-card">
+      <div class="c2-hsm-header">
+        <div class="c2-hsm-badge">SECURITY ENCLAVE TOKEN VERIFICATION</div>
+        <div class="c2-hsm-sub">LEVEL 5 ACCESS CONTROL // HARDWARE SECURITY MODULE</div>
       </div>
 
-      <div class="gate-title" data-text="CLASSIFIED BLACK-OPS ENCLAVE">CLASSIFIED BLACK-OPS ENCLAVE</div>
-      <div class="gate-sub">LEVEL 5 MILITARY VAULT // RESTRICTED OPERATOR CLEARANCE ONLY</div>
-      
-      <div class="gate-input-box">
-        <span class="gate-prompt-sym">#</span>
-        <input type="password" id="secretGateInput" class="gate-input" placeholder="ENTER MASTER PASSCODE..." autocomplete="off" autofocus>
-      </div>
-
-      <button class="gate-auth-btn" id="btnSecretGateSubmit">
-        <span class="btn-scan-laser"></span>
-        [ AUTHENTICATE MASTER ACCESS ]
-      </button>
-      <div class="gate-error-msg hidden" id="gateErrorMsg">✖ ACCESS DENIED: INVALID PASSCODE // INTRUSION LOGGED</div>
-
-      <div class="gate-stream-box hidden" id="gateStreamBox">
-        <div class="gate-stream-lines" id="gateStreamLines"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- =========================================================================
-       1. CINEMATIC FULL-SCREEN HACKER LOGIN OVERLAY (CYBERDECK NEURAL JACK-IN)
-       ========================================================================= -->
-  <div class="hacker-login-overlay hidden" id="hackerLoginOverlay">
-    <div class="login-terminal-card" id="loginTerminalCard">
-      <!-- 4 Chamfered Card Corner Accents -->
-      <span class="card-bracket tl"></span>
-      <span class="card-bracket tr"></span>
-      <span class="card-bracket bl"></span>
-      <span class="card-bracket br"></span>
-
-      <!-- Operator Hologram Avatar Header -->
-      <div class="login-avatar-stage">
-        <div class="operator-holo-avatar">
-          <div class="holo-avatar-head">
-            <div class="holo-cyber-visor"></div>
-          </div>
-          <div class="holo-hex-grid"></div>
+      <div class="c2-hsm-body">
+        <div class="c2-hsm-specs">
+          <div>ENCRYPTION: <strong>RSA-8192 / AES-256-GCM</strong></div>
+          <div>TAMPER-DETECT: <strong class="c2-val-green">ARMED [0 FAULTS]</strong></div>
+          <div>SESSION DOMAIN: <strong>SEC.ENTERPRISE.MIL</strong></div>
+          <div>AUDIT LOGGING: <strong class="c2-val-cyan">ENFORCED (SEC-0)</strong></div>
         </div>
-        <div class="biometric-voice-wave">
-          <span class="v-bar"></span><span class="v-bar"></span><span class="v-bar"></span><span class="v-bar"></span><span class="v-bar"></span><span class="v-bar"></span><span class="v-bar"></span>
-        </div>
-      </div>
 
-      <div class="login-card-header">
-        <div class="login-title-glitch" data-text="CYBER//TYPE MAINFRAME">CYBER//TYPE MAINFRAME</div>
-        <div class="login-security-tag">NEURAL JACK-IN CONSOLE // OPERATOR AUTHENTICATION</div>
-      </div>
-
-      <div class="login-card-body">
-        <div class="login-field-group">
-          <label class="login-label" for="loginUserField">OPERATOR ID:</label>
-          <div class="login-input-wrapper">
-            <span class="login-prefix">&gt;</span>
-            <input type="text" id="loginUserField" class="login-input" value="Anan" autocomplete="off" spellcheck="false">
+        <div class="c2-hsm-input-row">
+          <label class="c2-input-label" for="secretGateInput">MASTER SECURITY PASSPHRASE:</label>
+          <div class="c2-input-wrapper">
+            <span class="c2-input-prefix">TOKEN#</span>
+            <input type="password" id="secretGateInput" class="c2-text-input" placeholder="ENTER HSM PASSPHRASE..." autocomplete="off" autofocus>
           </div>
         </div>
 
-        <div class="login-field-group">
-          <label class="login-label" for="loginPassField">SECURITY KEY (PASSWORD):</label>
-          <div class="login-input-wrapper">
-            <span class="login-prefix">&gt;</span>
-            <input type="password" id="loginPassField" class="login-input" value="Infinity" placeholder="••••••••••••" autocomplete="off" spellcheck="false">
-          </div>
-        </div>
-
-        <button class="login-submit-btn" id="btnLoginSubmit">
-          <span class="btn-plasma-charge"></span>
-          [ ENGAGE NEURAL LINK &amp; LOGIN ]
+        <button class="c2-btn-primary" id="btnSecretGateSubmit">
+          [ AUTHENTICATE SECURITY ENCLAVE ]
         </button>
 
-        <div class="login-hint-text">
-          <span>* Level 5 Restricted Neural Interface</span>
+        <div class="gate-error-msg hidden" id="gateErrorMsg">✖ ACCESS DENIED: INVALID TOKEN PASSPHRASE // INTRUSION LOGGED</div>
+
+        <div class="gate-stream-box hidden" id="gateStreamBox">
+          <div class="gate-stream-lines" id="gateStreamLines"></div>
         </div>
       </div>
     </div>
   </div>
 
   <!-- =========================================================================
-       2. UNIVERSAL CYBER HUD TRANSITION OVERLAY (HOLLYWOOD WIDESCREEN COMMAND DECK)
+       STAGE 2: ENTERPRISE ZERO-TRUST PAM AUTHENTICATION STATION
+       ========================================================================= -->
+  <div class="hacker-login-overlay hidden" id="hackerLoginOverlay">
+    <div class="c2-pam-card" id="loginTerminalCard">
+      <div class="c2-pam-header">
+        <div class="c2-pam-title">ENTERPRISE PAM / KERBEROS WORKSTATION</div>
+        <div class="c2-pam-sub">ZERO-TRUST AUTHENTICATION STATION // ROOT DOMAIN</div>
+      </div>
+
+      <div class="c2-pam-body">
+        <div class="c2-pam-fingerprint-box">
+          <span class="c2-fp-label">HOST FINGERPRINT (SHA-256):</span>
+          <code class="c2-fp-code">SHA256:7b91e4f208a9c3d4e5f6a1b2c3d4e5f67a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d</code>
+        </div>
+
+        <div class="c2-field-group">
+          <label class="c2-field-label" for="loginUserField">OPERATOR PRINCIPAL (USER):</label>
+          <div class="c2-input-wrapper">
+            <span class="c2-input-prefix">UID@</span>
+            <input type="text" id="loginUserField" class="c2-text-input" value="Anan" autocomplete="off" spellcheck="false">
+          </div>
+        </div>
+
+        <div class="c2-field-group">
+          <label class="c2-field-label" for="loginPassField">KERBEROS / PAM PASSPHRASE:</label>
+          <div class="c2-input-wrapper">
+            <span class="c2-input-prefix">PASS#</span>
+            <input type="password" id="loginPassField" class="c2-text-input" value="Infinity" placeholder="••••••••••••" autocomplete="off" spellcheck="false">
+          </div>
+        </div>
+
+        <button class="c2-btn-primary" id="btnLoginSubmit">
+          [ AUTHENTICATE OPERATOR SESSION ]
+        </button>
+
+        <div class="c2-pam-footer">
+          <span>* Air-gapped workstation security clearance enforced. Unauthorized access is audited.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       STAGE 3: UNIVERSAL TRANSITION & BUFFER SYNCHRONIZER
        ========================================================================= -->
   <div class="cyber-transition-overlay hidden" id="universalTransitionOverlay">
-    <div class="cyber-transition-card widescreen-deck">
-      
-      <!-- Top Cyber Operations Command Header -->
+    <div class="c2-transition-card">
       <div class="transition-command-header">
         <div class="deck-title-group">
-          <span class="deck-signal-badge" id="transBadge">[ CLASSIFIED CYBER OPERATIONS DECK ]</span>
-          <span class="deck-telemetry-tag">UPLINK: <strong class="glow-cyan">14.25 GHz</strong> | ENCRYPTION: <strong class="glow-cmd">RSA-8192</strong> | STATUS: <strong class="glow-cmd">DEFCON-1</strong></span>
+          <span class="deck-signal-badge" id="transBadge">[ C2 COMMAND WORKSTATION TRANSITION ]</span>
+          <span class="deck-telemetry-tag">BUS: <strong class="glow-cyan">14.25 GHz</strong> | PARITY: <strong class="glow-cmd">100%</strong> | DEFENSE: <strong class="glow-cmd">DEFCON-1</strong></span>
         </div>
         <div class="deck-percent-group">
-          <span class="deck-percent-label">SUBSYSTEM ALLOCATION:</span>
+          <span class="deck-percent-label">MEMORY SYNCHRONIZATION:</span>
           <span class="transition-percentage" id="transPercent">0%</span>
         </div>
       </div>
 
-      <!-- Segmented High-Tech Laser Scanning Progress Bar -->
       <div class="transition-progress-deck">
         <div class="transition-progress-fill" id="transProgressFill"></div>
-        <div class="laser-scanner-line"></div>
       </div>
 
-      <!-- Widescreen Dual-Column Deck Body -->
       <div class="transition-deck-body">
-        
-        <!-- Left Column: Operations Terminal & CPU Core Cluster -->
         <div class="deck-left-col">
           <div class="deck-headline-row">
-            <div class="transition-headline" id="transHeadline" data-text="INITIALIZING SYSTEM">
-              INITIALIZING SYSTEM...
+            <div class="transition-headline" id="transHeadline">
+              INITIALIZING C2 RUNTIME...
             </div>
             <div class="deck-cluster-telemetry">
-              <span>CPU: <strong class="glow-cyan">3.70 GHz (96-CORE)</strong></span>
-              <span>MEM: <strong class="glow-cmd">64.8 GB / 128 GB</strong></span>
+              <span>CPU: <strong class="glow-cyan">EPYC 9654 (96-CORE)</strong></span>
+              <span>MEM: <strong class="glow-cmd">64.8 GB / 128 GB ECC</strong></span>
             </div>
           </div>
 
-          <!-- Progressive Hardware & Module Status Grid -->
           <div class="transition-module-grid">
             <div class="module-chip" id="modChip1"><span class="chip-dot"></span> [01] KERNEL_MEM</div>
             <div class="module-chip" id="modChip2"><span class="chip-dot"></span> [02] CPU_REGISTERS</div>

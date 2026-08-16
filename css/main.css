@@ -162,139 +162,209 @@ html, body {
    0. BOOT SEQUENCE SCREEN (DARK TECHNO SKULL + GLITCH TITLE + LIVE LOGS)
    ========================================================================== */
 
-.boot-screen {
+/* ==========================================================================
+   STAGE 0: ENTERPRISE C2 UEFI FIRMWARE POST & HARDWARE INITIALIZER
+   ========================================================================== */
+
+.c2-enterprise-terminal {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: radial-gradient(circle at center, rgba(4, 10, 6, 0.45) 0%, rgba(2, 5, 3, 0.85) 100%);
-  backdrop-filter: blur(2px);
-  z-index: 50;
+  background: #080c10;
+  z-index: 500;
   display: flex;
   flex-direction: column;
-  color: var(--theme-primary);
+  color: #e2e8f0;
   font-family: var(--font-mono);
   overflow: hidden;
-  transition: opacity 1s ease-out;
+  transition: opacity 0.6s ease-out;
 }
 
-.boot-screen.hidden {
+.c2-enterprise-terminal.hidden {
   opacity: 0;
   pointer-events: none;
 }
 
-/* Cyberpunk Top Telemetry HUD Bar */
-.boot-hud-topbar {
+/* Top Polybar Telemetry Strip */
+.c2-post-topbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 24px;
-  background: rgba(3, 10, 6, 0.8);
-  border-bottom: 1px solid rgba(0, 255, 102, 0.25);
+  padding: 8px 20px;
+  background: #0b1118;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   font-size: 11px;
-  font-family: var(--font-mono);
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
   z-index: 60;
 }
 
-.boot-hud-tl {
+.c2-bar-item {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.hud-indicator-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--theme-primary);
-  box-shadow: 0 0 10px var(--theme-primary);
-  animation: blinkFast 0.8s infinite alternate;
+.c2-label {
+  color: #8b9cb0;
+  font-size: 10px;
+  font-weight: 700;
 }
 
-.hud-txt-primary {
-  color: var(--theme-primary);
-  font-weight: 800;
-  text-shadow: 0 0 8px var(--theme-primary-glow);
-}
-
-.hud-txt-cyan {
-  color: var(--theme-cyan);
-  font-weight: 800;
-  text-shadow: 0 0 8px var(--theme-cyan-glow);
-}
-
-.hud-txt-dim {
-  color: var(--win-text-dim);
-}
-
-/* Center Stage: Dark Techno Skull & Cyberdeck Glitch Title */
-.boot-logo {
-  position: absolute;
-  top: 25%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+/* Center Stage: Minimalist Wireframe Reactor & POST Diagnostics Checklist */
+.c2-post-center-stage {
+  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
+  padding: 24px 20px 16px 20px;
   z-index: 60;
-  transition: opacity 0.5s ease-in;
 }
 
-.techno-skull-wrapper {
-  position: relative;
+.c2-canvas-wrapper {
   margin-bottom: 8px;
-  filter: drop-shadow(0 0 10px rgba(0, 255, 102, 0.5));
-  animation: skullHover 3s infinite ease-in-out;
 }
 
-@keyframes skullHover {
-  0%, 100% { transform: translateY(0); filter: drop-shadow(0 0 8px rgba(0, 255, 102, 0.4)); }
-  50% { transform: translateY(-4px); filter: drop-shadow(0 0 16px rgba(0, 255, 102, 0.75)); }
+.c2-vector-canvas {
+  width: 130px;
+  height: 130px;
+  display: block;
 }
 
-.techno-skull-ascii {
+.c2-os-title {
+  font-family: var(--font-mono);
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: #00e5ff;
+  letter-spacing: 2px;
   margin: 0;
+}
+
+.c2-os-sub {
   font-family: var(--font-mono);
   font-size: 11px;
-  line-height: 1.05;
-  font-weight: 900;
-  color: var(--theme-primary);
-  text-shadow: 0 0 6px var(--theme-primary);
-  user-select: none;
-}
-
-.skull-scanner-beam {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, #00e5ff, #00ff66, transparent);
-  box-shadow: 0 0 12px #00e5ff;
-  animation: scanSweep 2s infinite ease-in-out;
-}
-
-@keyframes scanSweep {
-  0% { top: 0%; opacity: 0; }
-  10% { opacity: 1; }
-  90% { opacity: 1; }
-  100% { top: 100%; opacity: 0; }
-}
-
-/* Digital Glitch Slicing Title (Hollywood Cyberpunk Style) */
-.boot-title-glitch {
-  position: relative;
-  font-family: var(--font-display);
-  font-size: 2.2rem;
-  font-weight: 900;
-  color: var(--theme-primary);
-  letter-spacing: 4px;
-  text-shadow: 0 0 10px var(--theme-primary-glow);
-  display: inline-block;
+  color: #8b9cb0;
   margin-top: 4px;
+}
+
+/* Hardware POST Telemetry Table */
+.c2-post-table {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: #0d1520;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 10px 18px;
+  border-radius: 4px;
+  margin-top: 14px;
+  width: 100%;
+  max-width: 580px;
+  text-align: left;
+}
+
+.c2-post-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11.5px;
+  font-family: var(--font-mono);
+}
+
+.c2-k {
+  color: #8b9cb0;
+  font-weight: 700;
+}
+
+.c2-v {
+  color: #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.c2-tag-ok {
+  color: #00ff88;
+  font-weight: 800;
+}
+
+.c2-post-ready-tag {
+  margin-top: 10px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #00ff88;
+  letter-spacing: 1px;
+}
+
+/* Procedural Kernel Bootstrap Ring Buffer */
+.c2-post-log-deck {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #05080c;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  margin-top: auto;
+  overflow: hidden;
+  z-index: 60;
+}
+
+.c2-log-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 18px;
+  background: #090e14;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 10.5px;
+  color: #8b9cb0;
+  letter-spacing: 0.5px;
+}
+
+.c2-baud-rate {
+  color: #00e5ff;
+  font-weight: 700;
+}
+
+.c2-post-logs {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow-y: hidden;
+  padding: 8px 18px;
+  mask-image: linear-gradient(to bottom, transparent, black 12%, black 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent, black 12%, black 100%);
+}
+
+.c2-progress-wrapper {
+  background: #080c10;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 8px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.c2-progress-track {
+  width: 100%;
+  height: 4px;
+  background: #111822;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.c2-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #00e5ff, #00ff88);
+  transition: width 0.08s linear;
+}
+
+.c2-progress-metrics {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: #8b9cb0;
 }
 
 .boot-title-glitch::before,
@@ -541,173 +611,260 @@ html, body {
 }
 
 /* ==========================================================================
-   SCREEN 1: CLASSIFIED BLACK-OPS ENCLAVE PASSCODE GATE
+   ENTERPRISE C2 HARDWARE SECURITY MODULE (HSM) PASSCODE GATE
    ========================================================================== */
 
-.secret-gate-card {
+.c2-hsm-card {
   position: relative;
   z-index: 30;
   width: 100%;
-  max-width: 500px;
-  background: rgba(4, 10, 6, 0.98);
-  border: 1.5px solid #ff2255;
-  border-radius: 8px;
-  box-shadow: 0 0 40px rgba(255, 34, 85, 0.5), inset 0 0 20px rgba(0, 0, 0, 0.9);
-  padding: 36px 32px;
+  max-width: 540px;
+  background: #0d151f;
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  border-top: 3px solid #00e5ff;
+  border-radius: 4px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.9), inset 0 0 20px rgba(0, 229, 255, 0.02);
+  padding: 28px 30px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
   gap: 16px;
-  animation: card-appear 0.25s ease-out;
+  animation: card-appear 0.2s ease-out;
 }
 
 @keyframes card-appear {
-  0% { transform: scale(0.95); opacity: 0; }
+  0% { transform: scale(0.98); opacity: 0; }
   100% { transform: scale(1); opacity: 1; }
 }
 
-.gate-lock-icon {
-  font-size: 2.2rem;
-  filter: drop-shadow(0 0 10px #ffcc00);
-  margin-bottom: 2px;
+.c2-hsm-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 12px;
 }
 
-.gate-title {
-  font-family: var(--font-display);
-  font-size: 1.35rem;
-  font-weight: 900;
-  color: #ffffff;
-  letter-spacing: 2px;
-  text-shadow: 0 0 12px rgba(0, 255, 102, 0.8);
-}
-
-.gate-sub {
+.c2-hsm-badge {
   font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--win-text-dim);
-  letter-spacing: 1px;
-  line-height: 1.4;
+  font-size: 13px;
+  font-weight: 800;
+  color: #00e5ff;
+  letter-spacing: 1.5px;
 }
 
-.gate-input-box {
-  width: 100%;
+.c2-hsm-sub {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--win-text-dim);
+  margin-top: 4px;
+}
+
+.c2-hsm-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.c2-hsm-specs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 12px;
+  background: #080d14;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 10px 14px;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #8b9cb0;
+}
+
+.c2-hsm-specs strong {
+  color: #e2e8f0;
+}
+
+.c2-val-green { color: #00ff88 !important; }
+.c2-val-cyan { color: #00e5ff !important; }
+.c2-val-amber { color: #e5a93c !important; }
+
+.c2-hsm-input-row,
+.c2-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+}
+
+.c2-input-label,
+.c2-field-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: #8b9cb0;
+  letter-spacing: 0.5px;
+}
+
+.c2-input-wrapper {
   display: flex;
   align-items: center;
-  background: #030805 !important;
-  border: 1px solid #1a3a22 !important;
-  border-radius: 4px;
-  padding: 0 14px;
-  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.8);
+  background: #060a0e;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 3px;
+  padding: 0 12px;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.gate-input-box:focus-within {
-  border-color: #00ff66 !important;
-  box-shadow: 0 0 12px rgba(0, 255, 102, 0.3);
+.c2-input-wrapper:focus-within {
+  border-color: #00e5ff;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.25);
 }
 
-.gate-prompt-sym {
-  color: #00ff66;
-  font-weight: 900;
+.c2-input-prefix {
   font-family: var(--font-mono);
-  font-size: 14px;
-  margin-right: 10px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #00e5ff;
+  margin-right: 8px;
+  user-select: none;
 }
 
-.gate-input {
+.c2-text-input {
   flex: 1;
-  background: transparent !important;
-  border: none !important;
-  outline: none !important;
-  color: #00ff66 !important;
-  font-family: var(--font-mono) !important;
-  font-size: 13.5px !important;
-  letter-spacing: 1.5px;
-  padding: 11px 0 !important;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #ffffff;
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  padding: 10px 0;
 }
 
-.gate-input::placeholder {
-  color: #557766 !important;
+.c2-text-input::placeholder {
+  color: #415264;
 }
 
-.gate-auth-btn {
-  width: 100%;
-  background: #00ff66 !important;
-  color: #000000 !important;
-  border: none !important;
-  padding: 13px 18px;
-  border-radius: 4px;
-  font-family: var(--font-display);
-  font-size: 13px;
-  font-weight: 900;
-  letter-spacing: 1.5px;
+.c2-btn-primary {
+  background: #00e5ff;
+  color: #04090e;
+  border: none;
+  padding: 12px 18px;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: 1px;
   cursor: pointer;
-  box-shadow: 0 0 20px #00ff66;
+  box-shadow: 0 0 16px rgba(0, 229, 255, 0.4);
   transition: all 0.15s ease;
+  margin-top: 4px;
 }
 
-.gate-auth-btn:hover {
-  background: #55ff99 !important;
-  box-shadow: 0 0 30px #00ff66;
+.c2-btn-primary:hover {
+  background: #66efff;
+  box-shadow: 0 0 24px rgba(0, 229, 255, 0.6);
   transform: translateY(-1px);
 }
 
-.gate-auth-btn:active {
+.c2-btn-primary:active {
   transform: translateY(1px);
 }
 
 .gate-error-msg {
-  color: var(--theme-danger);
+  color: #ff3b57;
+  font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 700;
   text-align: center;
-  text-shadow: 0 0 8px var(--theme-danger-glow);
 }
 
 .gate-stream-box {
   width: 100%;
-  background: rgba(0, 0, 0, 0.85);
-  border: 1px solid var(--theme-border);
-  border-radius: 4px;
+  background: #05080c;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
   padding: 8px 12px;
   font-size: 11px;
-  color: var(--theme-primary);
+  color: #00ff88;
   max-height: 80px;
   overflow-y: auto;
   text-align: left;
 }
 
 /* ==========================================================================
-   SCREEN 2: CINEMATIC FULL-SCREEN HACKER LOGIN OVERLAY
+   ENTERPRISE ZERO-TRUST PAM / KERBEROS AUTHENTICATION STATION
    ========================================================================== */
 
-.login-terminal-card {
+.c2-pam-card {
   position: relative;
   z-index: 30;
   width: 100%;
-  max-width: 500px;
-  background: rgba(4, 10, 6, 0.98);
-  border: 1.5px solid #00f0ff;
-  border-radius: 8px;
-  box-shadow: 0 0 40px rgba(0, 240, 255, 0.45), inset 0 0 20px rgba(0, 0, 0, 0.9);
-  padding: 34px 32px;
+  max-width: 520px;
+  background: #0d151f;
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  border-top: 3px solid #00ff88;
+  border-radius: 4px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.9);
+  padding: 28px 30px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  animation: card-appear 0.25s ease-out;
+  gap: 16px;
+  animation: card-appear 0.2s ease-out;
 }
 
-.login-card-header {
+.c2-pam-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 12px;
+}
+
+.c2-pam-title {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 1px;
+}
+
+.c2-pam-sub {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--win-text-dim);
+  margin-top: 3px;
+}
+
+.c2-pam-body {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 14px;
 }
 
-.login-title-glitch {
-  font-family: var(--font-display);
-  font-size: 1.55rem;
-  font-weight: 900;
+.c2-pam-fingerprint-box {
+  background: #070b10;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 8px 12px;
+  border-radius: 3px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.c2-fp-label {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #8b9cb0;
+}
+
+.c2-fp-code {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: #00ff88;
+  word-break: break-all;
+}
+
+.c2-pam-footer {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: #64748b;
+  text-align: left;
+  line-height: 1.4;
+  margin-top: 4px;
+}
   color: #00ff66;
   letter-spacing: 2px;
   text-shadow: 0 0 12px var(--theme-primary-glow);
@@ -3586,222 +3743,85 @@ html, body {
 }
 
 /* ==========================================================================
-   7. FULL DIEGETIC CYBERDECK HARDWARE CHASSIS & BLAST DOORS SYSTEM
+   ENTERPRISE C2 COMMAND & CONTROL WORKSTATION CHASSIS
    ========================================================================== */
 
-/* Chamfered 45° Cyber Geometry */
+.c2-transition-card {
+  position: relative;
+  z-index: 30;
+  width: 90%;
+  max-width: 960px;
+  background: #0b1118;
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  border-top: 3px solid #00e5ff;
+  border-radius: 4px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.95);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 .diegetic-terminal,
 .diegetic-cyberdeck-chassis,
-.secret-gate-card,
-.login-terminal-card,
 .terminal-view,
 .cli-terminal-column,
 .cyber-intel-column {
-  clip-path: polygon(
-    0 14px,
-    14px 0,
-    calc(100% - 14px) 0,
-    100% 14px,
-    100% calc(100% - 14px),
-    calc(100% - 14px) 100%,
-    14px 100%,
-    0 calc(100% - 14px)
-  );
+  background: #080c10;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
 }
 
-/* Aerospace Chassis Corner Bezels */
-.chassis-bezel-corner {
-  position: absolute;
-  width: 32px;
-  height: 32px;
-  border: 3px solid #00ff66;
-  z-index: 20;
-  pointer-events: none;
-}
-.chassis-bezel-corner.tl { top: 10px; left: 10px; border-right: none; border-bottom: none; }
-.chassis-bezel-corner.tr { top: 10px; right: 10px; border-left: none; border-bottom: none; }
-.chassis-bezel-corner.bl { bottom: 10px; left: 10px; border-right: none; border-top: none; }
-.chassis-bezel-corner.br { bottom: 10px; right: 10px; border-left: none; border-top: none; }
-
-/* 3D Hologram Reactor Orbital Rings */
-.holo-orbital-ring {
-  position: absolute;
-  border-radius: 50%;
-  border: 1px dashed rgba(0, 255, 102, 0.4);
-  pointer-events: none;
-}
-.holo-orbital-ring.ring-1 {
-  width: 170px;
-  height: 170px;
-  animation: reticleSpin 10s linear infinite;
-}
-.holo-orbital-ring.ring-2 {
-  width: 210px;
-  height: 210px;
-  border-color: rgba(0, 240, 255, 0.35);
-  animation: reticleSpinRev 14s linear infinite;
-}
-
-/* Heavy Titanium Blast Doors (Vault Gate) */
-.vault-blast-door {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 50%;
-  background: linear-gradient(135deg, #0d120f 0%, #030604 100%);
-  border: 2px solid rgba(255, 34, 85, 0.4);
-  z-index: 5;
-  pointer-events: none;
-  transition: transform 0.8s cubic-bezier(0.7, 0, 0.3, 1);
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 20px;
-  box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.9);
-}
-.vault-blast-door.left-door { left: 0; border-right: 3px solid #ff2255; }
-.vault-blast-door.right-door { right: 0; border-left: 3px solid #ff2255; }
-
-.secret-gate-overlay.gate-unlocked .left-door { transform: translateX(-100%); }
-.secret-gate-overlay.gate-unlocked .right-door { transform: translateX(100%); }
-
-.hazard-stripe {
-  height: 16px;
-  background: repeating-linear-gradient(45deg, #ffaa00, #ffaa00 10px, #000 10px, #000 20px);
-  box-shadow: 0 0 10px rgba(255, 170, 0, 0.5);
-  border-radius: 2px;
-}
-.door-bolt {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: radial-gradient(circle, #33443a 0%, #0d1611 100%);
-  border: 2px solid #557762;
-  box-shadow: inset 0 0 6px #000, 0 0 8px rgba(0,0,0,0.8);
-  margin: 12px 0;
-}
-
-.gate-security-badge {
-  font-family: 'Orbitron', monospace;
-  font-size: 11px;
-  font-weight: 900;
-  color: #ff2255;
-  letter-spacing: 2px;
-  text-shadow: 0 0 10px #ff2255;
-  margin-bottom: 12px;
-}
-
-.btn-scan-laser {
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 34, 85, 0.4), transparent);
-  animation: laserSweepBtn 2s infinite;
-}
-
-@keyframes laserSweepBtn {
-  0% { left: -100%; }
-  100% { left: 100%; }
-}
-
-/* Card Chamfered Corner Brackets */
-.card-bracket {
-  position: absolute;
-  width: 12px;
-  height: 12px;
-  border: 2px solid #00f0ff;
-  pointer-events: none;
-}
-.card-bracket.tl { top: 4px; left: 4px; border-right: none; border-bottom: none; }
-.card-bracket.tr { top: 4px; right: 4px; border-left: none; border-bottom: none; }
-.card-bracket.bl { bottom: 4px; left: 4px; border-right: none; border-top: none; }
-.card-bracket.br { bottom: 4px; right: 4px; border-left: none; border-top: none; }
-
-.holo-hex-grid {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-image: radial-gradient(#00f0ff 1px, transparent 1px);
-  background-size: 8px 8px;
-  opacity: 0.25;
-  pointer-events: none;
-}
-
-.btn-plasma-charge {
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(0, 240, 255, 0.4), transparent);
-  animation: laserSweepBtn 2s infinite;
-}
-
-/* Main Diegetic CyberDeck Chassis */
 .diegetic-cyberdeck-chassis {
   position: relative;
-  border: 3px solid rgba(0, 255, 102, 0.35);
-  background: radial-gradient(ellipse at 50% 30%, #05130b 0%, #010403 100%);
-  box-shadow: 0 0 45px rgba(0, 255, 102, 0.25), inset 0 0 35px rgba(0, 0, 0, 0.9);
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  background: #080c10;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.9);
 }
-
-.deck-chassis-bezel {
-  position: absolute;
-  width: 28px;
-  height: 28px;
-  border: 3px solid #00ff66;
-  z-index: 10;
-  pointer-events: none;
-}
-.deck-chassis-bezel.tl { top: 2px; left: 2px; border-right: none; border-bottom: none; }
-.deck-chassis-bezel.tr { top: 2px; right: 2px; border-left: none; border-bottom: none; }
-.deck-chassis-bezel.bl { bottom: 2px; left: 2px; border-right: none; border-top: none; }
-.deck-chassis-bezel.br { bottom: 2px; right: 2px; border-left: none; border-top: none; }
 
 .chassis-status-strip {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 5px 16px;
-  background: #020603;
-  border-bottom: 1px solid rgba(0, 255, 102, 0.25);
+  padding: 6px 16px;
+  background: #0a0f16;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .chassis-led-cluster {
   display: flex;
   gap: 8px;
 }
+
 .c-led {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
 }
-.c-led.led-green { background: #00ff66; box-shadow: 0 0 8px #00ff66; }
-.c-led.led-cyan { background: #00f0ff; box-shadow: 0 0 8px #00f0ff; }
-.c-led.led-amber { background: #ffaa00; box-shadow: 0 0 8px #ffaa00; }
-.c-led.led-red { background: #ff0055; box-shadow: 0 0 8px #ff0055; }
+
+.c-led.led-green { background: #00ff88; box-shadow: 0 0 6px #00ff88; }
+.c-led.led-cyan { background: #00e5ff; box-shadow: 0 0 6px #00e5ff; }
+.c-led.led-amber { background: #e5a93c; box-shadow: 0 0 6px #e5a93c; }
+.c-led.led-red { background: #ff3b57; box-shadow: 0 0 6px #ff3b57; }
 
 .chassis-brand-tag {
-  font-family: 'Orbitron', monospace;
-  font-size: 10px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
   font-weight: 800;
-  color: #00f0ff;
-  letter-spacing: 1.5px;
+  color: #00e5ff;
+  letter-spacing: 1px;
 }
 
 .chassis-heat-grille {
   display: flex;
   gap: 3px;
 }
+
 .chassis-heat-grille span {
-  width: 4px;
-  height: 12px;
-  background: #11261b;
-  border: 1px solid #1e4530;
+  width: 3px;
+  height: 10px;
+  background: #111822;
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 1px;
 }
 

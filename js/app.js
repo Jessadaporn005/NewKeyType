@@ -795,11 +795,11 @@ class WindowsTerminalApp {
 
     this.dom.gateStreamBox.classList.remove('hidden');
     const lines = [
-      `[+] MASTER PASSCODE VERIFIED: '${code.toUpperCase()}'`,
-      `>> DECRYPTING BLACK-OPS ENCLAVE VAULT...`,
-      `>> RSA-8192 SIGNATURE CONFIRMED (UID: 0)`,
-      `>> OPERATOR 'ANAN' BIOMETRIC CLEARED`,
-      `[✓] UNLOCKING OPERATOR AUTHENTICATION INTERFACE...`
+      `[+] HSM MASTER PASSPHRASE VERIFIED [OK]`,
+      `>> DERIVING CRYPTOGRAPHIC KEYS (PBKDF2 / SHA-512)...`,
+      `>> TPM 2.0 PCR ENCLAVE REGISTER MATCHED`,
+      `>> ACCESS CONTROL: SEC-LEVEL 5 ROOT GRANTED`,
+      `[✓] CONNECTING TO ENTERPRISE PAM WORKSTATION DAEMON...`
     ];
 
     let lIdx = 0;
