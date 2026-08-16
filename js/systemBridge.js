@@ -161,9 +161,9 @@ class SystemBridge {
     }
   }
 
-  async windowSplit(dir) {
+  async windowSplit(opts) {
     if (this.isElectron && window.cyberSystemAPI.windowSplit) {
-      return await window.cyberSystemAPI.windowSplit(dir);
+      return await window.cyberSystemAPI.windowSplit(opts);
     } else {
       return { success: false, error: 'Simulation mode does not support window tiling.' };
     }

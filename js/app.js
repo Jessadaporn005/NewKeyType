@@ -106,14 +106,27 @@ class WindowsTerminalApp {
   }
 
   async init() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const targetMode = urlParams.get('mode');
+    const targetUrl = urlParams.get('url');
+    const skipBoot = urlParams.get('skipBoot') === '1' || this.isGhostMode || !!targetMode;
+
     if (this.isGhostMode) {
       document.body.classList.add('ghost-mode');
     }
     
     this.cacheDOM();
 
-    // Start unskippable cinematic 20s boot sequence immediately
-    this.playBootSequence();
+    if (skipBoot) {
+      if (this.dom.bootScreenOverlay) this.dom.bootScreenOverlay.classList.add('hidden');
+      if (this.dom.secretGateOverlay) this.dom.secretGateOverlay.classList.add('hidden');
+      if (this.dom.hackerLoginOverlay) this.dom.hackerLoginOverlay.classList.add('hidden');
+      if (this.dom.mainTerminalContainer) this.dom.mainTerminalContainer.classList.remove('hidden');
+      this.state = STATES.CLI_PROMPT;
+    } else {
+      // Start unskippable cinematic 20s boot sequence immediately
+      this.playBootSequence();
+    }
 
     try {
       await profileStore.initStore();
@@ -124,6 +137,12 @@ class WindowsTerminalApp {
       this.bindEvents();
       this.syncProfileToHud();
       this.applyUserSettings('Anan');
+
+      if (targetMode === 'browser' || targetMode === 'web') {
+        setTimeout(() => this.launchBrowserMode(targetUrl || 'https://www.google.com'), 100);
+      } else if (targetMode === 'vscode' || targetMode === 'code') {
+        setTimeout(() => this.launchVscodeMode(targetUrl || 'python'), 100);
+      }
     } catch (err) {
       console.error('[!] Subsystem initialization error:', err);
     }
@@ -1435,6 +1454,37 @@ AVAILABLE CYBER TERMINAL & REAL-WORLD OS COMMANDS:
         this.launchBrowserMode(targetUrl || 'https://www.google.com');
         return;
 
+      // Multi-Window Tiling Split Mode
+      case 'split':
+      case 'tile':
+      case 'vsplit':
+      case 'hsplit': {
+        let dir = (cmd === 'hsplit' || args[0] === 'h' || args[0] === 'horizontal') ? 'horizontal' : 'vertical';
+        let subMode = '';
+        let subUrl = '';
+
+        const remainingArgs = args.filter(a => !['vertical', 'v', 'horizontal', 'h'].includes(a));
+        if (remainingArgs.length > 0) {
+          const firstSub = remainingArgs[0].toLowerCase();
+          if (['browser', 'web', 'yt', 'youtube', 'google'].includes(firstSub)) {
+            subMode = 'browser';
+            subUrl = remainingArgs.slice(1).join(' ') || (firstSub === 'yt' ? 'https://www.youtube.com' : 'https://www.google.com');
+          } else if (['code', 'vscode', 'ide', 'learn'].includes(firstSub)) {
+            subMode = 'vscode';
+            subUrl = remainingArgs.slice(1).join(' ') || 'python';
+          }
+        }
+
+        const res = await this.sys.windowSplit({ direction: dir, mode: subMode, url: subUrl });
+        if (res && res.success) {
+          output = `[+] Window split executed [${dir.toUpperCase()}]. Attached Mode: ${subMode ? subMode.toUpperCase() : 'MAIN CLI'}`;
+          this.audio.playSuccessFanfare();
+        } else {
+          output = `[!] Window split: ${res ? res.error : 'Split limit reached or unsupported.'}`;
+        }
+        break;
+      }
+
       // Hacky Cyberspace Node Crawl (Roguelite)
       case 'roguelite':
       case 'rl':
@@ -2104,10 +2154,10 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
       'CYBER IN-APP BROWSER',
       'CONNECTING TO CHROMIUM WEBVIEW GATEWAY...',
       logs,
-      'browser',
+      'cli',
       () => {
         if (this.browserEngine) {
-          this.browserEngine.openBrowser(urlArg || 'https://www.google.com');
+          this.browserEngine.openBrowser(urlArg || 'https://www.google.com', 'FULL');
         }
         setTimeout(() => this.hands.updatePositions(), 50);
       }

@@ -329,9 +329,23 @@ ipcMain.handle('cyber:sandbox-run', async (event, code) => {
 
 
 // Window Management (Tiling)
-ipcMain.handle('cyber:window-split', async (event, direction) => {
-  const allWins = BrowserWindow.getAllWindows().filter(w => !w.isDestroyed() && w.isVisible());
-  if (allWins.length === 0) return { success: false };
+ipcMain.handle('cyber:window-split', async (event, opts) => {
+  const allWins = BrowserWindow.getAllWindows().filter(w => w !== ghostWindow);
+  if (allWins.length >= 4) {
+    return { success: false, error: 'Maximum split limit reached (4 Windows)' };
+  }
+  
+  let direction = 'vertical';
+  let mode = '';
+  let url = '';
+
+  if (typeof opts === 'object' && opts !== null) {
+    direction = opts.direction || 'vertical';
+    mode = opts.mode || '';
+    url = opts.url || '';
+  } else if (typeof opts === 'string') {
+    direction = opts;
+  }
   
   const activeWin = BrowserWindow.getFocusedWindow() || allWins[0];
   const bounds = activeWin.getBounds();
@@ -340,20 +354,22 @@ ipcMain.handle('cyber:window-split', async (event, direction) => {
     width: bounds.width,
     height: bounds.height,
     backgroundColor: '#0c0c0c',
-    frame: activeWin.isWindowBox, // match style
+    frame: false,
     autoHideMenuBar: true,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.cjs'),
-      webSecurity: false
+      webSecurity: false,
+      webviewTag: true
     }
   });
 
   const port = server.address().port;
-  newWin.loadURL(`http://127.0.0.1:${port}/index.html`);
+  const targetQuery = `mode=${encodeURIComponent(mode)}&url=${encodeURIComponent(url)}&skipBoot=1`;
+  newWin.loadURL(`http://127.0.0.1:${port}/index.html?${targetQuery}`);
 
-  // Simple Split Logic
+  // Split Screen Sizing
   if (direction === 'vertical') {
     const halfWidth = Math.floor(bounds.width / 2);
     activeWin.setBounds({ x: bounds.x, y: bounds.y, width: halfWidth, height: bounds.height });

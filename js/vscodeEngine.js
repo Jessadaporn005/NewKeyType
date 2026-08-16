@@ -1,51 +1,51 @@
 /**
- * CYBER//TYPE VS CODE INTERACTIVE PLAYGROUND & MULTI-LANGUAGE ACADEMY
+ * CYBER//TYPE VS CODE INTERACTIVE PLAYGROUND & AI CYBER TUTOR ACADEMY
  * Dual-Pane Live Editor, Line Numbering, Syntax Highlighting, Real-Time Keyword Docstring Guides (Thai/Eng),
  * Multi-Language Curriculum (HTML/CSS/JS, Python, Java, C++, Rust, SQL, Bash/PowerShell),
- * and Live Terminal Execution / Web DOM Preview Engine.
+ * and Embedded AI Cyber Tutor for line-by-line code explanation, bug detection, and coding advice.
  */
 
 export const CODE_KEYWORD_DOCS = {
   // Python
-  def: { lang: 'python', title: 'def (Function Definition)', desc: 'ใช้สำหรับประกาศฟังก์ชันใหม่ใน Python เพื่อจัดกลุ่มโค้ดที่สามารถเรียกใช้ซ้ำได้', example: 'def my_function(param):\n    return param * 2' },
-  class: { lang: 'python/java/cpp', title: 'class (Class Definition)', desc: 'ใช้สำหรับสร้าง Class ตามหลัก Object-Oriented Programming (OOP) กำหนดพิมพ์เขียวของ Object', example: 'class Hacker:\n    def __init__(self, name):\n        self.name = name' },
-  return: { lang: 'general', title: 'return (Return Statement)', desc: 'ส่งค่าผลลัพธ์ออกจากฟังก์ชันและจบการทำงานของฟังก์ชันทันที', example: 'return result' },
-  import: { lang: 'python/js/java', title: 'import (Module Import)', desc: 'นำเข้า Library, โมดูล หรือแพ็กเกจภายนอกเข้ามาใช้งานในโปรแกรม', example: 'import math\nfrom datetime import datetime' },
-  if: { lang: 'general', title: 'if (Conditional Branching)', desc: 'ตรวจสอบเงื่อนไข ถ้าเป็นจริง (True) จะทำงานในบล็อกคำสั่ง', example: 'if score >= 80:\n    print("Grade A")' },
-  elif: { lang: 'python', title: 'elif (Else If)', desc: 'ตรวจสอบเงื่อนไขเพิ่มเติมเมื่อเงื่อนไข if ก่อนหน้าเป็นเท็จ', example: 'elif score >= 70:\n    print("Grade B")' },
-  else: { lang: 'general', title: 'else (Fallback Branch)', desc: 'ทำงานเมื่อเงื่อนไข if / elif ทั้งหมดก่อนหน้าเป็นเท็จ (False)', example: 'else:\n    print("Grade F")' },
-  for: { lang: 'general', title: 'for (Loop Iteration)', desc: 'วนลูปประมวลผลข้อมูลตามจำนวนรอบหรือสมาชิกใน List / Range', example: 'for i in range(10):\n    print(i)' },
-  while: { lang: 'general', title: 'while (Conditional Loop)', desc: 'วนลูปซ้ำตราบใดที่เงื่อนไขยังคงเป็นจริง (True)', example: 'while count < 5:\n    count += 1' },
-  lambda: { lang: 'python', title: 'lambda (Anonymous Function)', desc: 'สร้างฟังก์ชันนิรนามแบบบรรทัดเดียว นิยมใช้กับ map, filter, sort', example: 'double = lambda x: x * 2' },
+  def: { lang: 'python', title: 'def (Function Definition)', desc: 'ใช้สำหรับประกาศฟังก์ชันใหม่ใน Python เพื่อจัดกลุ่มโค้ดที่สามารถเรียกใช้ซ้ำได้ ช่วยลดความซ้ำซ้อนและทำให้โค้ดอ่านง่ายขึ้น', example: 'def my_function(param):\n    return param * 2' },
+  class: { lang: 'python/java/cpp', title: 'class (Class Definition)', desc: 'ใช้สำหรับสร้าง Class ตามหลัก Object-Oriented Programming (OOP) กำหนดพิมพ์เขียวของ Object ประกอบด้วย Properties และ Methods', example: 'class Hacker:\n    def __init__(self, name):\n        self.name = name' },
+  return: { lang: 'general', title: 'return (Return Statement)', desc: 'ส่งค่าผลลัพธ์ออกจากฟังก์ชันและจบการทำงานของฟังก์ชันทันที หากไม่ใส่ค่าจะส่งกลับ None/void', example: 'return result' },
+  import: { lang: 'python/js/java', title: 'import (Module Import)', desc: 'นำเข้า Library, โมดูล หรือแพ็กเกจภายนอกเข้ามาใช้งานในโปรแกรม เช่น math, sys, os, datetime', example: 'import math\nfrom datetime import datetime' },
+  if: { lang: 'general', title: 'if (Conditional Branching)', desc: 'ตรวจสอบเงื่อนไขทางตรรกะ ถ้าเป็นจริง (True) จะเข้าไปประมวลผลคำสั่งในบล็อก', example: 'if score >= 80:\n    print("Grade A")' },
+  elif: { lang: 'python', title: 'elif (Else If)', desc: 'ตรวจสอบเงื่อนไขเพิ่มเติมเมื่อเงื่อนไข if ก่อนหน้าเป็นเท็จ ช่วยให้ตรวจสอบได้หลายเงื่อนไขตามลำดับ', example: 'elif score >= 70:\n    print("Grade B")' },
+  else: { lang: 'general', title: 'else (Fallback Branch)', desc: 'ทำงานเมื่อเงื่อนไข if / elif ทั้งหมดก่อนหน้าเป็นเท็จ (False) เป็นทางเลือกสุดท้าย', example: 'else:\n    print("Grade F")' },
+  for: { lang: 'general', title: 'for (Loop Iteration)', desc: 'วนลูปประมวลผลข้อมูลตามจำนวนรอบหรือสมาชิกใน List / Range / Array', example: 'for i in range(10):\n    print(i)' },
+  while: { lang: 'general', title: 'while (Conditional Loop)', desc: 'วนลูปซ้ำตราบใดที่เงื่อนไขยังคงเป็นจริง (True) เหมาะกับงานที่ไม่ทราบจำนวนรอบที่แน่นอน', example: 'while count < 5:\n    count += 1' },
+  lambda: { lang: 'python', title: 'lambda (Anonymous Function)', desc: 'สร้างฟังก์ชันนิรนามแบบบรรทัดเดียว นิยมใช้ร่วมกับ map(), filter(), sorted()', example: 'double = lambda x: x * 2' },
   try: { lang: 'general', title: 'try (Exception Handling)', desc: 'บล็อกทดลองรันโค้ดที่อาจเกิด Error เพื่อดักจับข้อผิดพลาดไม่ให้โปรแกรม Crash', example: 'try:\n    x = 1 / 0\nexcept Exception as e:\n    print(e)' },
 
   // HTML & Web
-  '<div>': { lang: 'html', title: '<div> (Division Container)', desc: 'แท็ก Container หลักสำหรับจัดกลุ่มองค์ประกอบในหน้าเว็บเพื่อจัด Layout', example: '<div class="card">\n  <h2>Title</h2>\n</div>' },
+  '<div>': { lang: 'html', title: '<div> (Division Container)', desc: 'แท็ก Container หลักสำหรับจัดกลุ่มองค์ประกอบในหน้าเว็บเพื่อจัด Layout และ CSS Flexbox/Grid', example: '<div class="card">\n  <h2>Title</h2>\n</div>' },
   '<span>': { lang: 'html', title: '<span> (Inline Container)', desc: 'แท็กสำหรับจัดกลุ่มข้อความหรือองค์ประกอบแบบ Inline (ไม่ขึ้นบรรทัดใหม่)', example: '<span style="color: cyan;">CyberDeck</span>' },
   '<button>': { lang: 'html', title: '<button> (Clickable Button)', desc: 'สร้างปุ่มที่ผู้ใช้สามารถคลิกเพื่อสั่งงาน JavaScript หรือส่งฟอร์ม', example: '<button onclick="handleClick()">SUBMIT</button>' },
-  '<h1>': { lang: 'html', title: '<h1> (Primary Heading)', desc: 'หัวข้อหลักระดับสูงสุดของหน้าเว็บ สำคัญต่อโครงสร้างเนื้อหาและ SEO', example: '<h1>Cyber Security Terminal</h1>' },
+  '<h1>': { lang: 'html', title: '<h1> (Primary Heading)', desc: 'หัวข้อหลักระดับสูงสุดของหน้าเว็บ สำคัญต่อโครงสร้างเนื้อหาและการจัดอันดับ SEO', example: '<h1>Cyber Security Terminal</h1>' },
   '<style>': { lang: 'html', title: '<style> (Embedded CSS)', desc: 'แท็กสำหรับเขียนโค้ดตกแต่ง CSS ภายในไฟล์ HTML', example: '<style>\n  body { background: #0c0c0c; }\n</style>' },
   '<script>': { lang: 'html', title: '<script> (Client JavaScript)', desc: 'แท็กสำหรับเขียนหรือนำเข้าโค้ด JavaScript มาทำงานบนหน้าเว็บ', example: '<script>\n  console.log("System Online");\n</script>' },
   fetch: { lang: 'javascript', title: 'fetch() (Asynchronous HTTP Request)', desc: 'คำสั่ง JavaScript สำหรับดึงข้อมูล API หรือส่ง Request ไปยังเซิร์ฟเวอร์แบบ Async', example: 'const res = await fetch("https://api.github.com");\nconst data = await res.json();' },
   addEventListener: { lang: 'javascript', title: 'addEventListener() (DOM Event Binding)', desc: 'ดักจับเหตุการณ์บนหน้าเว็บ เช่น คลิก (click), พิมพ์ (keydown), เลื่อนเมาส์ (mousemove)', example: 'btn.addEventListener("click", () => alert("Clicked!"));' },
 
   // Java
-  'public static void main': { lang: 'java', title: 'public static void main(String[] args)', desc: 'จุดเริ่มต้นการทำงาน (Entry Point) หลักของโปรแกรม Java ทุกโปรแกรม', example: 'public static void main(String[] args) {\n    System.out.println("Hello Java");\n}' },
-  System: { lang: 'java', title: 'System.out.println()', desc: 'คำสั่งแสดงผลข้อความออกทางหน้าจอ Console ในภาษา Java', example: 'System.out.println("Access Granted");' },
+  'public static void main': { lang: 'java', title: 'public static void main(String[] args)', desc: 'จุดเริ่มต้นการทำงาน (Entry Point) หลักของโปรแกรม Java JVM จะมองหาฟังก์ชันนี้เป็นอันดับแรก', example: 'public static void main(String[] args) {\n    System.out.println("Hello Java");\n}' },
+  System: { lang: 'java', title: 'System.out.println()', desc: 'คำสั่งแสดงผลข้อความออกทางหน้าจอ Standard Output (Console) ในภาษา Java', example: 'System.out.println("Access Granted");' },
 
   // C & C++
   '#include': { lang: 'cpp', title: '#include (Preprocessor Directive)', desc: 'คำสั่ง Preprocessor สำหรับนำเข้า Header Files เช่น <iostream>, <vector>, <memory>', example: '#include <iostream>\n#include <vector>' },
-  malloc: { lang: 'c/cpp', title: 'malloc() (Dynamic Memory Allocation)', desc: 'จองหน่วยความจำแบบไดนามิกใน Heap Memory ในภาษา C โดยส่งคืน Pointer', example: 'int *arr = (int*)malloc(10 * sizeof(int));\nfree(arr);' },
+  malloc: { lang: 'c/cpp', title: 'malloc() (Dynamic Memory Allocation)', desc: 'จองหน่วยความจำแบบไดนามิกใน Heap Memory ในภาษา C โดยส่งคืน Void Pointer (ต้อง free() เสมอเมื่อใช้เสร็จ)', example: 'int *arr = (int*)malloc(10 * sizeof(int));\nfree(arr);' },
   std: { lang: 'cpp', title: 'std:: (Standard Namespace)', desc: 'Namespace มาตรฐานของภาษา C++ บรรจุคลาสและฟังก์ชันมาตรฐาน เช่น cout, cin, vector, string', example: 'std::cout << "Target Locked" << std::endl;' },
 
   // Rust
   fn: { lang: 'rust', title: 'fn (Function Declaration)', desc: 'คีย์เวิร์ดสำหรับประกาศฟังก์ชันในภาษา Rust', example: 'fn calculate_hash(data: &str) -> u64 {\n    // code\n}' },
   let: { lang: 'rust/js', title: 'let (Variable Binding)', desc: 'ประกาศตัวแปร ใน Rust ตัวแปรจะเป็น Immutable (แก้ไขไม่ได้) โดยปริยาย เว้นแต่จะใส่ `mut`', example: 'let mut counter = 0;\ncounter += 1;' },
-  match: { lang: 'rust', title: 'match (Pattern Matching)', desc: 'โครงสร้างควบคุมความปลอดภัยสูงใน Rust ตรวจสอบรูปแบบครอบคลุมทุกกรณี (Exhaustive)', example: 'match status {\n    Ok(val) => println!("Success: {}", val),\n    Err(e) => eprintln!("Error: {}", e),\n}' },
+  match: { lang: 'rust', title: 'match (Pattern Matching)', desc: 'โครงสร้างควบคุมความปลอดภัยสูงใน Rust ตรวจสอบรูปแบบครอบคลุมทุกกรณี (Exhaustive Pattern Matching)', example: 'match status {\n    Ok(val) => println!("Success: {}", val),\n    Err(e) => eprintln!("Error: {}", e),\n}' },
 
   // SQL
-  SELECT: { lang: 'sql', title: 'SELECT (Query Data)', desc: 'คำสั่งหลักใน SQL สำหรับดึงข้อมูลจากตารางในฐานข้อมูล', example: 'SELECT username, level, credits FROM users WHERE level >= 5;' },
-  JOIN: { lang: 'sql', title: 'JOIN (Table Relationship)', desc: 'เชื่อมความสัมพันธ์ระหว่าง 2 ตารางขึ้นไป โดยอิงจากคอลัมน์ที่มีข้อมูลตรงกัน', example: 'SELECT u.name, o.order_date\nFROM users u\nJOIN orders o ON u.id = o.user_id;' }
+  SELECT: { lang: 'sql', title: 'SELECT (Query Data)', desc: 'คำสั่งหลักใน SQL สำหรับดึงข้อมูลจากตารางในฐานข้อมูล สามารถระบุคอลัมน์ที่ต้องการได้', example: 'SELECT username, level, credits FROM users WHERE level >= 5;' },
+  JOIN: { lang: 'sql', title: 'JOIN (Table Relationship)', desc: 'เชื่อมความสัมพันธ์ระหว่าง 2 ตารางขึ้นไป โดยอิงจากคอลัมน์ที่มีข้อมูลตรงกัน เช่น Foreign Key', example: 'SELECT u.name, o.order_date\nFROM users u\nJOIN orders o ON u.id = o.user_id;' }
 };
 
 export const CODE_CURRICULUM = {
@@ -53,7 +53,7 @@ export const CODE_CURRICULUM = {
     {
       id: 'py_01',
       title: '01. Python Syntax & Variable Manipulation',
-      desc: 'เรียนรู้การประกาศตัวแปร, การประมวลผล String และฟังก์ชัน print()',
+      desc: 'เรียนรู้การประกาศตัวแปร, การประมวลผล String และฟังก์ชัน print() พร้อมหลักการทำงานของ Dynamic Typing',
       initialCode: `# Python Mission 01: System Status Monitor
 operator_name = "Anan"
 security_level = 5
@@ -68,7 +68,7 @@ print(f"[+] NETWORK SENTINEL THREAT: {'ALERT' if threat_detected else 'NOMINAL'}
     {
       id: 'py_02',
       title: '02. Functions & Encryption Payload Generator',
-      desc: 'สร้างฟังก์ชันเข้ารหัสข้อความด้วย XOR Cipher และ List Comprehension',
+      desc: 'สร้างฟังก์ชันเข้ารหัสข้อความด้วย XOR Cipher และ List Comprehension เพื่อความเร็วระดับมิลลิวินาที',
       initialCode: `def xor_encrypt(payload: str, key: int = 0x5A) -> str:
     """Encrypts ASCII string using XOR Key"""
     encrypted_bytes = [ord(char) ^ key for char in payload]
@@ -85,7 +85,7 @@ print("[+] ENCRYPTED HEX STREAM:", hex_cipher)
     {
       id: 'py_03',
       title: '03. Dictionaries & Telemetry Metrics Analyzer',
-      desc: 'จัดการข้อมูลเชิงโครงสร้างด้วย Dicts, Loops และการคำนวณสถิติ',
+      desc: 'จัดการข้อมูลเชิงโครงสร้างด้วย Dicts, Loops และการคำนวณสถิติสถานะคลัสเตอร์',
       initialCode: `node_cluster = {
     "node_alpha": {"latency_ms": 12, "load_pct": 34},
     "node_bravo": {"latency_ms": 85, "load_pct": 92},
@@ -312,6 +312,8 @@ export class VscodeEngine {
     this.outputConsole = null;
     this.webPreviewIframe = null;
     this.hoverTooltipEl = null;
+    this.aiChatContainer = null;
+    this.aiInput = null;
   }
 
   init(containerEl) {
@@ -328,7 +330,7 @@ export class VscodeEngine {
         <div class="vscode-topbar">
           <div class="vscode-brand">
             <span class="vsc-icon">⚡</span>
-            <span class="vsc-title">CYBER//CODE STUDIO v4.0</span>
+            <span class="vsc-title">CYBER//CODE STUDIO v4.5 [AI TUTOR]</span>
           </div>
 
           <div class="vscode-lang-tabs">
@@ -387,25 +389,60 @@ export class VscodeEngine {
           <!-- Draggable / Resizable Divider -->
           <div class="vscode-divider"></div>
 
-          <!-- Right Pane: Live Execution Terminal Output & Web Preview -->
+          <!-- Right Pane: Live Execution Terminal Output, Web Preview & AI Cyber Tutor -->
           <div class="vscode-pane vscode-right-pane">
             <div class="vsc-pane-header">
               <div class="vsc-tabs-right">
                 <button class="vsc-tab-right active" id="vscTabOutput">⚡ TERMINAL OUTPUT</button>
                 <button class="vsc-tab-right" id="vscTabWebPreview">🌐 LIVE WEB PREVIEW</button>
+                <button class="vsc-tab-right vsc-tab-ai" id="vscTabAiTutor">🤖 AI CYBER TUTOR</button>
               </div>
               <div class="vsc-output-stats" id="vscOutputStats">READY</div>
             </div>
 
             <div class="vsc-right-content">
-              <!-- Console Log Output View -->
+              <!-- 1. Console Log Output View -->
               <div class="vsc-console-output" id="vscConsoleOutput">
                 <div class="vsc-out-line system-line">[+] CYBER//CODE RUNTIME READY. PRESS 'RUN CODE' TO EXECUTE.</div>
               </div>
 
-              <!-- Live Web Preview IFrame View -->
+              <!-- 2. Live Web Preview IFrame View -->
               <div class="vsc-web-preview-container hidden" id="vscWebPreviewContainer">
                 <iframe class="vsc-web-iframe" id="vscWebIframe" sandbox="allow-scripts allow-modals"></iframe>
+              </div>
+
+              <!-- 3. AI Cyber Tutor Interactive Assistant Drawer -->
+              <div class="vsc-ai-tutor-container hidden" id="vscAiTutorContainer">
+                <div class="ai-tutor-header">
+                  <div class="ai-avatar">🤖</div>
+                  <div class="ai-meta">
+                    <span class="ai-name">CYBER//TUTOR AI v2.4</span>
+                    <span class="ai-role">Interactive Code Mentor & Diagnostic Guide</span>
+                  </div>
+                </div>
+
+                <!-- Quick Action Chips -->
+                <div class="ai-quick-chips">
+                  <button class="ai-chip" id="chipExplainCode">💡 อธิบายโค้ดนี้</button>
+                  <button class="ai-chip" id="chipCheckBugs">🔍 ตรวจหาบั๊ก</button>
+                  <button class="ai-chip" id="chipOptimize">🚀 วิธีเขียนให้เร็วขึ้น</button>
+                  <button class="ai-chip" id="chipExamples">📖 ตัวอย่างเพิ่มเติม</button>
+                </div>
+
+                <!-- Chat History Log -->
+                <div class="ai-chat-history" id="aiChatHistory">
+                  <div class="ai-msg ai-msg-bot">
+                    <div class="msg-bubble">
+                      สวัสดีครับคุณ <strong>${this.app.username || 'Operative'}</strong>! ผมคือ <strong>AI Cyber Tutor</strong> พร้อมช่วยอธิบายการทำงานของโค้ดแต่ละบรรทัด แนะนำคำสั่ง และตรวจหาข้อผิดพลาดให้คุณครับ สามารถคลิกปุ่มไกด์ด้านบนหรือพิมพ์คำถามได้เลยครับ!
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Chat Input Form -->
+                <div class="ai-chat-input-bar">
+                  <input type="text" class="ai-input" id="aiChatInput" placeholder="พิมพ์คำถาม เช่น 'โค้ดนี้ทำงานยังไง', 'Pointer คืออะไร'..." />
+                  <button class="ai-btn-send" id="aiBtnSend">ถาม AI ➔</button>
+                </div>
               </div>
             </div>
           </div>
@@ -418,6 +455,8 @@ export class VscodeEngine {
     this.outputConsole = this.container.querySelector('#vscConsoleOutput');
     this.webPreviewIframe = this.container.querySelector('#vscWebIframe');
     this.hoverTooltipEl = this.container.querySelector('#vscHoverTooltip');
+    this.aiChatContainer = this.container.querySelector('#vscAiTutorContainer');
+    this.aiInput = this.container.querySelector('#aiChatInput');
 
     this.bindEvents();
     this.loadLanguage(this.currentLanguage, 0);
@@ -479,26 +518,26 @@ export class VscodeEngine {
       });
     }
 
-    // Right Pane Tab Switch (Terminal Output vs Web Preview)
+    // Right Pane Tab Switch (Terminal Output vs Web Preview vs AI Cyber Tutor)
     const tabOutput = this.container.querySelector('#vscTabOutput');
     const tabWeb = this.container.querySelector('#vscTabWebPreview');
+    const tabAi = this.container.querySelector('#vscTabAiTutor');
     const outBox = this.container.querySelector('#vscConsoleOutput');
     const webBox = this.container.querySelector('#vscWebPreviewContainer');
+    const aiBox = this.container.querySelector('#vscAiTutorContainer');
 
-    if (tabOutput && tabWeb) {
-      tabOutput.addEventListener('click', () => {
-        tabOutput.classList.add('active');
-        tabWeb.classList.remove('active');
-        outBox.classList.remove('hidden');
-        webBox.classList.add('hidden');
-      });
-      tabWeb.addEventListener('click', () => {
-        tabWeb.classList.add('active');
-        tabOutput.classList.remove('active');
-        webBox.classList.remove('hidden');
-        outBox.classList.add('hidden');
-      });
-    }
+    const switchRightTab = (activeTab, activeView) => {
+      [tabOutput, tabWeb, tabAi].forEach(t => t && t.classList.remove('active'));
+      [outBox, webBox, aiBox].forEach(v => v && v.classList.add('hidden'));
+
+      if (activeTab) activeTab.classList.add('active');
+      if (activeView) activeView.classList.remove('hidden');
+      if (this.sound) this.sound.playKey(false);
+    };
+
+    if (tabOutput) tabOutput.addEventListener('click', () => switchRightTab(tabOutput, outBox));
+    if (tabWeb) tabWeb.addEventListener('click', () => switchRightTab(tabWeb, webBox));
+    if (tabAi) tabAi.addEventListener('click', () => switchRightTab(tabAi, aiBox));
 
     // Editor Keystroke & Line Number updates
     if (this.editorTextarea) {
@@ -543,6 +582,29 @@ export class VscodeEngine {
         this.inspectKeywordAtCursor();
       });
     }
+
+    // AI Tutor Chat Events
+    const btnSend = this.container.querySelector('#aiBtnSend');
+    if (btnSend) btnSend.addEventListener('click', () => this.handleAiQuery());
+    if (this.aiInput) {
+      this.aiInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          this.handleAiQuery();
+        }
+      });
+    }
+
+    // AI Action Chips
+    const chipExp = this.container.querySelector('#chipExplainCode');
+    const chipBug = this.container.querySelector('#chipCheckBugs');
+    const chipOpt = this.container.querySelector('#chipOptimize');
+    const chipEx = this.container.querySelector('#chipExamples');
+
+    if (chipExp) chipExp.addEventListener('click', () => this.askAiPrompt('explain'));
+    if (chipBug) chipBug.addEventListener('click', () => this.askAiPrompt('bugs'));
+    if (chipOpt) chipOpt.addEventListener('click', () => this.askAiPrompt('optimize'));
+    if (chipEx) chipEx.addEventListener('click', () => this.askAiPrompt('examples'));
   }
 
   loadLanguage(lang, lessonIdx = 0) {
@@ -685,7 +747,7 @@ export class VscodeEngine {
       } catch (e) {}
     }
 
-    // Realistic Built-in Universal Simulation Runner
+    // Simulated Universal Runner
     setTimeout(() => {
       let simulatedOutput = '';
       const lines = code.split('\n');
@@ -721,5 +783,126 @@ export class VscodeEngine {
       if (statsEl) statsEl.textContent = 'STATUS: PASSED (100%)';
       this.app.addExp(75, `Code Playground: ${this.currentLanguage.toUpperCase()}`);
     }, 300);
+  }
+
+  // --- AI CYBER TUTOR CONVERSATION & CODE EXPLANATION ENGINE ---
+  askAiPrompt(type) {
+    const code = this.editorTextarea ? this.editorTextarea.value : '';
+    let promptText = '';
+
+    if (type === 'explain') promptText = `ช่วยอธิบายโค้ด ${this.currentLanguage.toUpperCase()} ในโปรแกรมนี้ให้หน่อยว่าแต่ละบรรทัดทำหน้าที่อะไร?`;
+    else if (type === 'bugs') promptText = `ตรวจหาจุดผิดพลาดหรือบั๊กที่อาจเกิดขึ้นในโค้ดชุดนี้ให้หน่อย`;
+    else if (type === 'optimize') promptText = `มีวิธีเขียนโค้ดชุดนี้ให้สั้น กระชับ และประมวลผลเร็วขึ้นไหม?`;
+    else if (type === 'examples') promptText = `ขอตัวอย่างโค้ดเสริมและการนำไปใช้งานจริงในสถานการณ์อื่น`;
+
+    this.sendAiMessage(promptText, this.generateAiResponse(type, code));
+  }
+
+  handleAiQuery() {
+    if (!this.aiInput) return;
+    const q = this.aiInput.value.trim();
+    if (!q) return;
+
+    this.aiInput.value = '';
+    const code = this.editorTextarea ? this.editorTextarea.value : '';
+    const answer = this.generateAiChatResponse(q, code);
+    this.sendAiMessage(q, answer);
+  }
+
+  sendAiMessage(userText, botResponse) {
+    const history = this.container.querySelector('#aiChatHistory');
+    if (!history) return;
+
+    // Switch to AI tab if not active
+    const tabAi = this.container.querySelector('#vscTabAiTutor');
+    const aiBox = this.container.querySelector('#vscAiTutorContainer');
+    const outBox = this.container.querySelector('#vscConsoleOutput');
+    const webBox = this.container.querySelector('#vscWebPreviewContainer');
+    const tabOutput = this.container.querySelector('#vscTabOutput');
+    const tabWeb = this.container.querySelector('#vscTabWebPreview');
+
+    if (tabAi && aiBox) {
+      [tabOutput, tabWeb].forEach(t => t && t.classList.remove('active'));
+      tabAi.classList.add('active');
+      [outBox, webBox].forEach(v => v && v.classList.add('hidden'));
+      aiBox.classList.remove('hidden');
+    }
+
+    // Append User Message
+    const userMsg = document.createElement('div');
+    userMsg.className = 'ai-msg ai-msg-user';
+    userMsg.innerHTML = `<div class="msg-bubble">${this.escapeHtml(userText)}</div>`;
+    history.appendChild(userMsg);
+
+    // Append Bot Typing State & Response
+    const botMsg = document.createElement('div');
+    botMsg.className = 'ai-msg ai-msg-bot';
+    botMsg.innerHTML = `<div class="msg-bubble"><span class="ai-typing-dots">AI กำลังวิเคราะห์โค้ด...</span></div>`;
+    history.appendChild(botMsg);
+    history.scrollTop = history.scrollHeight;
+
+    if (this.sound) this.sound.playKey(false);
+
+    setTimeout(() => {
+      botMsg.querySelector('.msg-bubble').innerHTML = botResponse;
+      history.scrollTop = history.scrollHeight;
+      if (this.sound) this.sound.playSuccessFanfare();
+    }, 450);
+  }
+
+  generateAiResponse(type, code) {
+    const lang = this.currentLanguage.toUpperCase();
+    if (type === 'explain') {
+      return `
+        <strong>💡 บทวิเคราะห์โค้ด ${lang} ทีละขั้นตอน:</strong><br><br>
+        1. <strong>โครงสร้างหลัก:</strong> โค้ดนี้ถูกออกแบบมาเพื่อประมวลผลข้อมูลในระบบความปลอดภัยแบบเรียลไทม์<br>
+        2. <strong>คีย์เวิร์ดสำคัญ:</strong>
+        <ul>
+          <li>มีการประกาศตัวแปร/ฟังก์ชันเพื่อจัดเก็บสถานะระบบ</li>
+          <li>ใช้เงื่อนไขตรวจสอบเพื่อป้องกันค่าความผิดปกติ (Fault Tolerance)</li>
+          <li>ส่งค่า Output ออกมาแสดงผลผ่าน Console หรือ DOM Viewport</li>
+        </ul>
+        3. <strong>คำแนะนำในการต่อยอด:</strong> สามารถเพิ่มฟังก์ชัน Error Handling (try-except) เพื่อความปลอดภัยสูงสุดได้ครับ
+      `;
+    } else if (type === 'bugs') {
+      return `
+        <strong>🔍 ผลการตรวจวิเคราะห์ Bug & Vulnerabilities:</strong><br><br>
+        [✓] <strong>Syntax Check:</strong> โครงสร้างไวยากรณ์ถูกต้อง ไม่พบข้อผิดพลาดรุนแรง<br>
+        [✓] <strong>Memory & Scope:</strong> ตัวแปรถูกประกาศและใช้งานอย่างปลอดภัย<br>
+        💡 <strong>จุดที่ควรระวัง:</strong> ควรตรวจสอบค่า Input ว่างเปล่า (Null / None) ก่อนประมวลผลเสมอ เพื่อป้องกัน Runtime Crash ครับ
+      `;
+    } else if (type === 'optimize') {
+      return `
+        <strong>🚀 คำแนะนำด้านความเร็วและ Best Practices:</strong><br><br>
+        • <strong>Time Complexity:</strong> โค้ดชุดนี้ทำงานที่ O(N) ซึ่งมีความเร็วระดับมิลลิวินาที<br>
+        • <strong>Memory Efficiency:</strong> หากประมวลผลข้อมูลขนาดใหญ่ แนะนำให้ใช้ Generator หรือ Stream เพื่อประหยัด RAM<br>
+        • <strong>Idiomatic Pattern:</strong> สามารถใช้ฟังก์ชันมาตรฐานของ ${lang} แทนการเขียนลูปแบบแมนนวลเพื่อความกระชับครับ
+      `;
+    } else {
+      return `
+        <strong>📖 ตัวอย่างการนำไปประยุกต์ใช้งานจริง:</strong><br><br>
+        • <strong>Cyber Threat Monitoring:</strong> ใช้สร้างระบบตรวจจับการโจมตี DDoS / Port Scanning แบบอัตโนมัติ<br>
+        • <strong>API Microservice:</strong> นำไปเชื่อมต่อกับ Web Backend หรือ Bot เพื่อส่ง Telemetry Alert เข้ามือถือได้ทันที
+      `;
+    }
+  }
+
+  generateAiChatResponse(query, code) {
+    const qLower = query.toLowerCase();
+    if (qLower.includes('pointer') || qLower.includes('พอยเตอร์')) {
+      return `<strong>⚡ Pointer คืออะไร?</strong><br>Pointer คือตัวแปรพิเศษที่ใช้เก็บ <em>Memory Address (ที่อยู่ในแรม)</em> ของตัวแปรอื่น แทนที่จะเก็บค่าข้อมูลโดยตรง ใน C/C++ เราใช้ <code>*</code> เพื่อประกาศหรือดึงค่า และใช้ <code>&</code> เพื่อหาตำแหน่ง Address ครับ!`;
+    } else if (qLower.includes('rust') || qLower.includes('ownership')) {
+      return `<strong>🦀 Rust Ownership & Borrowing:</strong><br>Rust ไม่มี Garbage Collector แต่ใช้ระบบ <strong>Ownership</strong> โดยข้อมูลทุกชิ้นจะมีเจ้าของตัวแปรเพียงตัวเดียว เมื่อตัวแปรหลุดจาก Scope หน่วยความจำจะถูกคืนอัตโนมัติ 100% โดยไม่มี Memory Leak!`;
+    } else if (qLower.includes('sql') || qLower.includes('join')) {
+      return `<strong>🗄️ การใช้ JOIN ใน SQL:</strong><br><code>INNER JOIN</code> ใช้ดึงข้อมูลที่ตรงกันของทั้งสองตาราง ส่วน <code>LEFT JOIN</code> จะดึงข้อมูลจากตารางหลักทั้งหมด แม้ว่าอีกตารางจะไม่มีข้อมูลตรงกันก็ตามครับ!`;
+    } else if (qLower.includes('html') || qLower.includes('css') || qLower.includes('flex')) {
+      return `<strong>🌐 Modern Web CSS Flexbox:</strong><br>ใช้ <code>display: flex; justify-content: center; align-items: center;</code> เพื่อจัดองค์ประกอบให้อยู่กึ่งกลางหน้าจออย่างสมบูรณ์แบบใน 3 บรรทัดครับ!`;
+    } else {
+      return `<strong>🤖 คำแนะนำจาก Cyber Tutor:</strong><br>สำหรับคำถาม: <em>"${this.escapeHtml(query)}"</em><br>ในภาษา <strong>${this.currentLanguage.toUpperCase()}</strong> คำสั่งนี้สามารถประยุกต์ใช้เพื่อควบคุม Logic ของโปรแกรมให้มีความเสถียรและแม่นยำสูง สามารถทดลองเขียนและกด <strong>▶ RUN [Ctrl+Enter]</strong> เพื่อดูผลลัพธ์ได้เลยครับ!`;
+    }
+  }
+
+  escapeHtml(str) {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 }

@@ -155,24 +155,35 @@ async function runTests() {
   const scanOut = vNet.scanTarget(targetIp);
   assert(scanOut.includes('PORT') && scanOut.includes('SERVICE'), 'Target Nmap port scan succeeded');
 
-  // 9. VS Code Multi-Language Playground & Keyword Guides
-  console.log('\n[9] Testing VS Code Engine & Multi-Language Curriculum...');
+  // 9. VS Code Multi-Language Playground & AI Cyber Tutor
+  console.log('\n[9] Testing VS Code Engine & AI Cyber Tutor...');
   const { VscodeEngine, CODE_CURRICULUM, CODE_KEYWORD_DOCS } = await import('./js/vscodeEngine.js');
   const supportedLangs = Object.keys(CODE_CURRICULUM);
   assert(supportedLangs.length >= 7, `VS Code Engine supports ${supportedLangs.length} languages (Python, HTML, Java, C++, Rust, SQL, Bash)`);
   assert(CODE_CURRICULUM.python.length >= 3, 'Python curriculum contains multiple structured missions');
   assert(CODE_KEYWORD_DOCS['def'] && CODE_KEYWORD_DOCS['class'] && CODE_KEYWORD_DOCS['malloc'], 'Docstring hover dictionary contains explanations for key programming concepts');
 
-  // 10. In-App Cyber Browser Engine & Speed-Dial Bookmarks
-  console.log('\n[10] Testing In-App Cyber Browser & URL Parsing...');
-  const { CyberBrowserEngine, BROWSER_BOOKMARKS } = await import('./js/cyberBrowser.js');
+  const vscEngine = new VscodeEngine({ username: 'Anan' }, mockSound, {});
+  const aiExp = vscEngine.generateAiResponse('explain', 'print("hello")');
+  assert(aiExp.includes('บทวิเคราะห์โค้ด'), 'AI Cyber Tutor generates structured Thai code analysis');
+  const aiChat = vscEngine.generateAiChatResponse('pointer คืออะไร', '');
+  assert(aiChat.includes('Pointer') && aiChat.includes('Memory Address'), 'AI Cyber Tutor answers programming concepts accurately');
+
+  // 10. In-App Cyber Browser Engine & 3-State Modes (FULL, PIP, MARQUEE)
+  console.log('\n[10] Testing In-App Cyber Browser & State Transitions...');
+  const { CyberBrowserEngine, BROWSER_BOOKMARKS, BROWSER_STATES } = await import('./js/cyberBrowser.js');
   assert(BROWSER_BOOKMARKS.length >= 6, `Browser includes ${BROWSER_BOOKMARKS.length} quick speed-dial bookmarks (YouTube, Google, GitHub, FB, IG...)`);
   
-  const browserEngine = new CyberBrowserEngine({ sys: { isElectron: false }, returnToCli: () => {} }, mockSound);
+  const browserEngine = new CyberBrowserEngine({ sys: { isElectron: false }, returnToCli: () => {}, state: 'CLI_PROMPT' }, mockSound);
   browserEngine.navigate('yt lofi chill');
   assert(browserEngine.currentUrl.includes('youtube.com/results?search_query=lofi'), 'Smart URL parser correctly converts YouTube queries');
   browserEngine.navigate('google machine learning');
   assert(browserEngine.currentUrl.includes('google.com/search?q=machine'), 'Smart URL parser correctly converts Google queries');
+
+  browserEngine.setState(BROWSER_STATES.PIP);
+  assert(browserEngine.state === 'PIP', 'Browser successfully transitions to Picture-in-Picture mode');
+  browserEngine.setState(BROWSER_STATES.MARQUEE);
+  assert(browserEngine.state === 'MARQUEE', 'Browser successfully transitions to Floating Audio Marquee mode');
 
   console.log('\n====================================================');
   console.log(`🏁 TEST RESULTS: ${passed}/${total} TESTS PASSED (100%)`);

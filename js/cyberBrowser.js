@@ -1,7 +1,10 @@
 /**
- * CYBER//TYPE IN-APP CYBER BROWSER ENGINE
+ * CYBER//TYPE IN-APP CYBER BROWSER ENGINE (PERSISTENT & BACKGROUND MEDIA READY)
  * Embedded Chromium Webview & Sandbox Browser for in-application web surfing (YouTube, Google, FB, IG, GitHub).
- * Includes Address Bar, Cyber Bookmarks, Navigation Controls & Picture-in-Picture (PIP) Floating Mode.
+ * Supports 3 Display Modes:
+ *   1. FULL: Full workspace browser.
+ *   2. PIP: Floating Picture-in-Picture window (440x275px) that persists across all game modes.
+ *   3. MARQUEE: Floating compact audio ticker pill (280x44px) with animated Equalizer waves for background music.
  */
 
 export const BROWSER_BOOKMARKS = [
@@ -15,6 +18,13 @@ export const BROWSER_BOOKMARKS = [
   { id: 'wiki', name: 'Wikipedia', icon: '📖', url: 'https://www.wikipedia.org', color: '#a0a0a0' }
 ];
 
+export const BROWSER_STATES = {
+  CLOSED: 'CLOSED',
+  FULL: 'FULL',
+  PIP: 'PIP',
+  MARQUEE: 'MARQUEE'
+};
+
 export class CyberBrowserEngine {
   constructor(app, soundEngine) {
     this.app = app;
@@ -22,17 +32,24 @@ export class CyberBrowserEngine {
 
     this.container = null;
     this.currentUrl = 'https://www.google.com';
-    this.history = [];
-    this.historyIndex = -1;
-    this.isPipMode = false;
+    this.state = BROWSER_STATES.CLOSED;
 
     this.webviewEl = null;
     this.urlInput = null;
     this.statusIndicator = null;
+    this.marqueeTitle = null;
   }
 
   init(containerEl) {
-    this.container = containerEl;
+    // Mount to top-level #cyberBrowserHost on body so it stays persistent across all view switches
+    let host = document.getElementById('cyberBrowserHost');
+    if (!host) {
+      host = document.createElement('div');
+      host.id = 'cyberBrowserHost';
+      host.className = 'cyber-browser-host hidden';
+      document.body.appendChild(host);
+    }
+    this.container = host;
     this.renderLayout();
   }
 
@@ -50,9 +67,9 @@ export class CyberBrowserEngine {
     });
 
     this.container.innerHTML = `
-      <div class="cyber-browser-window" id="cyberBrowserWindow">
-        <!-- Top Browser Navigation Bar -->
-        <div class="browser-chrome-bar">
+      <div class="cyber-browser-window state-full" id="cyberBrowserWindow">
+        <!-- 1. Top Browser Navigation Bar (Full & PIP Modes) -->
+        <div class="browser-chrome-bar" id="browserChromeBar">
           <div class="browser-nav-btns">
             <button class="b-btn" id="bBtnBack" title="Back">◀</button>
             <button class="b-btn" id="bBtnForward" title="Forward">▶</button>
@@ -67,35 +84,57 @@ export class CyberBrowserEngine {
             <button class="b-btn-go" id="bBtnGo">GO ➔</button>
           </div>
 
-          <!-- Window & Mode Controls -->
+          <!-- Window Mode Controls -->
           <div class="browser-window-controls">
+            <button class="b-btn b-btn-marquee" id="bBtnMarquee" title="Minimize to Audio Marquee Bar">➖ BAR</button>
             <button class="b-btn b-btn-pip" id="bBtnPip" title="Picture-in-Picture Floating Mode">🗗 PIP</button>
+            <button class="b-btn b-btn-full" id="bBtnFull" title="Expand Fullscreen">🗖 FULL</button>
             <button class="b-btn b-btn-close" id="bBtnClose" title="Close Browser [ESC]">✖</button>
           </div>
         </div>
 
-        <!-- Cyber Speed-Dial Bookmarks Bar -->
-        <div class="browser-bookmarks-bar">
+        <!-- 2. Cyber Speed-Dial Bookmarks Bar (Full Mode) -->
+        <div class="browser-bookmarks-bar" id="browserBookmarksBar">
           <span class="bm-label">⚡ SPEED-DIAL:</span>
           ${bookmarkPillsHtml}
         </div>
 
-        <!-- Main Web Content Viewport -->
+        <!-- 3. Main Web Content Viewport (Persistent Chromium Frame) -->
         <div class="browser-viewport" id="browserViewport">
           <div class="browser-loading-bar hidden" id="browserLoadingBar"></div>
-          <!-- Webview / Iframe inserted dynamically -->
+          <!-- Webview / Iframe stays permanently mounted here -->
         </div>
 
-        <!-- Bottom Browser Status Bar -->
-        <div class="browser-status-bar">
+        <!-- 4. Bottom Browser Status Bar (Full Mode) -->
+        <div class="browser-status-bar" id="browserStatusBar">
           <span class="b-status-txt" id="bStatusTxt">READY // SECURE CHROMIUM SSL ENCRYPTED</span>
           <span class="b-security-badge">DEFCON-1 CYBER BROWSER</span>
+        </div>
+
+        <!-- 5. Compact Floating Audio Marquee Ticker (Marquee Mode) -->
+        <div class="browser-marquee-ticker" id="browserMarqueeTicker">
+          <div class="marquee-audio-wave">
+            <span class="eq-bar bar-1"></span>
+            <span class="eq-bar bar-2"></span>
+            <span class="eq-bar bar-3"></span>
+            <span class="eq-bar bar-4"></span>
+          </div>
+          <div class="marquee-info">
+            <span class="marquee-tag">NOW STREAMING:</span>
+            <span class="marquee-title" id="marqueeMediaTitle">YouTube / CyberDeck Media</span>
+          </div>
+          <div class="marquee-actions">
+            <button class="m-btn" id="mBtnPip" title="Expand to Floating PIP Window">🗗 PIP</button>
+            <button class="m-btn" id="mBtnFull" title="Expand to Fullscreen Browser">🗖 FULL</button>
+            <button class="m-btn m-btn-close" id="mBtnClose" title="Close Media Player">✖</button>
+          </div>
         </div>
       </div>
     `;
 
     this.urlInput = this.container.querySelector('#browserAddressInput');
     this.statusIndicator = this.container.querySelector('#bStatusTxt');
+    this.marqueeTitle = this.container.querySelector('#marqueeMediaTitle');
 
     this.bindEvents();
     this.createWebView(this.currentUrl);
@@ -132,6 +171,16 @@ export class CyberBrowserEngine {
         this.currentUrl = webview.getURL() || url;
         if (this.urlInput) this.urlInput.value = this.currentUrl;
         if (this.statusIndicator) this.statusIndicator.textContent = `ONLINE: ${this.currentUrl}`;
+        if (this.marqueeTitle) {
+          const title = webview.getTitle ? webview.getTitle() : this.currentUrl;
+          this.marqueeTitle.textContent = title || this.currentUrl;
+        }
+      });
+
+      webview.addEventListener('page-title-updated', (e) => {
+        if (this.marqueeTitle && e.title) {
+          this.marqueeTitle.textContent = e.title;
+        }
       });
 
       viewport.appendChild(webview);
@@ -148,6 +197,7 @@ export class CyberBrowserEngine {
         const bar = this.container.querySelector('#browserLoadingBar');
         if (bar) bar.classList.add('hidden');
         if (this.statusIndicator) this.statusIndicator.textContent = `CONNECTED: ${url}`;
+        if (this.marqueeTitle) this.marqueeTitle.textContent = url;
       };
 
       viewport.appendChild(iframe);
@@ -156,14 +206,19 @@ export class CyberBrowserEngine {
   }
 
   bindEvents() {
-    // Navigation Buttons
     const btnBack = this.container.querySelector('#bBtnBack');
     const btnFwd = this.container.querySelector('#bBtnForward');
     const btnReload = this.container.querySelector('#bBtnReload');
     const btnHome = this.container.querySelector('#bBtnHome');
     const btnGo = this.container.querySelector('#bBtnGo');
+    const btnMarquee = this.container.querySelector('#bBtnMarquee');
     const btnPip = this.container.querySelector('#bBtnPip');
+    const btnFull = this.container.querySelector('#bBtnFull');
     const btnClose = this.container.querySelector('#bBtnClose');
+
+    const mBtnPip = this.container.querySelector('#mBtnPip');
+    const mBtnFull = this.container.querySelector('#mBtnFull');
+    const mBtnClose = this.container.querySelector('#mBtnClose');
 
     if (btnBack) {
       btnBack.addEventListener('click', () => {
@@ -213,17 +268,15 @@ export class CyberBrowserEngine {
       });
     }
 
-    if (btnPip) {
-      btnPip.addEventListener('click', () => {
-        this.togglePipMode();
-      });
-    }
+    // State Transitions
+    if (btnMarquee) btnMarquee.addEventListener('click', () => this.setState(BROWSER_STATES.MARQUEE));
+    if (btnPip) btnPip.addEventListener('click', () => this.setState(BROWSER_STATES.PIP));
+    if (btnFull) btnFull.addEventListener('click', () => this.setState(BROWSER_STATES.FULL));
+    if (btnClose) btnClose.addEventListener('click', () => this.closeBrowser());
 
-    if (btnClose) {
-      btnClose.addEventListener('click', () => {
-        this.closeBrowser();
-      });
-    }
+    if (mBtnPip) mBtnPip.addEventListener('click', () => this.setState(BROWSER_STATES.PIP));
+    if (mBtnFull) mBtnFull.addEventListener('click', () => this.setState(BROWSER_STATES.FULL));
+    if (mBtnClose) mBtnClose.addEventListener('click', () => this.closeBrowser());
 
     // Bookmark pills click
     const pills = this.container.querySelectorAll('.cyber-bm-pill');
@@ -257,6 +310,7 @@ export class CyberBrowserEngine {
 
     this.currentUrl = target;
     if (this.urlInput) this.urlInput.value = target;
+    if (this.marqueeTitle) this.marqueeTitle.textContent = target;
 
     if (this.webviewEl) {
       this.webviewEl.src = target;
@@ -267,32 +321,49 @@ export class CyberBrowserEngine {
     if (this.sound) this.sound.playSuccessFanfare();
   }
 
-  togglePipMode() {
+  setState(newState) {
+    this.state = newState;
+    if (!this.container) return;
+
     const win = this.container.querySelector('#cyberBrowserWindow');
     if (!win) return;
 
-    this.isPipMode = !this.isPipMode;
-    if (this.isPipMode) {
-      win.classList.add('pip-floating-mode');
-    } else {
-      win.classList.remove('pip-floating-mode');
-    }
+    this.container.classList.remove('hidden');
+    win.classList.remove('state-full', 'state-pip', 'state-marquee');
 
-    if (this.sound) this.sound.playKey(false);
+    if (newState === BROWSER_STATES.FULL) {
+      win.classList.add('state-full');
+      if (this.sound) this.sound.playSuccessFanfare();
+    } else if (newState === BROWSER_STATES.PIP) {
+      win.classList.add('state-pip');
+      if (this.sound) this.sound.playKey(false);
+      // Return keyboard focus to background game/cli
+      if (this.app.state === 'CLI_PROMPT') {
+        this.app.focusCliInput();
+      }
+    } else if (newState === BROWSER_STATES.MARQUEE) {
+      win.classList.add('state-marquee');
+      if (this.sound) this.sound.playKey(false);
+      if (this.app.state === 'CLI_PROMPT') {
+        this.app.focusCliInput();
+      }
+    } else if (newState === BROWSER_STATES.CLOSED) {
+      this.container.classList.add('hidden');
+    }
   }
 
-  openBrowser(initialUrl = 'https://www.google.com') {
+  openBrowser(initialUrl = 'https://www.google.com', targetState = BROWSER_STATES.FULL) {
     if (!this.container) return;
-    this.container.classList.remove('hidden');
-    this.navigate(initialUrl);
+    this.setState(targetState);
+    if (initialUrl && initialUrl !== this.currentUrl) {
+      this.navigate(initialUrl);
+    }
   }
 
   closeBrowser() {
-    if (!this.container) return;
-    this.container.classList.add('hidden');
-    this.isPipMode = false;
-    const win = this.container.querySelector('#cyberBrowserWindow');
-    if (win) win.classList.remove('pip-floating-mode');
-    this.app.returnToCli();
+    this.setState(BROWSER_STATES.CLOSED);
+    if (this.app.state === 'MODE_BROWSER') {
+      this.app.returnToCli();
+    }
   }
 }
