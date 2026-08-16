@@ -21,6 +21,7 @@ import { CyberThreatGlobeEngine } from './threatGlobe.js';
 import { DUCKY_PAYLOAD_TEMPLATES } from './duckyCompiler.js';
 import { generateEntranceLogs, generateExitLogs, generateLoginLogs } from './cyberLogGenerator.js';
 import { generateRealisticBootLogs } from './bootLogGenerator.js';
+import { VirtualNetwork } from './virtualNetwork.js';
 import { RogueliteEngine } from './rogueliteEngine.js';
 import { ToastManager } from './toastManager.js';
 import { ParticleEffectEngine } from './particleEffect.js';
@@ -106,17 +107,22 @@ class WindowsTerminalApp {
     }
     
     this.cacheDOM();
-    await profileStore.initStore();
-    this.profile = profileStore.getProfile('Anan');
-    this.initEngines();
-    await this.sys.init();
-    this.registerServiceWorker();
-    this.bindEvents();
-    this.syncProfileToHud();
-    this.applyUserSettings('Anan');
-    
-    // Start unskippable cinematic boot sequence
+
+    // Start unskippable cinematic 20s boot sequence immediately
     this.playBootSequence();
+
+    try {
+      await profileStore.initStore();
+      this.profile = profileStore.getProfile('Anan');
+      this.initEngines();
+      await this.sys.init();
+      this.registerServiceWorker();
+      this.bindEvents();
+      this.syncProfileToHud();
+      this.applyUserSettings('Anan');
+    } catch (err) {
+      console.error('[!] Subsystem initialization error:', err);
+    }
   }
 
   cacheDOM() {
@@ -332,7 +338,7 @@ class WindowsTerminalApp {
 
   initEngines() {
     this.matrix = new MatrixVisualEngine('matrixCanvas', 'particleCanvas');
-    this.virtualNet = new window.VirtualNetwork(this);
+    this.virtualNet = new VirtualNetwork(this);
 
     this.kb = new KeyboardVisualizer(this.dom.cyberKeyboard);
     this.kb.setLayout(this.currentLayout);
