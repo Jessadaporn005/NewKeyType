@@ -63,10 +63,20 @@
     <!-- Full-Width Procedural Terminal Log Stream -->
     <div class="boot-logs-wrapper">
       <div class="boot-logs-header">
-        <span>[ SYSTEM TELEMETRY LOG STREAM ]</span>
-        <span class="log-baud">RATE: 1000 Hz // BUFFER: 100%</span>
+        <span>[ QUANTUM BOOTSTRAP & KERNEL TELEMETRY LOG STREAM ]</span>
+        <span class="log-baud" id="bootBaudRate">RATE: 1000 Hz // HIGH-BANDWIDTH</span>
       </div>
       <div id="bootScreenLogs" class="boot-logs"></div>
+      <div class="boot-progress-container">
+        <div class="boot-progress-bar">
+          <div class="boot-progress-fill" id="bootProgressFill"></div>
+        </div>
+        <div class="boot-progress-stats">
+          <span id="bootProgressPct">0%</span>
+          <span id="bootProgressTime">0.0s / 20.0s</span>
+          <span id="bootProgressStage">STAGE: [ UEFI_HARDWARE_POST ]</span>
+        </div>
+      </div>
     </div>
   </div>
 

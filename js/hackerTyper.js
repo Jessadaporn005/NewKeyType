@@ -214,8 +214,23 @@ export class HackerTyperEngine {
 
   handleKeyDown(event) {
     if (this.isBreachOpen) {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        this.hideBreach();
+        const nextMission = Math.min(HACKER_MISSIONS.length, this.currentMissionIndex + 2);
+        this.reset(nextMission, this.traceSpeedMultiplier);
+        return;
+      }
       this.hideBreach();
       return;
+    }
+
+    if (this.tracePercent >= 100) {
+      if (event.key === 'Enter' || event.key === ' ' || event.key === 'r' || event.key === 'R') {
+        event.preventDefault();
+        this.reset(this.currentMissionIndex + 1, this.traceSpeedMultiplier);
+        return;
+      }
     }
 
     if (this.isInjecting) return;

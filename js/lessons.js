@@ -45,6 +45,18 @@ export const LESSONS_DATA = {
       title: 'Python Neural Scripting',
       desc: 'High speed indentation, lists, dicts, and lambda expressions',
       text: 'def decrypt_payload(buffer: bytes, key: str) -> dict: return { "status": "200 OK", "data": [x ^ 0xFF for x in buffer] }'
+    },
+    {
+      id: 'en_cpp_memory_8',
+      title: 'C++ Pointers, RAII & Memory Management',
+      desc: 'High performance systems programming with smart pointers and dereferencing',
+      text: 'std::unique_ptr<SocketBuffer> sock = std::make_unique<SocketBuffer>(8080); sock->bind_interface("eth0"); sock->flush_packet();'
+    },
+    {
+      id: 'en_rust_concurrency_9',
+      title: 'Rust Lifetimes & Async Concurrency',
+      desc: 'Memory-safe channels, async tokio workers, and pattern matching',
+      text: 'let (tx, mut rx) = mpsc::channel(64); tokio::spawn(async move { tx.send(packet).await.expect("Failed to send payload"); });'
     }
   ],
   th: [
@@ -77,6 +89,12 @@ export const LESSONS_DATA = {
       title: 'แป้นเปลี่ยนตัวอักษร Shift ภาษาไทย (ฤฆฏโ ฌษศซ)',
       desc: 'ฝึกกด Shift เพื่อพิมพ์ตัวอักษรพิเศษและวรรณยุกต์ซ้อน',
       text: 'ฤๅ ฆ้อง ฏีกา โฆษณา ฌาน ฤษี ศาลา ซ่อนเร้น ฎีกา ฐานข้อมูล วิเคราะห์ วิจัย ปฏิบัติการ'
+    },
+    {
+      id: 'th_tech_command_6',
+      title: 'คำสั่งเทคโนโลยีและการสื่อสารเครือข่าย',
+      desc: 'คำศัพท์เฉพาะด้านคอมพิวเตอร์และสถาปัตยกรรมระบบ',
+      text: 'วิศวกรรมซอฟต์แวร์ การเชื่อมต่อเครือข่ายไร้สาย ไฟร์วอลล์ป้องกันมัลแวร์ การจัดการหน่วยความจำควอนตัม'
     }
   ]
 };

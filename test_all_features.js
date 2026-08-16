@@ -139,6 +139,22 @@ async function runTests() {
   cc.filterPaletteCommands('roguelite');
   assert(cc.filteredCommands.length >= 1 && cc.filteredCommands[0].id === 'roguelite', 'Search filtering for "roguelite" matches correctly');
 
+  // 7. Realistic 20s Boot Logs Generator
+  console.log('\n[7] Testing Realistic 20s Boot Log Generator...');
+  const { generateRealisticBootLogs } = await import('./js/bootLogGenerator.js');
+  const bootLogs = generateRealisticBootLogs();
+  assert(bootLogs.length >= 300, `Generated ${bootLogs.length} authentic system boot logs (Target: >=300)`);
+  assert(bootLogs[0].mod === 'BIOS_POST' && bootLogs[bootLogs.length - 1].mod === 'SYSTEM_BOOT', 'Boot log timeline spans from BIOS_POST to SYSTEM_BOOT');
+
+  // 8. Virtual Network Sync
+  console.log('\n[8] Testing Virtual Network Sync...');
+  const { VirtualNetwork } = await import('./js/virtualNetwork.js');
+  const vNet = new VirtualNetwork({ username: 'Anan', syncProfileToHud: () => {}, audio: mockSound });
+  assert(vNet.targets.length === 5, 'Virtual Network generated 5 active targets');
+  const targetIp = vNet.targets[0].ip;
+  const scanOut = vNet.scanTarget(targetIp);
+  assert(scanOut.includes('PORT') && scanOut.includes('SERVICE'), 'Target Nmap port scan succeeded');
+
   console.log('\n====================================================');
   console.log(`🏁 TEST RESULTS: ${passed}/${total} TESTS PASSED (100%)`);
   console.log('====================================================');

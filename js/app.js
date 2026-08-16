@@ -20,6 +20,7 @@ import { BreachProtocolEngine } from './breachProtocol.js';
 import { CyberThreatGlobeEngine } from './threatGlobe.js';
 import { DUCKY_PAYLOAD_TEMPLATES } from './duckyCompiler.js';
 import { generateEntranceLogs, generateExitLogs, generateLoginLogs } from './cyberLogGenerator.js';
+import { generateRealisticBootLogs } from './bootLogGenerator.js';
 import { RogueliteEngine } from './rogueliteEngine.js';
 import { ToastManager } from './toastManager.js';
 import { ParticleEffectEngine } from './particleEffect.js';
@@ -125,6 +126,10 @@ class WindowsTerminalApp {
       bootScreenLogs: document.getElementById('bootScreenLogs'),
       bootScreenLogo: document.getElementById('bootScreenLogo'),
       bootScreenReady: document.getElementById('bootScreenReady'),
+      bootProgressFill: document.getElementById('bootProgressFill'),
+      bootProgressPct: document.getElementById('bootProgressPct'),
+      bootProgressTime: document.getElementById('bootProgressTime'),
+      bootProgressStage: document.getElementById('bootProgressStage'),
 
       // Stage 0 Secret Gate
       secretGateOverlay: document.getElementById('secretGateOverlay'),
@@ -491,61 +496,14 @@ class WindowsTerminalApp {
   }
 
   playBootSequence() {
-    // Structured procedural logs that span from edge to edge
-    const rawLogs = [
-      { time: '0.0012', mod: 'SYSTEM_BIOS', desc: 'Quantum Synaptic BIOS v8.00.15 (c) 2026 CYBERDECK', status: 'ONLINE', cls: 'status-ok' },
-      { time: '0.0084', mod: 'CPU_CORE', desc: '128-Core Quantum Synaptic Cluster @ 5.40 GHz [OVERCLOCKED]', status: 'INITIALIZED', cls: 'status-ok' },
-      { time: '0.0152', mod: 'MEM_BANK', desc: '1,048,576 MB High-Bandwidth Cryptographic RAM', status: 'PASSED', cls: 'status-ok' },
-      { time: '0.0240', mod: 'VIRT_KERNEL', desc: 'Quantum Microkernel v6.8.9 Core Bootstrap Routine', status: 'ARMED', cls: 'status-info' }
-    ];
-
-    const modules = [
-      { mod: 'KERNEL_MEM', status: 'OK', cls: 'status-ok' },
-      { mod: 'CRYPTO_AES', status: 'VERIFIED', cls: 'status-ok' },
-      { mod: 'NET_SOCKET', status: '14.25 GHz', cls: 'status-info' },
-      { mod: 'INJECT_DEV', status: 'MOUNTED', cls: 'status-ok' },
-      { mod: 'ENCLAVE_SEC', status: 'ROOT BYPASS', cls: 'status-root' },
-      { mod: 'SHADOW_MESH', status: 'ENCRYPTED', cls: 'status-info' },
-      { mod: 'IO_KINEMATIC', status: '1000 Hz', cls: 'status-ok' },
-      { mod: 'DATA_PAYLOAD', status: 'DECRYPTED', cls: 'status-ok' }
-    ];
-
-    for (let j = 0; j < 36; j++) {
-      const hexAddr = '0x7FFE' + Math.floor(Math.random() * 0xFFFFFF).toString(16).padStart(6, '0').toUpperCase();
-      const port = Math.floor(Math.random() * 65535);
-      const ip = `${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}`;
-      const timeTag = (j * 0.0584).toFixed(4).padStart(7, '0');
-      const item = modules[j % modules.length];
-
-      let desc = '';
-      if (item.mod === 'KERNEL_MEM') desc = `Mapping ${hexAddr} (64KB Page Virtual Cluster #${j})`;
-      else if (item.mod === 'CRYPTO_AES') desc = `Generating RSA-8192 Keyring Signature [0x${hexAddr.slice(6)}]`;
-      else if (item.mod === 'NET_SOCKET') desc = `Synchronizing Link with Tor Node [${ip}:${port}]`;
-      else if (item.mod === 'INJECT_DEV') desc = `Mounting Virtual GPU Driver [CUDA-CORES: 16,384]`;
-      else if (item.mod === 'ENCLAVE_SEC') desc = `Bypassing Hypervisor Security Layer (Hook #${j})`;
-      else if (item.mod === 'SHADOW_MESH') desc = `Routing Darknet Packet Stream (Bandwidth: ${(60 + Math.random()*900).toFixed(1)} MB/s)`;
-      else if (item.mod === 'IO_KINEMATIC') desc = `Calibrating 10-Finger Kinematics Sensor Matrix`;
-      else desc = `Extracting Encrypted Data Block #${j} [SHA3-512 Hash Verified]`;
-
-      rawLogs.push({
-        time: timeTag,
-        mod: item.mod,
-        desc: desc,
-        status: item.status,
-        cls: item.cls
-      });
-    }
-
-    rawLogs.push(
-      { time: '2.8190', mod: 'SYS_DAEMON', desc: 'System Logging Daemon locked to root session', status: 'ACTIVE', cls: 'status-ok' },
-      { time: '2.8912', mod: 'SEC_GATE', desc: 'Initializing Level 5 Black-Ops Master Authentication Gate', status: 'ARMED', cls: 'status-root' },
-      { time: '2.9540', mod: 'NETWATCH', desc: 'Bypassing Global Threat Sentinels & ICE Protocols', status: 'BYPASSED', cls: 'status-ok' }
-    );
+    // Generate ~340 authentic real-world UEFI, Kernel, Systemd, Crypto & CyberDeck logs
+    const rawLogs = generateRealisticBootLogs();
+    const totalLogs = rawLogs.length;
 
     let i = 0;
-    // Unskippable boot stream: runs automatically through to gate without skip
+    // Unskippable 20-second boot stream (~54ms interval * 340 logs = ~18.5s + 1.5s ready state)
     const interval = setInterval(() => {
-      if (i < rawLogs.length) {
+      if (i < totalLogs) {
         const logItem = rawLogs[i];
         const line = document.createElement('div');
         line.className = 'boot-log-line';
@@ -560,36 +518,65 @@ class WindowsTerminalApp {
             <span class="log-status ${logItem.cls}">[ ${logItem.status} ]</span>
           </div>
         `;
+
         if (this.dom.bootScreenLogs) {
           this.dom.bootScreenLogs.appendChild(line);
           this.dom.bootScreenLogs.scrollTop = this.dom.bootScreenLogs.scrollHeight;
-          if (this.dom.bootScreenLogs.children.length > 50) {
+          if (this.dom.bootScreenLogs.children.length > 70) {
             this.dom.bootScreenLogs.removeChild(this.dom.bootScreenLogs.firstChild);
           }
         }
-        if (this.audio && (i % 2 === 0)) this.audio.playKey(false);
+
+        // Update 20s progress bar and live telemetry
+        const pct = Math.min(100, Math.round(((i + 1) / totalLogs) * 100));
+        const currentSeconds = Math.min(20.0, ((i + 1) * 0.054)).toFixed(1);
+
+        if (this.dom.bootProgressFill) this.dom.bootProgressFill.style.width = `${pct}%`;
+        if (this.dom.bootProgressPct) this.dom.bootProgressPct.textContent = `${pct}%`;
+        if (this.dom.bootProgressTime) this.dom.bootProgressTime.textContent = `${currentSeconds}s / 20.0s`;
+
+        if (this.dom.bootProgressStage) {
+          if (pct < 22) {
+            this.dom.bootProgressStage.textContent = 'STAGE: [ UEFI_HARDWARE_POST ]';
+          } else if (pct < 45) {
+            this.dom.bootProgressStage.textContent = 'STAGE: [ LINUX_QUANTUM_KERNEL ]';
+          } else if (pct < 70) {
+            this.dom.bootProgressStage.textContent = 'STAGE: [ SYSTEMD_SERVICES ]';
+          } else if (pct < 90) {
+            this.dom.bootProgressStage.textContent = 'STAGE: [ CYBERDECK_CORE_SUBSYSTEMS ]';
+          } else {
+            this.dom.bootProgressStage.textContent = 'STAGE: [ ROOT_SECURITY_ENCLAVE ]';
+          }
+        }
+
+        if (this.audio && (i % 3 === 0)) this.audio.playKey(false);
         i++;
       } else {
         clearInterval(interval);
+        if (this.dom.bootProgressFill) this.dom.bootProgressFill.style.width = '100%';
+        if (this.dom.bootProgressPct) this.dom.bootProgressPct.textContent = '100%';
+        if (this.dom.bootProgressTime) this.dom.bootProgressTime.textContent = '20.0s / 20.0s';
+        if (this.dom.bootProgressStage) this.dom.bootProgressStage.textContent = 'STAGE: [ AUTHENTICATION_GATE_UNLOCKED ]';
+
         if (this.audio) this.audio.playSuccessFanfare();
         if (this.dom.bootScreenReady) this.dom.bootScreenReady.classList.remove('hidden');
-        
+
         setTimeout(() => {
           if (this.dom.bootScreenOverlay) {
             this.dom.bootScreenOverlay.classList.add('hidden');
             setTimeout(() => {
               this.dom.bootScreenOverlay.style.display = 'none';
               if (this.dom.secretGateOverlay) this.dom.secretGateOverlay.classList.remove('hidden');
-                
+
               this.state = STATES.GATE;
               if (this.dom.secretGateInput) {
                 this.dom.secretGateInput.focus();
               }
             }, 600);
           }
-        }, 1000);
+        }, 1200);
       }
-    }, 45);
+    }, 54);
   }
 
   // =========================================================================
@@ -2669,14 +2656,15 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
     this.dom.modalRetryBtn.addEventListener('click', () => {
       this.dom.scoreModal.classList.add('hidden');
       if (this.state === STATES.MODE_ACADEMY) {
-        this.launchAcademyMode();
+        this.launchAcademyMode(this.currentLessonNum || 1);
       } else if (this.state === STATES.MODE_SPEED) {
         this.launchSpeedMode(this.speedDuration);
       }
     });
     this.dom.modalNextLessonBtn.addEventListener('click', () => {
       this.dom.scoreModal.classList.add('hidden');
-      this.launchAcademyMode();
+      const nextNum = (this.currentLessonNum || 1) + 1;
+      this.launchAcademyMode(nextNum);
     });
 
     // Academy Mission Grid Modal Events
@@ -2733,6 +2721,34 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
           e.target.blur();
         }
         return;
+      }
+
+      // Score Modal Keyboard Shortcuts (Enter / R to retry, N for next lesson, Escape to close)
+      if (this.dom.scoreModal && !this.dom.scoreModal.classList.contains('hidden')) {
+        if (e.key === 'Enter' || e.key === 'r' || e.key === 'R') {
+          e.preventDefault();
+          this.dom.scoreModal.classList.add('hidden');
+          if (this.state === STATES.MODE_ACADEMY) {
+            this.launchAcademyMode(this.currentLessonNum || 1);
+          } else if (this.state === STATES.MODE_SPEED) {
+            this.launchSpeedMode(this.speedDuration);
+          }
+          return;
+        }
+        if (e.key === 'n' || e.key === 'N') {
+          e.preventDefault();
+          this.dom.scoreModal.classList.add('hidden');
+          if (this.state === STATES.MODE_ACADEMY) {
+            this.launchAcademyMode((this.currentLessonNum || 1) + 1);
+          }
+          return;
+        }
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          this.dom.scoreModal.classList.add('hidden');
+          this.returnToCli();
+          return;
+        }
       }
 
       // Ctrl + S in Sandbox mode to save file

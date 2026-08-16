@@ -1,16 +1,14 @@
-class VirtualNetwork {
+import { profileStore } from './profileStore.js';
+
+export class VirtualNetwork {
   constructor(app) {
     this.app = app;
     this.activeTarget = null;
     this.traceProgress = 0;
     this.traceInterval = null;
-    
-    // Cyber Credits
-    this.credits = parseInt(localStorage.getItem('cyberCredits')) || 0;
-    if (this.app.dom.hudCredits) this.app.dom.hudCredits.textContent = this.credits;
 
     // Upgrades
-    this.upgrades = JSON.parse(localStorage.getItem('cyberUpgrades')) || {
+    this.upgrades = {
       proxyBouncer: 0,
       quantumDecryptor: 0
     };
@@ -48,15 +46,10 @@ class VirtualNetwork {
     return { ip, name: `${corp} ${suffix}`, diff, openPorts, reward, hacked: false };
   }
 
-  saveData() {
-    localStorage.setItem('cyberCredits', this.credits);
-    localStorage.setItem('cyberUpgrades', JSON.stringify(this.upgrades));
-    if (this.app.dom.hudCredits) this.app.dom.hudCredits.textContent = this.credits;
-  }
-
   addCredits(amount) {
-    this.credits += amount;
-    this.saveData();
+    const user = this.app.username || 'Anan';
+    profileStore.addCredits(user, amount);
+    this.app.syncProfileToHud();
     if(this.app.audio) this.app.audio.playSuccessFanfare();
   }
 
@@ -159,8 +152,13 @@ Type 'hack' to steal data, 'clearlogs' to wipe your trace, and 'disconnect' to e
     this.activeTarget.hacked = true;
     const bonus = solvedDaemons * 200;
     const totalReward = this.activeTarget.reward + bonus;
+    const btcReward = Math.round(totalReward / 8);
     
-    this.addCredits(totalReward);
+    const user = this.app.username || 'Anan';
+    profileStore.addCredits(user, totalReward);
+    profileStore.addBitcoin(user, btcReward);
+    this.app.addExp(Math.round(totalReward * 0.6), `Infiltrated ${this.activeTarget.name}`);
+    this.app.syncProfileToHud();
     
     // Replace hacked target with a new procedural one
     const index = this.targets.indexOf(this.activeTarget);
@@ -171,10 +169,10 @@ Type 'hack' to steal data, 'clearlogs' to wipe your trace, and 'disconnect' to e
     return `
 [+] BYPASSING ENCRYPTION...
 [✓] ACCESS GRANTED. (Daemons solved: ${solvedDaemons})
-[+] DOWNLOADING CONFIDENTIAL FILES... 100%
-[✓] DATA SECURED. 
-[!] Transferred ${totalReward} CC to your shadow account.
-[!] WARNING: TRACE IS STILL ACTIVE. TYPE 'clearlogs' AND 'disconnect'.
+[+] DOWNLOADING CONFIDENTIAL DATABASE DUMP... 100%
+[✓] DATA SECURED & ENCRYPTED. 
+[!] Reward Transferred: +${totalReward} CC | +₿ ${btcReward} BTC
+[!] WARNING: SENTINEL TRACE IS ACTIVE. TYPE 'clearlogs' AND 'disconnect'.
 `;
   }
 
@@ -182,7 +180,7 @@ Type 'hack' to steal data, 'clearlogs' to wipe your trace, and 'disconnect' to e
     if (!this.activeTarget) return ``;
     
     // Penalty: Increase trace progress massively
-    this.traceProgress += 40;
+    this.traceProgress += 35;
     if(this.app.audio) this.app.audio.playErrorSound();
     
     return `
@@ -194,8 +192,8 @@ Type 'hack' to steal data, 'clearlogs' to wipe your trace, and 'disconnect' to e
   clearLogs() {
     if (!this.activeTarget) return `[✗] Error: Not connected to any target.`;
     
-    this.traceProgress = Math.max(0, this.traceProgress - 30); // Reduces trace by 30%
-    return `[✓] /var/log/ wiped. Trace obfuscated. Trace level reduced.`;
+    this.traceProgress = Math.max(0, this.traceProgress - 35); // Reduces trace by 35%
+    return `[✓] /var/log/ and auth.log wiped. Trace signatures scrambled (-35% Trace).`;
   }
 
   disconnect() {
@@ -209,7 +207,7 @@ Type 'hack' to steal data, 'clearlogs' to wipe your trace, and 'disconnect' to e
     const wasTarget = this.activeTarget;
     this.activeTarget = null;
     
-    return `[+] Connection to ${wasTarget.ip} closed.`;
+    return `[+] Secure tunnel to ${wasTarget.ip} severed. Connection closed.`;
   }
 
   busted() {
@@ -217,28 +215,33 @@ Type 'hack' to steal data, 'clearlogs' to wipe your trace, and 'disconnect' to e
     if (this.app.dom.hudTracePanel) {
       this.app.dom.hudTracePanel.classList.add('hidden');
     }
+    const wasTarget = this.activeTarget;
     this.activeTarget = null;
     
-    // Penalize
-    const penalty = Math.floor(this.credits * 0.3);
-    this.credits = Math.max(0, this.credits - penalty);
-    this.saveData();
+    const user = this.app.username || 'Anan';
+    const prof = profileStore.getProfile(user);
+    const penalty = Math.floor((prof.credits || 0) * 0.15);
+    if (penalty > 0) {
+      profileStore.spendCredits(user, penalty);
+      this.app.syncProfileToHud();
+    }
 
-    if(this.app.audio) this.app.audio.playErrorSound();
+    if (this.app.audio && this.app.audio.playAlarmSiren) {
+      this.app.audio.playAlarmSiren();
+    }
     
-    const output = `
-[!!!] CRITICAL ALERT [!!!]
-NETWATCH HAS TRACED YOUR CONNECTION.
-CONNECTION TERMINATED BY REMOTE HOST.
-[-] You lost ${penalty} CC from emergency account freezes.
+    const alertEl = document.createElement('div');
+    alertEl.className = 'cli-history-output';
+    alertEl.style.color = '#ff2255';
+    alertEl.style.fontWeight = 'bold';
+    alertEl.innerHTML = `
+[!] EMERGENCY ALARM: NETWATCH IDS TRACE REACHED 100%!
+[!] Intrusion detected on ${wasTarget ? wasTarget.name : 'Target'}. Emergency lockdown initiated.
+[!] Security penalty: ${penalty} CC confiscated.
 `;
-    // Force write to CLI
-    const histLine = document.createElement('div');
-    histLine.className = 'cli-history-line';
-    histLine.innerHTML = `<span style="color: #ff2244;">${output.replace(/\n/g, '<br>')}</span>`;
     if (this.app.dom.cliHistory) {
-      this.app.dom.cliHistory.appendChild(histLine);
-      this.app.dom.cliHistory.parentElement.scrollTop = this.app.dom.cliHistory.parentElement.scrollHeight;
+      this.app.dom.cliHistory.appendChild(alertEl);
+      this.app.scrollToBottom();
     }
   }
 
