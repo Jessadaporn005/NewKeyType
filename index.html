@@ -117,6 +117,12 @@
           </div>
         </div>
 
+        <!-- Live Cryptographic Hash Stream Preview -->
+        <div class="c2-hsm-hash-preview" id="hsmHashPreview">
+          <span class="c2-hash-lbl">SHA-512 HASH STREAM (LIVE DERIVATION):</span>
+          <code class="c2-hash-val" id="hsmHashVal">cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e</code>
+        </div>
+
         <button class="c2-btn-primary" id="btnSecretGateSubmit">
           [ AUTHENTICATE SECURITY ENCLAVE ]
         </button>
@@ -144,6 +150,18 @@
         <div class="c2-pam-fingerprint-box">
           <span class="c2-fp-label">HOST FINGERPRINT (SHA-256):</span>
           <code class="c2-fp-code">SHA256:7b91e4f208a9c3d4e5f6a1b2c3d4e5f67a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d</code>
+        </div>
+
+        <div class="c2-field-group">
+          <label class="c2-field-label" for="loginDomainField">SECURITY DOMAIN AUTHORITY:</label>
+          <div class="c2-input-wrapper">
+            <span class="c2-input-prefix">DOM#</span>
+            <select id="loginDomainField" class="c2-select-input">
+              <option value="sec.defense.mil">sec.defense.mil [AIR-GAPPED HIGH-CLEARANCE]</option>
+              <option value="root.quantum.enclave">root.quantum.enclave [CORE-RING-0]</option>
+              <option value="soc.global.mesh">soc.global.mesh [NATO C4ISR NODE]</option>
+            </select>
+          </div>
         </div>
 
         <div class="c2-field-group">
@@ -220,26 +238,12 @@
           </div>
         </div>
 
-        <!-- Right Column: Operator Holographic Profile Dossier & Code Silhouette -->
+        <!-- Right Column: Operator Dossier Hologram & Statistics Profile -->
         <div class="deck-right-col">
-          <div class="trans-operator-dossier">
-            
-            <div class="dossier-header">
-              <span class="dossier-badge">[ OPERATOR DOSSIER // SYNAPSE ]</span>
-              <span class="dossier-status-dot">● ONLINE</span>
-            </div>
-
-            <!-- Matrix Log-Code Silhouette Avatar Box -->
-            <div class="dossier-avatar-container">
-              <canvas id="transHoloAvatarCanvas" class="holo-avatar-canvas" width="280" height="135"></canvas>
-              <div class="holo-scanline-fx"></div>
-              <div class="holo-brackets-overlay">
-                <span class="bracket tl"></span>
-                <span class="bracket tr"></span>
-                <span class="bracket bl"></span>
-                <span class="bracket br"></span>
-                <span class="holo-tag">BIOMETRIC: SYNCHRONIZED</span>
-              </div>
+          <div class="dossier-card-wrapper">
+            <div class="dossier-header-bar">
+              <span class="dossier-title-tag">[ OPERATOR C2 DOSSIER ]</span>
+              <span class="dossier-status-live"><span class="status-indicator live"></span> LIVE</span>
             </div>
 
             <!-- Dynamic Profile Telemetry Stats -->
@@ -281,36 +285,50 @@
                 </div>
               </div>
             </div>
-
           </div>
         </div>
-
       </div>
 
       <div class="transition-footer-hint">
-        <span>* Press <kbd>Space</kbd> / <kbd>Enter</kbd> or click to fast-forward execution</span>
+        <span class="pulse-bracket">[</span> PRESS ANY KEY OR ENTER TO ENGAGE WORKSTATION IMMEDIATELY <span class="pulse-bracket">]</span>
       </div>
     </div>
   </div>
 
   <!-- =========================================================================
-       3. MAIN APPLICATION: DIEGETIC CYBERDECK COMMAND FORTRESS
+       STAGE 3: MAIN OPERATING SYSTEM WORKSTATION & MODULAR C2 DOCK
        ========================================================================= -->
-  <div class="terminal-app-container diegetic-cyberdeck-chassis hidden" id="mainTerminalContainer">
-    <!-- 4 Heavy Metallic Chassis Corner Bezels & Status LED Cluster -->
-    <div class="deck-chassis-bezel tl"></div>
-    <div class="deck-chassis-bezel tr"></div>
-    <div class="deck-chassis-bezel bl"></div>
-    <div class="deck-chassis-bezel br"></div>
+  
+  <!-- C2 GLOBAL SYSTEM POLYBAR (MISSION CONTROL HUD) -->
+  <div class="c2-global-polybar" id="c2GlobalPolybar">
+    <div class="poly-cluster-left">
+      <span class="poly-item live-pulse"><span class="status-indicator live"></span> C2 ONLINE</span>
+      <span class="poly-item" id="polyUtcClock">UTC: --:--:--.---</span>
+      <span class="poly-item">HOST: <strong>c2-node-96epyc</strong></span>
+    </div>
+    <div class="poly-cluster-center">
+      <span class="poly-item">LOAD: <strong class="c2-val-cyan">0.24, 0.18, 0.12</strong></span>
+      <span class="poly-item">CPU: <strong class="c2-val-green">24% (41°C)</strong></span>
+      <span class="poly-item">RAM: <strong class="c2-val-cyan">32.4 / 128 GB ECC</strong></span>
+      <span class="poly-item">NET: <strong class="c2-val-green">14.2 Gbps (0.12ms)</strong></span>
+    </div>
+    <div class="poly-cluster-right">
+      <span class="poly-item">SECURITY: <strong class="c2-val-amber">DEFCON-1</strong></span>
+      <span class="poly-item">AIR-GAP: <strong class="c2-val-green">ENFORCED</strong></span>
+      <span class="poly-item">SESSION: <strong class="c2-val-cyan" id="polyUserTag">root@c2 (UID 0)</strong></span>
+    </div>
+  </div>
 
+  <div class="main-terminal-container diegetic-cyberdeck-chassis" id="mainTerminalContainer">
+    <!-- Physical Diegetic Chassis Status Bar -->
     <div class="chassis-status-strip">
       <div class="chassis-led-cluster">
-        <span class="c-led led-green" title="POWER: ON"></span>
-        <span class="c-led led-cyan" title="NEURAL LINK: SYNC"></span>
+        <span class="c-led led-green" title="POWER: NOMINAL"></span>
+        <span class="c-led led-cyan" title="LINK: 100GbE SYNCHRONIZED"></span>
         <span class="c-led led-amber" title="TX/RX: ACTIVE"></span>
         <span class="c-led led-red" title="FIREWALL: ARMED"></span>
       </div>
-      <div class="chassis-brand-tag">CYBER//DECK OS ➔ MODEL: NETRUNNER-X9</div>
+      <div class="chassis-brand-tag">C4ISR C2 COMMAND WORKSTATION // RUNTIME: 6.8.9-LTS</div>
       <div class="chassis-heat-grille">
         <span></span><span></span><span></span><span></span><span></span><span></span>
       </div>

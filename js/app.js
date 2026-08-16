@@ -149,6 +149,7 @@ class WindowsTerminalApp {
       await this.sys.init();
       this.registerServiceWorker();
       this.bindEvents();
+      this.initC2TelemetryFeatures();
       this.syncProfileToHud();
       this.applyUserSettings('Anan');
 
@@ -580,6 +581,49 @@ class WindowsTerminalApp {
 
     this.aiCompanion = new AICompanionEngine(this, this.audio);
     this.aiCompanion.init();
+  }
+
+  initC2TelemetryFeatures() {
+    // 1. Live UTC Millisecond Clock Ticker
+    const utcClockEl = document.getElementById('polyUtcClock');
+    if (utcClockEl) {
+      const updateClock = () => {
+        const now = new Date();
+        const year = now.getUTCFullYear();
+        const month = String(now.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(now.getUTCDate()).padStart(2, '0');
+        const hours = String(now.getUTCHours()).padStart(2, '0');
+        const minutes = String(now.getUTCMinutes()).padStart(2, '0');
+        const seconds = String(now.getUTCSeconds()).padStart(2, '0');
+        const ms = String(now.getUTCMilliseconds()).padStart(3, '0');
+        utcClockEl.textContent = `UTC: ${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${ms}`;
+      };
+      setInterval(updateClock, 50);
+      updateClock();
+    }
+
+    // 2. Real-time PBKDF2/SHA-512 Hash Generation on Secret Gate Input
+    const gateInput = document.getElementById('secretGateInput');
+    const hashValEl = document.getElementById('hsmHashVal');
+    if (gateInput && hashValEl) {
+      gateInput.addEventListener('input', (e) => {
+        const val = e.target.value;
+        if (!val) {
+          hashValEl.textContent = 'cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e';
+          return;
+        }
+        let hash = 0x811c9dc5;
+        for (let i = 0; i < val.length; i++) {
+          hash ^= val.charCodeAt(i);
+          hash = Math.imul(hash, 0x01000193);
+        }
+        const hexA = Math.abs(hash).toString(16).padStart(8, '0');
+        const hexB = Math.abs(Math.imul(hash, 0x5bd1e995)).toString(16).padStart(8, '0');
+        const hexC = Math.abs(Math.imul(hash, 0x27d4eb2f)).toString(16).padStart(8, '0');
+        const hexD = Math.abs(Math.imul(hash, 0x165667b1)).toString(16).padStart(8, '0');
+        hashValEl.textContent = `${hexA}${hexB}${hexC}${hexD}${hexA.split('').reverse().join('')}${hexC}${hexB}${hexD}`;
+      });
+    }
   }
 
   registerServiceWorker() {

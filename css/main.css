@@ -614,6 +614,44 @@ html, body {
 }
 
 /* ==========================================================================
+   C2 GLOBAL SYSTEM POLYBAR (MISSION CONTROL HUD)
+   ========================================================================== */
+
+.c2-global-polybar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 16px;
+  background: #060a0f;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #8b9cb0;
+  user-select: none;
+  z-index: 40;
+}
+
+.poly-cluster-left,
+.poly-cluster-center,
+.poly-cluster-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.poly-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.poly-item.live-pulse {
+  color: #00ff88;
+  font-weight: 800;
+}
+
+/* ==========================================================================
    ENTERPRISE C2 HARDWARE SECURITY MODULE (HSM) PASSCODE GATE
    ========================================================================== */
 
@@ -657,6 +695,50 @@ html, body {
   font-size: 11px;
   color: var(--win-text-dim);
   margin-top: 4px;
+}
+
+.c2-hsm-hash-preview {
+  background: #060a0e;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 8px 12px;
+  border-radius: 3px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  text-align: left;
+}
+
+.c2-hash-lbl {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #8b9cb0;
+}
+
+.c2-hash-val {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: #00e5ff;
+  word-break: break-all;
+  line-height: 1.35;
+  font-variant-numeric: tabular-nums;
+}
+
+.c2-select-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #00ff88;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 10px 0;
+  cursor: pointer;
+}
+
+.c2-select-input option {
+  background: #0d1520;
+  color: #e2e8f0;
 }
 
 .c2-hsm-body {
