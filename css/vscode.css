@@ -8,23 +8,13 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background: #080f0b;
+  background: #080c10;
   display: flex;
   flex-direction: column;
-  color: #c0f0d0;
+  color: #e2e8f0;
   font-family: var(--font-mono, 'Segoe UI Mono', monospace);
   overflow: hidden;
   z-index: 40;
-  clip-path: polygon(
-    0 12px,
-    12px 0,
-    calc(100% - 12px) 0,
-    100% 12px,
-    100% calc(100% - 12px),
-    calc(100% - 12px) 100%,
-    12px 100%,
-    0 calc(100% - 12px)
-  );
 }
 
 /* Top Navigation Bar */
@@ -32,8 +22,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #030805;
-  border-bottom: 1px solid rgba(0, 255, 102, 0.25);
+  background: #0d1520;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   padding: 6px 14px;
   min-height: 42px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.8);

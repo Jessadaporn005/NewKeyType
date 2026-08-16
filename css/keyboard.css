@@ -5,22 +5,13 @@
 .cyber-hardware-deck {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  background: radial-gradient(ellipse at 50% 0%, #06180e 0%, #020704 100%);
-  border: 2px solid rgba(0, 255, 102, 0.3);
-  padding: 14px;
-  border-radius: 6px;
-  box-shadow: 0 0 30px rgba(0, 255, 102, 0.15), inset 0 0 20px rgba(0, 0, 0, 0.8);
-  clip-path: polygon(
-    0 10px,
-    10px 0,
-    calc(100% - 10px) 0,
-    100% 10px,
-    100% calc(100% - 10px),
-    calc(100% - 10px) 100%,
-    10px 100%,
-    0 calc(100% - 10px)
-  );
+  gap: 8px;
+  background: #090e15;
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  border-top: 2px solid #00e5ff;
+  padding: 12px;
+  border-radius: 4px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(0, 229, 255, 0.02);
 }
 
 /* Finger Guidance Bar */
@@ -29,12 +20,13 @@
   justify-content: space-between;
   align-items: center;
   padding: 6px 14px;
-  background: #040c07;
-  border: 1px solid rgba(0, 255, 102, 0.2);
-  border-radius: 4px;
+  background: #060a0f;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
   flex-wrap: wrap;
   gap: 8px;
-  font-size: 11.5px;
+  font-size: 11px;
+  font-family: var(--font-mono);
 }
 
 .guide-item {
@@ -44,18 +36,20 @@
 }
 
 .guide-label {
-  color: #777777;
+  color: #8b9cb0;
+  font-size: 10px;
+  font-weight: 700;
 }
 
 .guide-key-badge {
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 800;
-  color: #000000;
+  color: #080c10;
   background: var(--theme-primary);
   padding: 2px 8px;
   border-radius: 2px;
-  min-width: 28px;
+  min-width: 26px;
   text-align: center;
 }
 

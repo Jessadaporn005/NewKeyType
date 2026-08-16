@@ -4,42 +4,45 @@
    ========================================================================== */
 
 :root {
-  /* Matrix Phosphor / Cyber Green Accent */
-  --theme-primary: #00ff66;
-  --theme-primary-dim: rgba(0, 255, 102, 0.15);
-  --theme-primary-glow: rgba(0, 255, 102, 0.45);
-  --theme-secondary: #00cc55;
-  --theme-accent: #55ff99;
+  /* Enterprise C2 Primary Telemetry Palette */
+  --theme-primary: #00e5ff;
+  --theme-primary-dim: rgba(0, 229, 255, 0.12);
+  --theme-primary-glow: rgba(0, 229, 255, 0.35);
+  --theme-secondary: #00ff88;
+  --theme-accent: #66efff;
   --theme-cyan: #00e5ff;
   --theme-cyan-glow: rgba(0, 229, 255, 0.4);
-  --theme-danger: #ff2255;
-  --theme-danger-glow: rgba(255, 34, 85, 0.4);
-  --theme-warning: #ffbb00;
-  --theme-border: rgba(0, 255, 102, 0.25);
+  --theme-danger: #ff3b57;
+  --theme-danger-glow: rgba(255, 59, 87, 0.4);
+  --theme-warning: #e5a93c;
+  --theme-border: rgba(0, 229, 255, 0.2);
 
-  /* Windows 11 Terminal Dark Palette */
-  --win-bg: #070b09;
-  --win-titlebar-bg: #0d1611;
-  --win-tab-active-bg: #070b09;
-  --win-tab-inactive-bg: #0d1611;
-  --win-border: #1a2e22;
-  --win-text: #c8e6d0;
+  /* Enterprise C2 Dark Slate Palette (Bloomberg & Palantir C2 Style) */
+  --win-bg: #080c10;
+  --win-surface-1: #0e1620;
+  --win-surface-2: #14202e;
+  --win-titlebar-bg: #0a1017;
+  --win-tab-active-bg: #0e1620;
+  --win-tab-inactive-bg: #080c10;
+  --win-border: rgba(255, 255, 255, 0.08);
+  --win-border-active: rgba(0, 229, 255, 0.3);
+  --win-text: #e2e8f0;
   --win-text-bright: #ffffff;
-  --win-text-dim: #648370;
+  --win-text-dim: #8b9cb0;
 
-  /* Finger Guide Colors */
-  --finger-lp: #ff0077;
+  /* Precision Biomechanical Finger Guide Palette */
+  --finger-lp: #ff3b57;
   --finger-lr: #ff7700;
-  --finger-lm: #ffdd00;
+  --finger-lm: #e5a93c;
   --finger-li: #00ff88;
   --finger-th: #00e5ff;
-  --finger-ri: #00aaff;
-  --finger-rm: #7744ff;
-  --finger-rr: #cc00ff;
-  --finger-rp: #ff00aa;
+  --finger-ri: #38bdf8;
+  --finger-rm: #818cf8;
+  --finger-rr: #c084fc;
+  --finger-rp: #f472b6;
 
-  --font-mono: 'Share Tech Mono', 'Fira Code', monospace;
-  --font-display: 'Orbitron', 'Rajdhani', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Share Tech Mono', 'Fira Code', monospace;
+  --font-display: 'Rajdhani', 'Inter', sans-serif;
   --font-thai: 'Kanit', sans-serif;
   --transition-fast: 0.08s ease;
 }

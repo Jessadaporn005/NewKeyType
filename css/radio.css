@@ -7,31 +7,20 @@
   flex-direction: column;
   height: 100%;
   width: 100%;
-  background: rgba(3, 10, 6, 0.92);
-  border: 1.5px solid rgba(0, 255, 102, 0.35);
-  border-radius: 6px;
+  background: #080c10;
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  border-radius: 4px;
   overflow: hidden;
-  backdrop-filter: blur(14px);
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.95);
-  clip-path: polygon(
-    0 12px,
-    12px 0,
-    calc(100% - 12px) 0,
-    100% 12px,
-    100% calc(100% - 12px),
-    calc(100% - 12px) 100%,
-    12px 100%,
-    0 calc(100% - 12px)
-  );
 }
 
 .radio-header-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 14px;
-  background: rgba(2, 6, 4, 0.96);
-  border-bottom: 1px solid rgba(0, 255, 102, 0.2);
+  padding: 8px 16px;
+  background: #0d1520;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   user-select: none;
 }
 
