@@ -135,6 +135,28 @@ class HackerAudioEngine {
   }
 
   /**
+   * Ultra-clean, single-layer high-frequency C2 Telemetry Tick for log streaming
+   * (Zero sub-bass harmonics or overlapping oscillator resonance)
+   */
+  playBootTelemetryTick() {
+    if (this.isMuted || this.preset === 'silent') return;
+    this.ensureContext();
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(3400 + (Math.random() - 0.5) * 300, t);
+    osc.frequency.exponentialRampToValueAtTime(1400, t + 0.005);
+    gain.gain.setValueAtTime(0.06, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.005);
+    osc.connect(gain);
+    gain.connect(this.masterGain);
+    osc.start(t);
+    osc.stop(t + 0.006);
+  }
+
+  /**
    * 1. Hollywood Cinema Hacker Click
    */
   synthHollywoodCinemaClick(t, pitchOffset) {

@@ -24,37 +24,41 @@ export function generateRealisticBootLogs() {
     { time: '0.068100', mod: 'PCI_WIFI', desc: 'pci 0000:04:00.0: [8086:7a70] Intel Wi-Fi 7 BE200 320MHz Quantum Band', status: 'LINKED', cls: 'status-ok' }
   );
 
-  // Procedural Micro-POST routines
+  // Procedural Micro-POST routines (varied real-world hardware and ACPI routines)
   for (let i = 1; i <= 65; i++) {
     const hex = '0x' + (0x1000 + i * 0x80).toString(16).toUpperCase();
     const time = (0.07 + i * 0.055).toFixed(6);
     const postTypes = [
-      { mod: 'CPU_CORE', desc: `Calibrating SMP Core #${i.toString().padStart(3, '0')} [Thermal Sensor: 34.2°C | 5.40 GHz Voltage: 1.25V]`, status: 'ONLINE', cls: 'status-ok' },
-      { mod: 'MEM_NODE', desc: `NUMA Node #0: Memory Channel B Interleave Verification [Bank ${hex}]`, status: 'PASSED', cls: 'status-ok' },
-      { mod: 'PCIE_LANE', desc: `PCIe Gen5 Lane #${(i % 16) + 1} Equalization Complete (Bit Error Rate: < 10^-14)`, status: 'SYNCED', cls: 'status-info' },
-      { mod: 'NVME_IO', desc: `NVMe Command Queue #${i} Allocated: 1024 Depth Ring Buffer`, status: 'OK', cls: 'status-ok' }
+      { mod: 'CPU_CORE', desc: `Calibrating SMP Core #${i.toString().padStart(3, '0')} [Thermal: 34.2°C | AMD EPYC Zen4 @ 5.40 GHz Voltage: 1.25V]`, status: 'ONLINE', cls: 'status-ok' },
+      { mod: 'MEM_NODE', desc: `NUMA Node #0: Memory Channel B Interleave Parity [Bank ${hex} - ECC ZERO-FAULT]`, status: 'PASSED', cls: 'status-ok' },
+      { mod: 'PCIE_LANE', desc: `PCIe Gen5 Lane #${(i % 16) + 1} Equalization Complete (BER < 10^-14 @ 32.0 GT/s)`, status: 'SYNCED', cls: 'status-info' },
+      { mod: 'NVME_IO', desc: `NVMe Controller #0 Command Queue #${i} Allocated: 1024 Depth Ring Buffer (IOPS: 1.4M)`, status: 'OK', cls: 'status-ok' },
+      { mod: 'TPM_PCR', desc: `TPM 2.0 PCR[${i % 24}] SHA-512 Measurement Enclave Hash Verified`, status: 'SEALED', cls: 'status-ok' },
+      { mod: 'IOMMU_GRP', desc: `IOMMU Group #${i} [Device 0000:00:${(i % 31).toString(16).padStart(2, '0')}.0] DMA Translation Enabled`, status: 'ISOLATED', cls: 'status-info' }
     ];
     const pick = postTypes[i % postTypes.length];
     logs.push({ time, mod: pick.mod, desc: pick.desc, status: pick.status, cls: pick.cls });
   }
 
-  // Stage 2: Linux 6.9 Quantum Microkernel Paging & SMP (4.000s - 8.500s)
+  // Stage 2: Linux 6.10 Quantum Microkernel Paging & SMP (4.000s - 8.500s)
   logs.push(
-    { time: '4.001200', mod: 'KERNEL', desc: 'Linux version 6.9.4-cyberdeck-synaptic (gcc version 14.1.0) #1 SMP PREEMPT_DYNAMIC', status: 'BOOTING', cls: 'status-ok' },
-    { time: '4.015400', mod: 'CMDLINE', desc: 'Command line: BOOT_IMAGE=/vmlinuz-cyberdeck root=UUID=7f8a92-quantum ro quiet loglevel=3 security=selinux intel_iommu=on net.ifnames=0', status: 'APPLIED', cls: 'status-info' },
+    { time: '4.001200', mod: 'KERNEL', desc: 'Linux version 6.10.2-quantum-c4isr-c2 (gcc version 14.2.0) #1 SMP PREEMPT_DYNAMIC', status: 'BOOTING', cls: 'status-ok' },
+    { time: '4.015400', mod: 'CMDLINE', desc: 'Command line: BOOT_IMAGE=/vmlinuz-c4isr root=UUID=7f8a92-quantum ro quiet loglevel=3 security=selinux intel_iommu=on net.ifnames=0 pcie_aspm=off', status: 'APPLIED', cls: 'status-info' },
     { time: '4.028900', mod: 'MMU_PAG', desc: 'x86/PAT: Configuration [0-7]: WB WC UC- UC WB WP UC- WT', status: 'OK', cls: 'status-ok' },
-    { time: '4.045100', mod: 'SELINUX', desc: 'SELinux: Initializing in targeted permissive root override mode', status: 'ARMED', cls: 'status-root' },
-    { time: '4.062400', mod: 'CRYPTO_HW', desc: 'crypto: AES-NI, ChaCha20-Poly1305, SHA3-512, SHA-256 hardware acceleration enabled', status: 'ARMED', cls: 'status-ok' }
+    { time: '4.045100', mod: 'SELINUX', desc: 'SELinux: Initializing in targeted air-gapped root security enclave mode', status: 'ARMED', cls: 'status-root' },
+    { time: '4.062400', mod: 'CRYPTO_HW', desc: 'crypto: AES-NI, ChaCha20-Poly1305, SHA3-512, SHA-256 hardware acceleration active', status: 'ARMED', cls: 'status-ok' },
+    { time: '4.081100', mod: 'EBPF_JIT', desc: 'bpf_jit: [eBPF JIT compiler enabled with 64-bit address translation]', status: 'ONLINE', cls: 'status-ok' }
   );
 
   for (let j = 1; j <= 80; j++) {
     const time = (4.10 + j * 0.052).toFixed(6);
     const kernelRoutines = [
-      { mod: 'IRQ_ROUTER', desc: `Mapping MSI-X Vector #${j + 32} to CPU Core #${(j % 128)} (Low Latency Interrupt)`, status: 'BOUND', cls: 'status-ok' },
-      { mod: 'VIRT_PAGING', desc: `Allocating 4MB Transparent Hugepage Cluster 0x7FFF${j.toString(16).padStart(4, '0').toUpperCase()}`, status: 'OK', cls: 'status-ok' },
-      { mod: 'DMA_ENGINE', desc: `DMA Direct Remapping Engine Channel #${j % 8} [Bandwidth: 128.0 GB/s]`, status: 'ARMED', cls: 'status-info' },
-      { mod: 'ZFS_POOL', desc: `ZFS pool 'cyberdeck-vault' [ASHIFT=12, RAID-Z2, LZ4 Compression Active]`, status: 'MOUNTED', cls: 'status-ok' },
-      { mod: 'SEC_ENCLAVE', desc: `Initializing Quantum Hypervisor Ring 0 Memory Sandbox #${j}`, status: 'SECURE', cls: 'status-root' }
+      { mod: 'IRQ_ROUTER', desc: `Mapping MSI-X Vector #${j + 32} to CPU Core #${(j % 128)} (Zero Latency Direct Interrupt)`, status: 'BOUND', cls: 'status-ok' },
+      { mod: 'VIRT_PAGING', desc: `Allocating 4MB Transparent Hugepage Cluster 0x7FFF${j.toString(16).padStart(4, '0').toUpperCase()} [WB Cache]`, status: 'OK', cls: 'status-ok' },
+      { mod: 'DMA_ENGINE', desc: `DMA Direct Remapping Engine Channel #${j % 8} [Host Bandwidth: 128.0 GB/s]`, status: 'ARMED', cls: 'status-info' },
+      { mod: 'ZFS_POOL', desc: `ZFS pool 'c2-enclave-vault' [ASHIFT=12, RAID-Z2, LZ4 Compression, Native AES-256]`, status: 'MOUNTED', cls: 'status-ok' },
+      { mod: 'SEC_ENCLAVE', desc: `Initializing Quantum Hypervisor Ring 0 Memory Sandbox #${j} [No-Execute Page Enforced]`, status: 'SECURE', cls: 'status-root' },
+      { mod: 'BPF_PROG', desc: `eBPF Tracepoint Hook #${j}: sys_enter_epoll_wait() -> Packet Filter JIT Compiled`, status: 'HOOKED', cls: 'status-ok' }
     ];
     const pick = kernelRoutines[j % kernelRoutines.length];
     logs.push({ time, mod: pick.mod, desc: pick.desc, status: pick.status, cls: pick.cls });
@@ -62,21 +66,21 @@ export function generateRealisticBootLogs() {
 
   // Stage 3: Systemd Service Daemons & Network Initialization (8.500s - 13.500s)
   logs.push(
-    { time: '8.501200', mod: 'SYSTEMD', desc: 'systemd 255.4-1 running in system mode (+PAM +AUDIT +SELINUX +APPARMOR +IMA +SMACK)', status: 'ONLINE', cls: 'status-ok' },
+    { time: '8.501200', mod: 'SYSTEMD', desc: 'systemd 256.2-1 running in system mode (+PAM +AUDIT +SELINUX +APPARMOR +IMA +SMACK)', status: 'ONLINE', cls: 'status-ok' },
     { time: '8.524100', mod: 'SYS_TARGET', desc: 'systemd[1]: Reached target Local File Systems (ext4 / zfs / btrfs).', status: 'REACHED', cls: 'status-ok' },
-    { time: '8.551200', mod: 'NET_IFACE', desc: 'eth0: Link up at 2500Mbps / Full Duplex (Flow Control: RX/TX)', status: 'UP', cls: 'status-ok' },
-    { time: '8.582400', mod: 'WIREGUARD', desc: 'wireguard: wg0: Peer established with Tor Darknet Exit Mesh (Endpoint: 185.220.101.5:51820)', status: 'ENCRYPTED', cls: 'status-info' },
-    { time: '8.621000', mod: 'IPTABLES', desc: 'nftables: Loaded 1,420 filter rules (Default Drop on Inbound / Zero-Day Stealth)', status: 'LOCKED', cls: 'status-ok' }
+    { time: '8.551200', mod: 'NET_IFACE', desc: 'eth0: Link up at 100Gbps / Full Duplex (Mellanox ConnectX-7 Flow Control: RX/TX)', status: 'UP', cls: 'status-ok' },
+    { time: '8.582400', mod: 'WIREGUARD', desc: 'wireguard: wg0: Peer established with C4ISR Tactical Satellite Mesh (Endpoint: 185.220.101.5:51820)', status: 'ENCRYPTED', cls: 'status-info' },
+    { time: '8.621000', mod: 'IPTABLES', desc: 'nftables: Loaded 2,840 filter rules (Air-Gapped Ingress Drop / Zero-Day Stealth Enforced)', status: 'LOCKED', cls: 'status-ok' }
   );
 
   for (let k = 1; k <= 90; k++) {
     const time = (8.70 + k * 0.051).toFixed(6);
     const sysServices = [
-      { mod: 'SYSTEMD_SRV', desc: `systemd[1]: Started Daemon #${k}: cyberdeck-entropy-pool.service`, status: 'STARTED', cls: 'status-ok' },
-      { mod: 'SOCKET_ACT', desc: `systemd[1]: Listening on Quantum Unix Domain Socket /run/cyber/pipe-${k}.sock`, status: 'LISTENING', cls: 'status-info' },
-      { mod: 'TOR_ROUTING', desc: `Tor Onion Gateway: Circuit #${k} Established [Nodes: Guard ➔ Middle ➔ Exit ➔ Darknet]`, status: 'ROUTED', cls: 'status-ok' },
-      { mod: 'SSH_DAEMON', desc: `sshd[892]: OpenSSH 9.7p1 Server armed with Quantum RSA-8192 Keypair`, status: 'ARMED', cls: 'status-ok' },
-      { mod: 'AUDIT_LOG', desc: `audit[104${k}]: System Call Interception Filter Loaded (eBPF Tracepoint Active)`, status: 'AUDITING', cls: 'status-root' }
+      { mod: 'SYSTEMD_SRV', desc: `systemd[1]: Started Daemon #${k}: c2-quantum-telemetry-engine.service`, status: 'STARTED', cls: 'status-ok' },
+      { mod: 'SOCKET_ACT', desc: `systemd[1]: Listening on Quantum Unix Domain Socket /run/c2/stream-${k}.sock`, status: 'LISTENING', cls: 'status-info' },
+      { mod: 'TOR_ROUTING', desc: `Tor Onion Gateway: Circuit #${k} Established [Nodes: Guard ➔ Middle ➔ Exit ➔ Darknet Mesh]`, status: 'ROUTED', cls: 'status-ok' },
+      { mod: 'SSH_DAEMON', desc: `sshd[892]: OpenSSH 9.8p1 Server armed with Quantum RSA-8192 Keypair`, status: 'ARMED', cls: 'status-ok' },
+      { mod: 'AUDIT_LOG', desc: `audit[104${k}]: System Call Interception Filter Active (eBPF Kernel Tracepoint Live)`, status: 'AUDITING', cls: 'status-root' }
     ];
     const pick = sysServices[k % sysServices.length];
     logs.push({ time, mod: pick.mod, desc: pick.desc, status: pick.status, cls: pick.cls });
@@ -84,10 +88,10 @@ export function generateRealisticBootLogs() {
 
   // Stage 4: CyberDeck Core Engine Subsystems (13.500s - 17.500s)
   logs.push(
-    { time: '13.501200', mod: 'CYBER_CORE', desc: 'CyberDeck Operating System v4.0.0 initializing graphics runtime...', status: 'ONLINE', cls: 'status-ok' },
-    { time: '13.534200', mod: 'KINEMATICS', desc: 'Calibrating 10-Finger High-Speed Kinematics Biometric Sensory Matrix...', status: 'CALIBRATED', cls: 'status-ok' },
-    { time: '13.582100', mod: 'AUDIO_DSP', desc: 'Audio DSP Sound Engine: Holy Panda Tactile & Cherry MX Sound Profiles loaded', status: 'READY', cls: 'status-ok' },
-    { time: '13.624000', mod: 'PARTICLE_GL', desc: 'WebGL 2.0 Shader Matrix: Real-time Kinetic Spark & Glitch Shaders compiled', status: 'COMPILED', cls: 'status-ok' },
+    { time: '13.501200', mod: 'CYBER_CORE', desc: 'C4ISR Command & Control Workstation v6.8.9 runtime initializing...', status: 'ONLINE', cls: 'status-ok' },
+    { time: '13.534200', mod: 'KINEMATICS', desc: 'Calibrating 10-Finger High-Speed Kinematics Biometric Sensory Rig...', status: 'CALIBRATED', cls: 'status-ok' },
+    { time: '13.582100', mod: 'AUDIO_DSP', desc: 'Studio Audio DSP Engine: Holy Panda Tactile & Cherry MX Real-Time WebAudio synthesized', status: 'READY', cls: 'status-ok' },
+    { time: '13.624000', mod: 'PARTICLE_GL', desc: 'WebGL 2.0 Shader Matrix: Real-time Kinetic Spark & Holographic Mesh compiled', status: 'COMPILED', cls: 'status-ok' },
     { time: '13.671200', mod: 'LAYOUT_ENG', desc: 'Bi-directional QWERTY / เกษมณี Touch Typing Layout Matrix verified', status: 'SYNCHRONIZED', cls: 'status-ok' }
   );
 

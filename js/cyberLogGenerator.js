@@ -13,17 +13,17 @@ export function generateEntranceLogs(mode, arg = '') {
   const lines = [];
 
   lines.push(`========================================================================================`);
-  lines.push(`[⚡] INITIATING HOLLYWOOD QUANTUM DIRECTIVE: '${mode.toUpperCase()} ${arg}'`);
+  lines.push(`[⚡] INITIATING C4ISR TACTICAL DIRECTIVE: '${mode.toUpperCase()} ${arg}'`);
   lines.push(`========================================================================================`);
 
   // Section 1: Boot Architecture & Microcode
-  lines.push(`[ 0.000000] Linux version 6.8.9-quantum-cyber (root@matrix-core) (gcc 13.2.0)`);
-  lines.push(`[ 0.001892] Command line: BOOT_IMAGE=/vmlinuz-quantum root=UUID=7f82-99ab-01 ro quiet splash`);
-  lines.push(`[ 0.003410] KERNEL: Initializing x86/64 microcode v0x4112... [OK]`);
-  lines.push(`[ 0.008920] MEMORY_MAP: Base 0x0000000000000000 - 0x000000007FFFFFFF (4096 MB RAM)`);
-  lines.push(`[ 0.012400] ACPI: Core System Description Table (RSDT) [OEM: QUANTUM]`);
-  lines.push(`[ 0.018900] CPU0: AMD EPYC 9654 96-Core Quantum Processor @ 3.70GHz`);
-  lines.push(`[ 0.024100] TSC: Fast TSC calibration using PIT: 3700.042 MHz`);
+  lines.push(`[ 0.000000] Linux version 6.10.2-quantum-c4isr (root@c2-node-96epyc) (gcc 14.2.0)`);
+  lines.push(`[ 0.001892] Command line: BOOT_IMAGE=/vmlinuz-c4isr root=UUID=7f82-99ab-01 ro quiet splash`);
+  lines.push(`[ 0.003410] KERNEL: Initializing x86/64 microcode v0x4112 [AMD Zen4 EPYC]... [OK]`);
+  lines.push(`[ 0.008920] MEMORY_MAP: Base 0x0000000000000000 - 0x000000007FFFFFFF (131,072 MB ECC RAM)`);
+  lines.push(`[ 0.012400] ACPI: Core System Description Table (DSDT/RSDT) [OEM: C4ISR_DEFENSE]`);
+  lines.push(`[ 0.018900] CPU0: AMD EPYC 9654 96-Core Quantum Processor @ 5.40GHz (128 Cores Online)`);
+  lines.push(`[ 0.024100] TSC: Fast TSC calibration using PIT: 5400.042 MHz [Jitter: 0.01ns]`);
 
   // Section 2: Memory Page Allocation Tables (35 lines)
   for (let i = 0; i < 35; i++) {
@@ -63,7 +63,7 @@ export function generateEntranceLogs(mode, arg = '') {
 
   // Section 7: Telemetry & Handshake
   lines.push(`>> [TELEMETRY] Attaching Bio-Metric Finger Sensors: [LP, LR, LM, LI, LT, RT, RI, RM, RR, RP]`);
-  lines.push(`>> [TELEMETRY] Calibrating Micro-Acoustic Hollywood Transients... [60 FPS OK]`);
+  lines.push(`>> [TELEMETRY] Calibrating Micro-Acoustic Sensor Transients... [60 FPS OK]`);
   lines.push(`>> [TELEMETRY] Pre-fetching ANSI Buffer Stream: Buffer Allocated 65536 KB`);
   lines.push(`>> [SYSTEM_DAEMON] Process Fork: PID ${Math.floor(2000 + Math.random()*8000)} spawned under UID 0`);
   lines.push(`>> [SECURITY_CHECK] Kernel Integrity Hash Match: 0x${Array.from({length: 6}, randHex).join('')}`);
@@ -120,10 +120,10 @@ export function generateLoginLogs(username = 'asus') {
   const lines = [];
 
   lines.push(`========================================================================================`);
-  lines.push(`[+] INITIATING QUANTUM MAINFRAME HANDSHAKE & BIOMETRIC AUTHENTICATION...`);
+  lines.push(`[+] INITIATING ZERO-TRUST MAINFRAME HANDSHAKE & PAM KERBEROS AUTHENTICATION...`);
   lines.push(`========================================================================================`);
-  lines.push(`>> PROXY_INIT: Routing through Darknet Satellite Orbital Node (14.25 GHz Uplink)...`);
-  lines.push(`>> BIO_SCAN: Operator Signature '${username}' Detected [CONFIRMED]`);
+  lines.push(`>> PROXY_INIT: Routing through C4ISR Tactical Satellite Orbital Node (14.25 GHz Uplink)...`);
+  lines.push(`>> BIO_SCAN: Operator Principal '${username}' Verified [CONFIRMED]`);
 
   // Section 1: RSA Key Exchanging (40 lines)
   for (let i = 0; i < 40; i++) {
@@ -144,7 +144,7 @@ export function generateLoginLogs(username = 'asus') {
 
   lines.push(`>> [FIREWALL_BYPASS] Ingress Filter Nullified: Rule #0 Active (ALLOW ALL INBOUND/OUTBOUND)`);
   lines.push(`>> [ROOT_PRIV] UID 0 Elevated: GID 0 (root), GROUPS: 0(root), 4(adm), 27(sudo)`);
-  lines.push(`>> [SHELL_SPAWN] Initializing Windows 11 Command Prompt Environment for '${username}'...`);
+  lines.push(`>> [SHELL_SPAWN] Initializing Enterprise C2 Workstation Environment for '${username}'...`);
   lines.push(`========================================================================================`);
   lines.push(`[✓] AUTHENTICATION & ACCESS GRANTED: SUCCESS (100%)`);
   lines.push(`========================================================================================`);

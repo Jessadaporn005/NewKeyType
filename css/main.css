@@ -153,7 +153,7 @@ html, body {
 }
 
 #matrixCanvas {
-  opacity: 0.12;
+  opacity: 0.35;
   z-index: 0;
 }
 
@@ -597,15 +597,16 @@ html, body {
    ========================================================================== */
 
 .secret-gate-overlay,
-.hacker-login-overlay {
+.hacker-login-overlay,
+.cyber-transition-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
   z-index: 500;
-  background: radial-gradient(circle at center, rgba(8, 16, 11, 0.95) 0%, rgba(2, 4, 3, 0.99) 100%);
-  backdrop-filter: blur(14px);
+  background: radial-gradient(circle at center, rgba(6, 10, 15, 0.72) 0%, rgba(2, 4, 6, 0.85) 100%);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;

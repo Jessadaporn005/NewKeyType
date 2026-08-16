@@ -790,7 +790,7 @@ class WindowsTerminalApp {
           }
         }
 
-        if (this.audio && (i % 3 === 0)) this.audio.playKey(false);
+        if (this.audio && (i % 3 === 0)) this.audio.playBootTelemetryTick();
         i++;
       } else {
         clearInterval(interval);
