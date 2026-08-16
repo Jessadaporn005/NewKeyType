@@ -27,6 +27,8 @@ import { ToastManager } from './toastManager.js';
 import { ParticleEffectEngine } from './particleEffect.js';
 import { ControlCenter } from './controlCenter.js';
 import { HologramAvatar } from './hologramAvatar.js';
+import { VscodeEngine } from './vscodeEngine.js';
+import { CyberBrowserEngine } from './cyberBrowser.js';
 
 // Application States
 const STATES = {
@@ -39,7 +41,9 @@ const STATES = {
   MODE_HACKER: 'MODE_HACKER',
   MODE_SPEED: 'MODE_SPEED',
   MODE_SANDBOX: 'MODE_SANDBOX',
-  MODE_ROGUELITE: 'MODE_ROGUELITE'
+  MODE_ROGUELITE: 'MODE_ROGUELITE',
+  MODE_VSCODE: 'MODE_VSCODE',
+  MODE_BROWSER: 'MODE_BROWSER'
 };
 
 class WindowsTerminalApp {
@@ -195,7 +199,9 @@ class WindowsTerminalApp {
         hacker: document.getElementById('viewHacker'),
         speed: document.getElementById('viewSpeed'),
         sandbox: document.getElementById('viewSandbox'),
-        roguelite: document.getElementById('viewRoguelite')
+        roguelite: document.getElementById('viewRoguelite'),
+        vscode: document.getElementById('viewVscode'),
+        browser: document.getElementById('viewBrowser')
       },
 
       // CLI Elements
@@ -490,6 +496,16 @@ class WindowsTerminalApp {
     if (this.dom.views.roguelite) {
       this.rogueliteEngine = new RogueliteEngine(this, this.audio, this.toasts);
       this.rogueliteEngine.init(this.dom.views.roguelite);
+    }
+
+    if (this.dom.views.vscode) {
+      this.vscodeEngine = new VscodeEngine(this, this.audio, this.toasts);
+      this.vscodeEngine.init(this.dom.views.vscode);
+    }
+
+    if (this.dom.views.browser) {
+      this.browserEngine = new CyberBrowserEngine(this, this.audio);
+      this.browserEngine.init(this.dom.views.browser);
     }
 
     this.controlCenter = new ControlCenter(this, this.audio, this.toasts);
@@ -1394,6 +1410,31 @@ AVAILABLE CYBER TERMINAL & REAL-WORLD OS COMMANDS:
         this.openDuckyModal();
         return;
 
+      // VS Code Multi-Language Interactive Playground & Academy
+      case 'code':
+      case 'vscode':
+      case 'ide':
+      case 'codeview':
+      case 'learn':
+        this.launchVscodeMode(args[0]);
+        return;
+
+      // In-App Cyber Browser (YouTube, Google, FB, IG, GitHub)
+      case 'browser':
+      case 'web':
+      case 'surf':
+      case 'yt':
+      case 'youtube':
+      case 'google':
+        let targetUrl = args.join(' ');
+        if (cmd === 'yt' || cmd === 'youtube') {
+          targetUrl = `yt ${args.join(' ')}`;
+        } else if (cmd === 'google') {
+          targetUrl = `google ${args.join(' ')}`;
+        }
+        this.launchBrowserMode(targetUrl || 'https://www.google.com');
+        return;
+
       // Hacky Cyberspace Node Crawl (Roguelite)
       case 'roguelite':
       case 'rl':
@@ -2021,6 +2062,52 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
       () => {
         if (this.rogueliteEngine) {
           this.rogueliteEngine.startNewRun();
+        }
+        setTimeout(() => this.hands.updatePositions(), 50);
+      }
+    );
+  }
+
+  launchVscodeMode(langArg) {
+    const targetLang = langArg ? langArg.toLowerCase() : 'python';
+    const logs = generateEntranceLogs('hacker', `VS Code Studio [${targetLang.toUpperCase()}]`);
+    this.state = STATES.MODE_VSCODE;
+
+    this.kb.clearTargetKeys();
+    this.hands.clearTargetGuide();
+
+    this.playCyberTransition(
+      'CYBER//CODE STUDIO IDE',
+      'INITIALIZING MULTI-LANGUAGE RUNTIME & COMPILER...',
+      logs,
+      'vscode',
+      () => {
+        if (this.vscodeEngine) {
+          this.vscodeEngine.loadLanguage(targetLang, 0);
+          if (this.vscodeEngine.editorTextarea) {
+            this.vscodeEngine.editorTextarea.focus();
+          }
+        }
+        setTimeout(() => this.hands.updatePositions(), 50);
+      }
+    );
+  }
+
+  launchBrowserMode(urlArg) {
+    const logs = generateEntranceLogs('hacker', `In-App Browser [${urlArg || 'Google'}]`);
+    this.state = STATES.MODE_BROWSER;
+
+    this.kb.clearTargetKeys();
+    this.hands.clearTargetGuide();
+
+    this.playCyberTransition(
+      'CYBER IN-APP BROWSER',
+      'CONNECTING TO CHROMIUM WEBVIEW GATEWAY...',
+      logs,
+      'browser',
+      () => {
+        if (this.browserEngine) {
+          this.browserEngine.openBrowser(urlArg || 'https://www.google.com');
         }
         setTimeout(() => this.hands.updatePositions(), 50);
       }

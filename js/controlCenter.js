@@ -22,6 +22,8 @@ export class ControlCenter {
     this.filteredCommands = [];
 
     this.commandsList = [
+      { id: 'vscode', name: 'VS Code Multi-Language Playground', category: 'Game Modes', icon: '💻', cmd: 'code' },
+      { id: 'browser', name: 'In-App Cyber Web Browser', category: 'Game Modes', icon: '🌐', cmd: 'browser' },
       { id: 'roguelite', name: 'Cyberspace Node Crawl (Roguelite)', category: 'Game Modes', icon: '🎮', cmd: 'roguelite' },
       { id: 'academy', name: 'Touch Typing Academy', category: 'Game Modes', icon: '⌨️', cmd: 'academy' },
       { id: 'speed', name: 'Speed Rush Benchmark (30s)', category: 'Game Modes', icon: '⚡', cmd: 'speed 30' },

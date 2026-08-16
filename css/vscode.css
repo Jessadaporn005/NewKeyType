@@ -1,0 +1,408 @@
+/**
+ * CYBER//TYPE VS CODE STUDIO STYLES
+ * Dual-Pane Layout, Line Numbers Gutter, Syntax Highlighting, Hover Tooltips, and Console Output.
+ */
+
+.vscode-wrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #080f0b;
+  display: flex;
+  flex-direction: column;
+  color: #c0f0d0;
+  font-family: var(--font-mono, 'Segoe UI Mono', monospace);
+  overflow: hidden;
+  z-index: 40;
+}
+
+/* Top Navigation Bar */
+.vscode-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #030805;
+  border-bottom: 1px solid rgba(0, 255, 102, 0.25);
+  padding: 6px 14px;
+  min-height: 42px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.8);
+}
+
+.vscode-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vsc-icon {
+  font-size: 16px;
+  color: var(--theme-primary, #00ff66);
+  text-shadow: 0 0 8px var(--theme-primary, #00ff66);
+}
+
+.vsc-title {
+  font-family: var(--font-display, 'Orbitron', sans-serif);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: #ffffff;
+  text-shadow: 0 0 10px rgba(0, 255, 102, 0.4);
+}
+
+.vscode-lang-tabs {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+}
+
+.vsc-tab {
+  background: #06120a;
+  border: 1px solid #102618;
+  color: #70b890;
+  padding: 4px 10px;
+  font-size: 11.5px;
+  font-weight: 700;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.vsc-tab:hover {
+  background: #0a2012;
+  color: #00ff66;
+  border-color: #00ff66;
+}
+
+.vsc-tab.active {
+  background: rgba(0, 255, 102, 0.15);
+  color: #ffffff;
+  border-color: #00ff66;
+  box-shadow: 0 0 10px rgba(0, 255, 102, 0.3);
+}
+
+.vscode-top-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.vsc-btn {
+  padding: 5px 12px;
+  font-family: var(--font-display, 'Orbitron', sans-serif);
+  font-size: 11px;
+  font-weight: 800;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  letter-spacing: 1px;
+}
+
+.vsc-btn-run {
+  background: #00ff66;
+  color: #000000;
+  border: 1px solid #00ff66;
+  box-shadow: 0 0 12px rgba(0, 255, 102, 0.4);
+}
+
+.vsc-btn-run:hover {
+  background: #00e5ff;
+  border-color: #00e5ff;
+  box-shadow: 0 0 20px #00e5ff;
+}
+
+.vsc-btn-reset {
+  background: #0d2015;
+  color: #70b890;
+  border: 1px solid #163622;
+}
+
+.vsc-btn-reset:hover {
+  background: #143320;
+  color: #ffffff;
+  border-color: #00ff66;
+}
+
+.vsc-btn-exit {
+  background: #200d12;
+  color: #ff5577;
+  border: 1px solid #4a1520;
+}
+
+.vsc-btn-exit:hover {
+  background: #38121a;
+  color: #ffffff;
+  border-color: #ff2255;
+  box-shadow: 0 0 12px rgba(255, 34, 85, 0.5);
+}
+
+/* Dual Pane Layout */
+.vscode-main-panes {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1.15fr 4px 1fr;
+  overflow: hidden;
+  position: relative;
+}
+
+.vscode-pane {
+  display: flex;
+  flex-direction: column;
+  background: #060c08;
+  overflow: hidden;
+  position: relative;
+}
+
+.vscode-divider {
+  background: #12281a;
+  cursor: col-resize;
+  transition: background 0.2s;
+}
+
+.vscode-divider:hover {
+  background: #00ff66;
+  box-shadow: 0 0 8px #00ff66;
+}
+
+.vsc-pane-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #040805;
+  border-bottom: 1px solid rgba(0, 255, 102, 0.2);
+  padding: 6px 14px;
+  min-height: 34px;
+}
+
+.vsc-file-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vsc-file-icon {
+  font-size: 13px;
+}
+
+.vsc-file-name {
+  font-weight: 700;
+  color: #ffffff;
+  font-size: 12px;
+}
+
+.vsc-lesson-badge {
+  font-size: 10px;
+  padding: 1px 6px;
+  background: rgba(0, 229, 255, 0.15);
+  border: 1px solid #00e5ff;
+  color: #00e5ff;
+  border-radius: 3px;
+  font-weight: 800;
+}
+
+.vsc-lesson-nav {
+  display: flex;
+  gap: 4px;
+}
+
+.vsc-mini-btn {
+  background: #0a180f;
+  border: 1px solid #163622;
+  color: #00ff66;
+  padding: 2px 8px;
+  font-size: 11px;
+  cursor: pointer;
+  border-radius: 3px;
+}
+
+.vsc-mini-btn:hover {
+  background: #00ff66;
+  color: #000;
+}
+
+/* Interactive Mission Objective Banner */
+.vsc-mission-banner {
+  background: rgba(0, 24, 12, 0.7);
+  border-bottom: 1px solid rgba(0, 255, 102, 0.2);
+  padding: 8px 16px;
+}
+
+.vsc-mission-title {
+  font-weight: 800;
+  color: #00ff66;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+}
+
+.vsc-mission-desc {
+  font-size: 11.5px;
+  color: #90d0a8;
+  margin-top: 3px;
+  line-height: 1.4;
+}
+
+/* Code Editor with Line Numbers */
+.vsc-editor-box {
+  flex: 1;
+  display: flex;
+  position: relative;
+  overflow: hidden;
+  background: #040806;
+}
+
+.vsc-line-numbers {
+  width: 42px;
+  padding: 12px 6px;
+  background: #020503;
+  border-right: 1px solid #102416;
+  color: #386b4a;
+  text-align: right;
+  font-size: 13px;
+  line-height: 1.6;
+  user-select: none;
+  font-family: inherit;
+}
+
+.vsc-textarea {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #e0ffe8;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.6;
+  padding: 12px 14px;
+  resize: none;
+  outline: none;
+  white-space: pre;
+  overflow-wrap: normal;
+  overflow-x: auto;
+  tab-size: 4;
+}
+
+/* Keyword Hover Docstring Tooltip */
+.vsc-hover-tooltip {
+  position: absolute;
+  bottom: 16px;
+  left: 56px;
+  right: 16px;
+  background: rgba(2, 10, 5, 0.95);
+  border: 1px solid #00e5ff;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.9), 0 0 15px rgba(0, 229, 255, 0.3);
+  padding: 12px 16px;
+  border-radius: 6px;
+  z-index: 50;
+  backdrop-filter: blur(8px);
+  animation: fadeIn 0.15s ease-out;
+}
+
+.vsc-tip-title {
+  font-weight: 800;
+  color: #00e5ff;
+  font-size: 12.5px;
+  margin-bottom: 4px;
+}
+
+.vsc-tip-desc {
+  font-size: 12px;
+  color: #d0f0e0;
+  line-height: 1.5;
+  margin-bottom: 6px;
+}
+
+.vsc-tip-example {
+  background: #040906;
+  border: 1px solid #12281a;
+  padding: 6px 10px;
+  border-radius: 4px;
+  color: #88ffb8;
+  font-size: 11.5px;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+/* Right Pane Tabs & Content */
+.vsc-tabs-right {
+  display: flex;
+  gap: 4px;
+}
+
+.vsc-tab-right {
+  background: transparent;
+  border: none;
+  color: #60a080;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+
+.vsc-tab-right.active {
+  color: #00ff66;
+  border-bottom-color: #00ff66;
+}
+
+.vsc-output-stats {
+  font-size: 11px;
+  color: #00e5ff;
+  font-weight: 700;
+}
+
+.vsc-right-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  background: #020604;
+}
+
+.vsc-console-output {
+  flex: 1;
+  padding: 14px 18px;
+  overflow-y: auto;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: #99ffc0;
+}
+
+.vsc-out-line {
+  margin-bottom: 4px;
+}
+
+.system-line {
+  color: #00e5ff;
+  font-weight: 700;
+}
+
+.success-line {
+  color: #00ff66;
+  font-weight: 700;
+}
+
+.error-line {
+  color: #ff2255;
+  font-weight: 700;
+}
+
+/* Web Live Preview */
+.vsc-web-preview-container {
+  flex: 1;
+  display: flex;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.vsc-web-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: #ffffff;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}

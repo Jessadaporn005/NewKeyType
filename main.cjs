@@ -411,7 +411,8 @@ server.listen(0, '127.0.0.1', () => {
         nodeIntegration: false,
         contextIsolation: true,
         preload: path.join(__dirname, 'preload.cjs'),
-        webSecurity: false
+        webSecurity: false,
+        webviewTag: true
       }
     });
     
@@ -477,7 +478,8 @@ server.listen(0, '127.0.0.1', () => {
         nodeIntegration: false,
         contextIsolation: true,
         preload: path.join(__dirname, 'preload.cjs'),
-        webSecurity: false
+        webSecurity: false,
+        webviewTag: true
       }
     });
 
