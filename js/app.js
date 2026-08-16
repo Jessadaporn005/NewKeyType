@@ -795,7 +795,7 @@ class WindowsTerminalApp {
           }
         }
 
-        if (this.audio && (i % 3 === 0)) this.audio.playBootTelemetryTick();
+        if (this.audio && (i % 2 === 0)) this.audio.playBootTelemetryTick();
         i++;
       } else {
         clearInterval(interval);
@@ -804,7 +804,7 @@ class WindowsTerminalApp {
         if (this.dom.bootProgressTime) this.dom.bootProgressTime.textContent = '20.0s / 20.0s';
         if (this.dom.bootProgressStage) this.dom.bootProgressStage.textContent = 'STAGE: [ AUTHENTICATION_GATE_UNLOCKED ]';
 
-        if (this.audio) this.audio.playSuccessFanfare();
+        if (this.audio) this.audio.playPostCompleteSound();
         if (this.dom.bootScreenReady) this.dom.bootScreenReady.classList.remove('hidden');
 
         setTimeout(() => {

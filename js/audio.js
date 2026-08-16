@@ -135,8 +135,8 @@ class HackerAudioEngine {
   }
 
   /**
-   * Ultra-clean, single-frequency static C2 Telemetry Tick for log streaming
-   * (Pure single 3ms blip with ZERO pitch-glide, echo, or harmonic resonance)
+   * Ultra-clean, satisfying, perfectly audible C2 Telemetry Tick for boot log streaming
+   * (Crisp 12ms single-frequency tactile tick with rich volume and zero harmonic echoes)
    */
   playBootTelemetryTick() {
     if (this.isMuted || this.preset === 'silent') return;
@@ -145,14 +145,36 @@ class HackerAudioEngine {
     const t = this.ctx.currentTime;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(2400, t);
-    gain.gain.setValueAtTime(0.04, t);
-    gain.gain.linearRampToValueAtTime(0.0001, t + 0.003);
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(1800, t);
+    gain.gain.setValueAtTime(0.22, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.012);
     osc.connect(gain);
     gain.connect(this.masterGain);
     osc.start(t);
-    osc.stop(t + 0.004);
+    osc.stop(t + 0.015);
+  }
+
+  /**
+   * Futuristic Single-Phase Firmware Authorization Beep on Boot Completion
+   */
+  playPostCompleteSound() {
+    if (this.isMuted || this.preset === 'silent') return;
+    this.ensureContext();
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    [1200, 2400].forEach((freq, idx) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, t + idx * 0.08);
+      gain.gain.setValueAtTime(0.25, t + idx * 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + idx * 0.08 + 0.14);
+      osc.connect(gain);
+      gain.connect(this.masterGain);
+      osc.start(t + idx * 0.08);
+      osc.stop(t + idx * 0.08 + 0.15);
+    });
   }
 
   /**
