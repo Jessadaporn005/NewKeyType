@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="th" data-theme="matrix">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Command Prompt</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0c0c0c">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Kanit:wght@300;400;600&family=Orbitron:wght@600;800;900&family=Rajdhani:wght@500;600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/matrix.css">
+  <link rel="stylesheet" href="css/keyboard.css">
+  <link rel="stylesheet" href="css/hands.css">
+  <link rel="stylesheet" href="css/roguelite.css">
+</head>
+<body class="crt-scanlines">
+  <!-- Initial Boot Sequence Screen -->
+  <div id="bootScreenOverlay" class="boot-screen">
+    <!-- Cyberpunk Top HUD Telemetry Brackets -->
+    <div class="boot-hud-topbar">
+      <div class="boot-hud-tl">
+        <span class="hud-indicator-dot"></span>
+        <span class="hud-txt-primary">[ PROTOCOL: DEFCON-1 // CLASSIFIED BLACK-OPS ENCLAVE ]</span>
+      </div>
+      <div class="boot-hud-tc">
+        <span class="hud-txt-dim">QUANTUM NEURAL LINK: </span>
+        <span class="hud-txt-cyan">ONLINE (14.25 GHz)</span>
+      </div>
+      <div class="boot-hud-tr">
+        <span class="hud-txt-dim">ENCRYPTION: </span>
+        <span class="hud-txt-primary">RSA-8192 / AES-256-GCM</span>
+      </div>
+    </div>
+
+    <!-- Center Stage: Dark Techno Skull & Glitch Title -->
+    <div id="bootScreenLogo" class="boot-logo">
+      <div class="techno-skull-wrapper">
+        <pre class="techno-skull-ascii">
+           .▄▄▄▄▄▄▄▄▄▄.
+        .▄█▀▀  ▀██▀  ▀▀█▄.
+       ▄█▀    ▄████▄    ▀█▄
+      ▄█'    ████████    '█▄
+     ▄█      ████████      █▄
+    ▄█   ▄▄▄ ▀██████▀ ▄▄▄   █▄
+   ▄██  █████  ▀▀▀▀  █████  ██▄
+   ███  █████        █████  ███
+   ███  ▀███▀  ▄  ▄  ▀███▀  ███
+   ███▄   ▀   ██  ██   ▀   ▄███
+    ▀███▄▄   ████████   ▄▄███▀
+      ▀███▄▄▄▄▄▄▄▄▄▄▄▄▄███▀
+         ▀▀██████████▀▀</pre>
+        <div class="skull-scanner-beam"></div>
+      </div>
+
+      <div class="boot-title-glitch" data-text="CYBERDECK">CYBERDECK</div>
+      <div class="boot-sub-version">TERMINAL OS // MILITARY-GRADE INFILTRATION SYSTEM</div>
+      <div id="bootScreenReady" class="boot-ready hidden">SYSTEM READY... ENTERING CLASSIFIED ENCLAVE.</div>
+    </div>
+
+    <!-- Full-Width Procedural Terminal Log Stream -->
+    <div class="boot-logs-wrapper">
+      <div class="boot-logs-header">
+        <span>[ SYSTEM TELEMETRY LOG STREAM ]</span>
+        <span class="log-baud">RATE: 1000 Hz // BUFFER: 100%</span>
+      </div>
+      <div id="bootScreenLogs" class="boot-logs"></div>
+    </div>
+  </div>
+
+  <!-- Matrix Digital Rain Canvas Background -->
+  <canvas id="matrixCanvas"></canvas>
+  <canvas id="particleCanvas"></canvas>
+  
+  <!-- =========================================================================
+       0. CLASSIFIED BIOMETRIC / SECRET MASTER PASSCODE GATE SCREEN
+       ========================================================================= -->
+  <div class="secret-gate-overlay hidden" id="secretGateOverlay">
+    <div class="secret-gate-card">
+      <div class="gate-lock-icon">🔒</div>
+      <div class="gate-title" data-text="CLASSIFIED BLACK-OPS ENCLAVE">CLASSIFIED BLACK-OPS ENCLAVE</div>
+      <div class="gate-sub">LEVEL 5 TOP SECRET ENCRYPTION // AUTHORIZED OPERATOR ONLY</div>
+      
+      <div class="gate-input-box">
+        <span class="gate-prompt-sym">#</span>
+        <input type="password" id="secretGateInput" class="gate-input" placeholder="ENTER MASTER PASSCODE..." autocomplete="off" autofocus>
+      </div>
+
+      <button class="gate-auth-btn" id="btnSecretGateSubmit">[ AUTHENTICATE MASTER ACCESS ]</button>
+      <div class="gate-error-msg hidden" id="gateErrorMsg">✖ ACCESS DENIED: INVALID PASSCODE // INTRUSION LOGGED</div>
+
+      <div class="gate-stream-box hidden" id="gateStreamBox">
+        <div class="gate-stream-lines" id="gateStreamLines"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       1. CINEMATIC FULL-SCREEN HACKER LOGIN OVERLAY
+       ========================================================================= -->
+  <div class="hacker-login-overlay hidden" id="hackerLoginOverlay">
+    <div class="login-terminal-card">
+      <div class="login-card-header">
+        <div class="login-title-glitch" data-text="CYBER//TYPE MAINFRAME">CYBER//TYPE MAINFRAME</div>
+        <div class="login-security-tag">RESTRICTED ROOT ACCESS // OPERATOR AUTHENTICATION</div>
+      </div>
+
+      <div class="login-card-body">
+        <div class="login-field-group">
+          <label class="login-label" for="loginUserField">OPERATOR ID:</label>
+          <div class="login-input-wrapper">
+            <span class="login-prefix">&gt;</span>
+            <input type="text" id="loginUserField" class="login-input" value="Anan" autocomplete="off" spellcheck="false">
+          </div>
+        </div>
+
+        <div class="login-field-group">
+          <label class="login-label" for="loginPassField">SECURITY KEY (PASSWORD):</label>
+          <div class="login-input-wrapper">
+            <span class="login-prefix">&gt;</span>
+            <input type="password" id="loginPassField" class="login-input" value="Infinity" placeholder="••••••••••••" autocomplete="off" spellcheck="false">
+          </div>
+        </div>
+
+        <button class="login-submit-btn" id="btnLoginSubmit">
+          [ ENGAGE NEURAL LINK &amp; LOGIN ]
+        </button>
+
+        <div class="login-hint-text">
+          <span>* Restricted Access Only</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       2. UNIVERSAL CYBER HUD TRANSITION OVERLAY (HOLLYWOOD WIDESCREEN COMMAND DECK)
+       ========================================================================= -->
+  <div class="cyber-transition-overlay hidden" id="universalTransitionOverlay">
+    <div class="cyber-transition-card widescreen-deck">
+      
+      <!-- Top Cyber Operations Command Header -->
+      <div class="transition-command-header">
+        <div class="deck-title-group">
+          <span class="deck-signal-badge" id="transBadge">[ CLASSIFIED CYBER OPERATIONS DECK ]</span>
+          <span class="deck-telemetry-tag">UPLINK: <strong class="glow-cyan">14.25 GHz</strong> | ENCRYPTION: <strong class="glow-cmd">RSA-8192</strong> | STATUS: <strong class="glow-cmd">DEFCON-1</strong></span>
+        </div>
+        <div class="deck-percent-group">
+          <span class="deck-percent-label">SUBSYSTEM ALLOCATION:</span>
+          <span class="transition-percentage" id="transPercent">0%</span>
+        </div>
+      </div>
+
+      <!-- Segmented High-Tech Laser Scanning Progress Bar -->
+      <div class="transition-progress-deck">
+        <div class="transition-progress-fill" id="transProgressFill"></div>
+        <div class="laser-scanner-line"></div>
+      </div>
+
+      <!-- Widescreen Dual-Column Deck Body -->
+      <div class="transition-deck-body">
+        
+        <!-- Left Column: Operations Terminal & CPU Core Cluster -->
+        <div class="deck-left-col">
+          <div class="deck-headline-row">
+            <div class="transition-headline" id="transHeadline" data-text="INITIALIZING SYSTEM">
+              INITIALIZING SYSTEM...
+            </div>
+            <div class="deck-cluster-telemetry">
+              <span>CPU: <strong class="glow-cyan">3.70 GHz (96-CORE)</strong></span>
+              <span>MEM: <strong class="glow-cmd">64.8 GB / 128 GB</strong></span>
+            </div>
+          </div>
+
+          <!-- Progressive Hardware & Module Status Grid -->
+          <div class="transition-module-grid">
+            <div class="module-chip" id="modChip1"><span class="chip-dot"></span> [01] KERNEL_MEM</div>
+            <div class="module-chip" id="modChip2"><span class="chip-dot"></span> [02] CPU_REGISTERS</div>
+            <div class="module-chip" id="modChip3"><span class="chip-dot"></span> [03] NET_SOCKET</div>
+            <div class="module-chip" id="modChip4"><span class="chip-dot"></span> [04] KINEMATICS</div>
+            <div class="module-chip" id="modChip5"><span class="chip-dot"></span> [05] CRYPTO_CIPHER</div>
+            <div class="module-chip" id="modChip6"><span class="chip-dot"></span> [06] WORKSPACE_ENV</div>
+          </div>
+
+          <!-- Fixed-Geometry Non-Pushing Log Stream Terminal (Widescreen) -->
+          <div class="transition-terminal-viewport" id="transTerminalViewport">
+            <div class="transition-log-lines" id="transLogLines"></div>
+          </div>
+        </div>
+
+        <!-- Right Column: Operator Holographic Profile Dossier & Code Silhouette -->
+        <div class="deck-right-col">
+          <div class="trans-operator-dossier">
+            
+            <div class="dossier-header">
+              <span class="dossier-badge">[ OPERATOR DOSSIER // SYNAPSE ]</span>
+              <span class="dossier-status-dot">● ONLINE</span>
+            </div>
+
+            <!-- Matrix Log-Code Silhouette Avatar Box -->
+            <div class="dossier-avatar-container">
+              <canvas id="transHoloAvatarCanvas" class="holo-avatar-canvas" width="280" height="135"></canvas>
+              <div class="holo-scanline-fx"></div>
+              <div class="holo-brackets-overlay">
+                <span class="bracket tl"></span>
+                <span class="bracket tr"></span>
+                <span class="bracket bl"></span>
+                <span class="bracket br"></span>
+                <span class="holo-tag">BIOMETRIC: SYNCHRONIZED</span>
+              </div>
+            </div>
+
+            <!-- Dynamic Profile Telemetry Stats -->
+            <div class="dossier-profile-info">
+              <div class="dossier-name-row">
+                <span class="dossier-username" id="transDossierUser">ANAN</span>
+                <span class="dossier-level-badge" id="transDossierLevel">LVL 1</span>
+              </div>
+              <div class="dossier-rank-title" id="transDossierRank">QUANTUM NETRUNNER</div>
+              
+              <!-- EXP Progress Bar -->
+              <div class="dossier-exp-box">
+                <div class="dossier-exp-labels">
+                  <span>SYNAPTIC EXP</span>
+                  <span id="transDossierExpTxt">0 / 300</span>
+                </div>
+                <div class="dossier-exp-track">
+                  <div class="dossier-exp-fill" id="transDossierExpFill" style="width: 25%;"></div>
+                </div>
+              </div>
+
+              <!-- Mini Stats Telemetry Grid -->
+              <div class="dossier-stats-grid">
+                <div class="d-stat-chip">
+                  <span class="ds-lbl">PEAK WPM</span>
+                  <span class="ds-val glow-cyan" id="transDossierWpm">0 WPM</span>
+                </div>
+                <div class="d-stat-chip">
+                  <span class="ds-lbl">AVG ACC</span>
+                  <span class="ds-val" id="transDossierAcc">100%</span>
+                </div>
+                <div class="d-stat-chip">
+                  <span class="ds-lbl">CREDITS</span>
+                  <span class="ds-val glow-cyan" id="transDossierCredits">500 CC</span>
+                </div>
+                <div class="d-stat-chip">
+                  <span class="ds-lbl">BITCOIN</span>
+                  <span class="ds-val glow-gold" id="transDossierBtc">₿ 0</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+      <div class="transition-footer-hint">
+        <span>* Press <kbd>Space</kbd> / <kbd>Enter</kbd> or click to fast-forward execution</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       3. MAIN APPLICATION: WINDOWS 11 COMMAND PROMPT & HARDWARE DECK
+       ========================================================================= -->
+  <div class="terminal-app-container hidden" id="mainTerminalContainer">
+    
+    <!-- Windows 11 Terminal Tabbed Title Bar -->
+    <header class="win11-titlebar">
+      <div class="tab-strip">
+        <div class="terminal-tab active">
+          <span class="tab-icon">&gt;_</span>
+          <span class="tab-title">CyberDeck</span>
+          <button class="tab-close-btn" title="Close Tab">✕</button>
+        </div>
+        <button class="tab-add-btn" title="Open new tab">+</button>
+        <button class="tab-dropdown-btn" title="Shell profiles">⌄</button>
+      </div>
+
+      <div class="window-controls">
+        <button class="win-btn win-min" title="Minimize">─</button>
+        <button class="win-btn win-max" title="Maximize">▢</button>
+        <button class="win-btn win-close" title="Close">✕</button>
+      </div>
+    </header>
+
+    <!-- LIVE CYBER-HUD TELEMETRY -->
+    <div class="cyber-hud-dashboard hidden" id="cyberHudDashboard">
+      <div class="hud-panel cpu-panel">
+        <div class="hud-lbl">CPU [EPYC 9654]</div>
+        <div class="hud-bar-bg"><div class="hud-bar-fg" id="hudCpuBar" style="width: 25%;"></div></div>
+        <div class="hud-val" id="hudCpuVal">25%</div>
+      </div>
+      <div class="hud-panel ram-panel">
+        <div class="hud-lbl">RAM [ALLOCATED]</div>
+        <div class="hud-bar-bg"><div class="hud-bar-fg" id="hudRamBar" style="width: 40%;"></div></div>
+        <div class="hud-val" id="hudRamVal">40%</div>
+      </div>
+      <div class="hud-panel net-panel">
+        <div class="hud-lbl">NET [DOWNLINK]</div>
+        <div class="hud-val"><span id="hudNetDown">14.2</span> Gbps</div>
+      </div>
+      <div class="hud-panel net-panel">
+        <div class="hud-lbl">NET [UPLINK]</div>
+        <div class="hud-val"><span id="hudNetUp">8.5</span> Gbps</div>
+      </div>
+      <div class="hud-panel credits-panel">
+        <div class="hud-lbl">FUNDS [CC]</div>
+        <div class="hud-val"><span id="hudCredits">0</span> CC</div>
+      </div>
+      <div class="hud-panel trace-panel hidden" id="hudTracePanel">
+        <div class="hud-lbl" style="color: #ff2244;">WARNING: ACTIVE TRACE</div>
+        <div class="hud-bar-bg"><div class="hud-bar-fg" id="hudTraceBar" style="width: 0%; background: #ff2244; box-shadow: 0 0 10px #ff2244;"></div></div>
+        <div class="hud-val" id="hudTraceVal" style="color: #ff2244;">0%</div>
+      </div>
+    </div>
+
+    <!-- Main Terminal Display Area -->
+    <main class="terminal-screen-wrapper" id="terminalScreenWrapper">
+      
+      <!-- CMD CLI VIEW (Main Screen) -->
+      <div class="terminal-view active" id="viewCli">
+        <div class="term-line">Microsoft Windows [Version 10.0.26200.9168]</div>
+        <div class="term-line">(c) Microsoft Corporation. All rights reserved.</div>
+        <br>
+        <div class="term-line hint-text">Type <strong class="glow-cmd">help</strong> to see available commands or <strong class="glow-cmd">academy</strong> to start touch typing.</div>
+        <br>
+        
+        <!-- Command History Output -->
+        <div class="cli-history" id="cliHistory"></div>
+        
+        <!-- Active Inline Prompt & Cursor (Always visible and anchored directly after typed text) -->
+        <div class="cli-active-prompt-row" id="cliActivePromptRow">
+          <span class="term-prompt" id="cliPromptPath">C:\Users\asus&gt;</span><span class="term-input-text" id="cliInputText"></span><span class="term-cursor" id="cliCursor"> </span><span class="term-input-after" id="cliInputAfter"></span>
+        </div>
+
+        <!-- Live Cyber Telemetry Strip at bottom of CMD -->
+        <div class="cli-system-status-dock">
+          <span class="status-item"><span class="status-indicator live"></span> SYSTEM: <strong>ONLINE</strong></span>
+          <span class="status-item">KERNEL: <strong>QUANTUM-v6.8.9</strong></span>
+          <span class="status-item">PROCESSOR: <strong>AMD EPYC @ 3.7GHz</strong></span>
+          <span class="status-item">ENCRYPTION: <strong>AES-256-GCM</strong></span>
+          <span class="status-item">SESSION: <strong class="glow-cmd" id="cliSessionUser">asus (UID: 0)</strong></span>
+        </div>
+      </div>
+
+      <!-- TOUCH TYPING ACADEMY VIEW -->
+      <div class="terminal-view hidden" id="viewAcademy">
+        <div class="mode-header-bar">
+          <span class="mode-tag">[ MODE: TOUCH TYPING ACADEMY ]</span>
+          <span class="mode-sub-tag">Lesson: <span id="academyLessonTitle">Home Row Basics</span> (Type 'exit' to return to CMD)</span>
+          <span class="mode-exp-badge">EXP +15 / KEYSTROKE DRILL</span>
+        </div>
+        <div class="academy-metrics-hud">
+          <span>SPEED: <strong id="acadWpm">0 WPM</strong> (<span id="acadCpm">0 CPM</span>)</span>
+          <span>ACCURACY: <strong id="acadAcc">100%</strong> (<span id="acadErr">0 ERR</span>)</span>
+          <span>STREAK: <strong id="acadStreak">0x</strong></span>
+          <span>PROGRESS: <strong id="acadProg">0%</strong></span>
+          <div class="mini-speedometer-container">
+            <svg class="speedo-gauge" viewBox="0 0 60 35">
+              <path d="M 10 30 A 20 20 0 0 1 50 30" fill="none" stroke="#162e1e" stroke-width="4" stroke-linecap="round"/>
+              <path class="speedo-bar" id="acadSpeedoBar" d="M 10 30 A 20 20 0 0 1 50 30" fill="none" stroke="#00ff66" stroke-width="4" stroke-dasharray="62.8" stroke-dashoffset="62.8" stroke-linecap="round"/>
+              <circle cx="30" cy="30" r="3" fill="#00e5ff"/>
+              <line class="speedo-needle" id="acadSpeedoNeedle" x1="30" y1="30" x2="30" y2="14" stroke="#00e5ff" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <span class="speedo-text" id="acadSpeedoText">0 WPM</span>
+          </div>
+        </div>
+        <div class="academy-typing-canvas" id="academyTypingCanvas" tabindex="0">
+          <div class="typing-target-stream" id="targetTextContainer"></div>
+          <div class="typing-prompt-hint">
+            <span class="cursor-block">█</span> กดแป้นพิมพ์ตามตัวอักษรที่ส่องสว่าง (สังเกตตำแหน่งนิ้วมือด้านล่าง)
+          </div>
+        </div>
+      </div>
+
+      <!-- HOLLYWOOD HACKER SIMULATOR VIEW (Interactive Exploit Missions) -->
+      <div class="terminal-view hidden" id="viewHacker">
+        <div class="mode-header-bar hacker-header-bar">
+          <span class="mode-tag" id="hackerModeTitle">[ MODE: QUANTUM CYBER INFILTRATION SIMULATOR ]</span>
+          <div class="hacker-trace-panel" id="hackerTracePanel">
+            <span class="trace-label">SECURITY TRACE:</span>
+            <div class="trace-bar-bg"><div class="trace-bar-fg" id="hackerTraceBar" style="width: 0%;"></div></div>
+            <span class="trace-val" id="hackerTraceVal">0%</span>
+          </div>
+          <div class="hacker-hud-badges">
+            <span class="mode-sub-tag"><kbd>Tab</kbd> Toggle Stream / Mission | Type 'map' for Topology | 'exit' to quit</span>
+          </div>
+        </div>
+        
+        <div class="hacker-terminal-canvas" id="hackerTerminalCanvas" tabindex="0">
+          <div class="terminal-history" id="hackerTerminalOutput">
+            <div class="term-line">[*] QUANTUM INFILTRATION TUNNEL INITIALIZED...</div>
+          </div>
+          
+          <div class="hacker-exec-banner hidden" id="hackerExecBanner">
+            <div class="exec-title">[⚡ INJECTING 0-DAY KERNEL EXPLOIT // OVERWRITING BUFFER MEMORY...]</div>
+            <div class="exec-dump" id="hackerExecDump">0x7FFF0042: 90 90 90 31 C0 50 68 2F 2F 73 68 89 E3 50 53 89</div>
+          </div>
+
+          <div class="terminal-current-line">
+            <span class="terminal-prompt" id="hackerPromptPrefix">root@quantum-core:~#</span>
+            <span class="terminal-stream-code" id="hackerStreamCode"></span>
+            <span class="terminal-cursor">█</span>
+          </div>
+        </div>
+
+        <!-- Access Granted Modal Popup -->
+        <div class="hacker-breach-modal hidden" id="hackerBreachModal">
+          <div class="breach-box">
+            <div class="breach-glitch" data-text="ACCESS GRANTED">[ ACCESS GRANTED ]</div>
+            <div class="breach-sub">ROOT PRIVILEGES ACQUIRED // MISSION OBJECTIVE ACCOMPLISHED</div>
+            <div class="breach-grid">
+              <div>HOST: SATURN_ORBITAL_NET</div>
+              <div>FIREWALL: FULLY PENETRATED (100%)</div>
+              <div>PRIVILEGE: UID 0 [ROOT ACCESS]</div>
+              <div>STATUS: SYSTEM COMPROMISED</div>
+            </div>
+            <div class="breach-footer">Press any key or Enter to advance to next mission...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SPEED RUSH & ENDLESS MARATHON VIEW -->
+      <div class="terminal-view hidden" id="viewSpeed">
+        <div class="mode-header-bar">
+          <span class="mode-tag" id="speedModeTitle">[ MODE: SPEED RUSH WPM BENCHMARK ]</span>
+          <span class="mode-sub-tag">STATUS: <strong id="speedTimer" class="glow-cmd">30s</strong> (Type 'exit' to quit)</span>
+          <span class="mode-exp-badge">DOUBLE EXP MARATHON</span>
+        </div>
+        <div class="academy-metrics-hud">
+          <span>SPEED: <strong id="speedLiveWpm">0 WPM</strong></span>
+          <span>ACCURACY: <strong id="speedLiveAcc">100%</strong></span>
+          <span>STREAK: <strong id="speedLiveStreak" class="flame-streak">0x</strong></span>
+          <span id="speedBatchHud" class="hidden">BATCHES: <strong id="speedLiveBatches">0</strong></span>
+          <div class="mini-speedometer-container">
+            <svg class="speedo-gauge" viewBox="0 0 60 35">
+              <path d="M 10 30 A 20 20 0 0 1 50 30" fill="none" stroke="#162e1e" stroke-width="4" stroke-linecap="round"/>
+              <path class="speedo-bar" id="speedSpeedoBar" d="M 10 30 A 20 20 0 0 1 50 30" fill="none" stroke="#00e5ff" stroke-width="4" stroke-dasharray="62.8" stroke-dashoffset="62.8" stroke-linecap="round"/>
+              <circle cx="30" cy="30" r="3" fill="#ffaa00"/>
+              <line class="speedo-needle" id="speedSpeedoNeedle" x1="30" y1="30" x2="30" y2="14" stroke="#ffaa00" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <span class="speedo-text" id="speedSpeedoText">0 WPM</span>
+          </div>
+        </div>
+        <div class="batch-execution-banner hidden" id="speedBatchNotice">
+          [⚡ EXECUTING BATCH SCRIPT // TRANSMITTING PAYLOAD TO QUANTUM CORE...]
+        </div>
+        <div class="academy-typing-canvas" id="speedTypingCanvas" tabindex="0">
+          <div class="typing-target-stream" id="speedTextContainer"></div>
+          <div class="typing-prompt-hint">
+            <span class="cursor-block">█</span> เริ่มพิมพ์คำแรกเพื่อเปิดระบบทดสอบความเร็วทันที
+          </div>
+        </div>
+      </div>
+
+      <!-- FREE SANDBOX VIEW -->
+      <div class="terminal-view hidden" id="viewSandbox">
+        <div class="mode-header-bar">
+          <span class="mode-tag">[ MODE: FREE TERMINAL NOTEPAD ]</span>
+          <span class="mode-sub-tag">Type anything freely with live finger kinematics and sound effects.</span>
+        </div>
+        <div class="sandbox-wrapper">
+          <textarea id="sandboxTextarea" class="sandbox-textarea" placeholder="C:\Users\asus\Sandbox> Type anything here... Press Escape to return to CMD."></textarea>
+        </div>
+      </div>
+
+      <!-- HACKY ROGUELITE CYBERSPACE VIEW -->
+      <div class="terminal-view hidden" id="viewRoguelite">
+        <!-- Dynamically rendered by RogueliteEngine -->
+      </div>
+
+    </main>
+
+    <!-- CENTERED REAL-TIME KEYBOARD & PIXEL-PERFECT FINGER RIG -->
+    <section class="hardware-dock-container" id="hardwareDockContainer">
+      <div class="hardware-status-strip">
+        <div class="status-left">
+          <span>TARGET: <strong class="hw-key" id="guideNextKeyDisplay">A</strong></span>
+          <span>FINGER: <strong class="hw-finger finger-lp" id="guideNextFingerDisplay">LEFT PINKY (นิ้วก้อยซ้าย)</strong></span>
+        </div>
+        <div class="status-center">
+          <span class="level-badge" id="hudLevelBadge">LVL 1 NETRUNNER</span>
+          <div class="level-exp-bar-box">
+            <div class="level-exp-fill" id="hudExpFill" style="width: 0%;"></div>
+          </div>
+          <span class="level-exp-text" id="hudExpText">0 / 300 EXP</span>
+        </div>
+        <div class="status-right">
+          <span>LAYOUT: <strong id="currentLayoutDisplay">EN [QWERTY]</strong></span>
+          <span>AUDIO: <strong id="currentSoundDisplay">HOLLYWOOD</strong></span>
+        </div>
+      </div>
+
+      <!-- Centered Keyboard Chassis Wrapper -->
+      <div class="keyboard-hardware-wrapper">
+        <div class="keyboard-hand-stage">
+          <!-- Physical Glowing Keyboard -->
+          <div class="cyber-keyboard" id="cyberKeyboard"></div>
+
+          <!-- Dynamic Pixel-Perfect Finger Kinematics Rig -->
+          <div class="cyber-finger-rig-stage" id="cyberHandsContainer"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Terminal Footer Status Bar -->
+    <footer class="terminal-statusbar">
+      <div class="status-left">
+        <span>STATUS: READY</span>
+        <span>ENCLAVE: ROOT // ONLINE</span>
+        <span class="bgm-indicator" id="bgmStatusTag">BGM: OFF</span>
+      </div>
+      <div class="status-right">
+        <span>COMMANDS: <kbd>help</kbd> <kbd>scan</kbd> <kbd>crack</kbd> <kbd>bgm</kbd> <kbd>whoami</kbd> <kbd>map</kbd> <kbd>academy</kbd> <kbd>hacker</kbd> <kbd>speed</kbd> <kbd>exit</kbd></span>
+        <span>AUTO-UPDATE: <span class="update-badge">LIVE V3.0</span></span>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- =========================================================================
+       4. INTERACTIVE SATELLITE NETWORK TOPOLOGY MAP MODAL
+       ========================================================================= -->
+  <div class="network-map-modal hidden" id="cyberNetworkMapModal">
+    <div class="network-map-card">
+      <div class="map-modal-header">
+        <span>[ ORBITAL CYBER INTRUSION TOPOLOGY MAP ]</span>
+        <button class="map-close-btn" id="mapCloseBtn">✕</button>
+      </div>
+      <div class="network-map-stage">
+        <div class="map-node node-local" style="top: 50%; left: 10%;">
+          <div class="node-icon">💻</div>
+          <div class="node-label">OPERATOR (YOU)</div>
+          <div class="node-status">127.0.0.1 [ENCRYPTED]</div>
+        </div>
+        <div class="map-link l1"></div>
+        <div class="map-node node-proxy" style="top: 25%; left: 35%;">
+          <div class="node-icon">🛡️</div>
+          <div class="node-label">TOR RELAY 01</div>
+          <div class="node-status">185.220.101.5 [ACTIVE]</div>
+        </div>
+        <div class="map-link l2"></div>
+        <div class="map-node node-sat" style="top: 75%; left: 60%;">
+          <div class="node-icon">🛰️</div>
+          <div class="node-label">SATURN-SAT-09</div>
+          <div class="node-status">14.25 GHz [LOCKED]</div>
+        </div>
+        <div class="map-link l3"></div>
+        <div class="map-node node-target" style="top: 50%; left: 85%;">
+          <div class="node-icon">🗄️</div>
+          <div class="node-label">MAINFRAME VAULT</div>
+          <div class="node-status">UID: 0 [BREACH READY]</div>
+        </div>
+      </div>
+      <div class="map-modal-footer">
+        <span>* Real-time Orbital telemetry uplink via Darknet Mesh. Press Escape or click ✕ to close.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- LEVEL UP FANFARE TOAST BANNER -->
+  <div class="level-up-toast hidden" id="cyberLevelUpToast">
+    <div class="toast-glow-ring"></div>
+    <div class="toast-title">▲ LEVEL UP ACHIEVED! ▲</div>
+    <div class="toast-sub" id="toastRankText">PROMOTED TO: NETRUNNER (LVL 2)</div>
+    <div class="toast-bonus">+100 CYBER OVERCLOCK BONUS ACTIVATED</div>
+  </div>
+  <!-- =========================================================================
+       5. CYBERPUNK 2077: BREACH PROTOCOL MINI-GAME MODAL
+       ========================================================================= -->
+  <div class="breach-protocol-modal hidden" id="breachProtocolModal">
+    <div class="breach-protocol-card">
+      <div class="breach-header">
+        <div class="breach-title">[ CYBERPUNK 2077 // BREACH PROTOCOL INFILTRATION ]</div>
+        <div class="breach-timer">BUFFER TIME: <strong id="breachTimerVal">30s</strong></div>
+        <button class="map-close-btn" id="breachCloseBtn">✕</button>
+      </div>
+
+      <div class="breach-body-grid">
+        <!-- Hex Matrix Grid -->
+        <div class="breach-matrix-panel">
+          <div class="panel-label">CODE MATRIX (SELECT ROW / COLUMN):</div>
+          <div class="breach-matrix-grid" id="breachMatrixGrid"></div>
+        </div>
+
+        <!-- Right: Buffer & Daemons -->
+        <div class="breach-side-panel">
+          <div class="panel-label">BUFFER ALLOCATION:</div>
+          <div class="breach-buffer-slots" id="breachBufferSlots"></div>
+
+          <div class="panel-label" style="margin-top:12px;">TARGET DAEMONS TO UPLOAD:</div>
+          <div class="breach-daemon-list" id="breachDaemonList"></div>
+        </div>
+      </div>
+
+      <div class="breach-footer-bar">
+        <span>* Select alternating rows & columns to match daemon code sequences. Press Escape to abort.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       6. WATCH DOGS: LIVE CYBER THREAT WAR GLOBE MODAL
+       ========================================================================= -->
+  <div class="cyber-threat-modal hidden" id="cyberThreatModal">
+    <div class="cyber-threat-card">
+      <div class="map-modal-header">
+        <span>[ GLOBAL CYBER THREAT WAR MAP // WATCH DOGS ENGINE ]</span>
+        <span class="threat-alert-pill">● DEFCON-1 ACTIVE</span>
+        <button class="map-close-btn" id="threatCloseBtn">✕</button>
+      </div>
+
+      <div class="threat-canvas-stage">
+        <canvas id="threatGlobeCanvas"></canvas>
+      </div>
+
+      <div class="threat-ticker-console" id="threatTickerConsole">
+        <div class="threat-ticker-item"><span>[INIT]</span> Global telemetry nodes online. Monitoring darknet packets...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       7. MR. ROBOT: USB RUBBER DUCKY ATTACK PAYLOAD MODAL
+       ========================================================================= -->
+  <div class="ducky-modal hidden" id="duckyPayloadModal">
+    <div class="ducky-card">
+      <div class="map-modal-header">
+        <span>[ MR. ROBOT // USB RUBBER DUCKY PAYLOAD COMPILER ]</span>
+        <button class="map-close-btn" id="duckyCloseBtn">✕</button>
+      </div>
+      <div class="ducky-body">
+        <div class="ducky-selector-row">
+          <button class="ducky-btn active" data-payload="reverse_shell">REVERSE_TCP</button>
+          <button class="ducky-btn" data-payload="wifi_dump">WLAN_EXTRACT</button>
+          <button class="ducky-btn" data-payload="sam_dump">SAM_HARVEST</button>
+        </div>
+        <pre class="ducky-code-preview" id="duckyCodePreview"></pre>
+        <button class="ducky-deploy-btn" id="btnDeployDucky">[ FLASH PAYLOAD TO VIRTUAL RUBBER DUCKY ]</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       8. ADVANCED VISUALS: HEATMAP, NODE GRAPH, PACKET SNIFFER
+       ========================================================================= -->
+  <!-- Keystroke Heatmap -->
+  <div class="cyber-modal hidden" id="heatmapModal">
+    <div class="modal-card" style="max-width: 900px;">
+      <div class="map-modal-header">
+        <span>[ KEYSTROKE HEATMAP // BIOMETRIC KINEMATICS ]</span>
+        <button class="map-close-btn" id="heatmapCloseBtn">✕</button>
+      </div>
+      <div class="heatmap-body" style="padding: 20px; text-align: center;">
+        <div style="font-size: 14px; margin-bottom: 20px; color: var(--theme-primary);">
+          ANALYZING RECENT KEYSTROKE FREQUENCY AND ERROR HOTSPOTS...
+        </div>
+        <!-- Mock Heatmap grid overlay on a keyboard layout -->
+        <div class="heatmap-grid" id="heatmapGrid" style="display: grid; grid-template-columns: repeat(14, 1fr); gap: 5px; max-width: 800px; margin: 0 auto;">
+          <!-- JS will populate this with colored blocks -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Node Graph Network Scanner -->
+  <div class="cyber-modal hidden" id="nodeGraphModal">
+    <div class="modal-card" style="max-width: 1000px; height: 700px;">
+      <div class="map-modal-header">
+        <span>[ QUANTUM NODE GRAPH // NETWORK TOPOLOGY SCANNER ]</span>
+        <button class="map-close-btn" id="nodeGraphCloseBtn">✕</button>
+      </div>
+      <div class="node-graph-body" id="nodeGraphContainer" style="width: 100%; height: calc(100% - 40px); position: relative; overflow: hidden; background: #050505;">
+        <!-- Canvas or SVG for Node Graph -->
+        <svg id="nodeGraphSvg" style="width: 100%; height: 100%;">
+          <g id="nodeGraphLinks"></g>
+          <g id="nodeGraphNodes"></g>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Packet Sniffer Visualizer -->
+  <div class="cyber-modal hidden" id="packetSnifferModal">
+    <div class="modal-card" style="max-width: 800px;">
+      <div class="map-modal-header">
+        <span>[ LIVE PACKET SNIFFER // DEEP PACKET INSPECTION ]</span>
+        <button class="map-close-btn" id="packetSnifferCloseBtn">✕</button>
+      </div>
+      <div class="packet-sniffer-body" id="packetSnifferOutput" style="height: 400px; overflow-y: auto; padding: 10px; font-family: var(--font-mono); font-size: 12px; background: rgba(0,0,0,0.8); border: 1px solid var(--theme-border);">
+        <div style="color: var(--theme-primary);">[*] BINDING TO PROMISCUOUS MODE...</div>
+        <div style="color: var(--theme-primary);">[*] LISTENING ON INTERFACE ETH0...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CCTV / Webcam Infiltration (camhack) -->
+  <div class="cyber-modal hidden" id="camhackModal">
+    <div class="modal-card" style="max-width: 800px;">
+      <div class="map-modal-header">
+        <span>[ CCTV // LOCAL FEED INTERCEPTED ]</span>
+        <button class="map-close-btn" id="camhackCloseBtn">✕</button>
+      </div>
+      <div class="camhack-body" style="position: relative; overflow: hidden; background: #000;">
+        <video id="camhackVideo" autoplay playsinline style="width: 100%; filter: sepia(100%) hue-rotate(90deg) saturate(200%) brightness(0.8) contrast(1.2);"></video>
+        <div style="position: absolute; top: 20px; left: 20px; color: #00ff66; font-family: var(--font-mono); text-shadow: 0 0 5px #00ff66;">
+          <div class="blink">[REC] CAM 01 // OVERRIDE</div>
+          <div id="camhackTimer">00:00:00</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EMP SHOCKWAVE FULLSCREEN FLASH LAYER -->
+  <div class="emp-shockwave-layer hidden" id="empShockwaveOverlay">
+    <div class="emp-lightning"></div>
+    <div class="emp-text">[ EMP BLAST DEPLOYED // SENTINELS NULLIFIED ]</div>
+  </div>
+
+  <!-- Score Summary Modal -->
+  <div class="cyber-modal hidden" id="scoreModal">
+    <div class="modal-backdrop"></div>
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-glitch" data-text="MISSION ACCOMPLISHED">MISSION ACCOMPLISHED</div>
+        <button class="modal-close-btn" id="modalCloseBtn">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="result-rank-badge" id="resultRank">RANK: S [CYBER DEITY]</div>
+        <div class="modal-stats-grid">
+          <div class="modal-stat-box">
+            <span class="lbl">FINAL SPEED</span>
+            <span class="val" id="modalFinalWpm">85</span>
+            <span class="sub" id="modalFinalCpm">425 CPM</span>
+          </div>
+          <div class="modal-stat-box">
+            <span class="lbl">ACCURACY</span>
+            <span class="val" id="modalFinalAcc">98.5%</span>
+            <span class="sub" id="modalFinalErrors">2 Errors</span>
+          </div>
+          <div class="modal-stat-box">
+            <span class="lbl">MAX COMBO</span>
+            <span class="val" id="modalFinalCombo">142x</span>
+            <span class="sub">Keystrokes</span>
+          </div>
+          <div class="modal-stat-box">
+            <span class="lbl">TIME ELAPSED</span>
+            <span class="val" id="modalFinalTime">45.2s</span>
+            <span class="sub">Total Duration</span>
+          </div>
+        </div>
+        <!-- Live Monkeytype-Style Telemetry Velocity Curve -->
+        <div class="modal-chart-container" id="modalChartContainer">
+          <div class="chart-header">
+            <span>PERFORMANCE VELOCITY CURVE</span>
+            <span class="chart-legend"><span class="leg-dot wpm-dot"></span> WPM <span class="leg-dot acc-dot"></span> ACCURACY</span>
+          </div>
+          <svg class="speed-chart-svg" id="modalSpeedChartSvg" viewBox="0 0 500 120" preserveAspectRatio="none">
+            <!-- Dynamic Grid Lines & Smooth Bezier Curves inserted by JS -->
+          </svg>
+        </div>
+
+        <div class="modal-performance-msg" id="modalMessage">
+          "Exemplary touch typing speed. Neural pathway synchronization optimal."
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="cmd-btn" id="modalNextLessonBtn">NEXT LESSON →</button>
+        <button class="cmd-btn primary-cmd-btn" id="modalRetryBtn">↺ RETRY MISSION</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOUCH TYPING ACADEMY VISUAL MISSION GRID MODAL -->
+  <div class="cyber-modal hidden" id="academyGridModal">
+    <div class="modal-backdrop"></div>
+    <div class="modal-card academy-grid-card">
+      <div class="modal-header">
+        <div class="modal-glitch" data-text="TOUCH TYPING MISSION MATRIX">[ TOUCH TYPING MISSION MATRIX ]</div>
+        <button class="modal-close-btn" id="academyGridCloseBtn">✕</button>
+      </div>
+      <div class="academy-modal-body">
+        <div class="academy-tabs">
+          <button class="academy-tab active" id="tabEnAcademy">ENGLISH CURRICULUM</button>
+          <button class="academy-tab" id="tabThAcademy">THAI CURRICULUM</button>
+          <button class="academy-tab weak-tab" id="tabWeakAcademy">⚡ WEAK KEY DRILL (KEYBR)</button>
+        </div>
+        <div class="academy-mission-grid" id="academyMissionGrid">
+          <!-- Dynamically generated lesson cards with stars & titles -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/duckyCompiler.js"></script>
+  <script src="js/cyberLogGenerator.js"></script>
+  <script src="js/virtualNetwork.js"></script>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,198 @@
+/* ==========================================================================
+   PIXEL-PERFECT FINGER KINEMATICS & HAND RIG STYLES
+   Fingertips perfectly anchored over Home Row keys (A, S, D, F / J, K, L, ;)
+   with smooth kinematic reaches and downward plunges onto pressed keys.
+   ========================================================================== */
+
+.cyber-finger-rig-stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10;
+  overflow: visible;
+}
+
+.cyber-finger-rig-stage.hidden-hands {
+  display: none !important;
+}
+
+/* Palm Deck Badges (Left & Right) */
+.hand-palm-deck {
+  position: absolute;
+  bottom: -22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  opacity: 0.85;
+}
+
+.left-palm-deck {
+  left: 20%;
+}
+
+.right-palm-deck {
+  right: 20%;
+}
+
+.palm-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+}
+
+.wrist-cyber-bar {
+  width: 90px;
+  height: 3px;
+  background: var(--theme-primary-dim);
+  border: 1px solid var(--theme-primary);
+  border-radius: 2px;
+  box-shadow: 0 0 8px var(--theme-primary-glow);
+}
+
+/* ==========================================================================
+   FINGERTIP PINS (10 Fingers)
+   ========================================================================== */
+
+.finger-pin {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  transition: left 0.08s cubic-bezier(0.1, 0.9, 0.2, 1), 
+              top 0.08s cubic-bezier(0.1, 0.9, 0.2, 1), 
+              transform 0.06s ease;
+  z-index: 15;
+}
+
+.pin-core {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 900;
+  color: #ffffff;
+  background: rgba(14, 14, 14, 0.92);
+  border: 2px solid;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.8);
+  transition: all 0.06s ease;
+}
+
+.pin-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 38px;
+  height: 38px;
+  border: 1.5px dashed;
+  border-radius: 50%;
+  opacity: 0.4;
+  transition: all 0.06s ease;
+}
+
+/* FINGER COLORS ASSIGNED TO PIN RINGS & CORES */
+.finger-lp .pin-core { border-color: var(--finger-lp); color: var(--finger-lp); }
+.finger-lp .pin-ring { border-color: var(--finger-lp); }
+
+.finger-lr .pin-core { border-color: var(--finger-lr); color: var(--finger-lr); }
+.finger-lr .pin-ring { border-color: var(--finger-lr); }
+
+.finger-lm .pin-core { border-color: var(--finger-lm); color: var(--finger-lm); }
+.finger-lm .pin-ring { border-color: var(--finger-lm); }
+
+.finger-li .pin-core { border-color: var(--finger-li); color: var(--finger-li); }
+.finger-li .pin-ring { border-color: var(--finger-li); }
+
+.finger-lt .pin-core, .finger-rt .pin-core { border-color: var(--finger-th); color: var(--finger-th); }
+.finger-lt .pin-ring, .finger-rt .pin-ring { border-color: var(--finger-th); }
+
+.finger-ri .pin-core { border-color: var(--finger-ri); color: var(--finger-ri); }
+.finger-ri .pin-ring { border-color: var(--finger-ri); }
+
+.finger-rm .pin-core { border-color: var(--finger-rm); color: var(--finger-rm); }
+.finger-rm .pin-ring { border-color: var(--finger-rm); }
+
+.finger-rr .pin-core { border-color: var(--finger-rr); color: var(--finger-rr); }
+.finger-rr .pin-ring { border-color: var(--finger-rr); }
+
+.finger-rp .pin-core { border-color: var(--finger-rp); color: var(--finger-rp); }
+.finger-rp .pin-ring { border-color: var(--finger-rp); }
+
+/* ==========================================================================
+   DIRECT KEY-PRESSING PLUNGE ANIMATION
+   ========================================================================== */
+
+.finger-pin.pressing {
+  z-index: 25;
+}
+
+.finger-pin.pressing .pin-core {
+  background: var(--theme-primary) !important;
+  color: #000000 !important;
+  border-color: #ffffff !important;
+  box-shadow: 0 0 16px var(--theme-primary-glow), inset 0 0 8px #ffffff;
+  transform: scale(0.9);
+}
+
+.finger-pin.pressing .pin-ring {
+  width: 48px;
+  height: 48px;
+  opacity: 0.9;
+  border-color: var(--theme-primary);
+  box-shadow: 0 0 15px var(--theme-primary);
+  border-style: solid;
+}
+
+/* ==========================================================================
+   TARGET GUIDANCE AURA (TOUCH TYPING NEXT KEY)
+   ========================================================================== */
+
+.finger-pin.target-guide {
+  z-index: 20;
+}
+
+.finger-pin.target-guide .pin-core {
+  box-shadow: 0 0 14px var(--theme-primary);
+  animation: guide-pin-pulse 0.7s infinite alternate ease-in-out;
+}
+
+.finger-pin.target-guide .pin-ring {
+  opacity: 0.9;
+  border-style: solid;
+  border-width: 2px;
+  animation: rotate-ring 2s linear infinite;
+}
+
+@keyframes guide-pin-pulse {
+  0% { transform: scale(1); filter: brightness(1); }
+  100% { transform: scale(1.15); filter: brightness(1.4); }
+}
+
+@keyframes rotate-ring {
+  0% { transform: translate(-50%, -50%) rotate(0deg); }
+  100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+@media (max-width: 768px) {
+  .finger-pin {
+    width: 24px;
+    height: 24px;
+  }
+  .pin-core {
+    width: 22px;
+    height: 22px;
+    font-size: 9px;
+  }
+}

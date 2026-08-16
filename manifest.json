@@ -1,0 +1,16 @@
+{
+  "name": "Command Prompt - CYBER//TYPE",
+  "short_name": "CMD CyberType",
+  "description": "Authentic Windows 11 Command Prompt Touch Typing & Hacker Terminal",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0c0c0c",
+  "theme_color": "#1f1f1f",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23000000'/><text x='15' y='65' fill='%2300ff66' font-family='monospace' font-size='45' font-weight='bold'>C:\\_</text></svg>",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+node_modules/
+CyberDeck-win32-x64/
+CyberDeck_Final/
+CyberType-win32-x64/
+*.log
+.DS_Store
+Thumbs.db

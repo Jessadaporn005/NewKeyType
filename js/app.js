@@ -1,0 +1,3018 @@
+/**
+ * CYBER//TYPE REAL-WORLD CYBER OS WORKSTATION & ADVANCED HACKER CONTROLLER
+ * Supports real application launching (Chrome, Notepad, Calc, Code, Steam, Spotify),
+ * Linux-like file manipulation (ls, pwd, cd, cat, mkdir, touch, nano),
+ * Neofetch system hardware diagnostics, real ping/exec bridge,
+ * Stage 0 Black-Ops Gate, Cyberpunk Breach Protocol, Watch Dogs Threat Globe,
+ * The Matrix EMP Blast, and Mr. Robot USB Ducky Compiler.
+ */
+
+import { soundEngine } from './audio.js';
+import { profileStore } from './profileStore.js';
+import { systemBridge } from './systemBridge.js';
+import { KeyboardVisualizer } from './keyboard.js';
+import { CyberHandsController } from './hands.js';
+import { MatrixVisualEngine } from './matrix.js';
+import { LESSONS_DATA, SPEED_TEST_TEXTS } from './lessons.js';
+import { TypingEngine } from './typingEngine.js';
+import { HackerTyperEngine } from './hackerTyper.js';
+import { BreachProtocolEngine } from './breachProtocol.js';
+import { CyberThreatGlobeEngine } from './threatGlobe.js';
+import { DUCKY_PAYLOAD_TEMPLATES } from './duckyCompiler.js';
+import { generateEntranceLogs, generateExitLogs, generateLoginLogs } from './cyberLogGenerator.js';
+import { RogueliteEngine } from './rogueliteEngine.js';
+import { ToastManager } from './toastManager.js';
+import { ParticleEffectEngine } from './particleEffect.js';
+import { ControlCenter } from './controlCenter.js';
+import { HologramAvatar } from './hologramAvatar.js';
+
+// Application States
+const STATES = {
+  BOOTING: 'BOOTING',
+  GATE: 'GATE',
+  LOGIN: 'LOGIN',
+  LOADING: 'LOADING',
+  CLI_PROMPT: 'CLI_PROMPT',
+  MODE_ACADEMY: 'MODE_ACADEMY',
+  MODE_HACKER: 'MODE_HACKER',
+  MODE_SPEED: 'MODE_SPEED',
+  MODE_SANDBOX: 'MODE_SANDBOX',
+  MODE_ROGUELITE: 'MODE_ROGUELITE'
+};
+
+class WindowsTerminalApp {
+  constructor() {
+    this.state = STATES.BOOTING;
+    this.username = 'Anan';
+    this.currentLayout = 'en';
+    this.currentTheme = 'matrix';
+    this.currentSound = 'hollywood';
+    this.promptStyle = 'windows'; // windows | kali | arch | ubuntu | matrix
+
+    this.cliInputBuffer = '';
+    this.cliCursorPos = 0;
+    this.cliHistoryStack = [];
+    this.cliHistoryIndex = -1;
+    this.customAliases = {};
+
+    // Profile & RPG Level
+    this.profile = null; // Loaded in init()
+
+    // Engines
+    this.audio = soundEngine;
+    this.sys = systemBridge;
+    this.matrix = null;
+    this.kb = null;
+    this.hands = null;
+    this.academyEngine = null;
+    this.speedEngine = null;
+    this.hackerEngine = null;
+    this.breachEngine = null;
+    this.threatEngine = null;
+    this.rogueliteEngine = null;
+    this.controlCenter = null;
+    this.toasts = new ToastManager(this.audio);
+    this.particles = new ParticleEffectEngine();
+    this.holoAvatar = new HologramAvatar();
+
+    profileStore.onAchievementUnlocked = (ach) => {
+      if (this.toasts) this.toasts.achievement(ach);
+    };
+
+    // Sandbox editor state
+    this.currentEditingFile = null;
+
+    // Speed test timer & endless runner
+    this.speedDuration = 30;
+    this.speedTimerInterval = null;
+    this.speedTimeLeft = 30;
+    this.speedElapsedSeconds = 0;
+
+    // Transition state
+    this.isTransitioning = false;
+    this.transitionInterval = null;
+    this.skipCurrentTransition = null;
+
+    this.isGhostMode = new URLSearchParams(window.location.search).get('ghost') === '1';
+    
+    // DOM Elements
+    this.dom = {};
+  }
+
+  async init() {
+    if (this.isGhostMode) {
+      document.body.classList.add('ghost-mode');
+    }
+    
+    this.cacheDOM();
+    await profileStore.initStore();
+    this.profile = profileStore.getProfile('Anan');
+    this.initEngines();
+    await this.sys.init();
+    this.registerServiceWorker();
+    this.bindEvents();
+    this.syncProfileToHud();
+    this.applyUserSettings('Anan');
+    
+    // Start unskippable cinematic boot sequence
+    this.playBootSequence();
+  }
+
+  cacheDOM() {
+    this.dom = {
+      // Boot Screen
+      bootScreenOverlay: document.getElementById('bootScreenOverlay'),
+      bootScreenLogs: document.getElementById('bootScreenLogs'),
+      bootScreenLogo: document.getElementById('bootScreenLogo'),
+      bootScreenReady: document.getElementById('bootScreenReady'),
+
+      // Stage 0 Secret Gate
+      secretGateOverlay: document.getElementById('secretGateOverlay'),
+      secretGateInput: document.getElementById('secretGateInput'),
+      btnSecretGateSubmit: document.getElementById('btnSecretGateSubmit'),
+      gateErrorMsg: document.getElementById('gateErrorMsg'),
+      gateStreamBox: document.getElementById('gateStreamBox'),
+      gateStreamLines: document.getElementById('gateStreamLines'),
+
+      // Stage 1 Hacker Login
+      hackerLoginOverlay: document.getElementById('hackerLoginOverlay'),
+      loginUserField: document.getElementById('loginUserField'),
+      loginPassField: document.getElementById('loginPassField'),
+      btnLoginSubmit: document.getElementById('btnLoginSubmit'),
+      btnLoginBypass: document.getElementById('btnLoginBypass'),
+      loginCipherStream: document.getElementById('loginCipherStream'),
+
+      // Universal Cyber Transition Overlay
+      universalTransitionOverlay: document.getElementById('universalTransitionOverlay'),
+      transBadge: document.getElementById('transBadge'),
+      transPercent: document.getElementById('transPercent'),
+      transHeadline: document.getElementById('transHeadline'),
+      transProgressFill: document.getElementById('transProgressFill'),
+      modChips: [
+        document.getElementById('modChip1'),
+        document.getElementById('modChip2'),
+        document.getElementById('modChip3'),
+        document.getElementById('modChip4'),
+        document.getElementById('modChip5'),
+        document.getElementById('modChip6')
+      ],
+      transTerminalViewport: document.getElementById('transTerminalViewport'),
+      transLogLines: document.getElementById('transLogLines'),
+      transHoloAvatarCanvas: document.getElementById('transHoloAvatarCanvas'),
+      transDossierUser: document.getElementById('transDossierUser'),
+      transDossierLevel: document.getElementById('transDossierLevel'),
+      transDossierRank: document.getElementById('transDossierRank'),
+      transDossierExpTxt: document.getElementById('transDossierExpTxt'),
+      transDossierExpFill: document.getElementById('transDossierExpFill'),
+      transDossierWpm: document.getElementById('transDossierWpm'),
+      transDossierAcc: document.getElementById('transDossierAcc'),
+      transDossierCredits: document.getElementById('transDossierCredits'),
+      transDossierBtc: document.getElementById('transDossierBtc'),
+
+      mainTerminalContainer: document.getElementById('mainTerminalContainer'),
+      terminalScreenWrapper: document.getElementById('terminalScreenWrapper'),
+      
+      // Window Controls
+      winMinBtn: document.querySelector('.win-min'),
+      winMaxBtn: document.querySelector('.win-max'),
+      winCloseBtn: document.querySelector('.win-close'),
+
+      // Views
+      views: {
+        cli: document.getElementById('viewCli'),
+        academy: document.getElementById('viewAcademy'),
+        hacker: document.getElementById('viewHacker'),
+        speed: document.getElementById('viewSpeed'),
+        sandbox: document.getElementById('viewSandbox'),
+        roguelite: document.getElementById('viewRoguelite')
+      },
+
+      // CLI Elements
+      cliHistory: document.getElementById('cliHistory'),
+      cliPromptPath: document.getElementById('cliPromptPath'),
+      cliInputText: document.getElementById('cliInputText'),
+      cliCursor: document.getElementById('cliCursor'),
+      cliInputAfter: document.getElementById('cliInputAfter'),
+      cliActivePromptRow: document.getElementById('cliActivePromptRow'),
+      cliSessionUser: document.getElementById('cliSessionUser'),
+
+      // Academy Elements
+      academyLessonTitle: document.getElementById('academyLessonTitle'),
+      acadWpm: document.getElementById('acadWpm'),
+      acadCpm: document.getElementById('acadCpm'),
+      acadAcc: document.getElementById('acadAcc'),
+      acadErr: document.getElementById('acadErr'),
+      acadStreak: document.getElementById('acadStreak'),
+      acadProg: document.getElementById('acadProg'),
+      acadSpeedoNeedle: document.getElementById('acadSpeedoNeedle'),
+      acadSpeedoText: document.getElementById('acadSpeedoText'),
+      academyTypingCanvas: document.getElementById('academyTypingCanvas'),
+      targetTextContainer: document.getElementById('targetTextContainer'),
+
+      // Hacker Elements
+      hackerTerminalCanvas: document.getElementById('hackerTerminalCanvas'),
+      hackerTerminalOutput: document.getElementById('hackerTerminalOutput'),
+      hackerStreamCode: document.getElementById('hackerStreamCode'),
+      hackerBreachModal: document.getElementById('hackerBreachModal'),
+
+      // Speed Elements
+      speedModeTitle: document.getElementById('speedModeTitle'),
+      speedTimer: document.getElementById('speedTimer'),
+      speedLiveWpm: document.getElementById('speedLiveWpm'),
+      speedLiveAcc: document.getElementById('speedLiveAcc'),
+      speedLiveStreak: document.getElementById('speedLiveStreak'),
+      speedBatchHud: document.getElementById('speedBatchHud'),
+      speedLiveBatches: document.getElementById('speedLiveBatches'),
+      speedBatchNotice: document.getElementById('speedBatchNotice'),
+      speedSpeedoNeedle: document.getElementById('speedSpeedoNeedle'),
+      speedSpeedoText: document.getElementById('speedSpeedoText'),
+      speedTypingCanvas: document.getElementById('speedTypingCanvas'),
+      speedTextContainer: document.getElementById('speedTextContainer'),
+
+      // Sandbox Elements
+      sandboxTextarea: document.getElementById('sandboxTextarea'),
+
+      // Netrunner EXP HUD
+      hudLevelBadge: document.getElementById('hudLevelBadge'),
+      hudExpFill: document.getElementById('hudExpFill'),
+      hudExpText: document.getElementById('hudExpText'),
+      currentLayoutDisplay: document.getElementById('currentLayoutDisplay'),
+      currentSoundDisplay: document.getElementById('currentSoundDisplay'),
+
+      // Cyber-HUD Telemetry
+      cyberHudDashboard: document.getElementById('cyberHudDashboard'),
+      hudCpuBar: document.getElementById('hudCpuBar'),
+      hudCpuVal: document.getElementById('hudCpuVal'),
+      hudRamBar: document.getElementById('hudRamBar'),
+      hudRamVal: document.getElementById('hudRamVal'),
+      hudNetDown: document.getElementById('hudNetDown'),
+      hudNetUp: document.getElementById('hudNetUp'),
+      hudCredits: document.getElementById('hudCredits'),
+      hudTracePanel: document.getElementById('hudTracePanel'),
+      hudTraceBar: document.getElementById('hudTraceBar'),
+      hudTraceVal: document.getElementById('hudTraceVal'),
+      
+      heatmapModal: document.getElementById('heatmapModal'),
+      heatmapCloseBtn: document.getElementById('heatmapCloseBtn'),
+      heatmapGrid: document.getElementById('heatmapGrid'),
+      
+      nodeGraphModal: document.getElementById('nodeGraphModal'),
+      nodeGraphCloseBtn: document.getElementById('nodeGraphCloseBtn'),
+      nodeGraphSvg: document.getElementById('nodeGraphSvg'),
+      
+      packetSnifferModal: document.getElementById('packetSnifferModal'),
+      packetSnifferCloseBtn: document.getElementById('packetSnifferCloseBtn'),
+      packetSnifferOutput: document.getElementById('packetSnifferOutput'),
+
+      camhackModal: document.getElementById('camhackModal'),
+      camhackCloseBtn: document.getElementById('camhackCloseBtn'),
+      camhackVideo: document.getElementById('camhackVideo'),
+      
+      bgmStatusTag: document.getElementById('bgmStatusTag'),
+
+      // Hardware
+      hardwareDock: document.getElementById('hardwareDockContainer'),
+      cyberKeyboard: document.getElementById('cyberKeyboard'),
+      cyberHandsContainer: document.getElementById('cyberHandsContainer'),
+      guideNextKeyDisplay: document.getElementById('guideNextKeyDisplay'),
+      guideNextFingerDisplay: document.getElementById('guideNextFingerDisplay'),
+      currentLayoutDisplay: document.getElementById('currentLayoutDisplay'),
+      currentSoundDisplay: document.getElementById('currentSoundDisplay'),
+
+      // Modals & Overlays
+      cyberNetworkMapModal: document.getElementById('cyberNetworkMapModal'),
+      mapCloseBtn: document.getElementById('mapCloseBtn'),
+      cyberLevelUpToast: document.getElementById('cyberLevelUpToast'),
+      toastRankText: document.getElementById('toastRankText'),
+
+      breachProtocolModal: document.getElementById('breachProtocolModal'),
+      breachCloseBtn: document.getElementById('breachCloseBtn'),
+
+      cyberThreatModal: document.getElementById('cyberThreatModal'),
+      threatGlobeCanvas: document.getElementById('threatGlobeCanvas'),
+      threatTickerConsole: document.getElementById('threatTickerConsole'),
+      threatCloseBtn: document.getElementById('threatCloseBtn'),
+
+      duckyPayloadModal: document.getElementById('duckyPayloadModal'),
+      duckyCodePreview: document.getElementById('duckyCodePreview'),
+      btnDeployDucky: document.getElementById('btnDeployDucky'),
+      duckyCloseBtn: document.getElementById('duckyCloseBtn'),
+
+      empShockwaveOverlay: document.getElementById('empShockwaveOverlay'),
+
+      scoreModal: document.getElementById('scoreModal'),
+      modalCloseBtn: document.getElementById('modalCloseBtn'),
+      modalRetryBtn: document.getElementById('modalRetryBtn'),
+      modalNextLessonBtn: document.getElementById('modalNextLessonBtn'),
+      resultRank: document.getElementById('resultRank'),
+      modalFinalWpm: document.getElementById('modalFinalWpm'),
+      modalFinalCpm: document.getElementById('modalFinalCpm'),
+      modalFinalAcc: document.getElementById('modalFinalAcc'),
+      modalFinalErrors: document.getElementById('modalFinalErrors'),
+      modalFinalCombo: document.getElementById('modalFinalCombo'),
+      modalFinalTime: document.getElementById('modalFinalTime'),
+      modalMessage: document.getElementById('modalMessage'),
+      modalChartContainer: document.getElementById('modalChartContainer'),
+      modalSpeedChartSvg: document.getElementById('modalSpeedChartSvg'),
+
+      // Academy Mission Grid Modal
+      academyGridModal: document.getElementById('academyGridModal'),
+      academyGridCloseBtn: document.getElementById('academyGridCloseBtn'),
+      academyMissionGrid: document.getElementById('academyMissionGrid'),
+      tabEnAcademy: document.getElementById('tabEnAcademy'),
+      tabThAcademy: document.getElementById('tabThAcademy'),
+      tabWeakAcademy: document.getElementById('tabWeakAcademy')
+    };
+  }
+
+  initEngines() {
+    this.matrix = new MatrixVisualEngine('matrixCanvas', 'particleCanvas');
+    this.virtualNet = new window.VirtualNetwork(this);
+
+    this.kb = new KeyboardVisualizer(this.dom.cyberKeyboard);
+    this.kb.setLayout(this.currentLayout);
+    this.kb.render();
+
+    this.hands = new CyberHandsController(
+      this.dom.cyberHandsContainer,
+      this.kb,
+      this.dom.guideNextKeyDisplay,
+      this.dom.guideNextFingerDisplay
+    );
+
+    this.academyEngine = new TypingEngine(
+      this.dom.targetTextContainer,
+      this.kb,
+      this.hands,
+      this.audio
+    );
+    this.academyEngine.onErrorKey = (char) => profileStore.recordWeakKey(this.username, char);
+    this.academyEngine.onCorrectKey = (span) => {
+      if (this.particles && span) this.particles.emitAtElement(span, 4);
+    };
+    this.academyEngine.onErrorTrigger = () => {
+      if (this.particles) this.particles.triggerGlitchShake();
+    };
+    this.academyEngine.onUpdateMetrics = (stats) => {
+      this.dom.acadWpm.textContent = `${stats.wpm} WPM`;
+      this.dom.acadCpm.textContent = `${stats.cpm} CPM`;
+      this.dom.acadAcc.textContent = `${stats.accuracy}%`;
+      this.dom.acadErr.textContent = `${stats.errors} ERR`;
+      this.dom.acadStreak.textContent = `${stats.streak}x`;
+      this.dom.acadProg.textContent = `${stats.progress}%`;
+      this.updateSpeedometer(this.dom.acadSpeedoNeedle, this.dom.acadSpeedoText, stats.wpm);
+    };
+    this.academyEngine.onCompleted = (stats) => {
+      const boosterMult = profileStore.hasItem(this.username, 'synaptic_booster') ? 1.2 : 1.0;
+      this.addExp(Math.round(150 * boosterMult), 'Academy Lesson Cleared');
+      profileStore.addCredits(this.username, 50);
+
+      let stars = 1;
+      if (stats.accuracy >= 98 && stats.wpm >= 40) stars = 3;
+      else if (stats.accuracy >= 94 && stats.wpm >= 25) stars = 2;
+      
+      const currentLessonId = this.currentActiveLessonId || 'en_homerow_1';
+      profileStore.recordLessonStars(this.username, currentLessonId, stars);
+
+      profileStore.recordSessionStats(this.username, {
+        wpm: stats.wpm,
+        accuracy: stats.accuracy,
+        keystrokes: stats.totalKeystrokes
+      });
+      this.showScoreModal(stats, 'academy');
+    };
+
+    this.speedEngine = new TypingEngine(
+      this.dom.speedTextContainer,
+      this.kb,
+      this.hands,
+      this.audio
+    );
+    this.speedEngine.onErrorKey = (char) => profileStore.recordWeakKey(this.username, char);
+    this.speedEngine.onCorrectKey = (span) => {
+      if (this.particles && span) this.particles.emitAtElement(span, 4);
+    };
+    this.speedEngine.onErrorTrigger = () => {
+      if (this.particles) this.particles.triggerGlitchShake();
+    };
+    this.speedEngine.onHardcoreFailed = (stats) => {
+      this.audio.playAlarmSiren();
+      if (this.dom.speedTimer) this.dom.speedTimer.textContent = 'FAIL';
+      this.showScoreModal(stats, 'speed_fail');
+    };
+    this.speedEngine.onUpdateMetrics = (stats) => {
+      this.dom.speedLiveWpm.textContent = `${stats.wpm} WPM`;
+      this.dom.speedLiveAcc.textContent = `${stats.accuracy}%`;
+      this.dom.speedLiveStreak.textContent = `${stats.streak}x 🔥`;
+      if (this.dom.speedLiveBatches) {
+        this.dom.speedLiveBatches.textContent = stats.batchesCleared;
+      }
+      this.updateSpeedometer(this.dom.speedSpeedoNeedle, this.dom.speedSpeedoText, stats.wpm);
+    };
+    this.speedEngine.onBatchCompleted = (stats) => {
+      const boosterMult = profileStore.hasItem(this.username, 'synaptic_booster') ? 1.2 : 1.0;
+      this.addExp(Math.round(80 * boosterMult), 'Batch Script Executed');
+      profileStore.addCredits(this.username, 30);
+      if (this.dom.speedBatchNotice) {
+        this.dom.speedBatchNotice.classList.remove('hidden');
+      }
+      setTimeout(() => {
+        if (this.dom.speedBatchNotice) {
+          this.dom.speedBatchNotice.classList.add('hidden');
+        }
+        const texts = SPEED_TEST_TEXTS[this.currentLayout] || SPEED_TEST_TEXTS.en;
+        const nextText = texts[Math.floor(Math.random() * texts.length)];
+        this.speedEngine.loadText(nextText, true);
+      }, 1000);
+    };
+    this.speedEngine.onCompleted = (stats) => {
+      const boosterMult = profileStore.hasItem(this.username, 'synaptic_booster') ? 1.2 : 1.0;
+      this.addExp(Math.round(250 * boosterMult), 'Speed Benchmark Completed');
+      profileStore.addCredits(this.username, Math.round(stats.wpm * 1.5));
+
+      const modeKey = this.speedDuration === 0 ? 'marathon' : `speed${this.speedDuration}`;
+      profileStore.recordSpeedBest(this.username, modeKey, stats.wpm);
+
+      profileStore.recordSessionStats(this.username, {
+        wpm: stats.wpm,
+        accuracy: stats.accuracy,
+        keystrokes: stats.totalKeystrokes,
+        batches: stats.batchesCleared
+      });
+      this.showScoreModal(stats, 'speed');
+    };
+
+    this.hackerEngine = new HackerTyperEngine(
+      this.dom.hackerTerminalCanvas,
+      this.dom.hackerStreamCode,
+      this.dom.hackerBreachModal,
+      this.kb,
+      this.hands,
+      this.audio
+    );
+    this.hackerEngine.onMissionComplete = (mission) => {
+      const boosterMult = profileStore.hasItem(this.username, 'synaptic_booster') ? 1.2 : 1.0;
+      this.addExp(Math.round(400 * boosterMult), 'Cyber Infiltration Objective');
+      profileStore.addCredits(this.username, 200);
+      profileStore.recordSessionStats(this.username, { missions: 1 });
+    };
+
+    if (this.dom.breachProtocolModal) {
+      this.breachEngine = new BreachProtocolEngine(
+        this.dom.breachProtocolModal,
+        this.audio,
+        (res) => {
+          if (res.solvedCount > 0) {
+            this.addExp(res.solvedCount * 150, 'Breach Protocol Daemons Uploaded');
+          }
+        }
+      );
+    }
+
+    if (this.dom.threatGlobeCanvas && this.dom.threatTickerConsole) {
+      this.threatEngine = new CyberThreatGlobeEngine(
+        this.dom.threatGlobeCanvas,
+        this.dom.threatTickerConsole
+      );
+    }
+
+    if (this.dom.views.roguelite) {
+      this.rogueliteEngine = new RogueliteEngine(this, this.audio, this.toasts);
+      this.rogueliteEngine.init(this.dom.views.roguelite);
+    }
+
+    this.controlCenter = new ControlCenter(this, this.audio, this.toasts);
+  }
+
+  registerServiceWorker() {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js').catch((err) => console.log('SW note:', err));
+    }
+  }
+
+  playBootSequence() {
+    // Structured procedural logs that span from edge to edge
+    const rawLogs = [
+      { time: '0.0012', mod: 'SYSTEM_BIOS', desc: 'Quantum Synaptic BIOS v8.00.15 (c) 2026 CYBERDECK', status: 'ONLINE', cls: 'status-ok' },
+      { time: '0.0084', mod: 'CPU_CORE', desc: '128-Core Quantum Synaptic Cluster @ 5.40 GHz [OVERCLOCKED]', status: 'INITIALIZED', cls: 'status-ok' },
+      { time: '0.0152', mod: 'MEM_BANK', desc: '1,048,576 MB High-Bandwidth Cryptographic RAM', status: 'PASSED', cls: 'status-ok' },
+      { time: '0.0240', mod: 'VIRT_KERNEL', desc: 'Quantum Microkernel v6.8.9 Core Bootstrap Routine', status: 'ARMED', cls: 'status-info' }
+    ];
+
+    const modules = [
+      { mod: 'KERNEL_MEM', status: 'OK', cls: 'status-ok' },
+      { mod: 'CRYPTO_AES', status: 'VERIFIED', cls: 'status-ok' },
+      { mod: 'NET_SOCKET', status: '14.25 GHz', cls: 'status-info' },
+      { mod: 'INJECT_DEV', status: 'MOUNTED', cls: 'status-ok' },
+      { mod: 'ENCLAVE_SEC', status: 'ROOT BYPASS', cls: 'status-root' },
+      { mod: 'SHADOW_MESH', status: 'ENCRYPTED', cls: 'status-info' },
+      { mod: 'IO_KINEMATIC', status: '1000 Hz', cls: 'status-ok' },
+      { mod: 'DATA_PAYLOAD', status: 'DECRYPTED', cls: 'status-ok' }
+    ];
+
+    for (let j = 0; j < 36; j++) {
+      const hexAddr = '0x7FFE' + Math.floor(Math.random() * 0xFFFFFF).toString(16).padStart(6, '0').toUpperCase();
+      const port = Math.floor(Math.random() * 65535);
+      const ip = `${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}`;
+      const timeTag = (j * 0.0584).toFixed(4).padStart(7, '0');
+      const item = modules[j % modules.length];
+
+      let desc = '';
+      if (item.mod === 'KERNEL_MEM') desc = `Mapping ${hexAddr} (64KB Page Virtual Cluster #${j})`;
+      else if (item.mod === 'CRYPTO_AES') desc = `Generating RSA-8192 Keyring Signature [0x${hexAddr.slice(6)}]`;
+      else if (item.mod === 'NET_SOCKET') desc = `Synchronizing Link with Tor Node [${ip}:${port}]`;
+      else if (item.mod === 'INJECT_DEV') desc = `Mounting Virtual GPU Driver [CUDA-CORES: 16,384]`;
+      else if (item.mod === 'ENCLAVE_SEC') desc = `Bypassing Hypervisor Security Layer (Hook #${j})`;
+      else if (item.mod === 'SHADOW_MESH') desc = `Routing Darknet Packet Stream (Bandwidth: ${(60 + Math.random()*900).toFixed(1)} MB/s)`;
+      else if (item.mod === 'IO_KINEMATIC') desc = `Calibrating 10-Finger Kinematics Sensor Matrix`;
+      else desc = `Extracting Encrypted Data Block #${j} [SHA3-512 Hash Verified]`;
+
+      rawLogs.push({
+        time: timeTag,
+        mod: item.mod,
+        desc: desc,
+        status: item.status,
+        cls: item.cls
+      });
+    }
+
+    rawLogs.push(
+      { time: '2.8190', mod: 'SYS_DAEMON', desc: 'System Logging Daemon locked to root session', status: 'ACTIVE', cls: 'status-ok' },
+      { time: '2.8912', mod: 'SEC_GATE', desc: 'Initializing Level 5 Black-Ops Master Authentication Gate', status: 'ARMED', cls: 'status-root' },
+      { time: '2.9540', mod: 'NETWATCH', desc: 'Bypassing Global Threat Sentinels & ICE Protocols', status: 'BYPASSED', cls: 'status-ok' }
+    );
+
+    let i = 0;
+    // Unskippable boot stream: runs automatically through to gate without skip
+    const interval = setInterval(() => {
+      if (i < rawLogs.length) {
+        const logItem = rawLogs[i];
+        const line = document.createElement('div');
+        line.className = 'boot-log-line';
+        line.innerHTML = `
+          <div class="log-left">
+            <span class="log-time">[ ${logItem.time}s ]</span>
+            <span class="log-mod">[${logItem.mod}]</span>
+            <span class="log-desc">${logItem.desc}</span>
+          </div>
+          <div class="log-dots"></div>
+          <div class="log-right">
+            <span class="log-status ${logItem.cls}">[ ${logItem.status} ]</span>
+          </div>
+        `;
+        if (this.dom.bootScreenLogs) {
+          this.dom.bootScreenLogs.appendChild(line);
+          this.dom.bootScreenLogs.scrollTop = this.dom.bootScreenLogs.scrollHeight;
+          if (this.dom.bootScreenLogs.children.length > 50) {
+            this.dom.bootScreenLogs.removeChild(this.dom.bootScreenLogs.firstChild);
+          }
+        }
+        if (this.audio && (i % 2 === 0)) this.audio.playKey(false);
+        i++;
+      } else {
+        clearInterval(interval);
+        if (this.audio) this.audio.playSuccessFanfare();
+        if (this.dom.bootScreenReady) this.dom.bootScreenReady.classList.remove('hidden');
+        
+        setTimeout(() => {
+          if (this.dom.bootScreenOverlay) {
+            this.dom.bootScreenOverlay.classList.add('hidden');
+            setTimeout(() => {
+              this.dom.bootScreenOverlay.style.display = 'none';
+              if (this.dom.secretGateOverlay) this.dom.secretGateOverlay.classList.remove('hidden');
+                
+              this.state = STATES.GATE;
+              if (this.dom.secretGateInput) {
+                this.dom.secretGateInput.focus();
+              }
+            }, 600);
+          }
+        }, 1000);
+      }
+    }, 45);
+  }
+
+  // =========================================================================
+  // STAGE 0 & 1 AUTHENTICATION
+  // =========================================================================
+
+  handleSecretGateSubmit() {
+    this.audio.ensureContext();
+    const code = this.dom.secretGateInput.value.trim();
+
+    if (!profileStore.verifySecretGatePasscode(code)) {
+      this.audio.playErrorSound();
+      this.dom.gateErrorMsg.classList.remove('hidden');
+      return;
+    }
+
+    this.dom.gateErrorMsg.classList.add('hidden');
+    this.audio.playSuccessFanfare();
+
+    this.dom.gateStreamBox.classList.remove('hidden');
+    const lines = [
+      `[+] MASTER PASSCODE VERIFIED: '${code.toUpperCase()}'`,
+      `>> DECRYPTING BLACK-OPS ENCLAVE VAULT...`,
+      `>> RSA-8192 SIGNATURE CONFIRMED (UID: 0)`,
+      `>> OPERATOR 'ANAN' BIOMETRIC CLEARED`,
+      `[✓] UNLOCKING OPERATOR AUTHENTICATION INTERFACE...`
+    ];
+
+    let lIdx = 0;
+    const interval = setInterval(() => {
+      if (lIdx < lines.length) {
+        const d = document.createElement('div');
+        d.textContent = lines[lIdx];
+        this.dom.gateStreamLines.appendChild(d);
+        this.audio.playKey(false);
+        lIdx++;
+      } else {
+        clearInterval(interval);
+        setTimeout(() => {
+          this.dom.secretGateOverlay.classList.add('hidden');
+          this.dom.hackerLoginOverlay.classList.remove('hidden');
+          this.state = STATES.LOGIN;
+          this.dom.loginPassField.focus();
+        }, 500);
+      }
+    }, 150);
+  }
+
+  handleLogin() {
+    this.audio.ensureContext();
+    const user = this.dom.loginUserField.value.trim() || 'Anan';
+
+    this.username = user;
+    this.profile = profileStore.getProfile(user);
+    this.applyUserSettings(this.username);
+
+    this.updatePromptPath();
+    if (this.dom.cliSessionUser) {
+      this.dom.cliSessionUser.textContent = `${this.username} (UID: 0)`;
+    }
+
+    this.audio.playEnterSound();
+    this.state = STATES.CLI_PROMPT;
+
+    this.dom.hackerLoginOverlay.classList.add('hidden');
+    this.dom.mainTerminalContainer.classList.remove('hidden');
+
+    const logs = generateLoginLogs(this.username);
+    this.playCyberTransition(
+      'QUANTUM AUTHENTICATION DIRECTIVE',
+      'ESTABLISHING ORBITAL SATELLITE HANDSHAKE...',
+      logs,
+      'cli',
+      () => {
+        this.focusCliInput();
+        this.executeCyberrc();
+        this.syncProfileToHud();
+        this.applyUserSettings(this.username);
+        setTimeout(() => this.hands.updatePositions(), 50);
+      }
+    );
+  }
+
+  updatePromptPath() {
+    const cwd = this.sys.currentWorkingDir || `C:\\Users\\${this.username}`;
+    switch (this.promptStyle) {
+      case 'kali':
+        this.dom.cliPromptPath.textContent = `┌──(${this.username.toLowerCase()}㉿kali)-[${cwd}]\n└─$ `;
+        break;
+      case 'arch':
+        this.dom.cliPromptPath.textContent = `[${this.username.toLowerCase()}@arch-quantum ${cwd}]$ `;
+        break;
+      case 'ubuntu':
+        this.dom.cliPromptPath.textContent = `${this.username.toLowerCase()}@ubuntu:${cwd}$ `;
+        break;
+      case 'matrix':
+        this.dom.cliPromptPath.textContent = `root@quantum-core:[${cwd}]# `;
+        break;
+      default:
+        this.dom.cliPromptPath.textContent = `${cwd}>`;
+    }
+  }
+
+  addExp(points, reason = '') {
+    const { profile, leveledUp } = profileStore.addExp(this.username, points);
+    this.profile = profile;
+    this.syncProfileToHud();
+
+    if (leveledUp) {
+      if (this.audio.playLevelUpFanfare) {
+        this.audio.playLevelUpFanfare();
+      }
+      this.audio.speak(`Level up achieved. You are now level ${this.profile.level}.`);
+      const ranks = ['INITIATE', 'SCRIPT RUNNER', 'NETRUNNER', 'ZERO-DAY HUNTER', 'QUANTUM DEITY'];
+      const rankTitle = ranks[Math.min(ranks.length - 1, this.profile.level - 1)];
+
+      if (this.dom.toastRankText) {
+        this.dom.toastRankText.textContent = `PROMOTED TO: ${rankTitle} (LVL ${this.profile.level})`;
+      }
+      if (this.dom.cyberLevelUpToast) {
+        this.dom.cyberLevelUpToast.classList.remove('hidden');
+        setTimeout(() => {
+          this.dom.cyberLevelUpToast.classList.add('hidden');
+        }, 3600);
+      }
+    }
+  }
+
+  syncProfileToHud() {
+    if (!this.profile) return;
+    const ranks = ['INITIATE', 'SCRIPT RUNNER', 'NETRUNNER', 'ZERO-DAY HUNTER', 'QUANTUM DEITY'];
+    const rankTitle = ranks[Math.min(ranks.length - 1, this.profile.level - 1)];
+
+    if (this.dom.hudLevelBadge) {
+      this.dom.hudLevelBadge.textContent = `LVL ${this.profile.level} ${rankTitle}`;
+    }
+    if (this.dom.hudExpText) {
+      this.dom.hudExpText.textContent = `${this.profile.exp} / ${this.profile.expNext} EXP`;
+    }
+    if (this.dom.hudExpFill) {
+      const pct = Math.min(100, Math.round((this.profile.exp / this.profile.expNext) * 100));
+      this.dom.hudExpFill.style.width = `${pct}%`;
+    }
+  }
+
+  updateSpeedometer(needleEl, textEl, wpm) {
+    if (!needleEl) return;
+    const clampedWpm = Math.max(0, Math.min(160, wpm));
+    const deg = -90 + (clampedWpm / 160) * 180;
+    needleEl.style.transform = `rotate(${deg}deg)`;
+    if (textEl) textEl.textContent = `${wpm} WPM`;
+  }
+
+  // =========================================================================
+  // UNIVERSAL CYBER HUD TRANSITION & INTERFACE MORPHER
+  // =========================================================================
+
+  playCyberTransition(badgeText, headlineText, logLines, targetMode, onComplete) {
+    if (this.transitionInterval) {
+      clearInterval(this.transitionInterval);
+      this.transitionInterval = null;
+    }
+
+    this.isTransitioning = true;
+    this.audio.ensureContext();
+    this.audio.startLogStreamDrone();
+
+    this.dom.universalTransitionOverlay.classList.remove('hidden');
+    this.dom.transBadge.textContent = `[ ${badgeText.toUpperCase()} ]`;
+    this.dom.transHeadline.textContent = headlineText;
+    this.dom.transPercent.textContent = '0%';
+    this.dom.transProgressFill.style.width = '0%';
+    this.dom.transLogLines.innerHTML = '';
+
+    // Update Operator Profile Dossier & Start Matrix Code Hologram Silhouette
+    const prof = profileStore.getProfile(this.username);
+    if (prof) {
+      const ranks = ['INITIATE', 'SCRIPT RUNNER', 'NETRUNNER', 'ZERO-DAY HUNTER', 'QUANTUM DEITY'];
+      const rankTitle = ranks[Math.min(ranks.length - 1, (prof.level || 1) - 1)];
+
+      if (this.dom.transDossierUser) this.dom.transDossierUser.textContent = (prof.username || this.username || 'ANAN').toUpperCase();
+      if (this.dom.transDossierLevel) this.dom.transDossierLevel.textContent = `LVL ${prof.level || 1}`;
+      if (this.dom.transDossierRank) this.dom.transDossierRank.textContent = rankTitle;
+      if (this.dom.transDossierExpTxt) this.dom.transDossierExpTxt.textContent = `${prof.exp || 0} / ${prof.expNext || 300}`;
+      if (this.dom.transDossierExpFill) {
+        const pct = Math.min(100, Math.round(((prof.exp || 0) / (prof.expNext || 300)) * 100));
+        this.dom.transDossierExpFill.style.width = `${pct}%`;
+      }
+      if (this.dom.transDossierWpm) this.dom.transDossierWpm.textContent = `${prof.stats?.peakWpm || 0} WPM`;
+      if (this.dom.transDossierAcc) this.dom.transDossierAcc.textContent = `${prof.stats?.avgAccuracy || 100}%`;
+      if (this.dom.transDossierCredits) this.dom.transDossierCredits.textContent = `${(prof.credits || 0).toLocaleString()} CC`;
+      if (this.dom.transDossierBtc) this.dom.transDossierBtc.textContent = `₿ ${prof.bitcoin || 0}`;
+    }
+
+    if (this.holoAvatar && this.dom.transHoloAvatarCanvas) {
+      this.holoAvatar.start(this.dom.transHoloAvatarCanvas);
+    }
+
+    this.dom.modChips.forEach(c => { if (c) c.classList.remove('active'); });
+
+    let step = 0;
+    const totalSteps = logLines.length;
+
+    const finishTransition = () => {
+      if (this.transitionInterval) {
+        clearInterval(this.transitionInterval);
+        this.transitionInterval = null;
+      }
+      this.audio.stopLogStreamDrone();
+      this.audio.playSuccessFanfare();
+
+      if (this.holoAvatar) {
+        this.holoAvatar.stop();
+      }
+
+      this.dom.transPercent.textContent = '100%';
+      this.dom.transProgressFill.style.width = '100%';
+      this.dom.transHeadline.textContent = '[✓] PROTOCOL INITIALIZED: SUCCESS';
+      this.dom.modChips.forEach(c => { if (c) c.classList.add('active'); });
+
+      this.switchViewState(targetMode);
+
+      setTimeout(() => {
+        this.dom.universalTransitionOverlay.classList.add('hidden');
+        this.isTransitioning = false;
+        this.skipCurrentTransition = null;
+        if (onComplete) onComplete();
+      }, 380);
+    };
+
+    this.skipCurrentTransition = finishTransition;
+
+    this.transitionInterval = setInterval(() => {
+      if (step < totalSteps) {
+        const line = document.createElement('div');
+        const txt = logLines[step];
+        line.className = 'transition-log-line';
+
+        if (txt.includes('================')) {
+          line.style.color = '#00ff66';
+        } else if (txt.startsWith('[+]') || txt.startsWith('[⚡]') || txt.startsWith('[✓]')) {
+          line.style.color = '#00ff66';
+          line.style.fontWeight = 'bold';
+        } else if (txt.startsWith('>>')) {
+          line.style.color = txt.includes('SUCCESS') || txt.includes('OK') || txt.includes('VALID') ? '#00ff66' : '#00e5ff';
+        }
+
+        line.textContent = txt;
+        this.dom.transLogLines.appendChild(line);
+
+        if (this.dom.transTerminalViewport) {
+          this.dom.transTerminalViewport.scrollTop = this.dom.transTerminalViewport.scrollHeight;
+        }
+
+        const pct = Math.min(99, Math.round(((step + 1) / totalSteps) * 100));
+        this.dom.transPercent.textContent = `${pct}%`;
+        this.dom.transProgressFill.style.width = `${pct}%`;
+
+        if (pct >= 15 && this.dom.modChips[0]) this.dom.modChips[0].classList.add('active');
+        if (pct >= 32 && this.dom.modChips[1]) this.dom.modChips[1].classList.add('active');
+        if (pct >= 50 && this.dom.modChips[2]) this.dom.modChips[2].classList.add('active');
+        if (pct >= 68 && this.dom.modChips[3]) this.dom.modChips[3].classList.add('active');
+        if (pct >= 84 && this.dom.modChips[4]) this.dom.modChips[4].classList.add('active');
+        if (pct >= 95 && this.dom.modChips[5]) this.dom.modChips[5].classList.add('active');
+
+        if (pct === 50) {
+          this.switchViewState(targetMode);
+        }
+
+        if (this.audio.playLogLineAudio) {
+          this.audio.playLogLineAudio(step, totalSteps);
+        }
+
+        step++;
+      } else {
+        finishTransition();
+      }
+    }, 75);
+  }
+
+  switchViewState(viewName) {
+    Object.keys(this.dom.views).forEach(vKey => {
+      this.dom.views[vKey].classList.toggle('hidden', vKey !== viewName);
+    });
+  }
+
+  renderCliPrompt() {
+    const text = this.cliInputBuffer || '';
+    const pos = Math.max(0, Math.min(text.length, this.cliCursorPos));
+    this.cliCursorPos = pos;
+
+    const before = text.slice(0, pos);
+    const at = text[pos] || '';
+    const after = text.slice(pos + 1);
+
+    if (this.dom.cliInputText) {
+      this.dom.cliInputText.textContent = before;
+    }
+    if (this.dom.cliCursor) {
+      if (pos >= text.length) {
+        this.dom.cliCursor.textContent = ' ';
+        this.dom.cliCursor.className = 'term-cursor cursor-block';
+      } else {
+        this.dom.cliCursor.textContent = at === ' ' ? ' ' : at;
+        this.dom.cliCursor.className = 'term-cursor cursor-char' + (at === ' ' ? ' cursor-space' : '');
+      }
+    }
+    if (this.dom.cliInputAfter) {
+      this.dom.cliInputAfter.textContent = after;
+    }
+  }
+
+  handleCliTabCompletion() {
+    const text = (this.cliInputBuffer || '').toLowerCase().trim();
+    if (!text) return;
+
+    const allCmds = [
+      'roguelite', 'academy', 'speed', 'hacker', 'dashboard', 'settings',
+      'records', 'shop', 'bbs', 'nmap', 'ssh', 'hack', 'clearlogs', 'disconnect',
+      'breach', 'threat', 'globe', 'emp', 'crt', 'payload', 'ducky', 'scan',
+      'crack', 'bgm', 'map', 'whoami', 'sandbox', 'cls', 'clear', 'lang',
+      'sound', 'theme', 'open', 'neofetch', 'ls', 'dir', 'pwd', 'cd', 'cat',
+      'mkdir', 'touch', 'nano', 'exec', 'ping', 'help', 'palette'
+    ];
+
+    const matches = allCmds.filter(c => c.startsWith(text));
+    if (matches.length === 1) {
+      this.cliInputBuffer = matches[0] + ' ';
+      this.cliCursorPos = this.cliInputBuffer.length;
+      this.renderCliPrompt();
+      if (this.audio && this.audio.playKey) this.audio.playKey(false);
+    } else if (matches.length > 1) {
+      const histLine = document.createElement('div');
+      histLine.className = 'cli-history-output';
+      histLine.style.color = 'var(--theme-cyan)';
+      histLine.textContent = 'Suggestions: ' + matches.join('   ');
+      this.dom.cliHistory.appendChild(histLine);
+      this.scrollToBottom();
+      if (this.audio && this.audio.playKey) this.audio.playKey(false);
+    }
+  }
+
+  focusCliInput() {
+    this.cliInputBuffer = '';
+    this.cliCursorPos = 0;
+    this.renderCliPrompt();
+  }
+
+  // =========================================================================
+  // ADVANCED REAL-WORLD CLI COMMAND PARSER
+  // =========================================================================
+
+  async executeCliCommand(cmdLine) {
+    const raw = cmdLine.trim();
+    if (!raw) return;
+
+    this.cliHistoryStack.push(raw);
+    this.cliHistoryIndex = this.cliHistoryStack.length;
+
+    const histLine = document.createElement('div');
+    histLine.className = 'cli-history-line';
+    histLine.innerHTML = `<span class="term-prompt">${this.dom.cliPromptPath.textContent}</span> ${this.escapeHtml(raw)}`;
+    this.dom.cliHistory.appendChild(histLine);
+
+    const parts = raw.split(/\s+/);
+    let cmd = parts[0].toLowerCase();
+    const args = parts.slice(1);
+
+    // Check alias
+    if (this.customAliases[cmd]) {
+      cmd = this.customAliases[cmd];
+    }
+
+    let output = '';
+
+    switch (cmd) {
+      case 'help':
+      case '?':
+        output = `
+AVAILABLE CYBER TERMINAL & REAL-WORLD OS COMMANDS:
+-----------------------------------------------------------------------------------------
+[ REAL APPLICATION LAUNCHER & DESKTOP APPS ]
+  open [app / url / path]  - Launch real PC programs (e.g. 'open chrome', 'open calc', 'open notepad',
+                             'open code', 'open spotify', 'open steam', 'open youtube', 'open discord')
+  launch / run [app]       - Alias for open (e.g. 'launch taskmgr', 'launch explorer')
+
+[ LINUX / UNIX REAL FILE SYSTEM COMMANDS ]
+  ls / dir [path]          - List real files & folders with sizes & color highlights
+  pwd                      - Print real working directory
+  cd [dir / ..]            - Change real current directory on host computer
+  cat / read [file]        - Read and stream actual file contents to terminal
+  mkdir [name]             - Create real directory on computer
+  touch [name]             - Create empty file on computer
+  nano / edit [file]       - Open real file in built-in Cyber Notepad editor
+  
+[ HARDWARE DIAGNOSTICS & SYSTEM INFO ]
+  neofetch / sysinfo       - Hollywood ASCII System Dossier (CPU, RAM, OS, Uptime, Host)
+  ps / top                 - List real processes running on host computer
+  ping [host]              - Real ICMP network latency probe (e.g. 'ping google.com')
+  exec [powershell cmd]    - Run ANY native PowerShell/CMD command directly on host PC
+
+[ CYBER CUSTOMIZATION & LINUX DOTFILES ]
+  prompt [kali|arch|ubuntu|matrix|win] - Customize terminal prompt style
+  alias [key]=[command]    - Register permanent custom command shortcuts
+  theme [name]             - Visual theme ('matrix', 'neon', 'amber', 'red', 'white')
+  sound [preset]           - Audio profile ('hollywood', 'mechanical', 'terminal', 'mute')
+  lang [en|th]             - Switch keyboard layout
+
+[ SHADOW NETWORK & HACKING MISSIONS ]
+  bbs                      - Open Shadow BBS to view hacking contracts & target IPs
+  nmap [ip]                - Scan a target IP for open ports and vulnerabilities
+  ssh [ip]                 - Attempt secure shell infiltration into target server
+  hack                     - Extract confidential data (Must be connected via SSH)
+  clearlogs                - Wipe connection logs to reduce Active Trace level
+  disconnect               - Sever current SSH connection to target
+  shop                     - Access the Black Market to purchase cyber upgrades
+
+[ HACKER MISSIONS, GAMES & ROGUELITE ]
+  roguelite / rl / crawl   - ✨ Cyberspace Node-Crawl Roguelite (Hacky-Inspired)
+  academy [num]            - Touch Typing Academy
+  hacker [1-4|stream]      - Cyber Infiltration Simulator
+  speed [0|15|30|60]       - Speed Benchmark ('speed 0' = Endless Marathon)
+  breach                   - Cyberpunk 2077 Breach Protocol Hex Code Mini-game
+  threat / globe           - Watch Dogs Live Cyber Threat War Map
+  emp / sentinel           - The Matrix EMP Shockwave Blast (or Ctrl+E)
+  crt / glitch             - Retro CRT Monitor Barrel Distortion & Scanlines
+  payload / ducky          - Mr. Robot USB Rubber Ducky Attack Payload Compiler
+  scan [target]            - Live Hollywood Port Vulnerability Scanner
+  crack / decrypt          - Interactive Matrix Password Hash Cracker
+  bgm [on|off]             - Toggle Procedural Dark Cyber Synthwave Soundtrack
+
+[ CONTROL CENTER, ANALYTICS & SHORTCUTS ]
+  palette / menu           - Open Command Palette (or Ctrl+K / Ctrl+P)
+  settings / config        - Terminal Settings & Live Theme/Sound Matrix (or Ctrl+,)
+  dashboard / dossier      - Operator Analytics, WPM Progression & Achievements
+  whoami / stats           - View Quick Netrunner Dossier
+  cls / clear              - Clear screen
+  logout / exit            - Return to login / CMD prompt
+-----------------------------------------------------------------------------------------
+`;
+        break;
+
+      // 1. Real Desktop Application Launcher
+      case 'open':
+      case 'launch':
+      case 'run':
+      case 'start':
+        if (!args[0]) {
+          output = `Usage: open [chrome | calc | notepad | code | explorer | taskmgr | spotify | steam | discord | url]`;
+        } else {
+          const targetApp = args.join(' ');
+          output = `[+] Spawning Real Process / Opening: ${targetApp}...`;
+          this.audio.playKey(false);
+          const res = await this.sys.launch(targetApp);
+          if (res.success) {
+            output += `\n[✓] ${res.message || 'Application launched successfully.'}`;
+            this.addExp(50, 'Application Spawned');
+            this.audio.playSuccessFanfare();
+          } else {
+            output += `\n[✗] Launch Error: ${res.error || 'Failed to start process.'}`;
+            this.audio.playErrorSound();
+          }
+        }
+        break;
+
+      // 2. Real System Diagnostics (Neofetch)
+      case 'neofetch':
+      case 'fastfetch':
+      case 'cyberfetch':
+      case 'sysinfo':
+        const info = await this.sys.getSysInfo();
+        output = `
+  ██████╗██╗   ██╗██████╗ ███████╗██████╗ 
+ ██╔════╝╚██╗ ██╔╝██╔══██╗██╔════╝██╔══██╗   OS       : ${info.platform.toUpperCase()} [${info.release}] ${info.arch}
+ ██║      ╚████╔╝ ██████╔╝█████╗  ██████╔╝   HOST     : ${info.hostname}
+ ██║       ╚██╔╝  ██╔══██╗██╔══╝  ██╔══██╗   KERNEL   : QUANTUM-v6.8.9 (UID: 0)
+ ╚██████╗   ██║   ██████╔╝███████╗██║  ██║   UPTIME   : ${Math.floor(info.uptime / 3600)}h ${Math.floor((info.uptime % 3600) / 60)}m
+  ╚═════╝   ╚═╝   ╚═════╝ ╚══════╝╚═╝  ╚═╝   CPU      : ${info.cpuModel} (${info.cpuCores} Cores)
+                                             MEMORY   : ${info.usedMemGB} GB / ${info.totalMemGB} GB (${info.memPercent}%)
+                                             OPERATOR : ${this.username} [LVL ${this.profile.level} NETRUNNER]
+                                             ENCRYPT  : RSA-8192 / AES-256-GCM
+`;
+        this.addExp(30, 'System Diagnostics Checked');
+        this.audio.playSuccessFanfare();
+        break;
+
+      // 3. Linux File System Commands (ls, dir, pwd, cd, cat, mkdir, touch, nano)
+      case 'ls':
+      case 'dir':
+        const dirData = await this.sys.listFiles(args[0]);
+        if (dirData.success) {
+          let lsOutput = `Directory of ${dirData.dir}\n\n`;
+          dirData.files.forEach(f => {
+            const typeMarker = f.isDir ? '<DIR>' : '     ';
+            const sizeStr = f.isDir ? '' : `${f.size} B`.padStart(12, ' ');
+            lsOutput += `${typeMarker}  ${sizeStr}  ${f.name}\n`;
+          });
+          output = lsOutput;
+        } else {
+          output = `ls: cannot access '${args[0] || '.'}': ${dirData.error}`;
+        }
+        break;
+
+      case 'pwd':
+        output = this.sys.currentWorkingDir;
+        break;
+
+      case 'cd':
+        if (!args[0] || args[0] === '~') {
+          this.sys.currentWorkingDir = 'C:\\Users\\' + this.username;
+        } else if (args[0] === '..') {
+          const parts = this.sys.currentWorkingDir.split(/[\/\\]/);
+          if (parts.length > 1) {
+            parts.pop();
+            this.sys.currentWorkingDir = parts.join('\\') || 'C:\\';
+          }
+        } else {
+          this.sys.currentWorkingDir = args[0].includes(':') ? args[0] : `${this.sys.currentWorkingDir}\\${args[0]}`;
+        }
+        this.updatePromptPath();
+        output = ``;
+        break;
+
+      case 'cat':
+      case 'read':
+        if (!args[0]) {
+          output = `Usage: cat [filename]`;
+        } else {
+          const fileData = await this.sys.readFile(args[0]);
+          if (fileData.success) {
+            output = `--- CONTENT OF ${args[0]} ---\n${fileData.content}`;
+          } else {
+            output = `cat: ${args[0]}: ${fileData.error}`;
+          }
+        }
+        break;
+
+      case 'mkdir':
+        if (!args[0]) {
+          output = `Usage: mkdir [dirname]`;
+        } else {
+          const mkRes = await this.sys.makeDir(args[0]);
+          output = mkRes.success ? `[+] Directory created: ${args[0]}` : `mkdir: ${mkRes.error}`;
+        }
+        break;
+
+      case 'touch':
+        if (!args[0]) {
+          output = `Usage: touch [filename]`;
+        } else {
+          const wrRes = await this.sys.writeFile(args[0], '');
+          output = wrRes.success ? `[+] File created: ${args[0]}` : `touch: ${wrRes.error}`;
+        }
+        break;
+
+      case 'nano':
+      case 'edit':
+        if (args[0]) {
+          this.currentEditingFile = args[0];
+          const fileRead = await this.sys.readFile(args[0]);
+          this.dom.sandboxTextarea.value = fileRead.success ? fileRead.content : '';
+        } else {
+          this.currentEditingFile = null;
+        }
+        this.launchSandboxMode();
+        return;
+
+      // 4. Real PowerShell / Command Execution Bridge
+      case 'exec':
+      case 'ps1':
+      case 'sh':
+        if (!args[0]) {
+          output = `Usage: exec [powershell / windows command] (e.g. 'exec Get-Process')`;
+        } else {
+          const realCmd = args.join(' ');
+          const execRes = await this.sys.exec(realCmd);
+          output = execRes.stdout || execRes.stderr || (execRes.success ? `[+] Command completed with code 0.` : `[✗] Error: ${execRes.error}`);
+        }
+        break;
+
+      case 'encrypt':
+        if (!args[0] || !args[1]) {
+          output = `Usage: encrypt [file] [password]`;
+        } else {
+          const encRes = await this.sys.encryptFile(args[0], args.slice(1).join(' '));
+          output = encRes.success ? `[+] File encrypted via AES-256-GCM: ${encRes.newPath}` : `[✗] Encryption failed: ${encRes.error}`;
+        }
+        break;
+
+      case 'decrypt':
+        if (!args[0] || !args[1]) {
+          output = `Usage: decrypt [file.enc] [password]`;
+        } else {
+          const decRes = await this.sys.decryptFile(args[0], args.slice(1).join(' '));
+          output = decRes.success ? `[+] File decrypted successfully: ${decRes.newPath}` : `[✗] Decryption failed: ${decRes.error}`;
+        }
+        break;
+
+      case 'shred':
+        if (!args[0]) {
+          output = `Usage: shred [file]\nWARNING: THIS WILL PERMANENTLY WIPE THE FILE (DoD 5220.22-M 3-Pass). CANNOT BE UNDONE.`;
+        } else {
+          output = `[+] INITIATING DOD 5220.22-M WIPE SEQUENCE ON: ${args[0]}...`;
+          this.audio.playKey(false);
+          const shRes = await this.sys.shred(args[0]);
+          output += shRes.success ? `\n[✓] FILE SHREDDED SUCCESSFULLY. DATA IS UNRECOVERABLE.` : `\n[✗] Shred failed: ${shRes.error}`;
+        }
+        break;
+
+      case 'osint':
+      case 'recon':
+        if (!args[0]) {
+          output = `Usage: osint [domain/IP]`;
+        } else {
+          output = `[+] GATHERING OPEN SOURCE INTELLIGENCE ON: ${args[0]}...`;
+          this.audio.playKey(false);
+          const osRes = await this.sys.osint(args[0]);
+          if (osRes.success) {
+            output += `\n[✓] TARGET ACQUIRED.\n>> IP ADDRESSES: ${osRes.ips.join(', ') || 'None'}\n>> MX RECORDS: ${osRes.mx.map(m => m.exchange).join(', ') || 'None'}`;
+          } else {
+            output += `\n[✗] OSINT failed: ${osRes.error}`;
+          }
+        }
+        break;
+
+      case 'vm':
+      case 'sandboxrun':
+        if (args[0] === 'run' || args.length > 0) {
+          const fileToRun = args[0] === 'run' ? (args[1] || this.currentEditingFile) : args[0];
+          if (!fileToRun) {
+            output = `[✗] No file selected to run. Use 'nano [file]' first or 'sandbox run [file]'`;
+          } else {
+            output = `[+] INITIATING ISOLATED VM SANDBOX FOR ${fileToRun}...`;
+            const fileData = await this.sys.readFile(fileToRun);
+            if (!fileData.success) {
+              output += `\n[✗] Failed to read file: ${fileData.error}`;
+            } else {
+              const vmRes = await this.sys.sandboxRun(fileData.content);
+              if (vmRes.success) {
+                output += `\n[✓] VM EXECUTION COMPLETE.\n>> LOGS:\n${vmRes.logs.join('\n')}\n>> RETURN: ${vmRes.result}`;
+                this.addExp(40, 'Malware Analysed in Sandbox');
+              } else {
+                output += `\n[✗] VM CRITICAL FAULT: ${vmRes.error}`;
+              }
+            }
+          }
+        } else {
+          output = `Usage: sandbox run [file.js]`;
+        }
+        break;
+
+      case 'stego':
+        if (args[0] === 'hide' && args[1] && args[2]) {
+          const msg = args.slice(2).join(' ');
+          const fileData = await this.sys.readFile(args[1]);
+          if (fileData.success) {
+            // Simplified stego append to EOF
+            await this.sys.writeFile(args[1], fileData.content + '\n#STEGO_DATA:' + Buffer.from(msg).toString('base64'));
+            output = `[+] MESSAGE EMBEDDED INTO ${args[1]} LSB LAYER.`;
+          } else {
+            output = `[✗] Failed to access ${args[1]}`;
+          }
+        } else if (args[0] === 'extract' && args[1]) {
+          const fileData = await this.sys.readFile(args[1]);
+          if (fileData.success) {
+            const match = fileData.content.match(/#STEGO_DATA:(.*)/);
+            if (match && match[1]) {
+              output = `[+] EXTRACTED HIDDEN PAYLOAD:\n>> ${Buffer.from(match[1], 'base64').toString('utf-8')}`;
+            } else {
+              output = `[✗] NO STEGANOGRAPHIC SIGNATURE DETECTED IN ${args[1]}.`;
+            }
+          } else {
+            output = `[✗] Failed to access ${args[1]}`;
+          }
+        } else {
+          output = `Usage:\nstego hide [image.jpg] [secret_message]\nstego extract [image.jpg]`;
+        }
+        break;
+
+      case 'split':
+        if (args[0] === 'vertical' || args[0] === 'horizontal') {
+          output = `[+] INITIATING ${args[0].toUpperCase()} TILING WINDOW SPLIT...`;
+          this.audio.playKey(false);
+          const splitRes = await this.sys.windowSplit(args[0]);
+          if (!splitRes.success) {
+            output += `\n[✗] Split failed: ${splitRes.error}`;
+          }
+        } else {
+          output = `Usage: split [vertical | horizontal]`;
+        }
+        break;
+
+      case 'heatmap':
+        if (this.dom.heatmapModal) {
+          this.dom.heatmapModal.classList.remove('hidden');
+          this.audio.playSuccessFanfare();
+          this.renderHeatmap();
+        }
+        return;
+
+      case 'nodegraph':
+      case 'nodes':
+        if (this.dom.nodeGraphModal) {
+          this.dom.nodeGraphModal.classList.remove('hidden');
+          this.audio.playEnterSound();
+          this.renderNodeGraph();
+        }
+        return;
+
+      case 'sniff':
+        if (this.dom.packetSnifferModal) {
+          this.dom.packetSnifferModal.classList.remove('hidden');
+          this.audio.playKey(false);
+          this.startPacketSniffer();
+        }
+        return;
+
+      case 'camhack':
+        if (this.dom.camhackModal) {
+          this.dom.camhackModal.classList.remove('hidden');
+          this.audio.speak('Bypassing local CCTV security matrix. Intercepting video feed.');
+          this.startCamhack();
+        }
+        return;
+
+      case 'hud':
+      case 'telemetry':
+        const isHudHidden = this.dom.cyberHudDashboard.classList.contains('hidden');
+        if (isHudHidden) {
+          this.dom.cyberHudDashboard.classList.remove('hidden');
+          output = `[+] CYBER-HUD TELEMETRY DASHBOARD: ONLINE.`;
+          this.startHudTelemetry();
+        } else {
+          this.dom.cyberHudDashboard.classList.add('hidden');
+          output = `[-] CYBER-HUD TELEMETRY DASHBOARD: OFFLINE.`;
+          if (this.hudInterval) clearInterval(this.hudInterval);
+        }
+        break;
+
+      case 'ping':
+        const pingHost = args[0] || '8.8.8.8';
+        output = `Pinging ${pingHost} with 32 bytes of encrypted quantum telemetry...`;
+        const pRes = await this.sys.ping(pingHost);
+        output += `\n` + pRes.output;
+        break;
+
+      // 5. Linux Prompt & Dotfile Customization
+      case 'prompt':
+        if (['windows', 'kali', 'arch', 'ubuntu', 'matrix', 'win'].includes(args[0])) {
+          const style = args[0] === 'win' ? 'windows' : args[0];
+          this.setPromptStyle(style);
+          output = `[+] Prompt style updated to: ${style.toUpperCase()}`;
+        } else {
+          output = `Available prompt styles: kali, arch, ubuntu, matrix, windows`;
+        }
+        break;
+
+      case 'alias':
+        if (!args[0] || !args[0].includes('=')) {
+          output = `Usage: alias [shortcut]=[command] (e.g. 'alias g=open chrome')\nCurrent Aliases: ${JSON.stringify(this.customAliases)}`;
+        } else {
+          const [aKey, aVal] = args[0].split('=');
+          this.customAliases[aKey.toLowerCase()] = aVal;
+          profileStore.updateUserSettings(this.username, { customAliases: this.customAliases });
+          output = `[+] Alias registered: '${aKey}' ➔ '${aVal}'`;
+        }
+        break;
+
+      // Cyberpunk 2077 Breach Protocol
+      case 'breach':
+      case 'cyberpunk':
+        if (this.dom.breachProtocolModal && this.breachEngine) {
+          this.dom.breachProtocolModal.classList.remove('hidden');
+          this.breachEngine.start();
+          this.audio.playEnterSound();
+        }
+        return;
+
+      // Watch Dogs Cyber Threat Globe
+      case 'threat':
+      case 'globe':
+      case 'warmap':
+        if (this.dom.cyberThreatModal && this.threatEngine) {
+          this.dom.cyberThreatModal.classList.remove('hidden');
+          this.threatEngine.start();
+          this.audio.playSuccessFanfare();
+        }
+        return;
+
+      // The Matrix EMP Blast
+      case 'emp':
+      case 'blast':
+      case 'sentinel':
+        this.triggerEmpBlast();
+        return;
+
+      // Retro CRT Mode
+      case 'crt':
+      case 'glitch':
+        const isCrt = this.toggleCrtEffect();
+        output = `[+] Retro CRT Monitor Phosphor Shader: ${isCrt ? 'ENABLED [90s CYBER]' : 'DISABLED'}`;
+        this.audio.playKey(false);
+        break;
+
+      // Mr. Robot USB Ducky Payload
+      case 'payload':
+      case 'ducky':
+      case 'usb':
+        this.openDuckyModal();
+        return;
+
+      // Hacky Cyberspace Node Crawl (Roguelite)
+      case 'roguelite':
+      case 'rl':
+      case 'crawl':
+      case 'dive':
+      case 'hacky':
+        this.launchRogueliteMode();
+        return;
+
+      // Operator Analytics & Dashboard
+      case 'dashboard':
+      case 'dossier':
+      case 'analytics':
+        if (this.controlCenter) this.controlCenter.openDashboardModal();
+        return;
+
+      // Terminal Settings Panel
+      case 'settings':
+      case 'config':
+      case 'options':
+        if (this.controlCenter) this.controlCenter.openSettingsModal();
+        return;
+
+      // Command Palette
+      case 'palette':
+      case 'menu':
+        if (this.controlCenter) this.controlCenter.openCommandPalette();
+        return;
+
+      case 'academy':
+      case 'practice':
+      case 'typing':
+        this.launchAcademyMode(args[0]);
+        return;
+
+      case 'hacker':
+      case 'breachmission':
+        this.launchHackerMode(args[0]);
+        return;
+
+      case 'speed':
+      case 'test':
+      case 'benchmark':
+      case 'marathon':
+        this.launchSpeedMode(args[0]);
+        return;
+
+      case 'scan':
+        this.runPortScanner(args[0] || 'saturn.orbital.mil');
+        return;
+
+      case 'crack':
+      case 'hashcrack':
+        this.runHashCracker(args[0] || 'e99a18c428cb38d5f260853678922e03');
+        return;
+
+      case 'bgm':
+      case 'music':
+      case 'radio':
+        const isPlaying = this.audio.toggleCyberBgm();
+        if (this.dom.bgmStatusTag) {
+          this.dom.bgmStatusTag.textContent = `BGM: ${isPlaying ? 'ONLINE' : 'OFF'}`;
+        }
+        output = `[+] Procedural Cyber Ambient BGM: ${isPlaying ? 'ENGAGED [PLAYING]' : 'MUTED'}`;
+        break;
+
+      case 'map':
+      case 'topology':
+      case 'satellite':
+        if (this.dom.cyberNetworkMapModal) {
+          this.dom.cyberNetworkMapModal.classList.remove('hidden');
+          this.audio.playSuccessFanfare();
+        }
+        return;
+
+      case 'shop':
+      case 'blackmarket':
+      case 'cyberware':
+        const curProf = profileStore.getProfile(this.username);
+        const inv = curProf.inventory || ['stock_switches'];
+        const subAction = args[0] ? args[0].toLowerCase() : '';
+        const itemArg = args[1] ? args[1].toLowerCase() : '';
+
+        if (subAction === 'buy') {
+          const catalog = {
+            synaptic_booster: { name: 'Synaptic Booster (EXP Multiplier +20%)', cost: 600 },
+            trace_jammer: { name: 'Trace Jammer (-30% Hacker Trace Speed)', cost: 800 },
+            holypanda_switches: { name: 'Holy Panda Mechanical Switches', cost: 400 },
+            cherry_switches: { name: 'Cherry MX Blue Clicky Switches', cost: 350 }
+          };
+          const targetItem = catalog[itemArg];
+          if (!targetItem) {
+            output = `[✗] Unknown item: '${itemArg}'. Available items:\n>> synaptic_booster (600 CC)\n>> trace_jammer (800 CC)\n>> holypanda_switches (400 CC)\n>> cherry_switches (350 CC)`;
+          } else {
+            const buyRes = profileStore.buyItem(this.username, itemArg, targetItem.cost);
+            if (buyRes.success) {
+              output = `[✓] PURCHASE CONFIRMED: ${targetItem.name}\n>> Balance Remaining: ${buyRes.credits} CC`;
+              this.audio.playSuccessFanfare();
+              if (itemArg.includes('switches')) {
+                this.audio.setPreset(itemArg);
+              }
+            } else if (buyRes.reason === 'ALREADY_OWNED') {
+              output = `[!] You already own ${targetItem.name}. Type 'shop equip ${itemArg}' to activate.`;
+            } else {
+              output = `[✗] INSUFFICIENT FUNDS. You need ${targetItem.cost} CC (Current Balance: ${curProf.credits || 0} CC).\nComplete speed runs or hacking missions to earn credits!`;
+              this.audio.playErrorSound();
+            }
+          }
+        } else if (subAction === 'equip') {
+          if (!itemArg) {
+            output = `Usage: shop equip [holypanda_switches | cherry_switches | stock_switches]`;
+          } else {
+            const eqRes = profileStore.equipSwitch(this.username, itemArg);
+            if (eqRes) {
+              this.audio.setPreset(itemArg);
+              output = `[✓] EQUIPPED SWITCH PROFILE: ${itemArg.toUpperCase()}`;
+              this.audio.playKey(false);
+            } else {
+              output = `[✗] You do not own '${itemArg}'. Purchase it in the shop first.`;
+            }
+          }
+        } else {
+          output = `
+BLACK MARKET CYBERWARE SHOP // CREDITS: ${curProf.credits || 0} CC
+-----------------------------------------------------------------------------------------
+[ HARDWARE & NEURAL AUGMENTATIONS ]
+  1. synaptic_booster     [ 600 CC ]  - +20% EXP boost across all typing modes
+     Status: ${inv.includes('synaptic_booster') ? 'OWNED [ACTIVE]' : 'AVAILABLE'}
+  
+  2. trace_jammer         [ 800 CC ]  - Slows security IDS trace countdown by 30%
+     Status: ${inv.includes('trace_jammer') ? 'OWNED [ACTIVE]' : 'AVAILABLE'}
+
+[ MECHANICAL SWITCH AUDIO PROFILES ]
+  3. holypanda_switches   [ 400 CC ]  - Deep acoustic tactile thock sound profile
+     Status: ${inv.includes('holypanda_switches') ? 'OWNED' : 'AVAILABLE'}
+  
+  4. cherry_switches      [ 350 CC ]  - Crisp high-tactile clicky mechanical sound profile
+     Status: ${inv.includes('cherry_switches') ? 'OWNED' : 'AVAILABLE'}
+-----------------------------------------------------------------------------------------
+COMMANDS:
+  shop buy [item_id]       - Purchase cyberware augmentation
+  shop equip [switch_id]   - Equip mechanical switch audio profile
+`;
+        }
+        break;
+
+      case 'records':
+      case 'leaderboard':
+        const p = profileStore.getProfile(this.username);
+        const rec = p.records || {};
+        output = `
+NETRUNNER HIGH-SCORE VAULT // PERSONAL RECORDS
+------------------------------------------------------------------
+OPERATOR: ${this.username.toUpperCase()} (LVL ${p.level}) | CREDITS: ${p.credits || 0} CC
+------------------------------------------------------------------
+  SPEED 15s BENCHMARK  : ${rec.speed15 || 0} WPM
+  SPEED 30s BENCHMARK  : ${rec.speed30 || 0} WPM
+  SPEED 60s BENCHMARK  : ${rec.speed60 || 0} WPM
+  ENDLESS MARATHON     : ${rec.marathon || 0} WPM (Peak: ${p.peakWpm || 0} WPM)
+------------------------------------------------------------------
+MILESTONES:
+  ${(p.peakWpm >= 100) ? '★ [LEGENDARY GHOST: 100+ WPM]' : (p.peakWpm >= 80) ? '★ [CYBER DEITY: 80+ WPM]' : (p.peakWpm >= 60) ? '★ [NETRUNNER: 60+ WPM]' : '★ [INITIATE OPERATOR]'}
+`;
+        break;
+
+      case 'whoami':
+      case 'stats':
+      case 'dossier':
+        const ranks = ['INITIATE', 'SCRIPT RUNNER', 'NETRUNNER', 'ZERO-DAY HUNTER', 'QUANTUM DEITY'];
+        const profObj = profileStore.getProfile(this.username);
+        const rankTitle = ranks[Math.min(ranks.length - 1, profObj.level - 1)];
+        const weakList = profileStore.getWeakKeys(this.username);
+        const weakStr = weakList.length > 0 ? weakList.slice(0, 6).join(', ').toUpperCase() : 'None (Flawless)';
+        output = `
+OPERATOR DOSSIER // CLASSIFIED
+--------------------------------------------------
+OPERATOR ID   : ${this.username.toUpperCase()} (UID: 0)
+CYBER RANK    : LVL ${profObj.level} [${rankTitle}]
+CREDITS [CC]  : ${profObj.credits || 0} CC
+EXPERIENCE    : ${profObj.exp} / ${profObj.expNext} EXP
+PEAK SPEED    : ${profObj.peakWpm} WPM
+WEAK KEYS     : [ ${weakStr} ] (Type 'academy weak' to drill)
+CYBERWARE     : [ ${(profObj.inventory || []).join(', ')} ]
+TOTAL DRILLS  : ${profObj.totalKeystrokes} Keystrokes Logged
+BATCHES DONE  : ${profObj.batchesCleared} Cleared
+MISSIONS WON  : ${profObj.missionsCleared} Completed
+ACCESS CLEAR  : DEFCON-1 (ROOT PRIVILEGES)
+ENCRYPTION    : RSA-8192 / AES-256-GCM
+--------------------------------------------------
+`;
+        break;
+
+      case 'sandbox':
+      case 'notepad':
+        this.launchSandboxMode();
+        return;
+
+      case 'cls':
+      case 'clear':
+        this.dom.cliHistory.innerHTML = '';
+        this.dom.cliInputText.textContent = '';
+        this.cliInputBuffer = '';
+        return;
+
+      case 'lang':
+      case 'layout':
+        if (args[0] === 'th' || args[0] === 'en') {
+          this.setLayout(args[0]);
+        } else {
+          this.setLayout(this.currentLayout === 'en' ? 'th' : 'en');
+        }
+        output = `[+] Layout switched to: ${this.currentLayout.toUpperCase()}`;
+        break;
+
+      case 'sound':
+      case 'audio':
+        if (['hollywood', 'mechanical', 'cyberterminal', 'terminal', 'silent', 'mute'].includes(args[0])) {
+          const preset = args[0] === 'terminal' ? 'cyberterminal' : (args[0] === 'mute' ? 'silent' : args[0]);
+          this.setSoundSwitch(preset);
+          output = `[+] Audio profile set to: ${this.currentSound}`;
+        } else {
+          output = `Available sound presets: hollywood, mechanical, terminal, mute`;
+        }
+        break;
+
+      case 'theme':
+        if (['matrix', 'neon', 'amber', 'red', 'stealth', 'white'].includes(args[0])) {
+          const t = args[0] === 'white' ? 'stealth' : args[0];
+          this.setTheme(t);
+          output = `[+] Visual theme updated: ${t.toUpperCase()}`;
+        } else {
+          output = `Available themes: matrix, neon, amber, red, white`;
+        }
+        break;
+
+      // --- VIRTUAL HACKING NETWORK COMMANDS ---
+      case 'bbs':
+        output = this.virtualNet.getBBSList();
+        break;
+      case 'nmap':
+        if (!args[0]) output = `Usage: nmap [ip address]`;
+        else {
+          output = this.virtualNet.scanTarget(args[0]);
+          this.audio.playKey(false);
+        }
+        break;
+      case 'ssh':
+      case 'connect':
+        if (!args[0]) output = `Usage: ssh [ip address]`;
+        else output = this.virtualNet.connectSSH(args[0]);
+        break;
+      case 'hack':
+        const hackRes = this.virtualNet.hackData();
+        if (typeof hackRes === 'string') {
+          output = hackRes; // Backwards compatibility if needed
+        } else if (hackRes.type === 'error') {
+          output = hackRes.msg;
+        } else if (hackRes.type === 'start_minigame') {
+          // Launch Breach Protocol for this target
+          this.launchVirtualHackMinigame(hackRes.target);
+          return; // Do not process standard output
+        }
+        break;
+      case 'clearlogs':
+        output = this.virtualNet.clearLogs();
+        break;
+      case 'rm':
+        if (args.join(' ') === '-rf /logs' || args.join(' ') === '-rf /var/log') {
+          output = this.virtualNet.clearLogs();
+        } else {
+          output = `rm: cannot remove '${args[0]}': Permission denied`;
+        }
+        break;
+      case 'disconnect':
+        output = this.virtualNet.disconnect();
+        break;
+      case 'shop':
+      case 'market':
+        output = this.virtualNet.openShop(args);
+        break;
+      // ----------------------------------------
+
+      case 'logout':
+        this.state = STATES.LOGIN;
+        this.dom.mainTerminalContainer.classList.add('hidden');
+        this.dom.hackerLoginOverlay.classList.remove('hidden');
+        this.dom.loginPassField.value = '';
+        this.dom.loginPassField.focus();
+        return;
+
+      case 'exit':
+        output = `Already at root CMD environment.`;
+        break;
+
+      default:
+        // Try executing as real native command if available
+        if (this.sys.isElectron) {
+          const autoExec = await this.sys.exec(raw);
+          if (autoExec.success && autoExec.stdout) {
+            output = autoExec.stdout;
+          } else {
+            output = autoExec.stderr || `'${cmd}' is not recognized as an internal or external command.\nType 'help' to see available commands.`;
+          }
+        } else {
+          output = `'${cmd}' is not recognized as an internal or external command.\nType 'help' to see available commands.`;
+        }
+    }
+
+    if (output) {
+      const outEl = document.createElement('div');
+      outEl.className = 'cli-history-output';
+      outEl.textContent = output.trim();
+      this.dom.cliHistory.appendChild(outEl);
+    }
+
+    this.cliInputBuffer = '';
+    this.cliCursorPos = 0;
+    this.renderCliPrompt();
+    this.scrollToBottom();
+  }
+
+  triggerEmpBlast() {
+    this.audio.playEmpBlast();
+    if (this.dom.empShockwaveOverlay) {
+      this.dom.empShockwaveOverlay.classList.remove('hidden');
+      setTimeout(() => {
+        this.dom.empShockwaveOverlay.classList.add('hidden');
+      }, 950);
+    }
+    this.addExp(100, 'EMP Defense Pulse');
+  }
+
+  openDuckyModal() {
+    if (this.dom.duckyPayloadModal) {
+      this.dom.duckyPayloadModal.classList.remove('hidden');
+      this.audio.playUsbMountSound();
+      this.renderDuckyPreview('reverse_shell');
+    }
+  }
+
+  renderDuckyPreview(type) {
+    const tmpl = DUCKY_PAYLOAD_TEMPLATES[type] || DUCKY_PAYLOAD_TEMPLATES.reverse_shell;
+    if (this.dom.duckyCodePreview) {
+      this.dom.duckyCodePreview.textContent = tmpl.script;
+    }
+  }
+
+  runPortScanner(target) {
+    const lines = [
+      `[+] INITIATING NMAP SCAN AGAINST TARGET: ${target}`,
+      `>> SYN Stealth Scan (65,535 ports)...`,
+      `>> PORT 21/tcp   [OPEN]  FTP  (vsftpd 3.0.3 - ANONYMOUS ALLOWED)`,
+      `>> PORT 22/tcp   [OPEN]  SSH  (OpenSSH 8.9p1 Ubuntu)`,
+      `>> PORT 80/tcp   [OPEN]  HTTP (nginx/1.18.0)`,
+      `>> PORT 443/tcp  [OPEN]  HTTPS (Quantum TLS 1.3 - RSA-8192)`,
+      `>> PORT 3306/tcp [FILTERED] MySQL (Database Enclave)`,
+      `>> PORT 8080/tcp [OPEN]  HTTP-Proxy (Shadow Gateway)`,
+      `>> PORT 8443/tcp [OPEN]  VULNERABLE (Saturn Satellite Command Daemon)`,
+      `[✓] SCAN COMPLETE: 1 CRITICAL ZERO-DAY VULNERABILITY FOUND ON PORT 8443!`
+    ];
+
+    let idx = 0;
+    const interval = setInterval(() => {
+      if (idx < lines.length) {
+        const out = document.createElement('div');
+        out.className = 'cli-history-output';
+        const txt = lines[idx];
+        if (txt.includes('CRITICAL') || txt.includes('[✓]')) {
+          out.style.color = '#ffaa00';
+          out.style.fontWeight = 'bold';
+        } else if (txt.includes('[OPEN]')) {
+          out.style.color = '#00ff66';
+        } else {
+          out.style.color = '#00e5ff';
+        }
+        out.textContent = txt;
+        this.dom.cliHistory.appendChild(out);
+        this.scrollToBottom();
+        this.audio.playKey(false);
+        idx++;
+      } else {
+        clearInterval(interval);
+        this.addExp(150, 'Target Port Reconnaissance');
+        this.audio.playSuccessFanfare();
+        this.focusCliInput();
+      }
+    }, 180);
+  }
+
+  runHashCracker(hash) {
+    const targetPassword = 'PASSWORD_QUANTUM_OVERRIDE_09';
+    let currentGuess = '';
+
+    const container = document.createElement('div');
+    container.className = 'cli-history-output';
+    container.style.color = '#00ff66';
+    container.innerHTML = `[⚡ BRUTE-FORCE HASH CRACKER: ${hash}]<br><span id="crackProgressText">SOLVING: </span>`;
+    this.dom.cliHistory.appendChild(container);
+
+    let charPos = 0;
+    const interval = setInterval(() => {
+      if (charPos < targetPassword.length) {
+        const randomChar = String.fromCharCode(33 + Math.floor(Math.random() * 90));
+        currentGuess = targetPassword.substring(0, charPos) + randomChar;
+        const progressEl = container.querySelector('#crackProgressText');
+        if (progressEl) {
+          progressEl.textContent = `SOLVING [${Math.round((charPos/targetPassword.length)*100)}%]: ${currentGuess}`;
+        }
+        this.audio.playKey(false);
+        if (Math.random() > 0.3) {
+          charPos++;
+        }
+      } else {
+        clearInterval(interval);
+        const progressEl = container.querySelector('#crackProgressText');
+        if (progressEl) {
+          progressEl.innerHTML = `<span style="color:#ffff00; font-weight:bold;">[✓] HASH CRACKED SUCCESS: '${targetPassword}'</span>`;
+        }
+        this.addExp(200, 'Password Hash Decryption');
+        this.audio.playSuccessFanfare();
+        this.focusCliInput();
+      }
+      this.scrollToBottom();
+    }, 45);
+  }
+
+  escapeHtml(str) {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  scrollToBottom() {
+    if (this.dom.terminalScreenWrapper) {
+      this.dom.terminalScreenWrapper.scrollTop = this.dom.terminalScreenWrapper.scrollHeight;
+    }
+  }
+
+  // =========================================================================
+  // MODE LAUNCHERS
+  // =========================================================================
+
+  launchAcademyMode(lessonArg) {
+    if (!lessonArg || lessonArg === 'grid' || lessonArg === 'list' || lessonArg === 'map') {
+      this.openAcademyMissionGrid();
+      return;
+    }
+    if (lessonArg === 'weak') {
+      this.launchWeakKeyDrill();
+      return;
+    }
+
+    const logs = generateEntranceLogs('academy', lessonArg || '1');
+    this.state = STATES.MODE_ACADEMY;
+
+    const lessons = LESSONS_DATA[this.currentLayout] || LESSONS_DATA.en;
+    let lessonIndex = 0;
+    if (lessonArg && !isNaN(parseInt(lessonArg, 10))) {
+      lessonIndex = Math.max(0, Math.min(lessons.length - 1, parseInt(lessonArg, 10) - 1));
+    }
+    const lesson = lessons[lessonIndex];
+    this.currentActiveLessonId = lesson.id;
+    this.dom.academyLessonTitle.textContent = lesson.title;
+    this.academyEngine.loadText(lesson.text);
+
+    this.playCyberTransition(
+      'TOUCH TYPING ACADEMY',
+      'INITIALIZING TACTILE SENSORS...',
+      logs,
+      'academy',
+      () => {
+        this.dom.academyTypingCanvas.focus();
+        setTimeout(() => this.hands.updatePositions(), 50);
+      }
+    );
+  }
+
+  launchHackerMode(missionArg) {
+    const logs = generateEntranceLogs('hacker', missionArg || '1');
+    this.state = STATES.MODE_HACKER;
+
+    const traceSpeedMod = profileStore.hasItem(this.username, 'trace_jammer') ? 0.7 : 1.0;
+
+    if (missionArg === 'stream') {
+      this.hackerEngine.mode = 'stream';
+      this.hackerEngine.reset(1, traceSpeedMod);
+    } else {
+      let mNum = 1;
+      if (missionArg && !isNaN(parseInt(missionArg, 10))) {
+        mNum = parseInt(missionArg, 10);
+      }
+      this.hackerEngine.mode = 'mission';
+      this.hackerEngine.reset(mNum, traceSpeedMod);
+    }
+
+    this.playCyberTransition(
+      'CYBER INFILTRATION HUD',
+      'ESTABLISHING SATELLITE TUNNEL...',
+      logs,
+      'hacker',
+      () => {
+        this.dom.hackerTerminalCanvas.focus();
+        setTimeout(() => this.hands.updatePositions(), 50);
+      }
+    );
+  }
+
+  launchVirtualHackMinigame(target) {
+    if (this.dom.breachProtocolModal && this.breachEngine) {
+      this.dom.breachProtocolModal.classList.remove('hidden');
+      
+      // Override onComplete callback
+      this.breachEngine.onComplete = (res) => {
+        this.dom.breachProtocolModal.classList.add('hidden');
+        this.focusCliInput();
+        
+        let output = "";
+        if (res.solvedCount > 0) {
+          // Success
+          output = this.virtualNet.hackSuccess(res.solvedCount);
+        } else {
+          // Fail
+          output = this.virtualNet.hackFail();
+        }
+        
+        // Write result to CLI History
+        const histLine = document.createElement('div');
+        histLine.className = 'cli-history-line';
+        histLine.innerHTML = `<span style="color: ${res.solvedCount > 0 ? 'var(--theme-primary)' : '#ff2244'};">${output.replace(/\n/g, '<br>')}</span>`;
+        if (this.dom.cliHistory) {
+          this.dom.cliHistory.appendChild(histLine);
+          this.dom.cliHistory.parentElement.scrollTop = this.dom.cliHistory.parentElement.scrollHeight;
+        }
+      };
+
+      // Set difficulty based on target.diff
+      const baseDifficulty = target.diff || 1;
+      this.breachEngine.gridSize = Math.min(8, 4 + baseDifficulty); // 5x5 to 8x8
+      this.breachEngine.bufferSize = Math.max(3, 7 - baseDifficulty); // 6 to 3 buffer sizes
+      
+      // Upgrade from Quantum Decryptor gives more time
+      const bonusTime = (this.virtualNet.upgrades.quantumDecryptor || 0) * 10;
+      this.breachEngine.baseTimeLeft = Math.max(10, 40 - (baseDifficulty * 5)) + bonusTime;
+
+      this.breachEngine.start();
+      this.audio.playEnterSound();
+    }
+  }
+
+  launchSpeedMode(durationArg) {
+    const isZero = durationArg === '0' || durationArg === 0;
+    const isHardcore = durationArg === 'hardcore' || durationArg === 'hard';
+    const logs = generateEntranceLogs('speed', isHardcore ? 'Hardcore Sudden Death' : isZero ? '0 (Endless)' : `${durationArg || 30}s`);
+    this.state = STATES.MODE_SPEED;
+
+    this.speedEngine.isHardcore = isHardcore;
+
+    const isValidDuration = durationArg && [15, 30, 60, 120].includes(parseInt(durationArg, 10));
+
+    if (isHardcore) {
+      this.speedDuration = 45;
+      this.speedTimeLeft = 45;
+      this.dom.speedModeTitle.textContent = '[ MODE: HARDCORE SUDDEN DEATH (3 ERRORS = FAIL) ]';
+      this.dom.speedTimer.textContent = '45s';
+      if (this.dom.speedBatchHud) this.dom.speedBatchHud.classList.add('hidden');
+    } else if (isZero) {
+      this.speedDuration = 0;
+      this.dom.speedModeTitle.textContent = '[ MODE: SPEED RUSH // ENDLESS MARATHON ]';
+      this.dom.speedTimer.textContent = '∞ ENDLESS';
+      if (this.dom.speedBatchHud) this.dom.speedBatchHud.classList.remove('hidden');
+      if (this.dom.speedLiveBatches) this.dom.speedLiveBatches.textContent = '0';
+    } else {
+      this.speedDuration = isValidDuration ? parseInt(durationArg, 10) : 30;
+      this.speedTimeLeft = this.speedDuration;
+      this.dom.speedModeTitle.textContent = '[ MODE: SPEED RUSH WPM BENCHMARK ]';
+      this.dom.speedTimer.textContent = `${this.speedTimeLeft}s`;
+      if (this.dom.speedBatchHud) this.dom.speedBatchHud.classList.add('hidden');
+    }
+
+    const texts = SPEED_TEST_TEXTS[this.currentLayout] || SPEED_TEST_TEXTS.en;
+    const randomText = texts[Math.floor(Math.random() * texts.length)];
+    this.speedEngine.loadText(randomText, isZero);
+
+    this.playCyberTransition(
+      'SPEED RUSH BENCHMARK',
+      'COMPILING HIGH-FREQUENCY TELEMETRY...',
+      logs,
+      'speed',
+      () => {
+        this.dom.speedTypingCanvas.focus();
+        setTimeout(() => this.hands.updatePositions(), 50);
+      }
+    );
+  }
+
+  launchSandboxMode() {
+    const logs = generateEntranceLogs('sandbox');
+    this.state = STATES.MODE_SANDBOX;
+
+    this.kb.clearTargetKeys();
+    this.hands.clearTargetGuide();
+
+    this.playCyberTransition(
+      'TERMINAL NOTEPAD BUFFER',
+      'SPAWNING UNRESTRICTED IO...',
+      logs,
+      'sandbox',
+      () => {
+        this.dom.sandboxTextarea.focus();
+        setTimeout(() => this.hands.updatePositions(), 50);
+      }
+    );
+  }
+
+  launchRogueliteMode() {
+    const logs = generateEntranceLogs('hacker', 'Cyberspace Node-Crawl');
+    this.state = STATES.MODE_ROGUELITE;
+
+    this.kb.clearTargetKeys();
+    this.hands.clearTargetGuide();
+
+    this.playCyberTransition(
+      'CYBERSPACE NODE INFILTRATION',
+      'ESTABLISHING DARKNET ROGUELITE TUNNEL...',
+      logs,
+      'roguelite',
+      () => {
+        if (this.rogueliteEngine) {
+          this.rogueliteEngine.startNewRun();
+        }
+        setTimeout(() => this.hands.updatePositions(), 50);
+      }
+    );
+  }
+
+  startSpeedCountdown() {
+    if (this.speedTimerInterval) clearInterval(this.speedTimerInterval);
+
+    if (this.speedDuration === 0) {
+      this.speedElapsedSeconds = 0;
+      this.speedTimerInterval = setInterval(() => {
+        this.speedElapsedSeconds++;
+        const mins = String(Math.floor(this.speedElapsedSeconds / 60)).padStart(2, '0');
+        const secs = String(this.speedElapsedSeconds % 60).padStart(2, '0');
+        this.dom.speedTimer.textContent = `∞ ${mins}:${secs}`;
+      }, 1000);
+    } else {
+      this.speedTimeLeft = this.speedDuration;
+      this.dom.speedTimer.textContent = `${this.speedTimeLeft}s`;
+
+      this.speedTimerInterval = setInterval(() => {
+        this.speedTimeLeft--;
+        this.dom.speedTimer.textContent = `${this.speedTimeLeft}s`;
+
+        if (this.speedTimeLeft <= 0) {
+          clearInterval(this.speedTimerInterval);
+          this.speedEngine.complete();
+        }
+      }, 1000);
+    }
+  }
+
+  returnToCli() {
+    if (this.speedTimerInterval) clearInterval(this.speedTimerInterval);
+    this.state = STATES.CLI_PROMPT;
+    this.kb.clearTargetKeys();
+    this.hands.clearTargetGuide();
+
+    const exitLogs = generateExitLogs(this.username);
+    this.playCyberTransition(
+      'SYSTEM TEARDOWN & REVERSE PROTOCOL',
+      'PURGING TRACE MEMORY & REGISTERS...',
+      exitLogs,
+      'cli',
+      () => {
+        this.focusCliInput();
+        setTimeout(() => this.hands.updatePositions(), 50);
+      }
+    );
+  }
+
+  setTheme(theme, persist = true) {
+    this.currentTheme = theme;
+    document.documentElement.setAttribute('data-theme', theme);
+    const themeColors = {
+      matrix: { hex: '#00ff66', dim: 'rgba(0, 255, 102, 0.2)' },
+      neon: { hex: '#00f0ff', dim: 'rgba(0, 240, 255, 0.2)' },
+      amber: { hex: '#ffaa00', dim: 'rgba(255, 170, 0, 0.2)' },
+      red: { hex: '#ff2244', dim: 'rgba(255, 34, 68, 0.2)' },
+      stealth: { hex: '#ffffff', dim: 'rgba(255, 255, 255, 0.15)' }
+    };
+    const c = themeColors[theme] || themeColors.matrix;
+    if (this.matrix) this.matrix.setTheme(c.hex, c.dim);
+    if (this.particles) this.particles.setThemeColor(c.hex);
+    if (persist && this.username) {
+      profileStore.updateUserSettings(this.username, { theme });
+    }
+  }
+
+  setSoundSwitch(soundPreset, persist = true) {
+    this.audio.setPreset(soundPreset);
+    this.currentSound = soundPreset.toUpperCase();
+    if (this.dom.currentSoundDisplay) {
+      this.dom.currentSoundDisplay.textContent = this.currentSound;
+    }
+    if (persist && this.username) {
+      profileStore.updateUserSettings(this.username, { sound: soundPreset });
+    }
+  }
+
+  setLayout(layout, persist = true) {
+    this.currentLayout = layout;
+    if (this.kb) this.kb.setLayout(layout);
+    if (this.dom.currentLayoutDisplay) {
+      this.dom.currentLayoutDisplay.textContent = layout.toUpperCase() + (layout === 'en' ? ' [QWERTY]' : ' [เกษมณี]');
+    }
+    setTimeout(() => { if (this.hands) this.hands.updatePositions(); }, 30);
+    if (persist && this.username) {
+      profileStore.updateUserSettings(this.username, { layout });
+    }
+  }
+
+  toggleCrtEffect(enabled, persist = true) {
+    if (typeof enabled === 'boolean') {
+      document.body.classList.toggle('crt-mode', enabled);
+    } else {
+      enabled = document.body.classList.toggle('crt-mode');
+    }
+    if (persist && this.username) {
+      profileStore.updateUserSettings(this.username, { crt: enabled });
+    }
+    return enabled;
+  }
+
+  setPromptStyle(style, persist = true) {
+    this.promptStyle = style;
+    this.updatePromptPath();
+    if (persist && this.username) {
+      profileStore.updateUserSettings(this.username, { prompt: style });
+    }
+  }
+
+  applyUserSettings(username) {
+    const settings = profileStore.getUserSettings(username || this.username);
+    if (!settings) return;
+
+    if (settings.theme) this.setTheme(settings.theme, false);
+    if (settings.sound) this.setSoundSwitch(settings.sound, false);
+    if (settings.layout) this.setLayout(settings.layout, false);
+    if (typeof settings.crt === 'boolean') this.toggleCrtEffect(settings.crt, false);
+    if (settings.prompt) this.setPromptStyle(settings.prompt, false);
+    if (settings.customAliases) this.customAliases = { ...settings.customAliases };
+  }
+
+  showScoreModal(stats, mode) {
+    let rank = 'RANK: S [QUANTUM OPERATOR]';
+    let msg = '"Exemplary touch typing speed. Infiltration protocol successful."';
+
+    if (mode === 'speed_fail') {
+      rank = 'RANK: F [SYSTEM LOCKDOWN]';
+      msg = '"Hardcore Sudden Death triggered. Security trace caught intrusion!"';
+    } else if (stats.wpm >= 85 && stats.accuracy >= 97) {
+      rank = 'RANK: S+ [CYBER DEITY]';
+      msg = '"Flawless neural synchronization! Keystroke speed exceeds biological limits."';
+    } else if (stats.wpm >= 60) {
+      rank = 'RANK: A [NETRUNNER]';
+      msg = '"High speed infiltration completed with smooth finger kinematics."';
+    } else if (stats.wpm >= 30) {
+      rank = 'RANK: B [INITIATE]';
+      msg = '"Solid execution. Continue touch typing practice."';
+    }
+
+    this.dom.resultRank.textContent = rank;
+    this.dom.modalFinalWpm.textContent = stats.wpm;
+    this.dom.modalFinalCpm.textContent = `${stats.cpm} CPM`;
+    this.dom.modalFinalAcc.textContent = `${stats.accuracy}%`;
+    this.dom.modalFinalErrors.textContent = `${stats.errors} Errors`;
+    this.dom.modalFinalCombo.textContent = `${stats.maxStreak}x`;
+    this.dom.modalFinalTime.textContent = `${stats.elapsedSeconds}s`;
+    this.dom.modalMessage.textContent = msg;
+
+    // Render Monkeytype-Style Telemetry Velocity Chart
+    this.renderSpeedChart(stats.wpmHistory);
+
+    this.dom.scoreModal.classList.remove('hidden');
+  }
+
+  renderSpeedChart(wpmHistory = []) {
+    if (!this.dom.modalSpeedChartSvg) return;
+    const svg = this.dom.modalSpeedChartSvg;
+    svg.innerHTML = '';
+
+    if (!wpmHistory || wpmHistory.length < 2) {
+      const finalWpm = parseInt(this.dom.modalFinalWpm.textContent, 10) || 60;
+      wpmHistory = [
+        { time: 0, wpm: 0, acc: 100 },
+        { time: 10, wpm: Math.round(finalWpm * 0.75), acc: 98 },
+        { time: 20, wpm: finalWpm, acc: 99 }
+      ];
+    }
+
+    const width = 500;
+    const height = 95;
+    const padding = 15;
+
+    const maxWpm = Math.max(80, ...wpmHistory.map(p => p.wpm + 10));
+    const maxTime = Math.max(1, ...wpmHistory.map(p => p.time));
+
+    // 1. Grid Lines
+    for (let r = 0; r <= 3; r++) {
+      const y = padding + (r / 3) * (height - padding * 2);
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', padding);
+      line.setAttribute('y1', y);
+      line.setAttribute('x2', width - padding);
+      line.setAttribute('y2', y);
+      line.setAttribute('stroke', 'rgba(255, 255, 255, 0.08)');
+      line.setAttribute('stroke-dasharray', '4,4');
+      svg.appendChild(line);
+    }
+
+    // 2. Map coordinates
+    const wpmPoints = wpmHistory.map(p => {
+      const x = padding + (p.time / maxTime) * (width - padding * 2);
+      const y = height - padding - (p.wpm / maxWpm) * (height - padding * 2);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    });
+
+    const accPoints = wpmHistory.map(p => {
+      const x = padding + (p.time / maxTime) * (width - padding * 2);
+      const y = height - padding - (p.acc / 100) * (height - padding * 2);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    });
+
+    // 3. WPM Area Fill
+    const firstX = padding;
+    const lastX = width - padding;
+    const bottomY = height - padding;
+    const areaPoints = `${firstX},${bottomY} ` + wpmPoints.join(' ') + ` ${lastX},${bottomY}`;
+
+    const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+    polygon.setAttribute('points', areaPoints);
+    polygon.setAttribute('fill', 'rgba(0, 255, 102, 0.15)');
+    svg.appendChild(polygon);
+
+    // 4. Accuracy Polyline (Cyan)
+    const accPoly = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+    accPoly.setAttribute('points', accPoints.join(' '));
+    accPoly.setAttribute('fill', 'none');
+    accPoly.setAttribute('stroke', '#00e5ff');
+    accPoly.setAttribute('stroke-width', '1.5');
+    accPoly.setAttribute('stroke-dasharray', '2,2');
+    svg.appendChild(accPoly);
+
+    // 5. WPM Polyline (Green)
+    const wpmPoly = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+    wpmPoly.setAttribute('points', wpmPoints.join(' '));
+    wpmPoly.setAttribute('fill', 'none');
+    wpmPoly.setAttribute('stroke', '#00ff66');
+    wpmPoly.setAttribute('stroke-width', '2.5');
+    svg.appendChild(wpmPoly);
+  }
+
+  openAcademyMissionGrid() {
+    if (!this.dom.academyGridModal) return;
+    this.dom.academyGridModal.classList.remove('hidden');
+    this.renderAcademyCurriculum(this.currentLayout || 'en');
+    this.audio.playSuccessFanfare();
+  }
+
+  renderAcademyCurriculum(lang) {
+    if (!this.dom.academyMissionGrid) return;
+    this.dom.academyMissionGrid.innerHTML = '';
+
+    const prof = profileStore.getProfile(this.username);
+    const starsMap = prof.lessonStars || {};
+
+    if (lang === 'weak') {
+      const weakKeys = profileStore.getWeakKeys(this.username);
+      const displayKeys = weakKeys.length > 0 ? weakKeys.slice(0, 8).join(', ').toUpperCase() : 'Z, X, P, Q, V, B, K, M';
+      
+      const card = document.createElement('div');
+      card.className = 'lesson-card';
+      card.innerHTML = `
+        <div class="lesson-card-top">
+          <span class="lesson-card-title" style="color: #ffaa00;">⚡ Adaptive Weak Key Drill</span>
+          <span class="lesson-card-stars">★★★</span>
+        </div>
+        <div class="lesson-card-desc">
+          Targeted drill generated automatically from your most frequent error keys: <strong>[ ${displayKeys} ]</strong>.
+        </div>
+        <button class="lesson-card-btn" style="border-color:#ffaa00; color:#ffaa00;">START DRILL →</button>
+      `;
+      card.addEventListener('click', () => {
+        this.dom.academyGridModal.classList.add('hidden');
+        this.launchWeakKeyDrill();
+      });
+      this.dom.academyMissionGrid.appendChild(card);
+      return;
+    }
+
+    const lessons = LESSONS_DATA[lang] || LESSONS_DATA.en;
+    lessons.forEach((les, idx) => {
+      const starsCount = starsMap[les.id] || 0;
+      const starsStr = '★'.repeat(starsCount) + '☆'.repeat(3 - starsCount);
+
+      const card = document.createElement('div');
+      card.className = 'lesson-card';
+      card.innerHTML = `
+        <div class="lesson-card-top">
+          <span class="lesson-card-title">0${idx + 1}. ${les.title}</span>
+          <span class="lesson-card-stars">${starsStr}</span>
+        </div>
+        <div class="lesson-card-desc">${les.desc}</div>
+        <button class="lesson-card-btn">SELECT MISSION →</button>
+      `;
+      card.addEventListener('click', () => {
+        this.dom.academyGridModal.classList.add('hidden');
+        this.launchAcademyMode(idx + 1);
+      });
+      this.dom.academyMissionGrid.appendChild(card);
+    });
+  }
+
+  launchWeakKeyDrill() {
+    const weakKeys = profileStore.getWeakKeys(this.username);
+    const keysToUse = weakKeys.length >= 3 ? weakKeys.slice(0, 6) : ['z', 'x', 'p', 'q', 'v', 'b', 'k'];
+    
+    // Procedurally assemble Keybr-style pseudo-words
+    const vowels = ['a', 'e', 'i', 'o', 'u'];
+    const words = [];
+    for (let i = 0; i < 28; i++) {
+      const k1 = keysToUse[Math.floor(Math.random() * keysToUse.length)];
+      const v = vowels[Math.floor(Math.random() * vowels.length)];
+      const k2 = keysToUse[Math.floor(Math.random() * keysToUse.length)];
+      words.push(`${k1}${v}${k2}`);
+    }
+    const drillText = words.join(' ');
+
+    const logs = generateEntranceLogs('academy', 'Weak Key Drill');
+    this.state = STATES.MODE_ACADEMY;
+    this.currentActiveLessonId = 'weak_drill_adaptive';
+
+    this.dom.academyLessonTitle.textContent = `⚡ Adaptive Weak Key Drill (${keysToUse.join(', ').toUpperCase()})`;
+    this.academyEngine.loadText(drillText);
+
+    this.playCyberTransition(
+      'ADAPTIVE KEYBR DRILL',
+      'CALIBRATING WEAK KEY STRENGTH...',
+      logs,
+      'academy',
+      () => {
+        this.dom.academyTypingCanvas.focus();
+        setTimeout(() => this.hands.updatePositions(), 50);
+      }
+    );
+  }
+
+  // =========================================================================
+  // GLOBAL INPUT & KEYBOARD EVENTS
+  // =========================================================================
+
+  // =========================================================================
+  // ADVANCED VISUALIZERS (Phase 4)
+  // =========================================================================
+
+  renderHeatmap() {
+    if (!this.dom.heatmapGrid) return;
+    this.dom.heatmapGrid.innerHTML = '';
+    const keys = '1234567890QWERTYUIOPASDFGHJKLZXCVBNM'.split('');
+
+    const prof = profileStore.getProfile(this.username);
+    const weakCounts = prof.weakKeys || {};
+    const errorValues = Object.values(weakCounts);
+    const maxErrors = errorValues.length > 0 ? Math.max(1, ...errorValues) : 1;
+
+    keys.forEach(k => {
+      const errCount = weakCounts[k.toLowerCase()] || 0;
+      const block = document.createElement('div');
+      block.style.width = '100%';
+      block.style.aspectRatio = '1';
+      block.style.display = 'flex';
+      block.style.flexDirection = 'column';
+      block.style.alignItems = 'center';
+      block.style.justifyContent = 'center';
+      block.style.fontWeight = 'bold';
+      block.style.color = '#fff';
+      block.innerHTML = `<span>${k}</span>${errCount > 0 ? `<small style="font-size:9px; color:#fff; opacity:0.8;">${errCount}x</small>` : ''}`;
+      
+      let bg = 'rgba(0, 255, 102, 0.12)';
+      let borderColor = 'rgba(0, 255, 102, 0.2)';
+      if (errCount > 0) {
+        const ratio = errCount / maxErrors;
+        if (ratio >= 0.6) {
+          bg = 'rgba(255, 34, 85, 0.75)';
+          borderColor = '#ff2255';
+        } else if (ratio >= 0.25) {
+          bg = 'rgba(255, 170, 0, 0.65)';
+          borderColor = '#ffaa00';
+        } else {
+          bg = 'rgba(0, 229, 255, 0.45)';
+          borderColor = '#00e5ff';
+        }
+      }
+      
+      block.style.backgroundColor = bg;
+      block.style.border = `1px solid ${borderColor}`;
+      block.style.borderRadius = '4px';
+      this.dom.heatmapGrid.appendChild(block);
+    });
+  }
+
+  renderNodeGraph() {
+    if (!this.dom.nodeGraphSvg) return;
+    const svg = this.dom.nodeGraphSvg;
+    svg.innerHTML = ''; // Clear
+    const w = this.dom.nodeGraphModal.querySelector('.modal-card').clientWidth;
+    const h = 660; // Approximate height
+
+    const nodes = [];
+    for(let i=0; i<30; i++) {
+      nodes.push({
+        x: Math.random() * w,
+        y: Math.random() * h,
+        r: Math.random() * 8 + 4,
+        color: Math.random() > 0.8 ? '#ff2255' : '#00ff66'
+      });
+    }
+
+    let linksHtml = '';
+    nodes.forEach((n1, i) => {
+      nodes.forEach((n2, j) => {
+        if (i < j && Math.random() > 0.85) {
+          linksHtml += `<line x1="${n1.x}" y1="${n1.y}" x2="${n2.x}" y2="${n2.y}" stroke="rgba(0,255,102,0.3)" stroke-width="1"></line>`;
+        }
+      });
+    });
+
+    let nodesHtml = '';
+    nodes.forEach(n => {
+      nodesHtml += `<circle cx="${n.x}" cy="${n.y}" r="${n.r}" fill="${n.color}"></circle>`;
+    });
+
+    svg.innerHTML = `<g id="nodeGraphLinks">${linksHtml}</g><g id="nodeGraphNodes">${nodesHtml}</g>`;
+  }
+
+  startPacketSniffer() {
+    if (this.packetSnifferInterval) clearInterval(this.packetSnifferInterval);
+    if (this.dom.packetSnifferOutput) this.dom.packetSnifferOutput.innerHTML = '<div style="color:var(--theme-primary);">[*] BINDING TO PROMISCUOUS MODE...</div>';
+    
+    this.packetSnifferInterval = setInterval(() => {
+      if (!this.dom.packetSnifferOutput || this.dom.packetSnifferModal.classList.contains('hidden')) {
+        clearInterval(this.packetSnifferInterval);
+        return;
+      }
+      const proto = ['TCP', 'UDP', 'ICMP', 'HTTP', 'HTTPS', 'SSH'][Math.floor(Math.random()*6)];
+      const src = `192.168.1.${Math.floor(Math.random()*255)}`;
+      const dst = `10.0.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}`;
+      const color = proto === 'SSH' ? '#ffaa00' : proto === 'HTTPS' ? '#00e5ff' : '#00ff66';
+      
+      const el = document.createElement('div');
+      el.style.color = color;
+      el.textContent = `[${new Date().toISOString().split('T')[1]}] ${proto} ${src} -> ${dst} len=${Math.floor(Math.random()*1500)}`;
+      this.dom.packetSnifferOutput.appendChild(el);
+      if (this.dom.packetSnifferOutput.childElementCount > 100) {
+        this.dom.packetSnifferOutput.removeChild(this.dom.packetSnifferOutput.firstChild);
+      }
+      this.dom.packetSnifferOutput.scrollTop = this.dom.packetSnifferOutput.scrollHeight;
+    }, 150);
+  }
+
+  async startCamhack() {
+    if (!this.dom.camhackVideo) return;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      this.dom.camhackVideo.srcObject = stream;
+      
+      let seconds = 0;
+      const timerEl = document.getElementById('camhackTimer');
+      if (this.camhackInterval) clearInterval(this.camhackInterval);
+      this.camhackInterval = setInterval(() => {
+        seconds++;
+        const h = String(Math.floor(seconds / 3600)).padStart(2, '0');
+        const m = String(Math.floor((seconds % 3600) / 60)).padStart(2, '0');
+        const s = String(seconds % 60).padStart(2, '0');
+        if (timerEl) timerEl.textContent = `${h}:${m}:${s}`;
+      }, 1000);
+      
+    } catch (err) {
+      console.error('Camhack Error:', err);
+      alert('Failed to intercept CCTV (Webcam access denied or unavailable).');
+    }
+  }
+
+  async executeCyberrc() {
+    const rcData = await this.sys.readFile('.cyberrc');
+    if (rcData.success && rcData.content) {
+      const lines = rcData.content.split('\n');
+      for (let cmd of lines) {
+        cmd = cmd.trim();
+        if (cmd && !cmd.startsWith('#')) {
+          await this.executeCliCommand(cmd);
+          // Wait briefly between auto-executed commands for visual effect
+          await new Promise(r => setTimeout(r, 300));
+        }
+      }
+    }
+  }
+
+  startHudTelemetry() {
+    if (this.hudInterval) clearInterval(this.hudInterval);
+    this.hudInterval = setInterval(async () => {
+      const info = await this.sys.getSysInfo();
+      // CPU
+      const cpuVal = Math.floor(Math.random() * 10) + 15; // Simulated fluctuation around 20%
+      this.dom.hudCpuBar.style.width = `${cpuVal}%`;
+      this.dom.hudCpuVal.textContent = `${cpuVal}%`;
+      
+      // RAM
+      const memPct = info.memPercent || (Math.floor(Math.random() * 10) + 40);
+      this.dom.hudRamBar.style.width = `${memPct}%`;
+      this.dom.hudRamVal.textContent = `${memPct}%`;
+      
+      // Net
+      this.dom.hudNetDown.textContent = (10 + Math.random() * 5).toFixed(1);
+      this.dom.hudNetUp.textContent = (5 + Math.random() * 3).toFixed(1);
+    }, 2000);
+  }
+
+  bindEvents() {
+    if (this.sys.isElectron && window.cyberSystemAPI.onUsbDetected) {
+      window.cyberSystemAPI.onUsbDetected((drive) => {
+        this.audio.playSuccessFanfare();
+        alert(`[!] NEW HARDWARE DETECTED: REMOVABLE MEDIA MOUNTED AT ${drive}\n>> SCANNING FOR EXECUTABLES & PAYLOADS...`);
+        this.addExp(25, 'Hardware Interfaced');
+      });
+    }
+
+    // Native Window Controls
+    if (this.dom.winMinBtn) {
+      this.dom.winMinBtn.addEventListener('click', () => {
+        if (this.sys.isElectron && window.cyberSystemAPI.windowControl) {
+          window.cyberSystemAPI.windowControl('minimize');
+        }
+      });
+    }
+    if (this.dom.winMaxBtn) {
+      this.dom.winMaxBtn.addEventListener('click', () => {
+        if (this.sys.isElectron && window.cyberSystemAPI.windowControl) {
+          window.cyberSystemAPI.windowControl('maximize');
+        }
+      });
+    }
+    if (this.dom.winCloseBtn) {
+      this.dom.winCloseBtn.addEventListener('click', () => {
+        if (this.sys.isElectron && window.cyberSystemAPI.windowControl) {
+          window.cyberSystemAPI.windowControl('close');
+        }
+      });
+    }
+
+    this.dom.btnSecretGateSubmit.addEventListener('click', () => this.handleSecretGateSubmit());
+    this.dom.secretGateInput.addEventListener('keydown', (e) => {
+      this.audio.playKey(false);
+      if (e.key === 'Enter') {
+        this.handleSecretGateSubmit();
+      }
+    });
+
+
+
+    this.dom.btnLoginSubmit.addEventListener('click', () => this.handleLogin());
+    if (this.dom.btnLoginBypass) {
+      this.dom.btnLoginBypass.addEventListener('click', () => {
+        this.audio.playSuccessFanfare();
+        this.dom.loginUserField.value = 'Anan';
+        this.dom.loginPassField.value = 'Infinity';
+        setTimeout(() => this.handleLogin(), 300);
+      });
+    }
+    this.dom.loginUserField.addEventListener('keydown', (e) => {
+      this.audio.playKey(false);
+      if (e.key === 'Enter') {
+        this.dom.loginPassField.focus();
+      }
+    });
+    this.dom.loginPassField.addEventListener('keydown', (e) => {
+      this.audio.playKey(false);
+      if (e.key === 'Enter') {
+        this.handleLogin();
+      }
+    });
+
+    if (this.dom.heatmapCloseBtn) {
+      this.dom.heatmapCloseBtn.addEventListener('click', () => {
+        this.dom.heatmapModal.classList.add('hidden');
+      });
+    }
+    if (this.dom.nodeGraphCloseBtn) {
+      this.dom.nodeGraphCloseBtn.addEventListener('click', () => {
+        this.dom.nodeGraphModal.classList.add('hidden');
+      });
+    }
+    if (this.dom.packetSnifferCloseBtn) {
+      this.dom.packetSnifferCloseBtn.addEventListener('click', () => {
+        this.dom.packetSnifferModal.classList.add('hidden');
+        if (this.packetSnifferInterval) clearInterval(this.packetSnifferInterval);
+      });
+    }
+
+    if (this.dom.camhackCloseBtn) {
+      this.dom.camhackCloseBtn.addEventListener('click', () => {
+        this.dom.camhackModal.classList.add('hidden');
+        if (this.camhackInterval) clearInterval(this.camhackInterval);
+        if (this.dom.camhackVideo.srcObject) {
+          this.dom.camhackVideo.srcObject.getTracks().forEach(t => t.stop());
+          this.dom.camhackVideo.srcObject = null;
+        }
+      });
+    }
+
+    if (this.dom.mapCloseBtn) {
+      this.dom.mapCloseBtn.addEventListener('click', () => {
+        this.dom.cyberNetworkMapModal.classList.add('hidden');
+      });
+    }
+    if (this.dom.breachCloseBtn) {
+      this.dom.breachCloseBtn.addEventListener('click', () => {
+        this.dom.breachProtocolModal.classList.add('hidden');
+        if (this.breachEngine) this.breachEngine.finish(false);
+      });
+    }
+    if (this.dom.threatCloseBtn) {
+      this.dom.threatCloseBtn.addEventListener('click', () => {
+        this.dom.cyberThreatModal.classList.add('hidden');
+        if (this.threatEngine) this.threatEngine.stop();
+      });
+    }
+    if (this.dom.duckyCloseBtn) {
+      this.dom.duckyCloseBtn.addEventListener('click', () => {
+        this.dom.duckyPayloadModal.classList.add('hidden');
+      });
+    }
+
+    document.querySelectorAll('.ducky-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.ducky-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const pType = btn.dataset.payload;
+        this.renderDuckyPreview(pType);
+        this.audio.playKey(false);
+      });
+    });
+
+    if (this.dom.btnDeployDucky) {
+      this.dom.btnDeployDucky.addEventListener('click', () => {
+        this.audio.playSuccessFanfare();
+        this.addExp(200, 'Rubber Ducky Flashed');
+        alert('[✓] PAYLOAD COMPILED & INJECTED TO RUBBER DUCKY DRIVER (COM3)');
+        this.dom.duckyPayloadModal.classList.add('hidden');
+      });
+    }
+
+    this.dom.modalCloseBtn.addEventListener('click', () => {
+      this.dom.scoreModal.classList.add('hidden');
+      this.returnToCli();
+    });
+    this.dom.modalRetryBtn.addEventListener('click', () => {
+      this.dom.scoreModal.classList.add('hidden');
+      if (this.state === STATES.MODE_ACADEMY) {
+        this.launchAcademyMode();
+      } else if (this.state === STATES.MODE_SPEED) {
+        this.launchSpeedMode(this.speedDuration);
+      }
+    });
+    this.dom.modalNextLessonBtn.addEventListener('click', () => {
+      this.dom.scoreModal.classList.add('hidden');
+      this.launchAcademyMode();
+    });
+
+    // Academy Mission Grid Modal Events
+    if (this.dom.academyGridCloseBtn) {
+      this.dom.academyGridCloseBtn.addEventListener('click', () => {
+        this.dom.academyGridModal.classList.add('hidden');
+      });
+    }
+
+    if (this.dom.tabEnAcademy) {
+      this.dom.tabEnAcademy.addEventListener('click', () => {
+        [this.dom.tabEnAcademy, this.dom.tabThAcademy, this.dom.tabWeakAcademy].forEach(t => t && t.classList.remove('active'));
+        this.dom.tabEnAcademy.classList.add('active');
+        this.renderAcademyCurriculum('en');
+        this.audio.playKey(false);
+      });
+    }
+
+    if (this.dom.tabThAcademy) {
+      this.dom.tabThAcademy.addEventListener('click', () => {
+        [this.dom.tabEnAcademy, this.dom.tabThAcademy, this.dom.tabWeakAcademy].forEach(t => t && t.classList.remove('active'));
+        this.dom.tabThAcademy.classList.add('active');
+        this.renderAcademyCurriculum('th');
+        this.audio.playKey(false);
+      });
+    }
+
+    if (this.dom.tabWeakAcademy) {
+      this.dom.tabWeakAcademy.addEventListener('click', () => {
+        [this.dom.tabEnAcademy, this.dom.tabThAcademy, this.dom.tabWeakAcademy].forEach(t => t && t.classList.remove('active'));
+        this.dom.tabWeakAcademy.classList.add('active');
+        this.renderAcademyCurriculum('weak');
+        this.audio.playKey(false);
+      });
+    }
+
+    this.dom.universalTransitionOverlay.addEventListener('click', () => {
+      if (this.isTransitioning && this.skipCurrentTransition) {
+        this.skipCurrentTransition();
+      }
+    });
+
+    this.dom.terminalScreenWrapper.addEventListener('click', () => {
+      window.focus();
+    });
+
+    window.addEventListener('keydown', async (e) => {
+      this.audio.ensureContext();
+
+      // 0. If user is focused on a native HTML input/textarea (like login, gate, search, sandbox textarea), let browser handle Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X natively!
+      const isHtmlInput = e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable);
+      if (isHtmlInput) {
+        if (e.key === 'Escape') {
+          e.target.blur();
+        }
+        return;
+      }
+
+      // Ctrl + S in Sandbox mode to save file
+      if (this.state === STATES.MODE_SANDBOX && e.ctrlKey && (e.key === 's' || e.key === 'S')) {
+        e.preventDefault();
+        if (this.currentEditingFile) {
+          const content = this.dom.sandboxTextarea.value;
+          await this.sys.writeFile(this.currentEditingFile, content);
+          this.audio.playSuccessFanfare();
+          alert(`[✓] File saved: ${this.currentEditingFile}`);
+        }
+        return;
+      }
+
+      // Ctrl + E for EMP Blast
+      if (e.ctrlKey && (e.key === 'e' || e.key === 'E')) {
+        e.preventDefault();
+        this.triggerEmpBlast();
+        return;
+      }
+
+      // Escape key handler
+      if (e.key === 'Escape') {
+        if (this.dom.camhackModal && !this.dom.camhackModal.classList.contains('hidden')) {
+          this.dom.camhackModal.classList.add('hidden');
+          if (this.camhackInterval) clearInterval(this.camhackInterval);
+          if (this.dom.camhackVideo.srcObject) {
+            this.dom.camhackVideo.srcObject.getTracks().forEach(t => t.stop());
+            this.dom.camhackVideo.srcObject = null;
+          }
+          return;
+        }
+        if (this.dom.heatmapModal && !this.dom.heatmapModal.classList.contains('hidden')) {
+          this.dom.heatmapModal.classList.add('hidden');
+          return;
+        }
+        if (this.dom.nodeGraphModal && !this.dom.nodeGraphModal.classList.contains('hidden')) {
+          this.dom.nodeGraphModal.classList.add('hidden');
+          return;
+        }
+        if (this.dom.packetSnifferModal && !this.dom.packetSnifferModal.classList.contains('hidden')) {
+          this.dom.packetSnifferModal.classList.add('hidden');
+          if (this.packetSnifferInterval) clearInterval(this.packetSnifferInterval);
+          return;
+        }
+        if (this.dom.cyberNetworkMapModal && !this.dom.cyberNetworkMapModal.classList.contains('hidden')) {
+          this.dom.cyberNetworkMapModal.classList.add('hidden');
+          return;
+        }
+        if (this.dom.breachProtocolModal && !this.dom.breachProtocolModal.classList.contains('hidden')) {
+          this.dom.breachProtocolModal.classList.add('hidden');
+          if (this.breachEngine) this.breachEngine.finish(false);
+          return;
+        }
+        if (this.dom.cyberThreatModal && !this.dom.cyberThreatModal.classList.contains('hidden')) {
+          this.dom.cyberThreatModal.classList.add('hidden');
+          if (this.threatEngine) this.threatEngine.stop();
+          return;
+        }
+        if (this.dom.duckyPayloadModal && !this.dom.duckyPayloadModal.classList.contains('hidden')) {
+          this.dom.duckyPayloadModal.classList.add('hidden');
+          return;
+        }
+      }
+
+      if (this.isTransitioning && (e.key === ' ' || e.key === 'Enter')) {
+        e.preventDefault();
+        if (this.skipCurrentTransition) {
+          this.skipCurrentTransition();
+        }
+        return;
+      }
+
+      if (e.key === 'Escape' && this.state !== STATES.GATE && this.state !== STATES.LOGIN && this.state !== STATES.LOADING && !this.isTransitioning) {
+        e.preventDefault();
+        this.returnToCli();
+        return;
+      }
+
+      this.kb.setKeyActive(e.code, true);
+      const finger = this.kb.getFingerForCode(e.code);
+      if (finger) {
+        this.hands.pressKeyWithFinger(e.code, finger);
+      }
+      const keyEl = this.kb.keyElementsMap.get(e.code);
+      if (keyEl && this.matrix) {
+        this.matrix.emitFromElement(keyEl);
+      }
+
+      // 1. CLI Prompt Key Handling (Supports full Left/Right arrow navigation, Ctrl+A/C/V/X, spacebar, and mid-line editing)
+      if (this.state === STATES.CLI_PROMPT) {
+        if (this.isTransitioning) return;
+
+        // Ctrl + A (Select / Jump to Start of buffer)
+        if (e.ctrlKey && (e.key === 'a' || e.key === 'A')) {
+          e.preventDefault();
+          this.cliCursorPos = 0;
+          this.renderCliPrompt();
+          return;
+        }
+
+        // Ctrl + C (Copy selection or Copy current CLI buffer & break line)
+        if (e.ctrlKey && (e.key === 'c' || e.key === 'C')) {
+          e.preventDefault();
+          const selectedText = window.getSelection ? window.getSelection().toString() : '';
+          if (selectedText) {
+            try { await navigator.clipboard.writeText(selectedText); } catch(err) {}
+          } else if (this.cliInputBuffer) {
+            try { await navigator.clipboard.writeText(this.cliInputBuffer); } catch(err) {}
+            const cancelLine = document.createElement('div');
+            cancelLine.className = 'cli-history-line';
+            cancelLine.innerHTML = `<span class="term-prompt">${this.dom.cliPromptPath.textContent}</span> ${this.escapeHtml(this.cliInputBuffer)}^C`;
+            this.dom.cliHistory.appendChild(cancelLine);
+            this.cliInputBuffer = '';
+            this.cliCursorPos = 0;
+            this.renderCliPrompt();
+            this.scrollToBottom();
+          }
+          return;
+        }
+
+        // Ctrl + V (Paste from Clipboard into CLI Prompt)
+        if (e.ctrlKey && (e.key === 'v' || e.key === 'V')) {
+          e.preventDefault();
+          try {
+            const pasteData = await navigator.clipboard.readText();
+            if (pasteData) {
+              const clean = pasteData.replace(/[\r\n]+/g, ' ');
+              this.cliInputBuffer = this.cliInputBuffer.slice(0, this.cliCursorPos) + clean + this.cliInputBuffer.slice(this.cliCursorPos);
+              this.cliCursorPos += clean.length;
+              this.renderCliPrompt();
+              this.audio.playKey(false);
+            }
+          } catch(err) {
+            console.warn('Clipboard paste error:', err);
+          }
+          return;
+        }
+
+        // Ctrl + X (Cut buffer to Clipboard)
+        if (e.ctrlKey && (e.key === 'x' || e.key === 'X')) {
+          e.preventDefault();
+          if (this.cliInputBuffer) {
+            try { await navigator.clipboard.writeText(this.cliInputBuffer); } catch(err) {}
+            this.cliInputBuffer = '';
+            this.cliCursorPos = 0;
+            this.renderCliPrompt();
+          }
+          return;
+        }
+
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          this.audio.playEnterSound();
+          const cmdToRun = this.cliInputBuffer;
+          this.cliInputBuffer = '';
+          this.cliCursorPos = 0;
+          this.renderCliPrompt();
+          await this.executeCliCommand(cmdToRun);
+        } else if (e.key === 'Backspace') {
+          e.preventDefault();
+          if (this.cliCursorPos > 0) {
+            this.cliInputBuffer = this.cliInputBuffer.slice(0, this.cliCursorPos - 1) + this.cliInputBuffer.slice(this.cliCursorPos);
+            this.cliCursorPos--;
+            this.renderCliPrompt();
+            this.audio.playKey(false);
+          }
+        } else if (e.key === 'Delete') {
+          e.preventDefault();
+          if (this.cliCursorPos < this.cliInputBuffer.length) {
+            this.cliInputBuffer = this.cliInputBuffer.slice(0, this.cliCursorPos) + this.cliInputBuffer.slice(this.cliCursorPos + 1);
+            this.renderCliPrompt();
+            this.audio.playKey(false);
+          }
+        } else if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          if (this.cliCursorPos > 0) {
+            this.cliCursorPos--;
+            this.renderCliPrompt();
+            this.audio.playKey(false);
+          }
+        } else if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          if (this.cliCursorPos < this.cliInputBuffer.length) {
+            this.cliCursorPos++;
+            this.renderCliPrompt();
+            this.audio.playKey(false);
+          }
+        } else if (e.key === 'Home') {
+          e.preventDefault();
+          this.cliCursorPos = 0;
+          this.renderCliPrompt();
+        } else if (e.key === 'End') {
+          e.preventDefault();
+          this.cliCursorPos = this.cliInputBuffer.length;
+          this.renderCliPrompt();
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          if (this.cliHistoryStack.length > 0 && this.cliHistoryIndex > 0) {
+            this.cliHistoryIndex--;
+            this.cliInputBuffer = this.cliHistoryStack[this.cliHistoryIndex];
+            this.cliCursorPos = this.cliInputBuffer.length;
+            this.renderCliPrompt();
+          }
+        } else if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          if (this.cliHistoryIndex < this.cliHistoryStack.length - 1) {
+            this.cliHistoryIndex++;
+            this.cliInputBuffer = this.cliHistoryStack[this.cliHistoryIndex];
+            this.cliCursorPos = this.cliInputBuffer.length;
+            this.renderCliPrompt();
+          } else {
+            this.cliHistoryIndex = this.cliHistoryStack.length;
+            this.cliInputBuffer = '';
+            this.cliCursorPos = 0;
+            this.renderCliPrompt();
+          }
+        } else if (e.key === 'Tab') {
+          e.preventDefault();
+          this.handleCliTabCompletion();
+        } else if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+          e.preventDefault();
+          this.cliInputBuffer = this.cliInputBuffer.slice(0, this.cliCursorPos) + e.key + this.cliInputBuffer.slice(this.cliCursorPos);
+          this.cliCursorPos++;
+          this.renderCliPrompt();
+          this.audio.playKey(false);
+          if (this.particles && keyEl) {
+            this.particles.emitAtElement(keyEl, 4);
+          }
+        }
+        return;
+      }
+
+      // 2. Touch Typing Academy Mode
+      if (this.state === STATES.MODE_ACADEMY) {
+        this.academyEngine.handleKeyDown(e);
+        return;
+      }
+
+      // 3. Speed Rush Mode
+      if (this.state === STATES.MODE_SPEED) {
+        if (!this.speedEngine.isActive && !['Control', 'Shift', 'Alt', 'Meta'].includes(e.key)) {
+          this.startSpeedCountdown();
+        }
+        this.speedEngine.handleKeyDown(e);
+        return;
+      }
+
+      // 4. Hacker Simulator Mode
+      if (this.state === STATES.MODE_HACKER) {
+        this.hackerEngine.handleKeyDown(e);
+        return;
+      }
+
+      // 5. Sandbox Mode
+      if (this.state === STATES.MODE_SANDBOX) {
+        this.audio.playKey(false);
+        return;
+      }
+
+      // 6. Hacky Roguelite Mode
+      if (this.state === STATES.MODE_ROGUELITE) {
+        if (this.rogueliteEngine) {
+          this.rogueliteEngine.handleKeyDown(e);
+        }
+        return;
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      this.kb.setKeyActive(e.code, false);
+      const finger = this.kb.getFingerForCode(e.code);
+      if (finger) {
+        this.hands.releaseFinger(finger);
+      }
+    });
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const app = new WindowsTerminalApp();
+  app.init();
+});

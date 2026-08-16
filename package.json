@@ -1,0 +1,29 @@
+{
+  "name": "cyberdeck",
+  "version": "4.0.0",
+  "description": "CyberDeck Terminal Native Desktop Application with Hacky Roguelite Mode",
+  "main": "main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron .",
+    "serve": "python -m http.server 3000"
+  },
+  "keywords": [
+    "touch-typing",
+    "hacker-terminal",
+    "matrix-rain",
+    "electron-app",
+    "windows-cmd"
+  ],
+  "author": "Antigravity",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^34.2.0"
+  },
+  "dependencies": {
+    "crypto": "^1.0.1",
+    "crypto-js": "^4.2.0",
+    "dns": "^0.2.2",
+    "net": "^1.0.2"
+  }
+}

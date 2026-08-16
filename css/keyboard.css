@@ -1,0 +1,277 @@
+/* ==========================================================================
+   CYBER HARDWARE DECK & REAL-TIME GLOWING KEYBOARD
+   ========================================================================== */
+
+.cyber-hardware-deck {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #101010;
+  border: 1px solid var(--cmd-border);
+  padding: 12px;
+  border-radius: 4px;
+}
+
+/* Finger Guidance Bar */
+.finger-guidance-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 12px;
+  background: #181818;
+  border: 1px solid #2a2a2a;
+  border-radius: 3px;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 11.5px;
+}
+
+.guide-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.guide-label {
+  color: #777777;
+}
+
+.guide-key-badge {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 800;
+  color: #000000;
+  background: var(--theme-primary);
+  padding: 2px 8px;
+  border-radius: 2px;
+  min-width: 28px;
+  text-align: center;
+}
+
+.guide-finger-badge {
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 2px;
+  background: #111111;
+  border: 1px solid;
+  font-family: var(--font-thai);
+}
+
+.keyboard-view-toggles {
+  display: flex;
+  gap: 12px;
+}
+
+/* Keyboard Chassis & Hands Overlaid Container */
+.keyboard-hardware-wrapper {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  padding: 4px 0;
+  overflow-x: auto;
+}
+
+.keyboard-hand-stage {
+  position: relative;
+  max-width: 960px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Base Keyboard Chassis */
+.cyber-keyboard {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  background: transparent;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: none;
+  width: 100%;
+}
+
+.kb-row {
+  display: flex;
+  gap: 4px;
+  width: 100%;
+}
+
+/* Base Keycap Styling */
+.key {
+  position: relative;
+  flex: 1;
+  height: 46px;
+  min-width: 30px;
+  background: linear-gradient(180deg, #1c1c1c 0%, #121212 100%);
+  border: 1px solid #333333;
+  border-bottom: 3px solid #080808;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 3px 5px;
+  cursor: default;
+  transition: transform 0.05s ease, background 0.05s ease, border-color 0.05s ease, box-shadow 0.05s ease;
+  overflow: hidden;
+}
+
+/* Key Labels */
+.key-top-label {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: #cccccc;
+  line-height: 1;
+  text-align: left;
+}
+
+.key-sub-label {
+  font-family: var(--font-thai);
+  font-size: 10.5px;
+  color: #666666;
+  line-height: 1;
+  text-align: right;
+}
+
+/* Key Widths */
+.key-backspace { flex: 2; }
+.key-tab { flex: 1.5; }
+.key-caps { flex: 1.75; }
+.key-enter { flex: 2.25; }
+.key-shift-l { flex: 2.25; }
+.key-shift-r { flex: 2.75; }
+.key-space { flex: 6.2; }
+.key-ctrl, .key-alt, .key-meta { flex: 1.25; }
+
+/* Modifier Key Labels */
+.key-mod .key-top-label {
+  font-size: 10px;
+}
+
+/* USER ACTIVE KEYPRESS DEPRESSION */
+.key.active {
+  transform: translateY(3px);
+  border-bottom-width: 1px;
+  background: var(--theme-primary) !important;
+  border-color: var(--theme-primary) !important;
+  box-shadow: 0 0 16px var(--theme-primary-glow), inset 0 0 10px #ffffff !important;
+}
+
+.key.active .key-top-label,
+.key.active .key-sub-label {
+  color: #000000 !important;
+  font-weight: 900;
+}
+
+/* TARGET NEXT KEY IN LESSON */
+.key.target-next {
+  border-color: var(--theme-primary) !important;
+  box-shadow: 0 0 10px var(--theme-primary-glow), inset 0 0 6px var(--theme-primary-dim);
+  animation: key-pulse 0.9s infinite alternate ease-in-out;
+}
+
+@keyframes key-pulse {
+  0% { transform: scale(1); box-shadow: 0 0 6px var(--theme-primary-glow); }
+  100% { transform: scale(1.02); box-shadow: 0 0 15px var(--theme-primary); }
+}
+
+/* ERROR WRONG KEY FLASH */
+.key.error-flash {
+  background: var(--theme-danger) !important;
+  border-color: var(--theme-danger) !important;
+  box-shadow: 0 0 15px var(--theme-danger) !important;
+  animation: error-shake 0.2s ease-in-out;
+}
+
+.key.error-flash .key-top-label,
+.key.error-flash .key-sub-label {
+  color: #ffffff !important;
+}
+
+@keyframes error-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  75% { transform: translateX(3px); }
+}
+
+/* FINGER ZONE BORDERS */
+.show-finger-colors .key-lp { border-top: 2px solid var(--finger-lp); }
+.show-finger-colors .key-lr { border-top: 2px solid var(--finger-lr); }
+.show-finger-colors .key-lm { border-top: 2px solid var(--finger-lm); }
+.show-finger-colors .key-li { border-top: 2px solid var(--finger-li); }
+.show-finger-colors .key-th { border-top: 2px solid var(--finger-th); }
+.show-finger-colors .key-ri { border-top: 2px solid var(--finger-ri); }
+.show-finger-colors .key-rm { border-top: 2px solid var(--finger-rm); }
+.show-finger-colors .key-rr { border-top: 2px solid var(--finger-rr); }
+.show-finger-colors .key-rp { border-top: 2px solid var(--finger-rp); }
+
+/* Finger Badges */
+.finger-lp { color: var(--finger-lp); border-color: var(--finger-lp); }
+.finger-lr { color: var(--finger-lr); border-color: var(--finger-lr); }
+.finger-lm { color: var(--finger-lm); border-color: var(--finger-lm); }
+.finger-li { color: var(--finger-li); border-color: var(--finger-li); }
+.finger-th { color: var(--finger-th); border-color: var(--finger-th); }
+.finger-ri { color: var(--finger-ri); border-color: var(--finger-ri); }
+.finger-rm { color: var(--finger-rm); border-color: var(--finger-rm); }
+.finger-rr { color: var(--finger-rr); border-color: var(--finger-rr); }
+.finger-rp { color: var(--finger-rp); border-color: var(--finger-rp); }
+
+/* Home Row Homing Bumps (F and J) */
+.key-homing::before {
+  content: '';
+  position: absolute;
+  bottom: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 8px;
+  height: 2px;
+  background: var(--theme-primary);
+  opacity: 0.8;
+}
+
+/* Toggles */
+.cyber-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  color: #777777;
+}
+
+.cyber-toggle input { display: none; }
+
+.toggle-track {
+  width: 24px;
+  height: 12px;
+  background: #333333;
+  border-radius: 6px;
+  position: relative;
+  transition: 0.1s ease;
+}
+
+.toggle-track::after {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #888888;
+  transition: 0.1s ease;
+}
+
+.cyber-toggle input:checked + .toggle-track {
+  background: var(--theme-primary-dim);
+}
+
+.cyber-toggle input:checked + .toggle-track::after {
+  transform: translateX(12px);
+  background: var(--theme-primary);
+}

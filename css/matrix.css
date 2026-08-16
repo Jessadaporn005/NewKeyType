@@ -1,0 +1,160 @@
+/* ==========================================================================
+   MATRIX EFFECTS, CRT SCANLINES & GLITCH ANIMATIONS
+   ========================================================================== */
+
+/* CRT Scanlines Overlay */
+body.crt-scanlines::after {
+  content: " ";
+  display: block;
+  position: fixed;
+  top: 0; left: 0; bottom: 0; right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.35) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+  z-index: 99;
+  background-size: 100% 3px, 6px 100%;
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+/* Subtle Screen Vignette */
+body.crt-scanlines::before {
+  content: " ";
+  display: block;
+  position: fixed;
+  top: 0; left: 0; bottom: 0; right: 0;
+  background: radial-gradient(circle at center, transparent 65%, rgba(0, 0, 0, 0.6) 100%);
+  z-index: 98;
+  pointer-events: none;
+}
+
+/* Glitch Title Effect */
+.glitch-title, .logo-text, .breach-glitch, .modal-glitch {
+  position: relative;
+  display: inline-block;
+}
+
+.glitch-title::before, .glitch-title::after,
+.logo-text::before, .logo-text::after,
+.breach-glitch::before, .breach-glitch::after,
+.modal-glitch::before, .modal-glitch::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  clip: rect(0, 0, 0, 0);
+}
+
+.glitch-title::before,
+.logo-text::before,
+.breach-glitch::before,
+.modal-glitch::before {
+  left: -2px;
+  text-shadow: 2px 0 var(--theme-danger);
+  animation: glitch-anim-1 3s infinite linear alternate-reverse;
+}
+
+.glitch-title::after,
+.logo-text::after,
+.breach-glitch::after,
+.modal-glitch::after {
+  left: 2px;
+  text-shadow: -2px 0 var(--theme-info);
+  animation: glitch-anim-2 2.5s infinite linear alternate-reverse;
+}
+
+@keyframes glitch-anim-1 {
+  0% { clip: rect(20px, 9999px, 35px, 0); }
+  20% { clip: rect(65px, 9999px, 75px, 0); }
+  40% { clip: rect(10px, 9999px, 25px, 0); }
+  60% { clip: rect(40px, 9999px, 50px, 0); }
+  80% { clip: rect(80px, 9999px, 90px, 0); }
+  100% { clip: rect(5px, 9999px, 15px, 0); }
+}
+
+@keyframes glitch-anim-2 {
+  0% { clip: rect(15px, 9999px, 25px, 0); }
+  25% { clip: rect(50px, 9999px, 60px, 0); }
+  50% { clip: rect(85px, 9999px, 95px, 0); }
+  75% { clip: rect(30px, 9999px, 45px, 0); }
+  100% { clip: rect(70px, 9999px, 80px, 0); }
+}
+
+/* Hacker Typer Breach Modal Pop-up */
+.hacker-breach-modal {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.88);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+  animation: breach-in 0.2s ease-out;
+}
+
+@keyframes breach-in {
+  0% { opacity: 0; transform: scale(0.95); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.breach-box {
+  background: rgba(10, 24, 14, 0.95);
+  border: 2px solid var(--theme-primary);
+  box-shadow: 0 0 35px var(--theme-primary-glow), inset 0 0 25px var(--theme-primary-dim);
+  padding: 24px 32px;
+  border-radius: 6px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 480px;
+}
+
+.breach-glitch {
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: var(--theme-primary);
+  letter-spacing: 3px;
+}
+
+.breach-sub {
+  font-size: 0.8rem;
+  color: var(--text-main);
+  letter-spacing: 1px;
+}
+
+.breach-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 10px 0;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px dashed var(--theme-primary-dim);
+  font-size: 0.75rem;
+  color: var(--theme-accent);
+  text-align: left;
+}
+
+.breach-footer {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  animation: pulse-dot 1.5s infinite;
+}
+
+/* Live Intrusion Blink Tag */
+.blink-tag {
+  color: var(--theme-danger);
+  font-weight: bold;
+  animation: danger-blink 1s infinite alternate;
+}
+
+@keyframes danger-blink {
+  0% { opacity: 1; text-shadow: 0 0 10px var(--theme-danger); }
+  100% { opacity: 0.4; text-shadow: none; }
+}
