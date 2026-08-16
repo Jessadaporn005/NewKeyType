@@ -556,43 +556,7 @@ class WindowsTerminalApp {
       );
     }
 
-    if (this.dom.views.roguelite) {
-      this.rogueliteEngine = new RogueliteEngine(this, this.audio, this.toasts);
-      this.rogueliteEngine.init(this.dom.views.roguelite);
-    }
-
-    if (this.dom.views.vscode) {
-      this.vscodeEngine = new VscodeEngine(this, this.audio, this.toasts);
-      this.vscodeEngine.init(this.dom.views.vscode);
-    }
-
-    if (this.dom.views.browser) {
-      this.browserEngine = new CyberBrowserEngine(this, this.audio);
-      this.browserEngine.init(this.dom.views.browser);
-    }
-
-    if (this.dom.views.explorer) {
-      this.explorerEngine = new CyberExplorerEngine(this, this.audio, this.toasts);
-      this.explorerEngine.init(this.dom.views.explorer);
-    }
-
-    if (this.dom.views.taskmgr) {
-      this.taskmgrEngine = new TaskManagerViewEngine(this, this.audio, this.toasts);
-      this.taskmgrEngine.init(this.dom.views.taskmgr);
-    }
-
-    if (this.dom.views.radio) {
-      this.radioEngine = new CyberRadioEngine(this, this.audio);
-      this.radioEngine.init(this.dom.views.radio);
-    }
-
-    if (this.dom.views.wifi) {
-      this.wifiEngine = new CyberWifiEngine(this, this.audio, this.toasts);
-      this.wifiEngine.init(this.dom.views.wifi);
-    }
-
     this.workspaceEngine = new WorkspaceLauncherEngine(this, this.audio, this.toasts);
-
     this.controlCenter = new ControlCenter(this, this.audio, this.toasts);
 
     this.tabManager = new TabManager(this, this.audio);
@@ -606,6 +570,74 @@ class WindowsTerminalApp {
 
     this.aiCompanion = new AICompanionEngine(this, this.audio);
     this.aiCompanion.init();
+  }
+
+  ensureViewEngineInitialized(mode) {
+    if (!this.dom || !this.dom.views) return;
+    switch (mode) {
+      case 'vscode':
+        if (!this.vscodeEngine && this.dom.views.vscode) {
+          this.vscodeEngine = new VscodeEngine(this, this.audio, this.toasts);
+          this.vscodeEngine.init(this.dom.views.vscode);
+        }
+        break;
+      case 'browser':
+        if (!this.browserEngine && this.dom.views.browser) {
+          this.browserEngine = new CyberBrowserEngine(this, this.audio);
+          this.browserEngine.init(this.dom.views.browser);
+        }
+        break;
+      case 'explorer':
+        if (!this.explorerEngine && this.dom.views.explorer) {
+          this.explorerEngine = new CyberExplorerEngine(this, this.audio, this.toasts);
+          this.explorerEngine.init(this.dom.views.explorer);
+        }
+        break;
+      case 'taskmgr':
+        if (!this.taskmgrEngine && this.dom.views.taskmgr) {
+          this.taskmgrEngine = new TaskManagerViewEngine(this, this.audio, this.toasts);
+          this.taskmgrEngine.init(this.dom.views.taskmgr);
+        }
+        break;
+      case 'radio':
+        if (!this.radioEngine && this.dom.views.radio) {
+          this.radioEngine = new CyberRadioEngine(this, this.audio);
+          this.radioEngine.init(this.dom.views.radio);
+        }
+        break;
+      case 'wifi':
+        if (!this.wifiEngine && this.dom.views.wifi) {
+          this.wifiEngine = new CyberWifiEngine(this, this.audio, this.toasts);
+          this.wifiEngine.init(this.dom.views.wifi);
+        }
+        break;
+      case 'roguelite':
+        if (!this.rogueliteEngine && this.dom.views.roguelite) {
+          this.rogueliteEngine = new RogueliteEngine(this, this.audio, this.toasts);
+          this.rogueliteEngine.init(this.dom.views.roguelite);
+        }
+        break;
+    }
+  }
+
+  switchViewState(targetMode) {
+    if (!this.dom || !this.dom.views) return;
+    
+    // Hide all view containers
+    Object.values(this.dom.views).forEach(v => {
+      if (v) v.classList.add('hidden');
+    });
+
+    // Lazily initialize engine for the target view if needed
+    this.ensureViewEngineInitialized(targetMode);
+
+    // Show target view container
+    const targetEl = this.dom.views[targetMode];
+    if (targetEl) {
+      targetEl.classList.remove('hidden');
+    } else if (this.dom.views.cli) {
+      this.dom.views.cli.classList.remove('hidden');
+    }
   }
 
   initC2TelemetryFeatures() {
@@ -1124,10 +1156,6 @@ class WindowsTerminalApp {
         if (pct >= 84 && this.dom.modChips[4]) this.dom.modChips[4].classList.add('active');
         if (pct >= 95 && this.dom.modChips[5]) this.dom.modChips[5].classList.add('active');
 
-        if (pct === 50) {
-          this.switchViewState(targetMode);
-        }
-
         if (this.audio.playLogLineAudio) {
           this.audio.playLogLineAudio(step, totalSteps);
         }
@@ -1137,12 +1165,6 @@ class WindowsTerminalApp {
         finishTransition();
       }
     }, 75);
-  }
-
-  switchViewState(viewName) {
-    Object.keys(this.dom.views).forEach(vKey => {
-      this.dom.views[vKey].classList.toggle('hidden', vKey !== viewName);
-    });
   }
 
   renderCliPrompt() {

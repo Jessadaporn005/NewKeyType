@@ -124,6 +124,9 @@ export class MatrixVisualEngine {
 
       this.mCtx.font = `bold ${this.fontSize}px 'Cascadia Mono', 'Share Tech Mono', monospace`;
 
+      const charsLen = this.characters.length;
+      const themeColor = this.themeColor;
+
       for (let i = 0; i < this.columns; i++) {
         const type = this.columnTypes[i];
         let text = '';
@@ -133,33 +136,27 @@ export class MatrixVisualEngine {
           const charIdx = Math.abs(Math.floor(this.drops[i])) % word.length;
           text = word.charAt(charIdx);
         } else {
-          text = this.characters.charAt(Math.floor(Math.random() * this.characters.length));
+          text = this.characters.charAt(Math.floor(Math.random() * charsLen));
         }
 
         const x = i * this.fontSize;
         const y = this.drops[i] * this.fontSize;
 
-        // Draw leading character with bright glowing white/cyan
-        const isLeading = (Math.random() > 0.82);
-        if (isLeading) {
-          this.mCtx.fillStyle = '#ffffff';
-          this.mCtx.shadowBlur = 12;
-          this.mCtx.shadowColor = '#00e5ff';
-        } else {
-          this.mCtx.fillStyle = (i % 4 === 0) ? '#00e5ff' : this.themeColor;
-          this.mCtx.shadowBlur = 8;
-          this.mCtx.shadowColor = this.themeColor;
-        }
-
         if (y > 0 && y < this.height + 50) {
+          // Draw leading character with bright glowing white/cyan
+          const isLeading = (Math.random() > 0.85);
+          if (isLeading) {
+            this.mCtx.fillStyle = '#ffffff';
+          } else if (i % 4 === 0) {
+            this.mCtx.fillStyle = '#00e5ff';
+          } else {
+            this.mCtx.fillStyle = themeColor;
+          }
           this.mCtx.fillText(text, x, y);
         }
 
-        // Reset shadow
-        this.mCtx.shadowBlur = 0;
-
         // Reset column to top randomly when it goes off screen
-        if (y > this.height && Math.random() > 0.972) {
+        if (y > this.height && Math.random() > 0.975) {
           this.drops[i] = 0;
           this.columnWords[i] = MATRIX_LOG_SNIPPETS[Math.floor(Math.random() * MATRIX_LOG_SNIPPETS.length)];
         }
