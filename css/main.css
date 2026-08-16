@@ -3165,3 +3165,403 @@ html, body {
   color: #ffaa00;
 }
 
+/* ==========================================================================
+   MASTER VISUAL & 3D CYBERPUNK OVERHAUL STYLES
+   ========================================================================== */
+
+/* 1. BioLoadingScreen (3D Hologram Reactor & Hardware POST Gauges) */
+.boot-holo-stage {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  margin: 0 auto 12px auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.boot-holo-canvas {
+  width: 200px;
+  height: 200px;
+  filter: drop-shadow(0 0 20px rgba(0, 255, 102, 0.6));
+}
+
+.boot-hardware-telemetry {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 8px 16px;
+  background: rgba(0, 255, 102, 0.04);
+  border: 1px dashed rgba(0, 255, 102, 0.25);
+  border-radius: 4px;
+}
+
+.hw-gauge-item {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  color: #72a382;
+}
+
+.hw-gauge-item strong {
+  color: #00ff66;
+  text-shadow: 0 0 6px rgba(0, 255, 102, 0.5);
+}
+
+/* 2. Secret Master Gate (Biometric Laser Reticle) */
+.gate-biometric-reticle {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  margin: 0 auto 16px auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.reticle-svg {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  animation: reticleSpin 12s linear infinite;
+}
+
+.reticle-ring {
+  fill: none;
+  stroke: #ff2255;
+  stroke-width: 1.5;
+}
+
+.reticle-ring.r-outer {
+  stroke-dasharray: 8, 4;
+}
+
+.reticle-ring.r-inner {
+  stroke-dasharray: 4, 3;
+  animation: reticleSpinRev 6s linear infinite;
+  transform-origin: center;
+}
+
+.reticle-cross {
+  stroke: #ff2255;
+  stroke-width: 2;
+}
+
+.reticle-laser-line {
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  height: 2px;
+  background: #ff2255;
+  box-shadow: 0 0 10px #ff2255, 0 0 20px #ff0055;
+  animation: laserScanSweep 2s ease-in-out infinite alternate;
+}
+
+.biometric-fingerprint-icon {
+  font-size: 32px;
+  z-index: 2;
+  filter: drop-shadow(0 0 10px rgba(255, 34, 85, 0.8));
+  animation: bioPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes reticleSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes reticleSpinRev {
+  from { transform: rotate(360deg); }
+  to { transform: rotate(0deg); }
+}
+
+@keyframes laserScanSweep {
+  0% { top: 15%; opacity: 0.3; }
+  50% { opacity: 1; }
+  100% { top: 85%; opacity: 0.3; }
+}
+
+@keyframes bioPulse {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.1); opacity: 1; filter: drop-shadow(0 0 18px #ff0055); }
+}
+
+/* 3. Cinematic 3D Parallax Login & Holographic Operator Visor */
+.login-terminal-card {
+  transition: transform 0.1s ease-out, box-shadow 0.2s ease;
+  transform-style: preserve-3d;
+}
+
+.login-avatar-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.operator-holo-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0, 240, 255, 0.2) 0%, rgba(2, 6, 4, 0.95) 80%);
+  border: 2px solid #00f0ff;
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.holo-avatar-head {
+  width: 36px;
+  height: 42px;
+  background: #0d1e18;
+  border-radius: 12px 12px 18px 18px;
+  position: relative;
+  border: 1px solid rgba(0, 240, 255, 0.4);
+}
+
+.holo-cyber-visor {
+  position: absolute;
+  top: 14px;
+  left: 3px;
+  right: 3px;
+  height: 8px;
+  background: #00f0ff;
+  border-radius: 4px;
+  box-shadow: 0 0 12px #00f0ff, 0 0 24px #00f0ff;
+  animation: visorScan 2.5s ease-in-out infinite;
+}
+
+@keyframes visorScan {
+  0%, 100% { opacity: 0.7; box-shadow: 0 0 10px #00f0ff; }
+  50% { opacity: 1; box-shadow: 0 0 20px #00f0ff, 0 0 35px #00e5ff; }
+}
+
+.biometric-voice-wave {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 14px;
+  margin-top: 8px;
+}
+
+.biometric-voice-wave .v-bar {
+  width: 3px;
+  background: #00f0ff;
+  border-radius: 2px;
+  box-shadow: 0 0 6px #00f0ff;
+  animation: voiceWave 1.2s ease-in-out infinite;
+}
+
+.biometric-voice-wave .v-bar:nth-child(1) { height: 4px; animation-delay: 0.1s; }
+.biometric-voice-wave .v-bar:nth-child(2) { height: 8px; animation-delay: 0.2s; }
+.biometric-voice-wave .v-bar:nth-child(3) { height: 14px; animation-delay: 0.3s; }
+.biometric-voice-wave .v-bar:nth-child(4) { height: 6px; animation-delay: 0.15s; }
+.biometric-voice-wave .v-bar:nth-child(5) { height: 12px; animation-delay: 0.25s; }
+.biometric-voice-wave .v-bar:nth-child(6) { height: 5px; animation-delay: 0.35s; }
+
+@keyframes voiceWave {
+  0%, 100% { transform: scaleY(0.4); opacity: 0.5; }
+  50% { transform: scaleY(1.2); opacity: 1; }
+}
+
+/* 4. 3D Holographic AI Cyber Companion (EVA) */
+.ai-companion-panel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 10px;
+  background: rgba(0, 240, 255, 0.05);
+  border: 1px solid rgba(0, 240, 255, 0.25);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ai-companion-panel:hover {
+  background: rgba(0, 240, 255, 0.12);
+  border-color: #00f0ff;
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
+}
+
+.ai-companion-avatar {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ai-core-sphere {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #00f0ff 0%, #004455 70%, #00111a 100%);
+  box-shadow: 0 0 10px #00f0ff;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 0 4px;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.ai-core-sphere .ai-eye-left,
+.ai-core-sphere .ai-eye-right {
+  width: 3px;
+  height: 5px;
+  background: #ffffff;
+  border-radius: 2px;
+  box-shadow: 0 0 6px #ffffff;
+  animation: eyeBlink 3.5s infinite;
+}
+
+.ai-halo-ring {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px dashed #00f0ff;
+  animation: reticleSpin 8s linear infinite;
+}
+
+/* AI Companion States */
+.ai-core-sphere.state-overclock {
+  background: radial-gradient(circle, #ff0055 0%, #aa0033 70%, #22000a 100%);
+  box-shadow: 0 0 18px #ff0055;
+  animation: overclockShake 0.4s infinite;
+}
+
+.ai-core-sphere.state-alert {
+  background: radial-gradient(circle, #ffaa00 0%, #885500 70%, #221100 100%);
+  box-shadow: 0 0 18px #ffaa00;
+}
+
+.ai-core-sphere.state-victory {
+  background: radial-gradient(circle, #00ff66 0%, #008833 70%, #00220a 100%);
+  box-shadow: 0 0 20px #00ff66;
+}
+
+@keyframes eyeBlink {
+  0%, 45%, 55%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(0.1); }
+}
+
+@keyframes overclockShake {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(-1px, 1px); }
+  75% { transform: translate(1px, -1px); }
+}
+
+.ai-companion-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.ai-name-tag {
+  font-family: 'Orbitron', 'Share Tech Mono', monospace;
+  font-size: 9px;
+  font-weight: 800;
+  color: #00f0ff;
+  letter-spacing: 0.5px;
+}
+
+.ai-speech-bubble {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  color: #a8dcd5;
+  max-width: 220px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ai-speech-bubble.speech-pop {
+  animation: speechPop 0.3s cubic-bezier(0.2, 0, 0.2, 1);
+}
+
+@keyframes speechPop {
+  0% { transform: scale(0.95); opacity: 0.6; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* 5. Kinetic Keystroke Plasma & Laser Sparks VFX */
+.key-shockwave-plasma {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: transparent;
+  border: 2px solid #00ff66;
+  box-shadow: 0 0 10px #00ff66;
+  transform: translate(-50%, -50%) scale(1);
+  animation: plasmaShockwave 0.35s ease-out forwards;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.key-shockwave-error {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: transparent;
+  border: 2px solid #ff2255;
+  box-shadow: 0 0 15px #ff2255;
+  transform: translate(-50%, -50%) scale(1);
+  animation: plasmaShockwave 0.35s ease-out forwards;
+  pointer-events: none;
+  z-index: 10;
+}
+
+@keyframes plasmaShockwave {
+  0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(3.5); opacity: 0; }
+}
+
+.key-spark-particle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #00f0ff;
+  box-shadow: 0 0 8px #00f0ff;
+  animation: sparkFly 0.4s ease-out forwards;
+  pointer-events: none;
+  z-index: 11;
+}
+
+.key-spark-particle.spark-err {
+  background: #ff0055;
+  box-shadow: 0 0 8px #ff0055;
+}
+
+@keyframes sparkFly {
+  0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  100% { transform: translate(calc(-50% + var(--dx, 15px)), calc(-50% + var(--dy, -15px))) scale(0.2); opacity: 0; }
+}
+
+/* 6. Speed Rush Nitrous Flame Streak Overdrive */
+.flame-streak {
+  color: #ffaa00;
+  text-shadow: 0 0 10px #ffaa00, 0 0 20px #ff4400;
+  animation: flameFlicker 0.6s infinite alternate;
+}
+
+@keyframes flameFlicker {
+  0% { text-shadow: 0 0 8px #ffaa00; }
+  100% { text-shadow: 0 0 18px #ff4400, 0 0 30px #ff0055; }
+}
+
+

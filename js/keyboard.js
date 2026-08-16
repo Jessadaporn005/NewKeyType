@@ -194,6 +194,7 @@ export class KeyboardVisualizer {
 
     if (isActive) {
       keyEl.classList.add('active');
+      this.spawnKeystrokeSparks(keyEl, false);
     } else {
       keyEl.classList.remove('active');
     }
@@ -206,9 +207,36 @@ export class KeyboardVisualizer {
     const keyEl = this.keyElementsMap.get(code);
     if (!keyEl) return;
     keyEl.classList.add('error-flash');
+    this.spawnKeystrokeSparks(keyEl, true);
     setTimeout(() => {
       keyEl.classList.remove('error-flash');
     }, 200);
+  }
+
+  /**
+   * Spawn Kinetic Plasma Shockwave and Laser Sparks over key element
+   */
+  spawnKeystrokeSparks(keyEl, isError = false) {
+    if (!keyEl || typeof document === 'undefined' || typeof document.createElement !== 'function') return;
+    try {
+      const ripple = document.createElement('div');
+      ripple.className = isError ? 'key-shockwave-error' : 'key-shockwave-plasma';
+      if (typeof keyEl.appendChild === 'function') keyEl.appendChild(ripple);
+      setTimeout(() => { if (ripple && typeof ripple.remove === 'function') ripple.remove(); }, 350);
+
+      for (let i = 0; i < 3; i++) {
+        const spark = document.createElement('div');
+        spark.className = isError ? 'key-spark-particle spark-err' : 'key-spark-particle';
+        const angle = (i / 3) * Math.PI * 2 + (Math.random() * 0.4);
+        const dist = 12 + Math.random() * 18;
+        if (spark.style && typeof spark.style.setProperty === 'function') {
+          spark.style.setProperty('--dx', `${Math.cos(angle) * dist}px`);
+          spark.style.setProperty('--dy', `${Math.sin(angle) * dist - 8}px`);
+        }
+        if (typeof keyEl.appendChild === 'function') keyEl.appendChild(spark);
+        setTimeout(() => { if (spark && typeof spark.remove === 'function') spark.remove(); }, 400);
+      }
+    } catch(e) {}
   }
 
   /**

@@ -42,28 +42,24 @@
       </div>
     </div>
 
-    <!-- Center Stage: Dark Techno Skull & Glitch Title -->
+    <!-- Center Stage: 3D Holographic Quantum Reactor & Glitch Title -->
     <div id="bootScreenLogo" class="boot-logo">
-      <div class="techno-skull-wrapper">
-        <pre class="techno-skull-ascii">
-           .▄▄▄▄▄▄▄▄▄▄.
-        .▄█▀▀  ▀██▀  ▀▀█▄.
-       ▄█▀    ▄████▄    ▀█▄
-      ▄█'    ████████    '█▄
-     ▄█      ████████      █▄
-    ▄█   ▄▄▄ ▀██████▀ ▄▄▄   █▄
-   ▄██  █████  ▀▀▀▀  █████  ██▄
-   ███  █████        █████  ███
-   ███  ▀███▀  ▄  ▄  ▀███▀  ███
-   ███▄   ▀   ██  ██   ▀   ▄███
-    ▀███▄▄   ████████   ▄▄███▀
-      ▀███▄▄▄▄▄▄▄▄▄▄▄▄▄███▀
-         ▀▀██████████▀▀</pre>
+      <div class="boot-holo-stage">
+        <canvas id="bootHoloCanvas" width="200" height="200" class="boot-holo-canvas"></canvas>
         <div class="skull-scanner-beam"></div>
       </div>
 
       <div class="boot-title-glitch" data-text="CYBERDECK">CYBERDECK</div>
       <div class="boot-sub-version">TERMINAL OS // MILITARY-GRADE INFILTRATION SYSTEM</div>
+      
+      <!-- Hardware POST Telemetry Meter Strip -->
+      <div class="boot-hardware-telemetry">
+        <div class="hw-gauge-item"><span>CPU CLOCK:</span> <strong>14.25 GHz [OVERCLOCKED]</strong></div>
+        <div class="hw-gauge-item"><span>RAM BANK:</span> <strong>64 GB DDR5 [CHECKED]</strong></div>
+        <div class="hw-gauge-item"><span>NEURAL LINK:</span> <strong>STABLE [0.12ms]</strong></div>
+        <div class="hw-gauge-item"><span>SECURITY ENCLAVE:</span> <strong>RSA-8192 [ENCRYPTED]</strong></div>
+      </div>
+
       <div id="bootScreenReady" class="boot-ready hidden">SYSTEM READY... ENTERING CLASSIFIED ENCLAVE.</div>
     </div>
 
@@ -96,7 +92,20 @@
        ========================================================================= -->
   <div class="secret-gate-overlay hidden" id="secretGateOverlay">
     <div class="secret-gate-card">
-      <div class="gate-lock-icon">🔒</div>
+      <!-- Rotating Biometric Laser Reticle Scanner -->
+      <div class="gate-biometric-reticle">
+        <svg class="reticle-svg" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="45" class="reticle-ring r-outer"/>
+          <circle cx="50" cy="50" r="32" class="reticle-ring r-inner"/>
+          <line x1="50" y1="5" x2="50" y2="20" class="reticle-cross"/>
+          <line x1="50" y1="80" x2="50" y2="95" class="reticle-cross"/>
+          <line x1="5" y1="50" x2="20" y2="50" class="reticle-cross"/>
+          <line x1="80" y1="50" x2="95" y2="50" class="reticle-cross"/>
+        </svg>
+        <div class="reticle-laser-line"></div>
+        <div class="biometric-fingerprint-icon">🧬</div>
+      </div>
+
       <div class="gate-title" data-text="CLASSIFIED BLACK-OPS ENCLAVE">CLASSIFIED BLACK-OPS ENCLAVE</div>
       <div class="gate-sub">LEVEL 5 TOP SECRET ENCRYPTION // AUTHORIZED OPERATOR ONLY</div>
       
@@ -115,10 +124,22 @@
   </div>
 
   <!-- =========================================================================
-       1. CINEMATIC FULL-SCREEN HACKER LOGIN OVERLAY
+       1. CINEMATIC FULL-SCREEN HACKER LOGIN OVERLAY (3D PARALLAX CARD)
        ========================================================================= -->
   <div class="hacker-login-overlay hidden" id="hackerLoginOverlay">
-    <div class="login-terminal-card">
+    <div class="login-terminal-card" id="loginTerminalCard">
+      <!-- Operator Hologram Avatar Header -->
+      <div class="login-avatar-stage">
+        <div class="operator-holo-avatar">
+          <div class="holo-avatar-head">
+            <div class="holo-cyber-visor"></div>
+          </div>
+        </div>
+        <div class="biometric-voice-wave">
+          <span class="v-bar"></span><span class="v-bar"></span><span class="v-bar"></span><span class="v-bar"></span><span class="v-bar"></span><span class="v-bar"></span><span class="v-bar"></span>
+        </div>
+      </div>
+
       <div class="login-card-header">
         <div class="login-title-glitch" data-text="CYBER//TYPE MAINFRAME">CYBER//TYPE MAINFRAME</div>
         <div class="login-security-tag">RESTRICTED ROOT ACCESS // OPERATOR AUTHENTICATION</div>
@@ -327,6 +348,20 @@
       <div class="hud-panel credits-panel">
         <div class="hud-lbl">FUNDS [CC]</div>
         <div class="hud-val"><span id="hudCredits">0</span> CC</div>
+      </div>
+      <!-- 3D Holographic AI Cyber Companion -->
+      <div class="hud-panel ai-companion-panel" id="aiCompanionWidget">
+        <div class="ai-companion-avatar">
+          <div class="ai-core-sphere" id="aiCoreSphere">
+            <span class="ai-eye-left"></span>
+            <span class="ai-eye-right"></span>
+          </div>
+          <div class="ai-halo-ring"></div>
+        </div>
+        <div class="ai-companion-info">
+          <div class="ai-name-tag">AI//EVA [COMPANION]</div>
+          <div class="ai-speech-bubble" id="aiCompanionSpeech">"SYSTEMS ONLINE. READY FOR INFILTRATION."</div>
+        </div>
       </div>
       <div class="hud-panel trace-panel hidden" id="hudTracePanel">
         <div class="hud-lbl" style="color: #ff2244;">WARNING: ACTIVE TRACE</div>

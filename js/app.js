@@ -36,6 +36,7 @@ import { TaskManagerViewEngine } from './taskManagerView.js';
 import { WorkspaceLauncherEngine } from './workspaceLauncher.js';
 import { CyberRadioEngine } from './cyberRadio.js';
 import { CyberWifiEngine } from './cyberWifi.js';
+import { AICompanionEngine } from './aiCompanion.js';
 
 // Application States
 const STATES = {
@@ -576,6 +577,9 @@ class WindowsTerminalApp {
       this.intelFeed = new CyberIntelFeed(this, this.audio);
       this.intelFeed.init(intelCol);
     }
+
+    this.aiCompanion = new AICompanionEngine(this, this.audio);
+    this.aiCompanion.init();
   }
 
   registerServiceWorker() {
@@ -584,7 +588,87 @@ class WindowsTerminalApp {
     }
   }
 
+  startBootHologramAnimation() {
+    const canvas = document.getElementById('bootHoloCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let angle = 0;
+    const nodes = [
+      [-1, -1, -1], [1, -1, -1], [1, 1, -1], [-1, 1, -1],
+      [-1, -1, 1], [1, -1, 1], [1, 1, 1], [-1, 1, 1]
+    ];
+    const edges = [
+      [0,1],[1,2],[2,3],[3,0],
+      [4,5],[5,6],[6,7],[7,4],
+      [0,4],[1,5],[2,6],[3,7]
+    ];
+
+    const render = () => {
+      const overlay = document.getElementById('bootScreenOverlay');
+      if (!overlay || overlay.classList.contains('hidden')) return;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+      const size = 52;
+
+      angle += 0.035;
+      const cosA = Math.cos(angle);
+      const sinA = Math.sin(angle);
+      const cosB = Math.cos(angle * 0.75);
+      const sinB = Math.sin(angle * 0.75);
+
+      const projected = nodes.map(([x, y, z]) => {
+        let rx = x * cosA - z * sinA;
+        let rz = x * sinA + z * cosA;
+        let ry = y * cosB - rz * sinB;
+        rz = y * sinB + rz * cosB;
+
+        const fov = 200 / (200 + rz * size * 0.4);
+        return [cx + rx * size * fov, cy + ry * size * fov];
+      });
+
+      // Draw glowing reactor core
+      const glowGrad = ctx.createRadialGradient(cx, cy, 2, cx, cy, 38);
+      glowGrad.addColorStop(0, 'rgba(0, 255, 102, 0.9)');
+      glowGrad.addColorStop(0.5, 'rgba(0, 240, 255, 0.35)');
+      glowGrad.addColorStop(1, 'transparent');
+      ctx.fillStyle = glowGrad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 38, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Draw wireframe edges
+      ctx.strokeStyle = '#00ff66';
+      ctx.lineWidth = 1.5;
+      ctx.shadowColor = '#00ff66';
+      ctx.shadowBlur = 12;
+      ctx.beginPath();
+      edges.forEach(([u, v]) => {
+        ctx.moveTo(projected[u][0], projected[u][1]);
+        ctx.lineTo(projected[v][0], projected[v][1]);
+      });
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      // Draw vertices
+      ctx.fillStyle = '#00f0ff';
+      projected.forEach(([px, py]) => {
+        ctx.beginPath();
+        ctx.arc(px, py, 3, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      requestAnimationFrame(render);
+    };
+
+    render();
+  }
+
   playBootSequence() {
+    this.startBootHologramAnimation();
     // Generate ~340 authentic real-world UEFI, Kernel, Systemd, Crypto & CyberDeck logs
     const rawLogs = generateRealisticBootLogs();
     const totalLogs = rawLogs.length;
@@ -3106,6 +3190,19 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
 
 
     this.dom.btnLoginSubmit.addEventListener('click', () => this.handleLogin());
+    if (this.dom.hackerLoginOverlay) {
+      const loginCard = document.getElementById('loginTerminalCard');
+      this.dom.hackerLoginOverlay.addEventListener('mousemove', (e) => {
+        if (!loginCard) return;
+        const rect = this.dom.hackerLoginOverlay.getBoundingClientRect();
+        const x = (e.clientX - rect.left) / rect.width - 0.5;
+        const y = (e.clientY - rect.top) / rect.height - 0.5;
+        loginCard.style.transform = `perspective(1000px) rotateY(${x * 12}deg) rotateX(${-y * 12}deg) translateY(-2px)`;
+      });
+      this.dom.hackerLoginOverlay.addEventListener('mouseleave', () => {
+        if (loginCard) loginCard.style.transform = 'perspective(1000px) rotateY(0deg) rotateX(0deg)';
+      });
+    }
     if (this.dom.btnLoginBypass) {
       this.dom.btnLoginBypass.addEventListener('click', () => {
         this.audio.playSuccessFanfare();
@@ -3464,6 +3561,10 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
       const keyEl = this.kb.keyElementsMap.get(e.code);
       if (keyEl && this.matrix) {
         this.matrix.emitFromElement(keyEl);
+      }
+
+      if (this.aiCompanion) {
+        this.aiCompanion.onKeystroke(this.speedWpm || 0, this.speedAccuracy || 100, this.speedStreak || 0, false);
       }
 
       // 1. CLI Prompt Key Handling (Supports full Left/Right arrow navigation, Ctrl+A/C/V/X, spacebar, and mid-line editing)

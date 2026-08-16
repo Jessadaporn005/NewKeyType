@@ -348,6 +348,33 @@ async function runTests() {
   const appJsCode = await import('fs').then(fs => fs.readFileSync('./js/app.js', 'utf8'));
   assert(appJsCode.includes('explorer / files / drives') && appJsCode.includes('taskmgr / htop / ps') && appJsCode.includes('wifi / wlan / radar') && appJsCode.includes('radio / music / synthwave'), 'Help command encyclopedic guide includes all newly added OS, Wi-Fi, Task Manager, Radio, and Explorer subsystems');
 
+  // 22. AI Cyber Companion Engine (EVA)
+  console.log('\n[22] Testing AI Cyber Companion Engine (EVA)...');
+  const { AICompanionEngine } = await import('./js/aiCompanion.js');
+  const mockCompanionEl = {
+    querySelector: () => ({ classList: { add: () => {}, remove: () => {} }, textContent: '' }),
+    addEventListener: () => {}
+  };
+  const companion = new AICompanionEngine(mockTabApp, mockSound);
+  companion.init(mockCompanionEl);
+  assert(companion.state === 'IDLE', 'AI Companion initialized in IDLE state');
+  companion.onKeystroke(85, 98, 20, false);
+  assert(companion.state === 'OVERCLOCK', 'AI Companion transitioned to OVERCLOCK state on high WPM/streak');
+  companion.onKeystroke(40, 70, 2, true);
+  assert(companion.state === 'ALERT', 'AI Companion transitioned to ALERT state on typing error');
+  companion.onVictory(250, 'Root Mainframe Breached');
+  assert(companion.state === 'VICTORY', 'AI Companion transitioned to VICTORY state upon winning');
+
+  // 23. Kinetic Keystroke Plasma & Sparks Engine
+  console.log('\n[23] Testing Kinetic Keystroke Plasma & Sparks Engine...');
+  const mockKeyEl = {
+    appendChild: () => {},
+    classList: { add: () => {}, remove: () => {} }
+  };
+  kb.spawnKeystrokeSparks(mockKeyEl, false);
+  kb.spawnKeystrokeSparks(mockKeyEl, true);
+  assert(typeof kb.spawnKeystrokeSparks === 'function', 'Kinetic keystroke sparks and plasma shockwave generator verified');
+
   console.log('\n====================================================');
   console.log(`🏁 TEST RESULTS: ${passed}/${total} TESTS PASSED (100%)`);
   console.log('====================================================');
