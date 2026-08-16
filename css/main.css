@@ -174,7 +174,8 @@ html, body {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: #080c10;
+  background: rgba(8, 12, 16, 0.88);
+  backdrop-filter: blur(3px);
   z-index: 500;
   display: flex;
   flex-direction: column;
@@ -604,7 +605,8 @@ html, body {
   width: 100vw;
   height: 100vh;
   z-index: 500;
-  background: transparent;
+  background: rgba(3, 7, 5, 0.45);
+  backdrop-filter: blur(2px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1063,11 +1065,11 @@ html, body {
   width: 100vw;
   height: 100vh;
   z-index: 700;
-  background: rgba(2, 5, 3, 0.95);
+  background: rgba(3, 7, 5, 0.45);
   display: flex;
   align-items: center;
   justify-content: center;
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(2px);
 }
 
 .cyber-transition-card.widescreen-deck {
@@ -1436,7 +1438,8 @@ html, body {
   flex-direction: column;
   width: 100vw;
   height: 100vh;
-  background: #080c10;
+  background: rgba(8, 12, 16, 0.88);
+  backdrop-filter: blur(6px);
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.95);
   overflow: hidden;
@@ -1640,7 +1643,8 @@ html, body {
    ========================================================================== */
 
 .cli-terminal-column {
-  background: #090e15;
+  background: rgba(9, 14, 21, 0.85);
+  backdrop-filter: blur(4px);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 4px;
   padding: 16px;

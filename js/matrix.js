@@ -1,31 +1,44 @@
 /**
- * CINEMATIC MATRIX DIGITAL RAIN & PARTICLE PHYSICS ENGINE
+ * CINEMATIC MATRIX DIGITAL RAIN & LOG STREAM ENGINE
  * Authentic Hollywood movie rain with multi-speed layers, glowing white heads,
- * mutating Katakana/Hex glyphs, and keypress spark explosions.
+ * mutating Katakana/Hex glyphs, streaming kernel logs & memory offsets, and keypress spark explosions.
  */
+
+export const MATRIX_LOG_SNIPPETS = [
+  '0x7FFF0042', 'SYSCALL_ENTER', 'AES_256_GCM', 'TCP_SYN_ACK', 'ROOT_AUTH_OK',
+  'MEM_PFN_ALLOC', 'PAGE_TABLE_MAP', 'CPU_RING_0', 'TLS_v1.3', 'DMESG_BOOT_OK',
+  'QUANTUM_CORE', '01001100', '0xDEADBEEF', 'STACK_POINTER', 'CALL_VECTOR',
+  'IP_PACKET_FWD', 'DEFCON_1', 'SHA256_HASH', 'RSA_8192', 'INODE_SYNC',
+  'EPOLL_WAIT', 'MUTEX_LOCKED', 'VIRT_MEM_MAP', 'KERNEL_EXEC', 'NET_SOCKET_443',
+  'RING_BUFFER', 'SIGINT_TRAP', 'OVERCLOCK_14G', 'NEURAL_SYNAPSE', 'AIRWAVE_SCAN'
+];
 
 export class MatrixVisualEngine {
   constructor(matrixCanvasId, particleCanvasId) {
     this.mCanvas = document.getElementById(matrixCanvasId);
-    this.mCtx = this.mCanvas.getContext('2d');
+    this.mCtx = this.mCanvas ? this.mCanvas.getContext('2d') : null;
     this.pCanvas = document.getElementById(particleCanvasId);
-    this.pCtx = this.pCanvas.getContext('2d');
+    this.pCtx = this.pCanvas ? this.pCanvas.getContext('2d') : null;
 
-    this.fontSize = 16;
+    this.fontSize = 15;
     this.columns = 0;
     this.drops = [];
+    this.columnTypes = []; // 'glyph' | 'log_stream' | 'hex_stream'
+    this.columnWords = [];
     this.speeds = [];
     this.particles = [];
     this.enabled = true;
     this.particlesEnabled = true;
 
     this.themeColor = '#00ff66';
-    this.themeColorDim = 'rgba(0, 255, 102, 0.25)';
+    this.themeColorDim = 'rgba(0, 255, 102, 0.35)';
 
     // Rich matrix characters: Japanese Half-width Katakana + Hex + Cyber symbols
     this.characters = 'ｦｱｳｴｵｶｷｹｺｻｼｽｾｿﾀﾂﾃﾅﾆﾇﾈﾊﾋﾎﾏﾐﾑﾒﾓﾔﾕﾗﾘﾜ0123456789ABCDEF!@#$%&*+-/<>~{}[]=';
 
-    this.init();
+    if (this.mCanvas) {
+      this.init();
+    }
   }
 
   init() {
@@ -36,21 +49,29 @@ export class MatrixVisualEngine {
   }
 
   resize() {
-    this.width = window.innerWidth;
-    this.height = window.innerHeight;
+    if (!this.mCanvas || !this.pCanvas) return;
+    this.width = window.innerWidth || 1920;
+    this.height = window.innerHeight || 1080;
     this.mCanvas.width = this.width;
     this.mCanvas.height = this.height;
     this.pCanvas.width = this.width;
     this.pCanvas.height = this.height;
 
-    this.columns = Math.floor(this.width / this.fontSize);
+    this.columns = Math.max(1, Math.floor(this.width / this.fontSize));
     this.drops = [];
     this.speeds = [];
+    this.columnTypes = [];
+    this.columnWords = [];
 
     for (let i = 0; i < this.columns; i++) {
-      this.drops[i] = Math.floor(Math.random() * -60);
+      this.drops[i] = Math.floor(Math.random() * -80);
       // Multi-layer speed for 3D depth illusion
-      this.speeds[i] = 0.8 + Math.random() * 0.9;
+      this.speeds[i] = 0.75 + Math.random() * 0.95;
+      
+      // 30% log snippet streams, 70% glyph rain
+      const isLog = (i % 3 === 0);
+      this.columnTypes[i] = isLog ? 'log_stream' : 'glyph';
+      this.columnWords[i] = MATRIX_LOG_SNIPPETS[Math.floor(Math.random() * MATRIX_LOG_SNIPPETS.length)];
     }
   }
 
@@ -63,7 +84,7 @@ export class MatrixVisualEngine {
    * Emit cyber sparks from a pressed key element
    */
   emitKeySparks(x, y, count = 12) {
-    if (!this.particlesEnabled) return;
+    if (!this.particlesEnabled || !this.pCtx) return;
 
     for (let i = 0; i < count; i++) {
       const angle = Math.random() * Math.PI * 2;
@@ -90,27 +111,43 @@ export class MatrixVisualEngine {
   }
 
   animate() {
-    // 1. Draw Cinematic Matrix Rain
+    if (!this.mCtx || !this.pCtx) {
+      requestAnimationFrame(this.animate);
+      return;
+    }
+
+    // 1. Draw Cinematic Matrix Rain & Log Stream
     if (this.enabled) {
       // Semi-transparent fade background creating smooth trailing streams
-      this.mCtx.fillStyle = 'rgba(6, 10, 8, 0.12)';
+      this.mCtx.fillStyle = 'rgba(3, 7, 5, 0.14)';
       this.mCtx.fillRect(0, 0, this.width, this.height);
 
       this.mCtx.font = `bold ${this.fontSize}px 'Cascadia Mono', 'Share Tech Mono', monospace`;
 
       for (let i = 0; i < this.columns; i++) {
-        const text = this.characters.charAt(Math.floor(Math.random() * this.characters.length));
+        const type = this.columnTypes[i];
+        let text = '';
+        
+        if (type === 'log_stream') {
+          const word = this.columnWords[i];
+          const charIdx = Math.abs(Math.floor(this.drops[i])) % word.length;
+          text = word.charAt(charIdx);
+        } else {
+          text = this.characters.charAt(Math.floor(Math.random() * this.characters.length));
+        }
+
         const x = i * this.fontSize;
         const y = this.drops[i] * this.fontSize;
 
         // Draw leading character with bright glowing white/cyan
-        if (Math.random() > 0.88) {
+        const isLeading = (Math.random() > 0.82);
+        if (isLeading) {
           this.mCtx.fillStyle = '#ffffff';
-          this.mCtx.shadowBlur = 10;
-          this.mCtx.shadowColor = '#ffffff';
+          this.mCtx.shadowBlur = 12;
+          this.mCtx.shadowColor = '#00e5ff';
         } else {
-          this.mCtx.fillStyle = this.themeColor;
-          this.mCtx.shadowBlur = 6;
+          this.mCtx.fillStyle = (i % 4 === 0) ? '#00e5ff' : this.themeColor;
+          this.mCtx.shadowBlur = 8;
           this.mCtx.shadowColor = this.themeColor;
         }
 
@@ -122,8 +159,9 @@ export class MatrixVisualEngine {
         this.mCtx.shadowBlur = 0;
 
         // Reset column to top randomly when it goes off screen
-        if (y > this.height && Math.random() > 0.975) {
+        if (y > this.height && Math.random() > 0.972) {
           this.drops[i] = 0;
+          this.columnWords[i] = MATRIX_LOG_SNIPPETS[Math.floor(Math.random() * MATRIX_LOG_SNIPPETS.length)];
         }
 
         this.drops[i] += this.speeds[i];
