@@ -642,6 +642,123 @@
         <!-- Dynamically rendered by CyberWifiEngine -->
       </div>
 
+      <!-- AI NEURAL QUANTITATIVE TRADING TERMINAL & PATTERN RECOMMENDATION -->
+      <div class="terminal-view hidden" id="viewTrading">
+        <!-- TOP TRADING TOOLBAR -->
+        <div class="trading-header-bar">
+          <div class="trading-pair-tabs" id="tradingPairTabs">
+            <button class="trading-pair-pill active" data-pair="BTC/USDT">₿ BTC/USDT</button>
+            <button class="trading-pair-pill" data-pair="ETH/USDT">Ξ ETH/USDT</button>
+            <button class="trading-pair-pill" data-pair="SOL/USDT">◎ SOL/USDT</button>
+            <button class="trading-pair-pill" data-pair="NVDA/USD">$ NVDA:AI</button>
+            <button class="trading-pair-pill" data-pair="CYBER/USDT">⚡ CYBER/USDT</button>
+            <button class="trading-pair-pill" data-pair="QUANTUM/USDT">Ψ QUANTUM/USDT</button>
+          </div>
+
+          <div class="trading-timeframe-selector" id="tradingTimeframeSelector">
+            <button class="tf-btn" data-tf="1m">1m</button>
+            <button class="tf-btn active" data-tf="5m">5m</button>
+            <button class="tf-btn" data-tf="15m">15m</button>
+            <button class="tf-btn" data-tf="1h">1h</button>
+            <button class="tf-btn" data-tf="1D">1D</button>
+          </div>
+
+          <div class="trading-indicator-toggles">
+            <label class="toggle-chip"><input type="checkbox" id="chkEma" checked> <span>EMA Ribbon</span></label>
+            <label class="toggle-chip"><input type="checkbox" id="chkBollinger" checked> <span>Bollinger</span></label>
+            <label class="toggle-chip"><input type="checkbox" id="chkPatterns" checked> <span>AI Scanner</span></label>
+          </div>
+        </div>
+
+        <!-- MAIN TRADING WORKSPACE (2 COLUMNS) -->
+        <div class="trading-workspace-grid">
+          <!-- LEFT COLUMN: TRADINGVIEW CANDLESTICK CHART & OSCILLATOR -->
+          <div class="trading-chart-column">
+            <div class="chart-canvas-container">
+              <canvas id="tradingCandleCanvas" width="850" height="340"></canvas>
+            </div>
+            <div class="sub-chart-container">
+              <div class="sub-chart-header">
+                <span class="sub-title">MOMENTUM OSCILLATOR</span>
+                <div class="sub-toggle-group">
+                  <button class="sub-toggle-btn active" id="btnSubRsi">RSI (14)</button>
+                </div>
+              </div>
+              <canvas id="tradingSubCanvas" width="850" height="90"></canvas>
+            </div>
+          </div>
+
+          <!-- RIGHT COLUMN: AI NEURAL SIGNAL CARD & PAPER TRADING -->
+          <div class="trading-signal-column">
+            <!-- AI RECOMMENDATION CARD -->
+            <div class="ai-signal-card" id="aiSignalCard">
+              <div class="signal-card-header">
+                <span class="signal-title">⚡ AI NEURAL PATTERN ENGINE</span>
+                <span class="signal-badge" id="aiSignalBadge">CALCULATING...</span>
+              </div>
+
+              <div class="signal-metrics-row">
+                <div class="sig-stat">
+                  <span class="lbl">CONFIDENCE</span>
+                  <span class="val glow-cyan" id="aiConfidenceVal">94.2%</span>
+                </div>
+                <div class="sig-stat">
+                  <span class="lbl">RISK/REWARD</span>
+                  <span class="val glow-cmd" id="aiRrVal">1 : 3.14</span>
+                </div>
+              </div>
+
+              <div class="signal-levels-matrix">
+                <div class="level-row entry-row">
+                  <span class="lvl-name">RECOMMENDED ENTRY:</span>
+                  <strong class="lvl-val" id="aiEntryVal">$96,420.00</strong>
+                </div>
+                <div class="level-row tp-row">
+                  <span class="lvl-name">TARGET 1 (TP1):</span>
+                  <strong class="lvl-val glow-cmd" id="aiTp1Val">$98,200.00</strong>
+                </div>
+                <div class="level-row tp-row">
+                  <span class="lvl-name">TARGET 2 (TP2):</span>
+                  <strong class="lvl-val glow-cmd" id="aiTp2Val">$101,500.00</strong>
+                </div>
+                <div class="level-row sl-row">
+                  <span class="lvl-name">STOP LOSS (SL):</span>
+                  <strong class="lvl-val glow-danger" id="aiSlVal">$94,800.00</strong>
+                </div>
+              </div>
+
+              <!-- AI Pattern Tags -->
+              <div class="ai-pattern-tags" id="aiPatternTags">
+                <span class="pattern-pill">[ Double Bottom W-Pattern ]</span>
+              </div>
+
+              <!-- Thai AI Reasoning Box -->
+              <div class="ai-rationale-box" id="aiRationaleBox">
+                "อัลกอริทึมตรวจพบโมเมนตัมขาขึ้นที่มีนัยสำคัญบนคู่เทรดนี้..."
+              </div>
+            </div>
+
+            <!-- PAPER TRADING ORDER FORM -->
+            <div class="paper-trading-card">
+              <div class="paper-header">
+                <span>PAPER EXECUTION DECK</span>
+                <span class="paper-bal">CAPITAL: <strong id="paperCapitalDisplay">$100,000.00</strong></span>
+              </div>
+
+              <div class="order-action-buttons">
+                <button class="order-btn btn-long" id="btnOrderLong">▲ LONG / BUY</button>
+                <button class="order-btn btn-short" id="btnOrderShort">▼ SHORT / SELL</button>
+              </div>
+
+              <!-- Active Positions -->
+              <div class="active-positions-container" id="activePositionsContainer">
+                <div class="no-positions-hint">No open paper positions. Click BUY/SELL to simulate execution.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </main>
 
     <!-- CENTERED REAL-TIME KEYBOARD & PIXEL-PERFECT FINGER RIG -->

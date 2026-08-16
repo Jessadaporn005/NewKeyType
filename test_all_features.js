@@ -433,6 +433,82 @@ async function runTests() {
   assert(monkeyEngine.wordIndex === 1, 'Advanced to next word after typing space');
   assert(monkeyEngine.correctKeystrokes >= firstWord.length, 'Recorded correct keystrokes accurately');
 
+  // 26. AI Neural Quantitative Trading Terminal & Pattern Recognition Engine
+  console.log('\n[26] Testing AI Neural Quantitative Trading Terminal & Pattern Engine...');
+  const {
+    calculateEMA,
+    calculateBollingerBands,
+    calculateRSI,
+    calculateMACD,
+    detectChartPatterns,
+    generateAISignal,
+    AITradingEngine,
+    TRADING_ASSETS,
+    TIMEFRAMES
+  } = await import('./js/aiTradingEngine.js');
+
+  assert(TRADING_ASSETS.length >= 6, `TRADING_ASSETS contains ${TRADING_ASSETS.length} tradable assets (BTC, ETH, SOL, NVDA, CYBER, QUANTUM)`);
+  assert(TIMEFRAMES.length >= 5, `TIMEFRAMES contains ${TIMEFRAMES.length} selectable intervals (1m, 5m, 15m, 1h, 1D)`);
+
+  // Build synthetic candles
+  const mockCandles = [];
+  let p = 90000;
+  for (let i = 0; i < 50; i++) {
+    p += (i % 2 === 0 ? 150 : -80);
+    mockCandles.push({
+      time: 1700000000 + i * 300,
+      open: p - 50,
+      high: p + 100,
+      low: p - 100,
+      close: p,
+      volume: 1200 + i * 10
+    });
+  }
+
+  // Technical Indicators
+  const ema20 = calculateEMA(mockCandles, 20);
+  assert(ema20.length === mockCandles.length, 'calculateEMA computed series with correct length');
+  assert(ema20[19] !== null, 'calculateEMA computed period 20 initial mean');
+
+  const bb = calculateBollingerBands(mockCandles, 20, 2);
+  assert(bb.upper.length === mockCandles.length && bb.lower.length === mockCandles.length, 'calculateBollingerBands produced Upper and Lower bands');
+  assert(bb.upper[25] > bb.middle[25] && bb.middle[25] > bb.lower[25], 'Bollinger bands adhere to upper > middle > lower band geometry');
+
+  const rsi = calculateRSI(mockCandles, 14);
+  assert(rsi.length === mockCandles.length, 'calculateRSI computed 14-period momentum index');
+  assert(rsi[30] >= 0 && rsi[30] <= 100, 'RSI oscillator bounded within [0, 100]');
+
+  const macd = calculateMACD(mockCandles);
+  assert(macd.macdLine.length === mockCandles.length && macd.histogram.length === mockCandles.length, 'calculateMACD computed MACD line and histogram');
+
+  // AI Pattern Scanner
+  const patterns = detectChartPatterns(mockCandles);
+  assert(Array.isArray(patterns), 'detectChartPatterns returned pattern candidates');
+
+  // AI Trade Signal Generator
+  const sig = generateAISignal(mockCandles, TRADING_ASSETS[0], patterns);
+  assert(sig && typeof sig.action === 'string', `generateAISignal produced actionable trade decision: ${sig.action}`);
+  assert(sig.confidence >= 50 && sig.confidence <= 99, `Neural confidence score calculated: ${sig.confidence}%`);
+  assert(sig.tp1 > 0 && sig.sl > 0, `Take Profit ($${sig.tp1}) and Stop Loss ($${sig.sl}) targets generated`);
+  assert(sig.rationale.length > 20, 'Thai AI technical rationale analysis assembled');
+
+  // Paper Trading Engine
+  const tradingEngine = new AITradingEngine({ sound: mockSound, toasts: null });
+  tradingEngine.candles = mockCandles;
+  tradingEngine.analyzeMarket();
+  assert(tradingEngine.signal !== null, 'AITradingEngine state analyzed successfully');
+
+  tradingEngine.openPosition('LONG', 5000);
+  assert(tradingEngine.positions.length === 1, 'Paper Trading opened LONG position on BTC');
+  assert(tradingEngine.positions[0].amountUSD === 5000, 'Position capital allocated');
+
+  tradingEngine.updatePositionPnL();
+  assert(typeof tradingEngine.positions[0].pnlUSD === 'number', 'Real-time position PnL computed');
+
+  tradingEngine.closePosition(tradingEngine.positions[0].id);
+  assert(tradingEngine.positions.length === 0, 'Paper position closed successfully');
+  assert(tradingEngine.tradeHistory.length === 1, 'Trade recorded in execution ledger');
+
   console.log('\n====================================================');
   console.log(`🏁 TEST RESULTS: ${passed}/${total} TESTS PASSED (100%)`);
   console.log('====================================================');

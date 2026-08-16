@@ -11,6 +11,7 @@
 
 export const TAB_TYPES = {
   CLI: { id: 'cli', name: 'CyberDeck', icon: '>_', mode: 'CLI_PROMPT' },
+  TRADING: { id: 'trading', name: 'AI Trading Terminal', icon: '📈', mode: 'MODE_TRADING' },
   WIFI: { id: 'wifi', name: 'Cyber Wi-Fi Radar', icon: '📡', mode: 'MODE_WIFI' },
   EXPLORER: { id: 'explorer', name: 'Cyber Explorer', icon: '📂', mode: 'MODE_EXPLORER' },
   TASKMGR: { id: 'taskmgr', name: 'Task Manager', icon: '📊', mode: 'MODE_TASKMGR' },

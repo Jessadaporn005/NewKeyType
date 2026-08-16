@@ -38,6 +38,7 @@ import { WorkspaceLauncherEngine } from './workspaceLauncher.js';
 import { CyberRadioEngine } from './cyberRadio.js';
 import { CyberWifiEngine } from './cyberWifi.js';
 import { AICompanionEngine } from './aiCompanion.js';
+import { AITradingEngine } from './aiTradingEngine.js';
 
 // Application States
 const STATES = {
@@ -56,7 +57,8 @@ const STATES = {
   MODE_EXPLORER: 'MODE_EXPLORER',
   MODE_TASKMGR: 'MODE_TASKMGR',
   MODE_RADIO: 'MODE_RADIO',
-  MODE_WIFI: 'MODE_WIFI'
+  MODE_WIFI: 'MODE_WIFI',
+  MODE_TRADING: 'MODE_TRADING'
 };
 
 class WindowsTerminalApp {
@@ -265,7 +267,8 @@ class WindowsTerminalApp {
         explorer: document.getElementById('viewExplorer'),
         taskmgr: document.getElementById('viewTaskManager'),
         radio: document.getElementById('viewRadio'),
-        wifi: document.getElementById('viewWifi')
+        wifi: document.getElementById('viewWifi'),
+        trading: document.getElementById('viewTrading')
       },
 
       // CLI Elements
@@ -396,9 +399,30 @@ class WindowsTerminalApp {
       modalFinalChars: document.getElementById('modalFinalChars'),
       modalFinalTime: document.getElementById('modalFinalTime'),
       modalTestConfigTag: document.getElementById('modalTestConfigTag'),
-      modalMessage: document.getElementById('modalMessage'),
       modalChartContainer: document.getElementById('modalChartContainer'),
       modalSpeedChartSvg: document.getElementById('modalSpeedChartSvg'),
+
+      // AI Trading Terminal Elements
+      tradingCandleCanvas: document.getElementById('tradingCandleCanvas'),
+      tradingSubCanvas: document.getElementById('tradingSubCanvas'),
+      tradingPairTabs: document.getElementById('tradingPairTabs'),
+      tradingTimeframeSelector: document.getElementById('tradingTimeframeSelector'),
+      chkEma: document.getElementById('chkEma'),
+      chkBollinger: document.getElementById('chkBollinger'),
+      chkPatterns: document.getElementById('chkPatterns'),
+      aiSignalBadge: document.getElementById('aiSignalBadge'),
+      aiConfidenceVal: document.getElementById('aiConfidenceVal'),
+      aiRrVal: document.getElementById('aiRrVal'),
+      aiEntryVal: document.getElementById('aiEntryVal'),
+      aiTp1Val: document.getElementById('aiTp1Val'),
+      aiTp2Val: document.getElementById('aiTp2Val'),
+      aiSlVal: document.getElementById('aiSlVal'),
+      aiPatternTags: document.getElementById('aiPatternTags'),
+      aiRationaleBox: document.getElementById('aiRationaleBox'),
+      paperCapitalDisplay: document.getElementById('paperCapitalDisplay'),
+      btnOrderLong: document.getElementById('btnOrderLong'),
+      btnOrderShort: document.getElementById('btnOrderShort'),
+      activePositionsContainer: document.getElementById('activePositionsContainer'),
 
       // Academy Mission Grid Modal
       academyGridModal: document.getElementById('academyGridModal'),
@@ -604,7 +628,200 @@ class WindowsTerminalApp {
           this.rogueliteEngine.init(this.dom.views.roguelite);
         }
         break;
+      case 'trading':
+        if (!this.tradingEngine && this.dom.tradingCandleCanvas) {
+          this.tradingEngine = new AITradingEngine({
+            app: this,
+            canvas: this.dom.tradingCandleCanvas,
+            subCanvas: this.dom.tradingSubCanvas,
+            sound: this.audio,
+            toasts: this.toasts
+          });
+
+          this.tradingEngine.onSignalUpdate = (signal) => {
+            this.updateTradingSignalUI(signal);
+          };
+
+          this.tradingEngine.onPositionUpdate = (positions) => {
+            this.updateTradingPositionsUI(positions);
+          };
+
+          this.tradingEngine.init();
+          this.bindTradingUIEvents();
+        }
+        break;
     }
+  }
+
+  updateTradingSignalUI(signal) {
+    if (!signal || !this.dom.aiSignalBadge) return;
+    this.dom.aiSignalBadge.className = 'signal-badge ' + signal.badgeClass;
+    this.dom.aiSignalBadge.textContent = signal.action;
+
+    if (this.dom.aiConfidenceVal) this.dom.aiConfidenceVal.textContent = `${signal.confidence}%`;
+    if (this.dom.aiRrVal) this.dom.aiRrVal.textContent = signal.rrRatio;
+
+    const digits = this.tradingEngine?.activeAsset?.digits || 2;
+    if (this.dom.aiEntryVal) this.dom.aiEntryVal.textContent = `$${signal.entry.toFixed(digits)}`;
+    if (this.dom.aiTp1Val) this.dom.aiTp1Val.textContent = `$${signal.tp1.toFixed(digits)}`;
+    if (this.dom.aiTp2Val) this.dom.aiTp2Val.textContent = `$${signal.tp2.toFixed(digits)}`;
+    if (this.dom.aiSlVal) this.dom.aiSlVal.textContent = `$${signal.sl.toFixed(digits)}`;
+
+    if (this.dom.aiPatternTags) {
+      this.dom.aiPatternTags.innerHTML = '';
+      if (signal.patterns && signal.patterns.length > 0) {
+        signal.patterns.forEach(p => {
+          const pill = document.createElement('span');
+          pill.className = 'pattern-pill';
+          pill.textContent = `[ ${p.name} ]`;
+          this.dom.aiPatternTags.appendChild(pill);
+        });
+      } else {
+        const pill = document.createElement('span');
+        pill.className = 'pattern-pill';
+        pill.textContent = '[ Price Action Consolidation ]';
+        this.dom.aiPatternTags.appendChild(pill);
+      }
+    }
+
+    if (this.dom.aiRationaleBox) {
+      this.dom.aiRationaleBox.textContent = `"${signal.rationale}"`;
+    }
+  }
+
+  updateTradingPositionsUI(positions = []) {
+    if (this.dom.paperCapitalDisplay && this.tradingEngine) {
+      this.dom.paperCapitalDisplay.textContent = `$${this.tradingEngine.paperBalanceUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+
+    if (!this.dom.activePositionsContainer) return;
+    this.dom.activePositionsContainer.innerHTML = '';
+
+    if (positions.length === 0) {
+      this.dom.activePositionsContainer.innerHTML = '<div class="no-positions-hint">No open paper positions. Click BUY/SELL to simulate execution.</div>';
+      return;
+    }
+
+    positions.forEach(pos => {
+      const card = document.createElement('div');
+      card.className = 'pos-card';
+
+      const isProfit = pos.pnlUSD >= 0;
+      const pnlColor = isProfit ? '#00ff66' : '#ff2244';
+      const sideClass = pos.side === 'LONG' ? 'pos-side-long' : 'pos-side-short';
+
+      card.innerHTML = `
+        <div class="pos-info">
+          <span><strong class="${sideClass}">${pos.side}</strong> ${pos.assetId} (${pos.leverage}x)</span>
+          <span style="font-size: 10px; color: #8b9cb0;">Entry: $${pos.entryPrice} | Mark: $${pos.currentPrice}</span>
+        </div>
+        <div style="text-align: right; display: flex; align-items: center; gap: 8px;">
+          <div style="display: flex; flex-direction: column;">
+            <strong style="color: ${pnlColor};">${isProfit ? '+' : ''}$${pos.pnlUSD.toFixed(2)}</strong>
+            <span style="font-size: 9.5px; color: ${pnlColor};">${isProfit ? '+' : ''}${pos.pnlPercent.toFixed(2)}%</span>
+          </div>
+          <button class="btn-close-pos" data-pos-id="${pos.id}">✕ CLOSE</button>
+        </div>
+      `;
+
+      card.querySelector('.btn-close-pos').addEventListener('click', () => {
+        this.tradingEngine.closePosition(pos.id);
+      });
+
+      this.dom.activePositionsContainer.appendChild(card);
+    });
+  }
+
+  bindTradingUIEvents() {
+    // Pair Tabs
+    if (this.dom.tradingPairTabs) {
+      this.dom.tradingPairTabs.querySelectorAll('.trading-pair-pill').forEach(btn => {
+        btn.addEventListener('click', () => {
+          this.dom.tradingPairTabs.querySelectorAll('.trading-pair-pill').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          const pair = btn.dataset.pair;
+          if (this.tradingEngine) this.tradingEngine.setAsset(pair);
+          if (this.audio && this.audio.playKey) this.audio.playKey(false);
+        });
+      });
+    }
+
+    // Timeframe Selector
+    if (this.dom.tradingTimeframeSelector) {
+      this.dom.tradingTimeframeSelector.querySelectorAll('.tf-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          this.dom.tradingTimeframeSelector.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          const tf = btn.dataset.tf;
+          if (this.tradingEngine) this.tradingEngine.setTimeframe(tf);
+          if (this.audio && this.audio.playKey) this.audio.playKey(false);
+        });
+      });
+    }
+
+    // Indicators Checkboxes
+    if (this.dom.chkEma) {
+      this.dom.chkEma.addEventListener('change', (e) => {
+        if (this.tradingEngine) {
+          this.tradingEngine.showEMA = e.target.checked;
+          this.tradingEngine.render();
+        }
+      });
+    }
+    if (this.dom.chkBollinger) {
+      this.dom.chkBollinger.addEventListener('change', (e) => {
+        if (this.tradingEngine) {
+          this.tradingEngine.showBollinger = e.target.checked;
+          this.tradingEngine.render();
+        }
+      });
+    }
+    if (this.dom.chkPatterns) {
+      this.dom.chkPatterns.addEventListener('change', (e) => {
+        if (this.tradingEngine) {
+          this.tradingEngine.showPatterns = e.target.checked;
+          this.tradingEngine.render();
+        }
+      });
+    }
+
+    // Order Buttons
+    if (this.dom.btnOrderLong) {
+      this.dom.btnOrderLong.addEventListener('click', () => {
+        if (this.tradingEngine) this.tradingEngine.openPosition('LONG', 2000);
+      });
+    }
+    if (this.dom.btnOrderShort) {
+      this.dom.btnOrderShort.addEventListener('click', () => {
+        if (this.tradingEngine) this.tradingEngine.openPosition('SHORT', 2000);
+      });
+    }
+  }
+
+  launchTradingMode(assetArg) {
+    const logs = generateEntranceLogs('trading', assetArg ? assetArg.toUpperCase() : 'BTC/USDT');
+    this.state = STATES.MODE_TRADING;
+
+    this.ensureViewEngineInitialized('trading');
+
+    if (assetArg && this.tradingEngine) {
+      const match = TRADING_ASSETS.find(a => a.id.toLowerCase().includes(assetArg.toLowerCase()));
+      if (match) {
+        this.tradingEngine.setAsset(match.id);
+        if (this.dom.tradingPairTabs) {
+          this.dom.tradingPairTabs.querySelectorAll('.trading-pair-pill').forEach(b => {
+            b.classList.toggle('active', b.dataset.pair === match.id);
+          });
+        }
+      }
+    }
+
+    this.playCyberTransition(
+      'AI QUANTUM TRADING TERMINAL',
+      'BOOTING NEURAL QUANTITATIVE MATRIX & SMC SCANNER...',
+      logs,
+      'trading'
+    );
   }
 
   switchViewState(targetMode) {
@@ -1185,7 +1402,7 @@ class WindowsTerminalApp {
     if (!text) return;
 
     const allCmds = [
-      'roguelite', 'academy', 'speed', 'hacker', 'dashboard', 'settings',
+      'trade', 'trading', 'crypto', 'roguelite', 'academy', 'speed', 'hacker', 'dashboard', 'settings',
       'records', 'shop', 'bbs', 'nmap', 'ssh', 'hack', 'clearlogs', 'disconnect',
       'breach', 'threat', 'globe', 'emp', 'crt', 'payload', 'ducky', 'scan',
       'crack', 'bgm', 'map', 'whoami', 'sandbox', 'cls', 'clear', 'lang',
@@ -1268,11 +1485,12 @@ AVAILABLE CYBER TERMINAL & REAL-WORLD OS COMMANDS:
   strace                       - 🔬 Live System Call Tracer (epoll_wait, mprotect, futex, read/write)
   lsof                         - 📂 Open File Descriptors & Memory-Mapped IPC Socket Auditor
 
-[ ⚡ IN-APP CODE STUDIO, BROWSER &amp; INTELLIGENCE ]
+[ ⚡ IN-APP CODE STUDIO, BROWSER & INTELLIGENCE ]
   code / vscode / ide [lang]   - ⚡ VS Code Studio (Python, HTML, C++, Rust, SQL) with AI Cyber Tutor
+  trade / trading / crypto     - 📈 AI Neural Quantitative Trading Terminal & Pattern Recommendation Engine
   browser / web / surf [url]   - 🌐 In-App Chromium Cyber Browser with Picture-in-Picture mode
   yt / youtube [query]         - 📺 Stream YouTube videos directly inside the terminal browser
-  news / market / btc / intel  - 📈 Live Real-time Binance Crypto (BTC/ETH) &amp; Hacker News Intel Feed
+  news / market / btc / intel  - 📈 Live Real-time Binance Crypto (BTC/ETH) & Hacker News Intel Feed
 
 [ 💻 REAL APPLICATION LAUNCHER & FILESYSTEM ]
   open [app / url / path]      - Launch real PC programs (Chrome, Calc, Notepad, Spotify, Steam, Discord)
@@ -1910,6 +2128,34 @@ OPEN DESCRIPTORS: 7 Active | LEAKS: 0
       case 'aircrack':
       case 'decrypt':
         this.launchWifiMode();
+        return;
+
+      // AI Neural Quantitative Trading Terminal
+      case 'trade':
+      case 'trading':
+      case 'crypto':
+      case 'stocks':
+        this.launchTradingMode(args[0]);
+        return;
+
+      case 'buy':
+      case 'long':
+        if (this.tradingEngine) {
+          const amt = args[0] ? parseFloat(args[0]) : 2000;
+          this.tradingEngine.openPosition('LONG', isNaN(amt) ? 2000 : amt);
+        } else {
+          this.launchTradingMode('btc');
+        }
+        return;
+
+      case 'sell':
+      case 'short':
+        if (this.tradingEngine) {
+          const amt = args[0] ? parseFloat(args[0]) : 2000;
+          this.tradingEngine.openPosition('SHORT', isNaN(amt) ? 2000 : amt);
+        } else {
+          this.launchTradingMode('btc');
+        }
         return;
 
       // Mr. Robot Workspace Automator
@@ -4193,6 +4439,16 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
       if (this.state === STATES.MODE_ROGUELITE) {
         if (this.rogueliteEngine) {
           this.rogueliteEngine.handleKeyDown(e);
+        }
+        return;
+      }
+
+      // 7. AI Trading Terminal Mode
+      if (this.state === STATES.MODE_TRADING) {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          this.returnToCli();
+          return;
         }
         return;
       }

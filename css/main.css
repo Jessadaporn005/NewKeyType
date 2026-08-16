@@ -4173,5 +4173,445 @@ html, body {
   border-radius: 1px;
 }
 
+/* ==========================================================================
+   AI NEURAL QUANTITATIVE TRADING TERMINAL & PATTERN RECOMMENDATION STYLING
+   ========================================================================== */
+
+#viewTrading {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  padding: 10px 14px;
+  background: rgba(5, 9, 14, 0.85);
+  backdrop-filter: blur(4px);
+  overflow: hidden;
+}
+
+.trading-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  background: rgba(8, 13, 20, 0.85);
+  border: 1px solid rgba(0, 229, 255, 0.20);
+  border-radius: 4px;
+  margin-bottom: 10px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.trading-pair-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.trading-pair-pill {
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #8b9cb0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.trading-pair-pill:hover {
+  color: #ffffff;
+  border-color: rgba(0, 229, 255, 0.4);
+}
+
+.trading-pair-pill.active {
+  color: #00e5ff !important;
+  background: rgba(0, 229, 255, 0.12);
+  border-color: #00e5ff;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.3);
+}
+
+.trading-timeframe-selector {
+  display: flex;
+  gap: 4px;
+}
+
+.tf-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: #64748b;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.tf-btn:hover {
+  color: #e2e8f0;
+}
+
+.tf-btn.active {
+  color: var(--theme-primary) !important;
+  background: rgba(0, 255, 102, 0.12);
+  border-color: rgba(0, 255, 102, 0.3);
+  font-weight: 800;
+  text-shadow: 0 0 8px var(--theme-primary-glow);
+}
+
+.trading-indicator-toggles {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #8b9cb0;
+}
+
+.toggle-chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.toggle-chip input[type="checkbox"] {
+  accent-color: var(--theme-primary);
+  cursor: pointer;
+}
+
+.trading-workspace-grid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 12px;
+  flex: 1;
+  min-height: 0;
+  height: calc(100% - 55px);
+}
+
+.trading-chart-column {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-height: 0;
+  background: rgba(8, 12, 18, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  padding: 8px;
+}
+
+.chart-canvas-container {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  width: 100%;
+}
+
+.chart-canvas-container canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.sub-chart-container {
+  height: 95px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.sub-chart-container canvas {
+  width: 100%;
+  height: 75px;
+  display: block;
+}
+
+.sub-chart-header {
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 6px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  color: #64748b;
+}
+
+.trading-signal-column {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.ai-signal-card {
+  background: rgba(9, 15, 23, 0.85);
+  border: 1px solid rgba(0, 255, 102, 0.25);
+  border-radius: 4px;
+  padding: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+}
+
+.signal-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.signal-title {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #00e5ff;
+}
+
+.signal-badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 900;
+  padding: 3px 8px;
+  border-radius: 3px;
+  letter-spacing: 0.5px;
+}
+
+.signal-strong-buy {
+  background: rgba(0, 255, 102, 0.2);
+  color: #00ff66 !important;
+  border: 1px solid #00ff66;
+  box-shadow: 0 0 12px rgba(0, 255, 102, 0.4);
+}
+
+.signal-buy {
+  background: rgba(0, 255, 102, 0.12);
+  color: #00ff88 !important;
+  border: 1px solid #00ff88;
+}
+
+.signal-hold {
+  background: rgba(255, 170, 0, 0.15);
+  color: #ffaa00 !important;
+  border: 1px solid #ffaa00;
+}
+
+.signal-sell {
+  background: rgba(255, 34, 68, 0.15);
+  color: #ff4466 !important;
+  border: 1px solid #ff4466;
+}
+
+.signal-strong-sell {
+  background: rgba(255, 34, 68, 0.25);
+  color: #ff2244 !important;
+  border: 1px solid #ff2244;
+  box-shadow: 0 0 12px rgba(255, 34, 68, 0.5);
+}
+
+.signal-metrics-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.sig-stat {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 6px 8px;
+  border-radius: 3px;
+  display: flex;
+  flex-direction: column;
+}
+
+.sig-stat .lbl {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.sig-stat .val {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.signal-levels-matrix {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  background: rgba(0, 0, 0, 0.35);
+  padding: 8px;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.level-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.lvl-name {
+  color: #8b9cb0;
+}
+
+.glow-danger {
+  color: #ff2244 !important;
+  text-shadow: 0 0 8px rgba(255, 34, 68, 0.6);
+}
+
+.ai-pattern-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.pattern-pill {
+  background: rgba(255, 170, 0, 0.12);
+  border: 1px solid rgba(255, 170, 0, 0.3);
+  color: #ffaa00;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-weight: 700;
+}
+
+.ai-rationale-box {
+  font-family: var(--font-thai);
+  font-size: 11px;
+  line-height: 1.45;
+  color: #cbd5e1;
+  background: rgba(0, 0, 0, 0.4);
+  border-left: 3px solid #00e5ff;
+  padding: 6px 10px;
+  border-radius: 2px;
+}
+
+.paper-trading-card {
+  background: rgba(9, 15, 23, 0.85);
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  border-radius: 4px;
+  padding: 12px;
+}
+
+.paper-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #8b9cb0;
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+
+.paper-bal strong {
+  color: #00ff66;
+}
+
+.order-action-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.order-btn {
+  border: none;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 800;
+  padding: 8px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  letter-spacing: 0.5px;
+}
+
+.order-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.15);
+}
+
+.btn-long {
+  background: #00ff66;
+  color: #000000;
+  box-shadow: 0 0 10px rgba(0, 255, 102, 0.3);
+}
+
+.btn-short {
+  background: #ff2244;
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(255, 34, 68, 0.3);
+}
+
+.active-positions-container {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.no-positions-hint {
+  color: #64748b;
+  font-size: 10.5px;
+  text-align: center;
+  padding: 8px 4px;
+}
+
+.pos-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 6px 8px;
+  border-radius: 3px;
+  margin-bottom: 4px;
+}
+
+.pos-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.pos-side-long {
+  color: #00ff66;
+  font-weight: 800;
+}
+
+.pos-side-short {
+  color: #ff2244;
+  font-weight: 800;
+}
+
+.btn-close-pos {
+  background: rgba(255, 34, 68, 0.2);
+  border: 1px solid #ff2244;
+  color: #ff2244;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.btn-close-pos:hover {
+  background: #ff2244;
+  color: #ffffff;
+}
+
+
 
 

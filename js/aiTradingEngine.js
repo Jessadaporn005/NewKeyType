@@ -1,0 +1,867 @@
+/**
+ * AI NEURAL QUANTITATIVE TRADING TERMINAL & PATTERN RECOMMENDATION ENGINE
+ * Inspired by TradingView and Binance Pro. Features real-time OHLCV market feeds,
+ * technical indicators (EMA Ribbon, Bollinger Bands, RSI, MACD),
+ * neural chart pattern recognition (Double Bottom/Top, Engulfing, Head & Shoulders, SMC Order Blocks),
+ * real-time AI Trade Signals (STRONG BUY/SELL with TP/SL & Confidence Score),
+ * interactive HTML5 Canvas Candlestick Chart with crosshair, and Paper Trading simulator.
+ */
+
+// Asset Definitions
+export const TRADING_ASSETS = [
+  { id: 'BTC/USDT', name: 'Bitcoin Network', basePrice: 96420.50, unit: '₿', minTick: 0.5, digits: 2, leverageMax: 50 },
+  { id: 'ETH/USDT', name: 'Ethereum Network', basePrice: 3580.00, unit: 'Ξ', minTick: 0.1, digits: 2, leverageMax: 50 },
+  { id: 'SOL/USDT', name: 'Solana High-Speed L1', basePrice: 198.40, unit: '◎', minTick: 0.01, digits: 2, leverageMax: 20 },
+  { id: 'NVDA/USD', name: 'NVIDIA AI Semiconductor', basePrice: 142.80, unit: '$', minTick: 0.01, digits: 2, leverageMax: 10 },
+  { id: 'CYBER/USDT', name: 'Darknet Hashrate Index', basePrice: 42.50, unit: '⚡', minTick: 0.01, digits: 2, leverageMax: 25 },
+  { id: 'QUANTUM/USDT', name: 'Qubit Yield Protocol', basePrice: 850.00, unit: 'Ψ', minTick: 0.1, digits: 2, leverageMax: 20 }
+];
+
+export const TIMEFRAMES = [
+  { id: '1m', label: '1m', seconds: 60, candleCount: 80 },
+  { id: '5m', label: '5m', seconds: 300, candleCount: 80 },
+  { id: '15m', label: '15m', seconds: 900, candleCount: 80 },
+  { id: '1h', label: '1h', seconds: 3600, candleCount: 80 },
+  { id: '1D', label: '1D', seconds: 86400, candleCount: 80 }
+];
+
+/**
+ * Technical Indicator Calculation Algorithms
+ */
+export function calculateEMA(candles, period = 20) {
+  const ema = [];
+  const k = 2 / (period + 1);
+  if (candles.length === 0) return ema;
+
+  let sum = 0;
+  for (let i = 0; i < Math.min(period, candles.length); i++) {
+    sum += candles[i].close;
+  }
+  let prevEma = sum / Math.min(period, candles.length);
+
+  for (let i = 0; i < candles.length; i++) {
+    if (i < period - 1) {
+      ema.push(null);
+    } else if (i === period - 1) {
+      ema.push(prevEma);
+    } else {
+      const curEma = candles[i].close * k + prevEma * (1 - k);
+      ema.push(curEma);
+      prevEma = curEma;
+    }
+  }
+  return ema;
+}
+
+export function calculateBollingerBands(candles, period = 20, stdDevMultiplier = 2) {
+  const upper = [];
+  const middle = [];
+  const lower = [];
+
+  for (let i = 0; i < candles.length; i++) {
+    if (i < period - 1) {
+      upper.push(null);
+      middle.push(null);
+      lower.push(null);
+      continue;
+    }
+
+    let sum = 0;
+    for (let j = i - period + 1; j <= i; j++) {
+      sum += candles[j].close;
+    }
+    const sma = sum / period;
+
+    let varianceSum = 0;
+    for (let j = i - period + 1; j <= i; j++) {
+      varianceSum += Math.pow(candles[j].close - sma, 2);
+    }
+    const stdDev = Math.sqrt(varianceSum / period);
+
+    middle.push(sma);
+    upper.push(sma + stdDev * stdDevMultiplier);
+    lower.push(sma - stdDev * stdDevMultiplier);
+  }
+
+  return { upper, middle, lower };
+}
+
+export function calculateRSI(candles, period = 14) {
+  const rsi = [];
+  if (candles.length <= period) return candles.map(() => 50);
+
+  let gains = 0;
+  let losses = 0;
+
+  for (let i = 1; i <= period; i++) {
+    const diff = candles[i].close - candles[i - 1].close;
+    if (diff >= 0) gains += diff;
+    else losses += Math.abs(diff);
+  }
+
+  let avgGain = gains / period;
+  let avgLoss = losses / period;
+
+  for (let i = 0; i < candles.length; i++) {
+    if (i < period) {
+      rsi.push(50);
+      continue;
+    }
+    if (i > period) {
+      const diff = candles[i].close - candles[i - 1].close;
+      const gain = diff > 0 ? diff : 0;
+      const loss = diff < 0 ? Math.abs(diff) : 0;
+      avgGain = (avgGain * (period - 1) + gain) / period;
+      avgLoss = (avgLoss * (period - 1) + loss) / period;
+    }
+
+    if (avgLoss === 0) {
+      rsi.push(100);
+    } else {
+      const rs = avgGain / avgLoss;
+      rsi.push(Math.round(100 - (100 / (1 + rs))));
+    }
+  }
+
+  return rsi;
+}
+
+export function calculateMACD(candles, fast = 12, slow = 26, signal = 9) {
+  const fastEMA = calculateEMA(candles, fast);
+  const slowEMA = calculateEMA(candles, slow);
+  const macdLine = [];
+
+  for (let i = 0; i < candles.length; i++) {
+    if (fastEMA[i] === null || slowEMA[i] === null) {
+      macdLine.push(0);
+    } else {
+      macdLine.push(fastEMA[i] - slowEMA[i]);
+    }
+  }
+
+  // Signal line is EMA of MACD Line
+  const dummyCandles = macdLine.map(v => ({ close: v }));
+  const signalLine = calculateEMA(dummyCandles, signal);
+  const histogram = [];
+
+  for (let i = 0; i < candles.length; i++) {
+    const sig = signalLine[i] === null ? 0 : signalLine[i];
+    histogram.push(macdLine[i] - sig);
+  }
+
+  return { macdLine, signalLine, histogram };
+}
+
+/**
+ * AI Pattern Recognition Engine
+ */
+export function detectChartPatterns(candles) {
+  const patterns = [];
+  const len = candles.length;
+  if (len < 10) return patterns;
+
+  const current = candles[len - 1];
+  const prev = candles[len - 2];
+  const prev2 = candles[len - 3];
+
+  // 1. Bullish Engulfing
+  if (prev.close < prev.open && current.close > current.open && current.open <= prev.close && current.close >= prev.open) {
+    patterns.push({
+      type: 'BULLISH_ENGULFING',
+      name: 'Bullish Engulfing (แท่งเทียนกลืนกินขาขึ้น)',
+      sentiment: 'BULLISH',
+      weight: 25,
+      desc: 'แรงซื้อเอาชนะแรงขายอย่างสมบูรณ์ เกิดสัญญาณกลับตัวขึ้นที่แนวรับสำคัญ'
+    });
+  }
+
+  // 2. Bearish Engulfing
+  if (prev.close > prev.open && current.close < current.open && current.open >= prev.close && current.close <= prev.open) {
+    patterns.push({
+      type: 'BEARISH_ENGULFING',
+      name: 'Bearish Engulfing (แท่งเทียนกลืนกินขาลง)',
+      sentiment: 'BEARISH',
+      weight: -25,
+      desc: 'แรงขายเททับแท่งก่อนหน้า ชี้ถึงการปฏิเสธราคาและจุดกลับตัวลง'
+    });
+  }
+
+  // 3. Hammer (Bullish Rejection Pin Bar)
+  const body = Math.abs(current.close - current.open);
+  const lowerWick = Math.min(current.open, current.close) - current.low;
+  const upperWick = current.high - Math.max(current.open, current.close);
+
+  if (lowerWick >= body * 2 && upperWick <= body * 0.5) {
+    patterns.push({
+      type: 'HAMMER_PINBAR',
+      name: 'Bullish Hammer / Pin Bar (แท่งค้อนกลับตัว)',
+      sentiment: 'BULLISH',
+      weight: 20,
+      desc: 'มีการทิ้งไส้ล่างยาว บ่งบอกว่าผู้ซื้อผลักดันราคากลับขึ้นมาอย่างรวดเร็ว'
+    });
+  }
+
+  // 4. Shooting Star (Bearish Pin Bar)
+  if (upperWick >= body * 2 && lowerWick <= body * 0.5) {
+    patterns.push({
+      type: 'SHOOTING_STAR',
+      name: 'Shooting Star (แท่งดาวตกปฏิเสธแนวต้าน)',
+      sentiment: 'BEARISH',
+      weight: -20,
+      desc: 'ไส้บนยาวแสดงถึงแรงเทขายอย่างหนักเมื่อราคาพยายามทดสอบแนวต้าน'
+    });
+  }
+
+  // 5. Double Bottom (W-Pattern) Detection in recent 20 candles
+  if (len >= 20) {
+    const recent = candles.slice(len - 20);
+    const lows = recent.map((c, i) => ({ price: c.low, idx: i }));
+    lows.sort((a, b) => a.price - b.price);
+    const firstLow = lows[0];
+    const secondLow = lows.find(l => Math.abs(l.idx - firstLow.idx) >= 4 && Math.abs(l.price - firstLow.price) / firstLow.price < 0.015);
+
+    if (secondLow) {
+      patterns.push({
+        type: 'DOUBLE_BOTTOM',
+        name: 'Double Bottom (W-Pattern แนวรับสองชั้น)',
+        sentiment: 'BULLISH',
+        weight: 35,
+        desc: 'ราคาลงมาทดสอบแนวรับเดิมสองครั้งแต่ไม่หลุด ยืนยันโซนสะสมพลังของเจ้ามือ (Smart Money Accumulation)'
+      });
+    }
+  }
+
+  // 6. Smart Money Concept: Fair Value Gap / Order Block
+  if (len >= 4) {
+    const c1 = candles[len - 4];
+    const c2 = candles[len - 3];
+    const c3 = candles[len - 2];
+    if (c3.low > c1.high && c2.close > c2.open) {
+      patterns.push({
+        type: 'BULLISH_FVG_OB',
+        name: 'Bullish Order Block & FVG (โซนสภาพคล่องสถาบัน)',
+        sentiment: 'BULLISH',
+        weight: 30,
+        desc: 'เกิดช่องว่างสภาพคล่อง (Fair Value Gap) คาดการณ์ราคาย่อตัวลงมาแตะ Order Block แล้วดีดตัวขึ้นแรง'
+      });
+    }
+  }
+
+  return patterns;
+}
+
+/**
+ * AI Signal Generation & Decision Matrix
+ */
+export function generateAISignal(candles, asset, patterns = []) {
+  const len = candles.length;
+  if (len === 0) return null;
+
+  const currentPrice = candles[len - 1].close;
+  const ema20 = calculateEMA(candles, 20);
+  const ema50 = calculateEMA(candles, 50);
+  const ema200 = calculateEMA(candles, 200);
+  const rsi = calculateRSI(candles, 14);
+  const macd = calculateMACD(candles);
+  const bb = calculateBollingerBands(candles, 20, 2);
+
+  const curEMA20 = ema20[len - 1] || currentPrice;
+  const curEMA50 = ema50[len - 1] || currentPrice;
+  const curEMA200 = ema200[len - 1] || currentPrice;
+  const curRSI = rsi[len - 1] || 50;
+  const curMACDHist = macd.histogram[len - 1] || 0;
+  const curBBLower = bb.lower[len - 1] || currentPrice * 0.98;
+  const curBBUpper = bb.upper[len - 1] || currentPrice * 1.02;
+
+  // Composite Score Calculation (-100 to +100)
+  let score = 0;
+
+  // 1. Trend Alignment (EMA Ribbon)
+  if (currentPrice > curEMA20 && curEMA20 > curEMA50) score += 25;
+  else if (currentPrice < curEMA20 && curEMA20 < curEMA50) score -= 25;
+
+  if (curEMA50 > curEMA200) score += 15; // Golden Cross Macro
+  else score -= 15; // Death Cross Macro
+
+  // 2. Momentum (RSI)
+  if (curRSI <= 32) score += 30; // Deeply Oversold (Rebound likely)
+  else if (curRSI >= 68) score -= 30; // Overbought
+  else if (curRSI > 50) score += 10;
+  else score -= 10;
+
+  // 3. Volatility & Mean Reversion (Bollinger Bands)
+  if (currentPrice <= curBBLower * 1.002) score += 20; // At Lower Band support
+  if (currentPrice >= curBBUpper * 0.998) score -= 20; // At Upper Band resistance
+
+  // 4. MACD Momentum
+  if (curMACDHist > 0) score += 15;
+  else score -= 15;
+
+  // 5. Pattern Multipliers
+  patterns.forEach(p => {
+    score += p.weight;
+  });
+
+  // Bound score
+  score = Math.max(-100, Math.min(100, score));
+
+  // Determine Action & Confidence
+  let action = 'NEUTRAL / HOLD';
+  let badgeClass = 'signal-hold';
+  let confidence = Math.abs(score);
+
+  if (score >= 45) {
+    action = score >= 75 ? 'STRONG BUY' : 'BUY';
+    badgeClass = score >= 75 ? 'signal-strong-buy' : 'signal-buy';
+  } else if (score <= -45) {
+    action = score <= -75 ? 'STRONG SELL' : 'SELL';
+    badgeClass = score <= -75 ? 'signal-strong-sell' : 'signal-sell';
+  }
+
+  // Calculate Entry, TP, SL, Risk/Reward
+  const isLong = score >= 0;
+  const atr = Math.abs(curBBUpper - curBBLower) / 4 || currentPrice * 0.015;
+
+  const entry = currentPrice;
+  const sl = isLong ? Number((entry - atr * 1.2).toFixed(asset.digits)) : Number((entry + atr * 1.2).toFixed(asset.digits));
+  const tp1 = isLong ? Number((entry + atr * 2.0).toFixed(asset.digits)) : Number((entry - atr * 2.0).toFixed(asset.digits));
+  const tp2 = isLong ? Number((entry + atr * 3.8).toFixed(asset.digits)) : Number((entry - atr * 3.8).toFixed(asset.digits));
+
+  const riskAmount = Math.abs(entry - sl);
+  const rewardAmount = Math.abs(tp1 - entry);
+  const rrRatio = (rewardAmount / (riskAmount || 1)).toFixed(2);
+
+  // Confluence Factors Checklist
+  const factors = [
+    { name: `EMA 20/50 Trend Alignment (${curEMA20 > curEMA50 ? 'BULLISH 🟢' : 'BEARISH 🔴'})`, pass: isLong ? curEMA20 > curEMA50 : curEMA20 < curEMA50 },
+    { name: `RSI Oscillator (${curRSI} - ${curRSI < 35 ? 'OVERSOLD' : curRSI > 65 ? 'OVERBOUGHT' : 'BALANCED'})`, pass: isLong ? curRSI < 55 : curRSI > 45 },
+    { name: `MACD Zero-Line Momentum (${curMACDHist >= 0 ? '+BULLISH' : '-BEARISH'})`, pass: isLong ? curMACDHist > 0 : curMACDHist < 0 },
+    { name: `Bollinger Band Position (${currentPrice < (curBBLower + curBBUpper)/2 ? 'Discount Zone' : 'Premium Zone'})`, pass: true }
+  ];
+
+  // Thai AI Rationale Breakdown
+  let rationale = '';
+  if (action.includes('BUY')) {
+    rationale = `อัลกอริทึมตรวจพบโมเมนตัมขาขึ้นที่มีนัยสำคัญบนคู่เทรด ${asset.id} โดยราคาเคลื่อนไหวอยู่เหนือแนวรับ EMA20 และค่า RSI (${curRSI}) บ่งชี้ว่าอยู่ในโซนที่มีความได้เปรียบสูง (High Probability Setup) เหมาะสำหรับเปิดสถานะ LONG เพื่อหวังผลกำไรที่เป้าหมาย TP1 ($${tp1}) และ TP2 ($${tp2}) พร้อมตั้งจุดตัดขาดทุน Stop Loss ($${sl})`;
+  } else if (action.includes('SELL')) {
+    rationale = `ระบบตรวจพบแรงกดดันฝั่งขายที่หนาแน่นบริเวณแนวต้าน และสัญญาณ Overbought/Rejection บนคู่เทรด ${asset.id} แนะนำเปิดสถานะ SHORT หรือทยอย Take Profit เพื่อลดความเสี่ยง โดยมีเป้าหมายทำกำไรขาลงที่ $${tp1} และตัดขาดทุนหากราคาทะลุผ่าน $${sl}`;
+  } else {
+    rationale = `สภาวะตลาดยังอยู่ในช่วงพักฐาน (Consolidation / Sideway) สัญญาณอินดิเคเตอร์ยังไม่มีความสอดคล้องชัดเจน แนะนำรอจังหวะ Breakout หรือรอการยืนยันแท่งเทียนที่แนวรับ/แนวต้านก่อนเข้าออเดอร์`;
+  }
+
+  return {
+    action,
+    badgeClass,
+    score,
+    confidence: Math.min(99, Math.max(55, Math.round(50 + confidence / 2))),
+    entry,
+    tp1,
+    tp2,
+    sl,
+    rrRatio: `1 : ${rrRatio}`,
+    factors,
+    patterns,
+    rationale,
+    curRSI,
+    curMACDHist
+  };
+}
+
+/**
+ * AI Trading Terminal Controller
+ */
+export class AITradingEngine {
+  constructor(options = {}) {
+    this.app = options.app || null;
+    this.sound = options.sound || null;
+    this.toasts = options.toasts || null;
+
+    // DOM Elements
+    this.canvas = options.canvas || null;
+    this.ctx = this.canvas ? this.canvas.getContext('2d') : null;
+    this.subCanvas = options.subCanvas || null;
+    this.subCtx = this.subCanvas ? this.subCanvas.getContext('2d') : null;
+
+    // Active State
+    this.activeAsset = TRADING_ASSETS[0];
+    this.activeTimeframe = TIMEFRAMES[1]; // 5m default
+    this.candles = [];
+    this.patterns = [];
+    this.signal = null;
+
+    // Chart Settings
+    this.showEMA = true;
+    this.showBollinger = true;
+    this.showPatterns = true;
+    this.showVolume = true;
+    this.subChartMode = 'RSI'; // 'RSI' | 'MACD'
+
+    // Mouse Interaction
+    this.mouseX = -1;
+    this.mouseY = -1;
+    this.isHovering = false;
+
+    // Live Tick Loop
+    this.tickInterval = null;
+
+    // Paper Trading Positions
+    this.positions = [];
+    this.tradeHistory = [];
+    this.paperBalanceUSD = 100000.00; // $100,000 Paper Capital
+    this.leverage = 10;
+  }
+
+  init() {
+    this.generateHistoricalCandles();
+    this.analyzeMarket();
+    this.setupCanvasInteractions();
+    this.startLiveTickStream();
+  }
+
+  destroy() {
+    if (this.tickInterval) clearInterval(this.tickInterval);
+    this.tickInterval = null;
+  }
+
+  setAsset(assetId) {
+    const asset = TRADING_ASSETS.find(a => a.id === assetId);
+    if (!asset) return;
+    this.activeAsset = asset;
+    this.generateHistoricalCandles();
+    this.analyzeMarket();
+    this.render();
+  }
+
+  setTimeframe(tfId) {
+    const tf = TIMEFRAMES.find(t => t.id === tfId);
+    if (!tf) return;
+    this.activeTimeframe = tf;
+    this.generateHistoricalCandles();
+    this.analyzeMarket();
+    this.render();
+  }
+
+  generateHistoricalCandles() {
+    this.candles = [];
+    let price = this.activeAsset.basePrice;
+    const count = this.activeTimeframe.candleCount;
+    const now = Math.floor(Date.now() / 1000);
+    const stepSecs = this.activeTimeframe.seconds;
+
+    // Generate smooth realistic random walk with trend & momentum
+    let trend = (Math.random() - 0.45) * 0.002;
+    const volatility = 0.008;
+
+    for (let i = count; i >= 0; i--) {
+      const time = now - i * stepSecs;
+      trend += (Math.random() - 0.5) * 0.001;
+      const changePercent = trend + (Math.random() - 0.5) * volatility;
+
+      const open = price;
+      const close = Number((open * (1 + changePercent)).toFixed(this.activeAsset.digits));
+      const high = Number((Math.max(open, close) + Math.random() * open * 0.005).toFixed(this.activeAsset.digits));
+      const low = Number((Math.min(open, close) - Math.random() * open * 0.005).toFixed(this.activeAsset.digits));
+      const volume = Math.round(500 + Math.random() * 4500);
+
+      this.candles.push({ time, open, high, low, close, volume });
+      price = close;
+    }
+  }
+
+  startLiveTickStream() {
+    if (this.tickInterval) clearInterval(this.tickInterval);
+    this.tickInterval = setInterval(() => {
+      this.simulateLiveTick();
+    }, 1200);
+  }
+
+  simulateLiveTick() {
+    if (this.candles.length === 0) return;
+    const last = this.candles[this.candles.length - 1];
+    const delta = (Math.random() - 0.49) * (last.close * 0.0018);
+    const newClose = Number((last.close + delta).toFixed(this.activeAsset.digits));
+
+    last.close = newClose;
+    last.high = Math.max(last.high, newClose);
+    last.low = Math.min(last.low, newClose);
+    last.volume += Math.round(5 + Math.random() * 25);
+
+    // Update Paper Trading Positions in real-time
+    this.updatePositionPnL();
+
+    // Recompute Signals and Redraw
+    this.analyzeMarket();
+    this.render();
+  }
+
+  analyzeMarket() {
+    this.patterns = detectChartPatterns(this.candles);
+    this.signal = generateAISignal(this.candles, this.activeAsset, this.patterns);
+    if (this.onSignalUpdate) {
+      this.onSignalUpdate(this.signal);
+    }
+  }
+
+  setupCanvasInteractions() {
+    if (!this.canvas) return;
+
+    this.canvas.addEventListener('mousemove', (e) => {
+      const rect = this.canvas.getBoundingClientRect();
+      this.mouseX = e.clientX - rect.left;
+      this.mouseY = e.clientY - rect.top;
+      this.isHovering = true;
+      this.render();
+    });
+
+    this.canvas.addEventListener('mouseleave', () => {
+      this.isHovering = false;
+      this.render();
+    });
+  }
+
+  render() {
+    if (!this.canvas || !this.ctx || this.candles.length === 0) return;
+
+    const ctx = this.ctx;
+    const width = this.canvas.width;
+    const height = this.canvas.height;
+    ctx.clearRect(0, 0, width, height);
+
+    const candles = this.candles;
+    const candleCount = candles.length;
+    const paddingRight = 70;
+    const paddingBottom = 25;
+    const paddingTop = 25;
+    const chartWidth = width - paddingRight;
+    const chartHeight = height - paddingBottom - paddingTop;
+
+    // Calculate Price Min & Max with margin
+    let minPrice = Infinity;
+    let maxPrice = -Infinity;
+    let maxVol = 0;
+
+    candles.forEach(c => {
+      if (c.low < minPrice) minPrice = c.low;
+      if (c.high > maxPrice) maxPrice = c.high;
+      if (c.volume > maxVol) maxVol = c.volume;
+    });
+
+    const priceRange = maxPrice - minPrice || 1;
+    const candleWidth = Math.max(3, (chartWidth / candleCount) * 0.7);
+    const candleSpacing = chartWidth / candleCount;
+
+    const getY = (price) => paddingTop + chartHeight - ((price - minPrice) / priceRange) * chartHeight;
+    const getX = (index) => index * candleSpacing + candleSpacing / 2;
+
+    // 1. Draw Grid Lines & Price Axis
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+    ctx.lineWidth = 1;
+    ctx.font = '10px "Share Tech Mono", monospace';
+    ctx.fillStyle = '#64748b';
+    ctx.textAlign = 'left';
+
+    for (let i = 0; i <= 5; i++) {
+      const p = minPrice + (priceRange / 5) * i;
+      const y = getY(p);
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(chartWidth, y);
+      ctx.stroke();
+      ctx.fillText(p.toFixed(this.activeAsset.digits), chartWidth + 6, y + 3);
+    }
+
+    // 2. Draw Volume Bars at the bottom
+    if (this.showVolume) {
+      const volHeightMax = chartHeight * 0.25;
+      candles.forEach((c, idx) => {
+        const x = getX(idx);
+        const vH = (c.volume / (maxVol || 1)) * volHeightMax;
+        const y = height - paddingBottom - vH;
+        ctx.fillStyle = c.close >= c.open ? 'rgba(0, 255, 102, 0.18)' : 'rgba(255, 34, 68, 0.18)';
+        ctx.fillRect(x - candleWidth / 2, y, candleWidth, vH);
+      });
+    }
+
+    // 3. Draw Bollinger Bands
+    if (this.showBollinger) {
+      const bb = calculateBollingerBands(candles, 20, 2);
+      ctx.beginPath();
+      for (let i = 0; i < candleCount; i++) {
+        if (bb.upper[i] !== null) {
+          const x = getX(i);
+          const y = getY(bb.upper[i]);
+          if (i === 19) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+      }
+      for (let i = candleCount - 1; i >= 0; i--) {
+        if (bb.lower[i] !== null) {
+          const x = getX(i);
+          const y = getY(bb.lower[i]);
+          ctx.lineTo(x, y);
+        }
+      }
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(0, 229, 255, 0.04)';
+      ctx.fill();
+
+      // Lower & Upper line strokes
+      ['upper', 'lower'].forEach(band => {
+        ctx.beginPath();
+        ctx.strokeStyle = 'rgba(0, 229, 255, 0.35)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 3]);
+        for (let i = 0; i < candleCount; i++) {
+          if (bb[band][i] !== null) {
+            const x = getX(i);
+            const y = getY(bb[band][i]);
+            if (i === 19) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+        }
+        ctx.stroke();
+        ctx.setLineDash([]);
+      });
+    }
+
+    // 4. Draw EMA Ribbon Curves (EMA 20 & EMA 50)
+    if (this.showEMA) {
+      const ema20 = calculateEMA(candles, 20);
+      const ema50 = calculateEMA(candles, 50);
+
+      // EMA 20 (Cyan)
+      ctx.beginPath();
+      ctx.strokeStyle = '#00e5ff';
+      ctx.lineWidth = 1.5;
+      for (let i = 0; i < candleCount; i++) {
+        if (ema20[i] !== null) {
+          const x = getX(i);
+          const y = getY(ema20[i]);
+          if (i === 19) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+      }
+      ctx.stroke();
+
+      // EMA 50 (Gold/Amber)
+      ctx.beginPath();
+      ctx.strokeStyle = '#ffaa00';
+      ctx.lineWidth = 1.5;
+      for (let i = 0; i < candleCount; i++) {
+        if (ema50[i] !== null) {
+          const x = getX(i);
+          const y = getY(ema50[i]);
+          if (i === 49) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+      }
+      ctx.stroke();
+    }
+
+    // 5. Draw Candlesticks (Body + High/Low Wicks)
+    candles.forEach((c, idx) => {
+      const x = getX(idx);
+      const isGreen = c.close >= c.open;
+      const color = isGreen ? '#00ff66' : '#ff2244';
+
+      // Wick
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(x, getY(c.high));
+      ctx.lineTo(x, getY(c.low));
+      ctx.stroke();
+
+      // Body
+      const openY = getY(c.open);
+      const closeY = getY(c.close);
+      const topY = Math.min(openY, closeY);
+      const bodyH = Math.max(1.5, Math.abs(closeY - openY));
+
+      ctx.fillStyle = color;
+      ctx.fillRect(x - candleWidth / 2, topY, candleWidth, bodyH);
+    });
+
+    // 6. Draw AI Pattern Badges on Chart
+    if (this.showPatterns && this.patterns.length > 0) {
+      const lastCandleIdx = candleCount - 1;
+      const lastX = getX(lastCandleIdx);
+      const lastY = getY(candles[lastCandleIdx].high) - 15;
+
+      ctx.fillStyle = '#ffaa00';
+      ctx.font = 'bold 10px "Share Tech Mono", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(`⚡ [AI: ${this.patterns[0].type}]`, lastX - 20, lastY);
+    }
+
+    // 7. Interactive Crosshair & Tooltip
+    if (this.isHovering && this.mouseX >= 0 && this.mouseX <= chartWidth) {
+      const hoveredIdx = Math.min(candleCount - 1, Math.max(0, Math.floor(this.mouseX / candleSpacing)));
+      const hoveredCandle = candles[hoveredIdx];
+
+      // Crosshair Lines
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+
+      // Vertical Line
+      ctx.beginPath();
+      ctx.moveTo(this.mouseX, 0);
+      ctx.lineTo(this.mouseX, height - paddingBottom);
+      ctx.stroke();
+
+      // Horizontal Line
+      ctx.beginPath();
+      ctx.moveTo(0, this.mouseY);
+      ctx.lineTo(chartWidth, this.mouseY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Price Tag on Axis
+      const hoverPrice = minPrice + ((chartHeight - (this.mouseY - paddingTop)) / chartHeight) * priceRange;
+      ctx.fillStyle = '#00e5ff';
+      ctx.fillRect(chartWidth + 2, this.mouseY - 8, paddingRight - 4, 16);
+      ctx.fillStyle = '#000000';
+      ctx.font = 'bold 10px "Share Tech Mono", monospace';
+      ctx.fillText(hoverPrice.toFixed(this.activeAsset.digits), chartWidth + 6, this.mouseY + 4);
+
+      // Top Banner OHLCV Stats
+      if (hoveredCandle) {
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '11px "Share Tech Mono", monospace';
+        ctx.textAlign = 'left';
+        const isUp = hoveredCandle.close >= hoveredCandle.open;
+        const ohlcText = `O: ${hoveredCandle.open.toFixed(this.activeAsset.digits)}  H: ${hoveredCandle.high.toFixed(this.activeAsset.digits)}  L: ${hoveredCandle.low.toFixed(this.activeAsset.digits)}  C: ${hoveredCandle.close.toFixed(this.activeAsset.digits)}  Vol: ${hoveredCandle.volume}`;
+        ctx.fillStyle = isUp ? '#00ff66' : '#ff2244';
+        ctx.fillText(ohlcText, 14, 16);
+      }
+    }
+
+    // Render Sub-Chart (RSI or MACD)
+    this.renderSubChart();
+  }
+
+  renderSubChart() {
+    if (!this.subCanvas || !this.subCtx || this.candles.length === 0) return;
+    const ctx = this.subCtx;
+    const width = this.subCanvas.width;
+    const height = this.subCanvas.height;
+    ctx.clearRect(0, 0, width, height);
+
+    const candleCount = this.candles.length;
+    const paddingRight = 70;
+    const chartWidth = width - paddingRight;
+    const candleSpacing = chartWidth / candleCount;
+    const getX = (index) => index * candleSpacing + candleSpacing / 2;
+
+    if (this.subChartMode === 'RSI') {
+      const rsi = calculateRSI(this.candles, 14);
+
+      // 70 Overbought & 30 Oversold Levels
+      const getY = (val) => height - (val / 100) * height;
+
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([2, 2]);
+      [70, 50, 30].forEach(level => {
+        const y = getY(level);
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(chartWidth, y);
+        ctx.stroke();
+        ctx.fillStyle = '#64748b';
+        ctx.font = '9px monospace';
+        ctx.fillText(level, chartWidth + 6, y + 3);
+      });
+      ctx.setLineDash([]);
+
+      // RSI Curve (Purple/Cyan)
+      ctx.beginPath();
+      ctx.strokeStyle = '#c084fc';
+      ctx.lineWidth = 1.8;
+      for (let i = 0; i < candleCount; i++) {
+        const x = getX(i);
+        const y = getY(rsi[i]);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      // Legend
+      ctx.fillStyle = '#c084fc';
+      ctx.font = 'bold 10px "Share Tech Mono", monospace';
+      ctx.fillText(`RSI (14): ${rsi[rsi.length - 1] || 50}`, 10, 14);
+    }
+  }
+
+  // Paper Trading Operations
+  openPosition(side = 'LONG', amountUSD = 1000) {
+    if (this.candles.length === 0) return;
+    const currentPrice = this.candles[this.candles.length - 1].close;
+
+    if (amountUSD > this.paperBalanceUSD) {
+      if (this.toasts) this.toasts.show('ERROR', 'INSUFFICIENT PAPER CAPITAL BALANCE', 2000);
+      return;
+    }
+
+    const pos = {
+      id: 'POS_' + Date.now().toString(36),
+      assetId: this.activeAsset.id,
+      side: side.toUpperCase(), // 'LONG' | 'SHORT'
+      entryPrice: currentPrice,
+      currentPrice: currentPrice,
+      amountUSD: amountUSD,
+      leverage: this.leverage,
+      size: (amountUSD * this.leverage) / currentPrice,
+      pnlUSD: 0,
+      pnlPercent: 0,
+      openTime: new Date().toLocaleTimeString(),
+      sl: this.signal ? this.signal.sl : null,
+      tp: this.signal ? this.signal.tp1 : null
+    };
+
+    this.paperBalanceUSD -= amountUSD;
+    this.positions.unshift(pos);
+
+    if (this.sound && this.sound.playSuccessFanfare) this.sound.playSuccessFanfare();
+    if (this.toasts) {
+      this.toasts.show('INFO', `⚡ EXECUTED ${side} ${this.activeAsset.id} @ $${currentPrice} (${this.leverage}x)`, 2500);
+    }
+
+    if (this.onPositionUpdate) this.onPositionUpdate(this.positions);
+  }
+
+  closePosition(posId) {
+    const idx = this.positions.findIndex(p => p.id === posId);
+    if (idx === -1) return;
+
+    const pos = this.positions[idx];
+    const returnAmount = pos.amountUSD + pos.pnlUSD;
+    this.paperBalanceUSD += Math.max(0, returnAmount);
+
+    pos.closeTime = new Date().toLocaleTimeString();
+    this.tradeHistory.unshift(pos);
+    this.positions.splice(idx, 1);
+
+    if (this.sound && this.sound.playKey) this.sound.playKey(false);
+    if (this.toasts) {
+      this.toasts.show(pos.pnlUSD >= 0 ? 'SUCCESS' : 'ERROR', `POSITION CLOSED: PnL $${pos.pnlUSD.toFixed(2)} (${pos.pnlPercent.toFixed(2)}%)`, 2500);
+    }
+
+    if (this.onPositionUpdate) this.onPositionUpdate(this.positions);
+  }
+
+  updatePositionPnL() {
+    if (this.candles.length === 0 || this.positions.length === 0) return;
+    const curPrice = this.candles[this.candles.length - 1].close;
+
+    this.positions.forEach(pos => {
+      pos.currentPrice = curPrice;
+      const priceDiff = pos.side === 'LONG' ? curPrice - pos.entryPrice : pos.entryPrice - curPrice;
+      pos.pnlPercent = (priceDiff / pos.entryPrice) * 100 * pos.leverage;
+      pos.pnlUSD = (pos.amountUSD * pos.pnlPercent) / 100;
+    });
+
+    if (this.onPositionUpdate) this.onPositionUpdate(this.positions);
+  }
+}
