@@ -595,14 +595,23 @@ class WindowsTerminalApp {
     if (!ctx) return;
 
     let angle = 0;
-    const nodes = [
+    const nodesOuter = [
       [-1, -1, -1], [1, -1, -1], [1, 1, -1], [-1, 1, -1],
       [-1, -1, 1], [1, -1, 1], [1, 1, 1], [-1, 1, 1]
     ];
-    const edges = [
+    const nodesInner = [
+      [0, -1.3, 0], [1.3, 0, 0], [0, 1.3, 0], [-1.3, 0, 0],
+      [0, 0, -1.3], [0, 0, 1.3]
+    ];
+    const edgesOuter = [
       [0,1],[1,2],[2,3],[3,0],
       [4,5],[5,6],[6,7],[7,4],
       [0,4],[1,5],[2,6],[3,7]
+    ];
+    const edgesInner = [
+      [0,1],[1,2],[2,3],[3,0],
+      [4,0],[4,1],[4,2],[4,3],
+      [5,0],[5,1],[5,2],[5,3]
     ];
 
     const render = () => {
@@ -612,52 +621,67 @@ class WindowsTerminalApp {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       const cx = canvas.width / 2;
       const cy = canvas.height / 2;
-      const size = 52;
+      const size = 48;
 
-      angle += 0.035;
+      angle += 0.025;
       const cosA = Math.cos(angle);
       const sinA = Math.sin(angle);
-      const cosB = Math.cos(angle * 0.75);
-      const sinB = Math.sin(angle * 0.75);
+      const cosB = Math.cos(angle * 0.85);
+      const sinB = Math.sin(angle * 0.85);
 
-      const projected = nodes.map(([x, y, z]) => {
+      const project = (nodes, scale) => nodes.map(([x, y, z]) => {
         let rx = x * cosA - z * sinA;
         let rz = x * sinA + z * cosA;
         let ry = y * cosB - rz * sinB;
         rz = y * sinB + rz * cosB;
 
-        const fov = 200 / (200 + rz * size * 0.4);
-        return [cx + rx * size * fov, cy + ry * size * fov];
+        const fov = 220 / (220 + rz * size * scale * 0.4);
+        return [cx + rx * size * scale * fov, cy + ry * size * scale * fov];
       });
 
-      // Draw glowing reactor core
-      const glowGrad = ctx.createRadialGradient(cx, cy, 2, cx, cy, 38);
-      glowGrad.addColorStop(0, 'rgba(0, 255, 102, 0.9)');
-      glowGrad.addColorStop(0.5, 'rgba(0, 240, 255, 0.35)');
+      const projOuter = project(nodesOuter, 1.0);
+      const projInner = project(nodesInner, 0.65);
+
+      // Glowing Quantum Energy Core
+      const glowGrad = ctx.createRadialGradient(cx, cy, 2, cx, cy, 42);
+      glowGrad.addColorStop(0, 'rgba(0, 255, 102, 0.95)');
+      glowGrad.addColorStop(0.4, 'rgba(0, 240, 255, 0.45)');
       glowGrad.addColorStop(1, 'transparent');
       ctx.fillStyle = glowGrad;
       ctx.beginPath();
-      ctx.arc(cx, cy, 38, 0, Math.PI * 2);
+      ctx.arc(cx, cy, 42, 0, Math.PI * 2);
       ctx.fill();
 
-      // Draw wireframe edges
+      // Outer Wireframe Cage (Green)
       ctx.strokeStyle = '#00ff66';
       ctx.lineWidth = 1.5;
       ctx.shadowColor = '#00ff66';
-      ctx.shadowBlur = 12;
+      ctx.shadowBlur = 10;
       ctx.beginPath();
-      edges.forEach(([u, v]) => {
-        ctx.moveTo(projected[u][0], projected[u][1]);
-        ctx.lineTo(projected[v][0], projected[v][1]);
+      edgesOuter.forEach(([u, v]) => {
+        ctx.moveTo(projOuter[u][0], projOuter[u][1]);
+        ctx.lineTo(projOuter[v][0], projOuter[v][1]);
+      });
+      ctx.stroke();
+
+      // Inner Octahedron Core (Cyan)
+      ctx.strokeStyle = '#00f0ff';
+      ctx.lineWidth = 1.2;
+      ctx.shadowColor = '#00f0ff';
+      ctx.shadowBlur = 8;
+      ctx.beginPath();
+      edgesInner.forEach(([u, v]) => {
+        ctx.moveTo(projInner[u][0], projInner[u][1]);
+        ctx.lineTo(projInner[v][0], projInner[v][1]);
       });
       ctx.stroke();
       ctx.shadowBlur = 0;
 
-      // Draw vertices
-      ctx.fillStyle = '#00f0ff';
-      projected.forEach(([px, py]) => {
+      // Vertex Nodes
+      ctx.fillStyle = '#ffffff';
+      [...projOuter, ...projInner].forEach(([px, py]) => {
         ctx.beginPath();
-        ctx.arc(px, py, 3, 0, Math.PI * 2);
+        ctx.arc(px, py, 2.5, 0, Math.PI * 2);
         ctx.fill();
       });
 
