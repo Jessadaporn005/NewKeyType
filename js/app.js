@@ -29,6 +29,8 @@ import { ControlCenter } from './controlCenter.js';
 import { HologramAvatar } from './hologramAvatar.js';
 import { VscodeEngine } from './vscodeEngine.js';
 import { CyberBrowserEngine } from './cyberBrowser.js';
+import { TabManager, TAB_TYPES } from './tabManager.js';
+import { CyberIntelFeed } from './cyberIntelFeed.js';
 
 // Application States
 const STATES = {
@@ -77,6 +79,8 @@ class WindowsTerminalApp {
     this.threatEngine = null;
     this.rogueliteEngine = null;
     this.controlCenter = null;
+    this.tabManager = null;
+    this.intelFeed = null;
     this.toasts = new ToastManager(this.audio);
     this.particles = new ParticleEffectEngine();
     this.holoAvatar = new HologramAvatar();
@@ -528,6 +532,15 @@ class WindowsTerminalApp {
     }
 
     this.controlCenter = new ControlCenter(this, this.audio, this.toasts);
+
+    this.tabManager = new TabManager(this, this.audio);
+    this.tabManager.init();
+
+    const intelCol = document.getElementById('cyberIntelColumn');
+    if (intelCol) {
+      this.intelFeed = new CyberIntelFeed(this, this.audio);
+      this.intelFeed.init(intelCol);
+    }
   }
 
   registerServiceWorker() {
@@ -1550,6 +1563,37 @@ AVAILABLE CYBER TERMINAL & REAL-WORLD OS COMMANDS:
         }
         output = `[+] Procedural Cyber Ambient BGM: ${isPlaying ? 'ENGAGED [PLAYING]' : 'MUTED'}`;
         break;
+
+      // Cyber Intelligence, Stock Markets & Tech News Radar
+      case 'intel':
+      case 'news':
+      case 'stocks':
+      case 'market':
+      case 'markets':
+      case 'feed': {
+        if (this.intelFeed) {
+          if (this.intelFeed.isCollapsed) {
+            this.intelFeed.toggleCollapse();
+          }
+          this.intelFeed.randomizeMarkets();
+        }
+        output = `
+[+] CYBER//INTEL TELEMETRY RADAR ACTIVE [2.4 GHz LIVE STREAM]
+------------------------------------------------------------------
+• BITCOIN (BTC/USD) : ₿ $96,420.50 (+5.82% ▲) [HIGH LIQUIDITY]
+• NVIDIA (NVDA)     : $ 142.80 (+4.31% ▲) [AI ACCELERATOR SURGE]
+• NASDAQ CYBER      : $ 428.15 (+2.14% ▲) [CYBERSECURITY SECTOR]
+• ETHEREUM (ETH)    : $ 3,580.00 (-0.85% ▼) [GAS: 14 GWEI]
+------------------------------------------------------------------
+[LATEST INTEL WIRE]
+1. [AI/QUANTUM] OpenAI & DeepSeek Deploy 100M Context Window Lattice
+2. [0-DAY ALERT] Critical RCE Vulnerability Patched in Global OpenSSL
+3. [HARDWARE] NVIDIA Blackwell Ultra B300 Sets 1.2 ExaFLOPS Benchmark
+4. [DEV/CODE] Python 3.13 Free-Threaded GIL-less Mode Delivers 45% Speedup
+(Use the interactive radar on the right to filter categories or view live sparklines)`;
+        this.audio.playSuccessFanfare();
+        break;
+      }
 
       case 'map':
       case 'topology':
@@ -2915,6 +2959,45 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
           this.returnToCli();
           return;
         }
+      }
+
+      // Global Multi-Tab Shortcuts: Ctrl + T (New Tab), Ctrl + W (Close Tab), Ctrl + Tab (Next Tab)
+      if (e.ctrlKey && (e.key === 't' || e.key === 'T')) {
+        e.preventDefault();
+        if (this.tabManager) {
+          this.tabManager.tabCounter++;
+          this.tabManager.createTab(TAB_TYPES.CLI, `CyberDeck (${this.tabManager.tabCounter})`, true);
+          if (this.audio) this.audio.playSuccessFanfare();
+        }
+        return;
+      }
+
+      if (e.ctrlKey && (e.key === 'w' || e.key === 'W')) {
+        e.preventDefault();
+        if (this.tabManager && this.tabManager.activeTabId) {
+          this.tabManager.closeTab(this.tabManager.activeTabId);
+        }
+        return;
+      }
+
+      if (e.ctrlKey && e.key === 'Tab') {
+        e.preventDefault();
+        if (this.tabManager) {
+          if (e.shiftKey) {
+            this.tabManager.prevTab();
+          } else {
+            this.tabManager.nextTab();
+          }
+        }
+        return;
+      }
+
+      if (e.ctrlKey && /^[1-9]$/.test(e.key)) {
+        e.preventDefault();
+        if (this.tabManager) {
+          this.tabManager.switchToTabIndex(parseInt(e.key, 10) - 1);
+        }
+        return;
       }
 
       // Global Hotkey: Ctrl + K (Open Command Palette)

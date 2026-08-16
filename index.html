@@ -17,6 +17,7 @@
   <link rel="stylesheet" href="css/roguelite.css">
   <link rel="stylesheet" href="css/vscode.css">
   <link rel="stylesheet" href="css/browser.css">
+  <link rel="stylesheet" href="css/intelFeed.css">
 </head>
 <body class="crt-scanlines">
   <!-- Initial Boot Sequence Screen -->
@@ -282,14 +283,14 @@
     
     <!-- Windows 11 Terminal Tabbed Title Bar -->
     <header class="win11-titlebar">
-      <div class="tab-strip">
+      <div class="tab-strip" id="tabStrip">
         <div class="terminal-tab active">
           <span class="tab-icon">&gt;_</span>
           <span class="tab-title">CyberDeck</span>
-          <button class="tab-close-btn" title="Close Tab">✕</button>
+          <button class="tab-close-btn" title="Close Tab [Ctrl+W]">✕</button>
         </div>
-        <button class="tab-add-btn" title="Open new tab">+</button>
-        <button class="tab-dropdown-btn" title="Shell profiles">⌄</button>
+        <button class="tab-add-btn" id="tabAddBtn" title="Open new tab [Ctrl+T]">+</button>
+        <button class="tab-dropdown-btn" id="tabDropdownBtn" title="Shell profiles & Subsystems">⌄</button>
       </div>
 
       <div class="window-controls">
@@ -333,20 +334,28 @@
     <!-- Main Terminal Display Area -->
     <main class="terminal-screen-wrapper" id="terminalScreenWrapper">
       
-      <!-- CMD CLI VIEW (Main Screen) -->
+      <!-- CMD CLI VIEW (Main Screen with Dual-Pane Split) -->
       <div class="terminal-view active" id="viewCli">
-        <div class="term-line">Microsoft Windows [Version 10.0.26200.9168]</div>
-        <div class="term-line">(c) Microsoft Corporation. All rights reserved.</div>
-        <br>
-        <div class="term-line hint-text">Type <strong class="glow-cmd">help</strong> to see available commands or <strong class="glow-cmd">academy</strong> to start touch typing.</div>
-        <br>
-        
-        <!-- Command History Output -->
-        <div class="cli-history" id="cliHistory"></div>
-        
-        <!-- Active Inline Prompt & Cursor (Always visible and anchored directly after typed text) -->
-        <div class="cli-active-prompt-row" id="cliActivePromptRow">
-          <span class="term-prompt" id="cliPromptPath">C:\Users\asus&gt;</span><span class="term-input-text" id="cliInputText"></span><span class="term-cursor" id="cliCursor"> </span><span class="term-input-after" id="cliInputAfter"></span>
+        <div class="cli-main-split">
+          <!-- Left Column: Interactive Command Prompt -->
+          <div class="cli-terminal-column" id="cliTerminalColumn">
+            <div class="term-line">Microsoft Windows [Version 10.0.26200.9168]</div>
+            <div class="term-line">(c) Microsoft Corporation. All rights reserved.</div>
+            <br>
+            <div class="term-line hint-text">Type <strong class="glow-cmd">help</strong> to see available commands, <strong class="glow-cmd">intel</strong> for telemetry, or <strong class="glow-cmd">academy</strong> for typing drills.</div>
+            <br>
+            
+            <!-- Command History Output -->
+            <div class="cli-history" id="cliHistory"></div>
+            
+            <!-- Active Inline Prompt & Cursor -->
+            <div class="cli-active-prompt-row" id="cliActivePromptRow">
+              <span class="term-prompt" id="cliPromptPath">C:\Users\asus&gt;</span><span class="term-input-text" id="cliInputText"></span><span class="term-cursor" id="cliCursor"> </span><span class="term-input-after" id="cliInputAfter"></span>
+            </div>
+          </div>
+
+          <!-- Right Column: Real-Time Cyber Intelligence & Markets Radar -->
+          <div class="cyber-intel-column" id="cyberIntelColumn"></div>
         </div>
 
         <!-- Live Cyber Telemetry Strip at bottom of CMD -->

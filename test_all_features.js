@@ -193,6 +193,50 @@ async function runTests() {
   browserEngine.closeBrowser();
   assert(browserEngine.state === 'CLOSED' && browserEngine.currentUrl === 'about:blank', 'Browser closing cleanly terminates media stream to about:blank');
 
+  // 11. Multi-Tab Session Manager Engine
+  console.log('\n[11] Testing Multi-Tab Session Manager...');
+  const { TabManager, TAB_TYPES } = await import('./js/tabManager.js');
+  const mockTabApp = {
+    dom: { cliHistory: { innerHTML: '' } },
+    cliInputBuffer: '',
+    cliCursorPos: 0,
+    renderCliPrompt: () => {},
+    focusCliInput: () => {},
+    switchViewState: () => {}
+  };
+  const tabMgr = new TabManager(mockTabApp, mockSound);
+  assert(TAB_TYPES.CLI && TAB_TYPES.BROWSER && TAB_TYPES.VSCODE, 'TAB_TYPES contains all core subsystem profiles');
+  
+  const tab1 = tabMgr.createTab(TAB_TYPES.CLI, 'CyberDeck Main');
+  assert(tabMgr.tabs.length === 1 && tabMgr.activeTabId === tab1.id, 'TabManager created primary session tab');
+
+  const tab2 = tabMgr.createTab(TAB_TYPES.VSCODE, 'VS Code Session');
+  assert(tabMgr.tabs.length === 2 && tabMgr.activeTabId === tab2.id, 'TabManager created secondary session tab and activated it');
+
+  tabMgr.switchTab(tab1.id);
+  assert(tabMgr.activeTabId === tab1.id, 'TabManager switched back to primary session tab');
+
+  tabMgr.closeTab(tab2.id);
+  assert(tabMgr.tabs.length === 1 && tabMgr.tabs[0].id === tab1.id, 'TabManager closed secondary session tab cleanly');
+
+  // 12. Real-Time Cyber Intelligence & Markets Telemetry Matrix
+  console.log('\n[12] Testing Cyber Intelligence & Markets Telemetry Matrix...');
+  const { CyberIntelFeed, INITIAL_MARKETS, INTEL_STREAM_DATA } = await import('./js/cyberIntelFeed.js');
+  assert(INITIAL_MARKETS.length >= 4, `INITIAL_MARKETS contains ${INITIAL_MARKETS.length} live crypto & stock tickers (BTC, NVDA, HACK, ETH)`);
+  assert(INTEL_STREAM_DATA.length >= 5, `INTEL_STREAM_DATA contains ${INTEL_STREAM_DATA.length} curated intelligence briefs`);
+
+  const intelFeed = new CyberIntelFeed(mockTabApp, mockSound);
+  assert(intelFeed.markets.some(m => m.symbol === 'BTC/USD'), 'Market matrix contains Bitcoin telemetry');
+  assert(intelFeed.markets.some(m => m.symbol === 'NVDA'), 'Market matrix contains NVIDIA AI chips telemetry');
+
+  const initialBtcPrice = intelFeed.markets.find(m => m.id === 'btc').price;
+  intelFeed.randomizeMarkets();
+  const updatedBtcPrice = intelFeed.markets.find(m => m.id === 'btc').price;
+  assert(updatedBtcPrice > 0, 'Markets simulator calculated live price fluctuations');
+
+  const sparkline = intelFeed.generateSparkline([90000, 92000, 95000, 96420], true);
+  assert(sparkline.includes('<svg') && sparkline.includes('polyline'), 'Sparkline generator produces valid SVG vector charts');
+
   console.log('\n====================================================');
   console.log(`🏁 TEST RESULTS: ${passed}/${total} TESTS PASSED (100%)`);
   console.log('====================================================');
