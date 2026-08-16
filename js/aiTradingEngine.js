@@ -635,6 +635,7 @@ export class AITradingEngine {
   async init() {
     await this.loadCandles();
     this.setupCanvasInteractions();
+    this.setupResizeObserver();
     this.resizeCanvas();
     window.addEventListener('resize', () => this.resizeCanvas());
     this.startLiveTickStream();
@@ -644,8 +645,10 @@ export class AITradingEngine {
   destroy() {
     if (this.tickInterval) clearInterval(this.tickInterval);
     if (this.newsInterval) clearInterval(this.newsInterval);
+    if (this.resizeObserver) this.resizeObserver.disconnect();
     this.tickInterval = null;
     this.newsInterval = null;
+    this.resizeObserver = null;
   }
 
   async setAsset(assetId) {
@@ -981,6 +984,19 @@ export class AITradingEngine {
       this.isHovering = false;
       this.requestRender();
     });
+  }
+
+  setupResizeObserver() {
+    if (typeof ResizeObserver !== 'undefined' && this.canvas && this.canvas.parentElement) {
+      this.resizeObserver = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          if (entry.contentRect.width > 50 && entry.contentRect.height > 50) {
+            this.resizeCanvas();
+          }
+        }
+      });
+      this.resizeObserver.observe(this.canvas.parentElement);
+    }
   }
 
   requestRender() {

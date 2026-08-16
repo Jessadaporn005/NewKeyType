@@ -987,9 +987,11 @@ class WindowsTerminalApp {
     }
 
     if (isTrading && this.tradingEngine) {
-      setTimeout(() => {
-        this.tradingEngine.resizeCanvas();
-      }, 50);
+      [30, 100, 250, 450].forEach(delay => {
+        setTimeout(() => {
+          if (this.tradingEngine) this.tradingEngine.resizeCanvas();
+        }, delay);
+      });
     }
   }
 
@@ -1470,6 +1472,9 @@ class WindowsTerminalApp {
         }
         this.isTransitioning = false;
         this.skipCurrentTransition = null;
+        if (targetMode === 'trading' && this.tradingEngine) {
+          this.tradingEngine.resizeCanvas();
+        }
         if (onComplete) onComplete();
       }, 380);
     };
