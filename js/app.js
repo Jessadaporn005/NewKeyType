@@ -2197,6 +2197,11 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
     this.kb.clearTargetKeys();
     this.hands.clearTargetGuide();
 
+    if (document.activeElement && typeof document.activeElement.blur === 'function') {
+      document.activeElement.blur();
+    }
+    window.focus();
+
     const exitLogs = generateExitLogs(this.username);
     this.playCyberTransition(
       'SYSTEM TEARDOWN & REVERSE PROTOCOL',
@@ -2205,6 +2210,7 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
       'cli',
       () => {
         this.focusCliInput();
+        window.focus();
         setTimeout(() => this.hands.updatePositions(), 50);
       }
     );
@@ -2852,6 +2858,23 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
 
     this.dom.terminalScreenWrapper.addEventListener('click', () => {
       window.focus();
+      if (this.state === STATES.CLI_PROMPT) {
+        this.focusCliInput();
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      const isInput = e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT');
+      const isBrowserChrome = e.target && e.target.closest && e.target.closest('#browserChromeBar, #browserBookmarksBar');
+      const isModal = e.target && e.target.closest && e.target.closest('.cyber-modal-container:not(.hidden)');
+      const isVscode = this.state === STATES.MODE_VSCODE;
+
+      if (!isInput && !isBrowserChrome && !isModal && !isVscode) {
+        window.focus();
+        if (this.state === STATES.CLI_PROMPT) {
+          this.focusCliInput();
+        }
+      }
     });
 
     window.addEventListener('keydown', async (e) => {

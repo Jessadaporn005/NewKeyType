@@ -333,22 +333,39 @@ export class CyberBrowserEngine {
 
     if (newState === BROWSER_STATES.FULL) {
       win.classList.add('state-full');
+      this.app.state = 'MODE_BROWSER';
       if (this.sound) this.sound.playSuccessFanfare();
-    } else if (newState === BROWSER_STATES.PIP) {
-      win.classList.add('state-pip');
-      if (this.sound) this.sound.playKey(false);
-      // Return keyboard focus to background game/cli
-      if (this.app.state === 'CLI_PROMPT') {
-        this.app.focusCliInput();
+    } else if (newState === BROWSER_STATES.PIP || newState === BROWSER_STATES.MARQUEE) {
+      if (newState === BROWSER_STATES.PIP) {
+        win.classList.add('state-pip');
+      } else {
+        win.classList.add('state-marquee');
       }
-    } else if (newState === BROWSER_STATES.MARQUEE) {
-      win.classList.add('state-marquee');
       if (this.sound) this.sound.playKey(false);
+
+      // Return application state to CLI or background mode so keyboard input is not trapped
+      if (this.app.state === 'MODE_BROWSER') {
+        this.app.state = 'CLI_PROMPT';
+      }
+
+      if (document.activeElement && typeof document.activeElement.blur === 'function') {
+        document.activeElement.blur();
+      }
+      window.focus();
+
       if (this.app.state === 'CLI_PROMPT') {
         this.app.focusCliInput();
       }
     } else if (newState === BROWSER_STATES.CLOSED) {
       this.container.classList.add('hidden');
+      if (this.app.state === 'MODE_BROWSER') {
+        this.app.state = 'CLI_PROMPT';
+      }
+      if (document.activeElement && typeof document.activeElement.blur === 'function') {
+        document.activeElement.blur();
+      }
+      window.focus();
+      this.app.focusCliInput();
     }
   }
 
@@ -364,6 +381,12 @@ export class CyberBrowserEngine {
     this.setState(BROWSER_STATES.CLOSED);
     if (this.app.state === 'MODE_BROWSER') {
       this.app.returnToCli();
+    } else {
+      if (document.activeElement && typeof document.activeElement.blur === 'function') {
+        document.activeElement.blur();
+      }
+      window.focus();
+      if (this.app.focusCliInput) this.app.focusCliInput();
     }
   }
 }
