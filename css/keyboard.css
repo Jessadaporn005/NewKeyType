@@ -6,10 +6,21 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  background: #101010;
-  border: 1px solid var(--cmd-border);
-  padding: 12px;
-  border-radius: 4px;
+  background: radial-gradient(ellipse at 50% 0%, #06180e 0%, #020704 100%);
+  border: 2px solid rgba(0, 255, 102, 0.3);
+  padding: 14px;
+  border-radius: 6px;
+  box-shadow: 0 0 30px rgba(0, 255, 102, 0.15), inset 0 0 20px rgba(0, 0, 0, 0.8);
+  clip-path: polygon(
+    0 10px,
+    10px 0,
+    calc(100% - 10px) 0,
+    100% 10px,
+    100% calc(100% - 10px),
+    calc(100% - 10px) 100%,
+    10px 100%,
+    0 calc(100% - 10px)
+  );
 }
 
 /* Finger Guidance Bar */
@@ -17,10 +28,10 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 6px 12px;
-  background: #181818;
-  border: 1px solid #2a2a2a;
-  border-radius: 3px;
+  padding: 6px 14px;
+  background: #040c07;
+  border: 1px solid rgba(0, 255, 102, 0.2);
+  border-radius: 4px;
   flex-wrap: wrap;
   gap: 8px;
   font-size: 11.5px;
@@ -88,11 +99,11 @@
   display: flex;
   flex-direction: column;
   gap: 5px;
-  background: transparent;
-  padding: 10px;
+  background: #020503;
+  padding: 12px;
   border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  box-shadow: none;
+  border: 1px solid rgba(0, 255, 102, 0.25);
+  box-shadow: 0 0 25px rgba(0, 255, 102, 0.15), inset 0 0 15px rgba(0, 0, 0, 0.9);
   width: 100%;
 }
 
@@ -106,19 +117,20 @@
 .key {
   position: relative;
   flex: 1;
-  height: 46px;
+  height: 48px;
   min-width: 30px;
-  background: linear-gradient(180deg, #1c1c1c 0%, #121212 100%);
-  border: 1px solid #333333;
-  border-bottom: 3px solid #080808;
+  background: linear-gradient(180deg, #18221c 0%, #0c1410 100%);
+  border: 1px solid rgba(0, 255, 102, 0.25);
+  border-bottom: 3px solid #040806;
   border-radius: 4px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 3px 5px;
+  padding: 3px 6px;
   cursor: default;
   transition: transform 0.05s ease, background 0.05s ease, border-color 0.05s ease, box-shadow 0.05s ease;
   overflow: hidden;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
 }
 
 /* Key Labels */

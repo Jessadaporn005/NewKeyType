@@ -788,12 +788,16 @@ class WindowsTerminalApp {
         lIdx++;
       } else {
         clearInterval(interval);
+        if (this.dom.secretGateOverlay) {
+          this.dom.secretGateOverlay.classList.add('gate-unlocked');
+        }
         setTimeout(() => {
           this.dom.secretGateOverlay.classList.add('hidden');
+          this.dom.secretGateOverlay.classList.remove('gate-unlocked');
           this.dom.hackerLoginOverlay.classList.remove('hidden');
           this.state = STATES.LOGIN;
           this.dom.loginPassField.focus();
-        }, 500);
+        }, 800);
       }
     }, 150);
   }

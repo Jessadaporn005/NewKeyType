@@ -3564,4 +3564,224 @@ html, body {
   100% { text-shadow: 0 0 18px #ff4400, 0 0 30px #ff0055; }
 }
 
+/* ==========================================================================
+   7. FULL DIEGETIC CYBERDECK HARDWARE CHASSIS & BLAST DOORS SYSTEM
+   ========================================================================== */
+
+/* Chamfered 45° Cyber Geometry */
+.diegetic-terminal,
+.diegetic-cyberdeck-chassis,
+.secret-gate-card,
+.login-terminal-card,
+.terminal-view,
+.cli-terminal-column,
+.cyber-intel-column {
+  clip-path: polygon(
+    0 14px,
+    14px 0,
+    calc(100% - 14px) 0,
+    100% 14px,
+    100% calc(100% - 14px),
+    calc(100% - 14px) 100%,
+    14px 100%,
+    0 calc(100% - 14px)
+  );
+}
+
+/* Aerospace Chassis Corner Bezels */
+.chassis-bezel-corner {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  border: 3px solid #00ff66;
+  z-index: 20;
+  pointer-events: none;
+}
+.chassis-bezel-corner.tl { top: 10px; left: 10px; border-right: none; border-bottom: none; }
+.chassis-bezel-corner.tr { top: 10px; right: 10px; border-left: none; border-bottom: none; }
+.chassis-bezel-corner.bl { bottom: 10px; left: 10px; border-right: none; border-top: none; }
+.chassis-bezel-corner.br { bottom: 10px; right: 10px; border-left: none; border-top: none; }
+
+/* 3D Hologram Reactor Orbital Rings */
+.holo-orbital-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px dashed rgba(0, 255, 102, 0.4);
+  pointer-events: none;
+}
+.holo-orbital-ring.ring-1 {
+  width: 170px;
+  height: 170px;
+  animation: reticleSpin 10s linear infinite;
+}
+.holo-orbital-ring.ring-2 {
+  width: 210px;
+  height: 210px;
+  border-color: rgba(0, 240, 255, 0.35);
+  animation: reticleSpinRev 14s linear infinite;
+}
+
+/* Heavy Titanium Blast Doors (Vault Gate) */
+.vault-blast-door {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 50%;
+  background: linear-gradient(135deg, #0d120f 0%, #030604 100%);
+  border: 2px solid rgba(255, 34, 85, 0.4);
+  z-index: 1;
+  transition: transform 0.8s cubic-bezier(0.7, 0, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 20px;
+  box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.9);
+}
+.vault-blast-door.left-door { left: 0; border-right: 3px solid #ff2255; }
+.vault-blast-door.right-door { right: 0; border-left: 3px solid #ff2255; }
+
+.secret-gate-overlay.gate-unlocked .left-door { transform: translateX(-100%); }
+.secret-gate-overlay.gate-unlocked .right-door { transform: translateX(100%); }
+
+.hazard-stripe {
+  height: 16px;
+  background: repeating-linear-gradient(45deg, #ffaa00, #ffaa00 10px, #000 10px, #000 20px);
+  box-shadow: 0 0 10px rgba(255, 170, 0, 0.5);
+  border-radius: 2px;
+}
+.door-bolt {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #33443a 0%, #0d1611 100%);
+  border: 2px solid #557762;
+  box-shadow: inset 0 0 6px #000, 0 0 8px rgba(0,0,0,0.8);
+  margin: 12px 0;
+}
+
+.gate-security-badge {
+  font-family: 'Orbitron', monospace;
+  font-size: 11px;
+  font-weight: 900;
+  color: #ff2255;
+  letter-spacing: 2px;
+  text-shadow: 0 0 10px #ff2255;
+  margin-bottom: 12px;
+}
+
+.btn-scan-laser {
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 34, 85, 0.4), transparent);
+  animation: laserSweepBtn 2s infinite;
+}
+
+@keyframes laserSweepBtn {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+/* Card Chamfered Corner Brackets */
+.card-bracket {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border: 2px solid #00f0ff;
+  pointer-events: none;
+}
+.card-bracket.tl { top: 4px; left: 4px; border-right: none; border-bottom: none; }
+.card-bracket.tr { top: 4px; right: 4px; border-left: none; border-bottom: none; }
+.card-bracket.bl { bottom: 4px; left: 4px; border-right: none; border-top: none; }
+.card-bracket.br { bottom: 4px; right: 4px; border-left: none; border-top: none; }
+
+.holo-hex-grid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: radial-gradient(#00f0ff 1px, transparent 1px);
+  background-size: 8px 8px;
+  opacity: 0.25;
+  pointer-events: none;
+}
+
+.btn-plasma-charge {
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(0, 240, 255, 0.4), transparent);
+  animation: laserSweepBtn 2s infinite;
+}
+
+/* Main Diegetic CyberDeck Chassis */
+.diegetic-cyberdeck-chassis {
+  position: relative;
+  border: 3px solid rgba(0, 255, 102, 0.35);
+  background: radial-gradient(ellipse at 50% 30%, #05130b 0%, #010403 100%);
+  box-shadow: 0 0 45px rgba(0, 255, 102, 0.25), inset 0 0 35px rgba(0, 0, 0, 0.9);
+}
+
+.deck-chassis-bezel {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  border: 3px solid #00ff66;
+  z-index: 10;
+  pointer-events: none;
+}
+.deck-chassis-bezel.tl { top: 2px; left: 2px; border-right: none; border-bottom: none; }
+.deck-chassis-bezel.tr { top: 2px; right: 2px; border-left: none; border-bottom: none; }
+.deck-chassis-bezel.bl { bottom: 2px; left: 2px; border-right: none; border-top: none; }
+.deck-chassis-bezel.br { bottom: 2px; right: 2px; border-left: none; border-top: none; }
+
+.chassis-status-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 16px;
+  background: #020603;
+  border-bottom: 1px solid rgba(0, 255, 102, 0.25);
+}
+
+.chassis-led-cluster {
+  display: flex;
+  gap: 8px;
+}
+.c-led {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.c-led.led-green { background: #00ff66; box-shadow: 0 0 8px #00ff66; }
+.c-led.led-cyan { background: #00f0ff; box-shadow: 0 0 8px #00f0ff; }
+.c-led.led-amber { background: #ffaa00; box-shadow: 0 0 8px #ffaa00; }
+.c-led.led-red { background: #ff0055; box-shadow: 0 0 8px #ff0055; }
+
+.chassis-brand-tag {
+  font-family: 'Orbitron', monospace;
+  font-size: 10px;
+  font-weight: 800;
+  color: #00f0ff;
+  letter-spacing: 1.5px;
+}
+
+.chassis-heat-grille {
+  display: flex;
+  gap: 3px;
+}
+.chassis-heat-grille span {
+  width: 4px;
+  height: 12px;
+  background: #11261b;
+  border: 1px solid #1e4530;
+  border-radius: 1px;
+}
+
+
 

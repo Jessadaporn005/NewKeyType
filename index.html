@@ -24,20 +24,26 @@
   <link rel="stylesheet" href="css/wifi.css">
 </head>
 <body class="crt-scanlines">
-  <!-- Initial Boot Sequence Screen -->
-  <div id="bootScreenOverlay" class="boot-screen">
+  <!-- Initial Boot Sequence Screen (Aerospace Quantum Flight Terminal) -->
+  <div id="bootScreenOverlay" class="boot-screen diegetic-terminal">
+    <!-- 4 Heavy Angled Aerospace Chassis Corner Bezels -->
+    <div class="chassis-bezel-corner tl"></div>
+    <div class="chassis-bezel-corner tr"></div>
+    <div class="chassis-bezel-corner bl"></div>
+    <div class="chassis-bezel-corner br"></div>
+
     <!-- Cyberpunk Top HUD Telemetry Brackets -->
     <div class="boot-hud-topbar">
       <div class="boot-hud-tl">
-        <span class="hud-indicator-dot"></span>
-        <span class="hud-txt-primary">[ PROTOCOL: DEFCON-1 // CLASSIFIED BLACK-OPS ENCLAVE ]</span>
+        <span class="hud-indicator-dot pulse-red"></span>
+        <span class="hud-txt-primary">[ DEFCON-1 // QUANTUM MAINFRAME GENESIS ]</span>
       </div>
       <div class="boot-hud-tc">
-        <span class="hud-txt-dim">QUANTUM NEURAL LINK: </span>
-        <span class="hud-txt-cyan">ONLINE (14.25 GHz)</span>
+        <span class="hud-txt-dim">NEURAL CLOCK: </span>
+        <span class="hud-txt-cyan">14.25 GHz [ALL-CORE LOCKED]</span>
       </div>
       <div class="boot-hud-tr">
-        <span class="hud-txt-dim">ENCRYPTION: </span>
+        <span class="hud-txt-dim">CIPHER: </span>
         <span class="hud-txt-primary">RSA-8192 / AES-256-GCM</span>
       </div>
     </div>
@@ -45,29 +51,31 @@
     <!-- Center Stage: 3D Holographic Quantum Reactor & Glitch Title -->
     <div id="bootScreenLogo" class="boot-logo">
       <div class="boot-holo-stage">
-        <canvas id="bootHoloCanvas" width="200" height="200" class="boot-holo-canvas"></canvas>
+        <canvas id="bootHoloCanvas" width="220" height="220" class="boot-holo-canvas"></canvas>
         <div class="skull-scanner-beam"></div>
+        <div class="holo-orbital-ring ring-1"></div>
+        <div class="holo-orbital-ring ring-2"></div>
       </div>
 
       <div class="boot-title-glitch" data-text="CYBERDECK">CYBERDECK</div>
-      <div class="boot-sub-version">TERMINAL OS // MILITARY-GRADE INFILTRATION SYSTEM</div>
+      <div class="boot-sub-version">MILITARY-GRADE INFILTRATION SYSTEM // OS V3.0</div>
       
-      <!-- Hardware POST Telemetry Meter Strip -->
+      <!-- Hexagonal Hardware POST Telemetry Hub -->
       <div class="boot-hardware-telemetry">
-        <div class="hw-gauge-item"><span>CPU CLOCK:</span> <strong>14.25 GHz [OVERCLOCKED]</strong></div>
-        <div class="hw-gauge-item"><span>RAM BANK:</span> <strong>64 GB DDR5 [CHECKED]</strong></div>
-        <div class="hw-gauge-item"><span>NEURAL LINK:</span> <strong>STABLE [0.12ms]</strong></div>
-        <div class="hw-gauge-item"><span>SECURITY ENCLAVE:</span> <strong>RSA-8192 [ENCRYPTED]</strong></div>
+        <div class="hw-gauge-item"><span class="hw-lbl">CPU CLOCK:</span> <strong class="hw-val">14.25 GHz [OVERCLOCKED]</strong></div>
+        <div class="hw-gauge-item"><span class="hw-lbl">RAM BANK:</span> <strong class="hw-val">64 GB DDR5 [CHECKED]</strong></div>
+        <div class="hw-gauge-item"><span class="hw-lbl">NEURAL LINK:</span> <strong class="hw-val">STABLE [0.12ms]</strong></div>
+        <div class="hw-gauge-item"><span class="hw-lbl">SECURITY ENCLAVE:</span> <strong class="hw-val">RSA-8192 [ENCRYPTED]</strong></div>
       </div>
 
-      <div id="bootScreenReady" class="boot-ready hidden">SYSTEM READY... ENTERING CLASSIFIED ENCLAVE.</div>
+      <div id="bootScreenReady" class="boot-ready hidden">[ SYSTEM READY... UNLOCKING AIR-GAPPED VAULT ]</div>
     </div>
 
     <!-- Full-Width Procedural Terminal Log Stream -->
     <div class="boot-logs-wrapper">
       <div class="boot-logs-header">
-        <span>[ QUANTUM BOOTSTRAP & KERNEL TELEMETRY LOG STREAM ]</span>
-        <span class="log-baud" id="bootBaudRate">RATE: 1000 Hz // HIGH-BANDWIDTH</span>
+        <span>[ QUANTUM BOOTSTRAP &amp; KERNEL TELEMETRY LOG STREAM ]</span>
+        <span class="log-baud" id="bootBaudRate">RATE: 1000 Hz // ULTRA-BANDWIDTH</span>
       </div>
       <div id="bootScreenLogs" class="boot-logs"></div>
       <div class="boot-progress-container">
@@ -88,10 +96,28 @@
   <canvas id="particleCanvas"></canvas>
   
   <!-- =========================================================================
-       0. CLASSIFIED BIOMETRIC / SECRET MASTER PASSCODE GATE SCREEN
+       0. CLASSIFIED BIOMETRIC / SECRET MASTER PASSCODE GATE SCREEN (HEAVY BLAST DOORS)
        ========================================================================= -->
   <div class="secret-gate-overlay hidden" id="secretGateOverlay">
+    <!-- Heavy Titanium Vault Blast Doors that Split Horizontally -->
+    <div class="vault-blast-door left-door">
+      <div class="hazard-stripe top"></div>
+      <div class="door-bolt b1"></div>
+      <div class="door-bolt b2"></div>
+      <div class="door-bolt b3"></div>
+      <div class="hazard-stripe bottom"></div>
+    </div>
+    <div class="vault-blast-door right-door">
+      <div class="hazard-stripe top"></div>
+      <div class="door-bolt b1"></div>
+      <div class="door-bolt b2"></div>
+      <div class="door-bolt b3"></div>
+      <div class="hazard-stripe bottom"></div>
+    </div>
+
     <div class="secret-gate-card">
+      <div class="gate-security-badge">// DEFCON-1 TOP SECRET FACILITY //</div>
+      
       <!-- Rotating Biometric Laser Reticle Scanner -->
       <div class="gate-biometric-reticle">
         <svg class="reticle-svg" viewBox="0 0 100 100">
@@ -107,14 +133,17 @@
       </div>
 
       <div class="gate-title" data-text="CLASSIFIED BLACK-OPS ENCLAVE">CLASSIFIED BLACK-OPS ENCLAVE</div>
-      <div class="gate-sub">LEVEL 5 TOP SECRET ENCRYPTION // AUTHORIZED OPERATOR ONLY</div>
+      <div class="gate-sub">LEVEL 5 MILITARY VAULT // RESTRICTED OPERATOR CLEARANCE ONLY</div>
       
       <div class="gate-input-box">
         <span class="gate-prompt-sym">#</span>
         <input type="password" id="secretGateInput" class="gate-input" placeholder="ENTER MASTER PASSCODE..." autocomplete="off" autofocus>
       </div>
 
-      <button class="gate-auth-btn" id="btnSecretGateSubmit">[ AUTHENTICATE MASTER ACCESS ]</button>
+      <button class="gate-auth-btn" id="btnSecretGateSubmit">
+        <span class="btn-scan-laser"></span>
+        [ AUTHENTICATE MASTER ACCESS ]
+      </button>
       <div class="gate-error-msg hidden" id="gateErrorMsg">✖ ACCESS DENIED: INVALID PASSCODE // INTRUSION LOGGED</div>
 
       <div class="gate-stream-box hidden" id="gateStreamBox">
@@ -124,16 +153,23 @@
   </div>
 
   <!-- =========================================================================
-       1. CINEMATIC FULL-SCREEN HACKER LOGIN OVERLAY (3D PARALLAX CARD)
+       1. CINEMATIC FULL-SCREEN HACKER LOGIN OVERLAY (CYBERDECK NEURAL JACK-IN)
        ========================================================================= -->
   <div class="hacker-login-overlay hidden" id="hackerLoginOverlay">
     <div class="login-terminal-card" id="loginTerminalCard">
+      <!-- 4 Chamfered Card Corner Accents -->
+      <span class="card-bracket tl"></span>
+      <span class="card-bracket tr"></span>
+      <span class="card-bracket bl"></span>
+      <span class="card-bracket br"></span>
+
       <!-- Operator Hologram Avatar Header -->
       <div class="login-avatar-stage">
         <div class="operator-holo-avatar">
           <div class="holo-avatar-head">
             <div class="holo-cyber-visor"></div>
           </div>
+          <div class="holo-hex-grid"></div>
         </div>
         <div class="biometric-voice-wave">
           <span class="v-bar"></span><span class="v-bar"></span><span class="v-bar"></span><span class="v-bar"></span><span class="v-bar"></span><span class="v-bar"></span><span class="v-bar"></span>
@@ -142,7 +178,7 @@
 
       <div class="login-card-header">
         <div class="login-title-glitch" data-text="CYBER//TYPE MAINFRAME">CYBER//TYPE MAINFRAME</div>
-        <div class="login-security-tag">RESTRICTED ROOT ACCESS // OPERATOR AUTHENTICATION</div>
+        <div class="login-security-tag">NEURAL JACK-IN CONSOLE // OPERATOR AUTHENTICATION</div>
       </div>
 
       <div class="login-card-body">
@@ -163,11 +199,12 @@
         </div>
 
         <button class="login-submit-btn" id="btnLoginSubmit">
+          <span class="btn-plasma-charge"></span>
           [ ENGAGE NEURAL LINK &amp; LOGIN ]
         </button>
 
         <div class="login-hint-text">
-          <span>* Restricted Access Only</span>
+          <span>* Level 5 Restricted Neural Interface</span>
         </div>
       </div>
     </div>
@@ -302,11 +339,29 @@
   </div>
 
   <!-- =========================================================================
-       3. MAIN APPLICATION: WINDOWS 11 COMMAND PROMPT & HARDWARE DECK
+       3. MAIN APPLICATION: DIEGETIC CYBERDECK COMMAND FORTRESS
        ========================================================================= -->
-  <div class="terminal-app-container hidden" id="mainTerminalContainer">
+  <div class="terminal-app-container diegetic-cyberdeck-chassis hidden" id="mainTerminalContainer">
+    <!-- 4 Heavy Metallic Chassis Corner Bezels & Status LED Cluster -->
+    <div class="deck-chassis-bezel tl"></div>
+    <div class="deck-chassis-bezel tr"></div>
+    <div class="deck-chassis-bezel bl"></div>
+    <div class="deck-chassis-bezel br"></div>
+
+    <div class="chassis-status-strip">
+      <div class="chassis-led-cluster">
+        <span class="c-led led-green" title="POWER: ON"></span>
+        <span class="c-led led-cyan" title="NEURAL LINK: SYNC"></span>
+        <span class="c-led led-amber" title="TX/RX: ACTIVE"></span>
+        <span class="c-led led-red" title="FIREWALL: ARMED"></span>
+      </div>
+      <div class="chassis-brand-tag">CYBER//DECK OS ➔ MODEL: NETRUNNER-X9</div>
+      <div class="chassis-heat-grille">
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+      </div>
+    </div>
     
-    <!-- Windows 11 Terminal Tabbed Title Bar -->
+    <!-- CyberDeck Tabbed Title Bar -->
     <header class="win11-titlebar">
       <div class="tab-strip" id="tabStrip">
         <div class="terminal-tab active">
@@ -315,7 +370,7 @@
           <button class="tab-close-btn" title="Close Tab [Ctrl+W]">✕</button>
         </div>
         <button class="tab-add-btn" id="tabAddBtn" title="Open new tab [Ctrl+T]">+</button>
-        <button class="tab-dropdown-btn" id="tabDropdownBtn" title="Shell profiles & Subsystems">⌄</button>
+        <button class="tab-dropdown-btn" id="tabDropdownBtn" title="Shell profiles &amp; Subsystems">⌄</button>
       </div>
 
       <div class="window-controls">
