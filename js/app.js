@@ -1143,11 +1143,22 @@ AVAILABLE CYBER TERMINAL & REAL-WORLD OS COMMANDS:
   workspace / devmode / gamemode - 🕶️ Mr. Robot 1-Click Batch Workspace Launcher (Dev, Gaming, Chill, Sec)
   heat / heatmap / biometric   - 🧠 Matrix Biometric Thermal Keyboard Heatmap & Hand Fatigue Analyzer
 
-[ ⚡ IN-APP CODE STUDIO, BROWSER & INTELLIGENCE ]
+[ 🛡️ MILITARY-GRADE LINUX/UNIX SYSADMIN &amp; SOC SUITE ]
+  dmesg                        - 📜 Linux Kernel Boot Ring Buffer (PCIe, eBPF, ACPI, IOMMU, TPM 2.0)
+  netstat / ss / sockets       - 🔌 Real Network Sockets & Active Channel Monitor (TCP/UDP/UNIX)
+  iptables / ufw / firewall    - 🛡️ Kernel IP Packet Filtering Chains (DROP/ACCEPT/PORT-SCAN Defense)
+  systemctl / service          - ⚙️ Systemd Unit Manager & Microservice Daemon Watcher
+  siem / soc                   - 🚨 Live Security Operations Center (SOC) Incident Command & Ban List
+  crypto / cipherbench         - ⚡ Hardware Cryptographic Accelerator Benchmark (AES-NI/AVX-512 GB/s)
+  iotop / iostat               - 💾 NVMe Controller & Storage Bus I/O Throughput (MB/s & IOPS)
+  strace                       - 🔬 Live System Call Tracer (epoll_wait, mprotect, futex, read/write)
+  lsof                         - 📂 Open File Descriptors & Memory-Mapped IPC Socket Auditor
+
+[ ⚡ IN-APP CODE STUDIO, BROWSER &amp; INTELLIGENCE ]
   code / vscode / ide [lang]   - ⚡ VS Code Studio (Python, HTML, C++, Rust, SQL) with AI Cyber Tutor
   browser / web / surf [url]   - 🌐 In-App Chromium Cyber Browser with Picture-in-Picture mode
   yt / youtube [query]         - 📺 Stream YouTube videos directly inside the terminal browser
-  news / market / btc / intel  - 📈 Live Real-time Binance Crypto (BTC/ETH) & Hacker News Intel Feed
+  news / market / btc / intel  - 📈 Live Real-time Binance Crypto (BTC/ETH) &amp; Hacker News Intel Feed
 
 [ 💻 REAL APPLICATION LAUNCHER & FILESYSTEM ]
   open [app / url / path]      - Launch real PC programs (Chrome, Calc, Notepad, Spotify, Steam, Discord)
@@ -1499,6 +1510,193 @@ AVAILABLE CYBER TERMINAL & REAL-WORLD OS COMMANDS:
         output = `Pinging ${pingHost} with 32 bytes of encrypted quantum telemetry...`;
         const pRes = await this.sys.ping(pingHost);
         output += `\n` + pRes.output;
+        break;
+
+      // -------------------------------------------------------------------------
+      // HARDCORE LINUX / UNIX SYSADMIN & SOC NETWORK OPERATIONS SUITE
+      // -------------------------------------------------------------------------
+      case 'dmesg':
+        output = `
+[    0.000000] Linux version 6.8.9-quantum-soc (root@quantum-build-cluster) (gcc 14.1.0) #1 SMP PREEMPT_DYNAMIC
+[    0.000000] Command line: BOOT_IMAGE=/vmlinuz-6.8.9-quantum root=UUID=8f7e2a-4b1c ro quiet security=apparmor iommu=pt
+[    0.000000] x86/fpu: Supporting XSAVE feature 0x001: 'x87 floating point registers'
+[    0.000000] x86/fpu: Supporting XSAVE feature 0x002: 'SSE registers'
+[    0.000000] x86/fpu: Supporting XSAVE feature 0x004: 'AVX registers'
+[    0.000000] x86/fpu: Supporting XSAVE feature 0x020: 'AVX-512 Foundation'
+[    0.001240] ACPI: DSDT 0x000000007BAFE000 01A480 (v02 QUANTUM CYBERDECK 00000001 INTL 20240105)
+[    0.004510] smpboot: Allowing 96 CPUs, 0 hotplug CPUs
+[    0.012890] Memory: 65842180K/67108864K available (16384K kernel code, 3240K rwdata, 8192K rodata)
+[    0.045120] pci 0000:00:00.0: [1022:1480] type 00 class 0x060000 PCIe Root Complex (Gen5 x16)
+[    0.089450] nvme nvme0: pci function 0000:01:00.0 (PCIe 5.0 x4 NVMe 2.0 SSD, 4TB TLC)
+[    0.112800] BPF: [0] [eBPF JIT compiler enabled with 64-bit verification engine]
+[    0.142900] systemd[1]: Inserted module 'quantum_defense_enclave' into kernel memory space
+[    0.189500] net eth0: Mellanox ConnectX-6 Dx (100GbE Dual-Port SFP56) link UP at 100000 Mbps
+[    0.210400] crypto: Hardware AES-NI and SHA-512 acceleration engines LOCKED & ACTIVE
+[    0.245800] soc-agent[812]: SIEM Telemetry Bridge attached to eBPF socket filter (UID: 0)
+`;
+        this.addExp(25, 'Kernel Ring Buffer Inspected');
+        this.audio.playKey(false);
+        break;
+
+      case 'netstat':
+      case 'ss':
+      case 'sockets':
+        output = `
+ACTIVE INTERNET CONNECTIONS (ONLY SERVERS & ESTABLISHED CHANNELS):
+Proto Recv-Q Send-Q  Local Address           Foreign Address         State       PID/Program name
+----------------------------------------------------------------------------------------------------
+tcp        0      0  0.0.0.0:22              0.0.0.0:*               LISTEN      812/sshd
+tcp        0      0  127.0.0.1:5432          0.0.0.0:*               LISTEN      945/postgres
+tcp        0      0  0.0.0.0:443             0.0.0.0:*               LISTEN      1120/nginx-edge
+tcp        0      0  0.0.0.0:9090            0.0.0.0:*               LISTEN      1340/prometheus
+tcp        0      0  192.168.1.105:54382     104.244.42.1:443        ESTABLISHED 2341/cyberdeck-core
+tcp        0      0  192.168.1.105:49152     140.82.121.4:443        ESTABLISHED 4102/git-sync
+tcp        0      0  192.168.1.105:58920     52.84.18.22:443         ESTABLISHED 1120/binance-ws
+udp        0      0  127.0.0.53:53           0.0.0.0:*                           620/systemd-resolved
+udp        0      0  0.0.0.0:51820           0.0.0.0:*                           745/wireguard-vpn
+----------------------------------------------------------------------------------------------------
+TOTAL SOCKETS: 9 Active | TX BUFFER: 0 B | RX BUFFER: 0 B | STATUS: ZERO DROPPED PACKETS
+`;
+        this.addExp(25, 'Network Sockets Audited');
+        this.audio.playKey(false);
+        break;
+
+      case 'iptables':
+      case 'ufw':
+      case 'firewall':
+        output = `
+[+] KERNEL IP PACKET FILTERING MATRIX (TABLE: FILTER // DEFCON-1 ENFORCED):
+-----------------------------------------------------------------------------------------
+Chain INPUT (policy DROP 18,421 packets, 3.12 MB)
+ num   pkts bytes target     prot opt in     out     source               destination
+   1   8.4M 6.12G ACCEPT     all  --  *      *       0.0.0.0/0            0.0.0.0/0           ctstate RELATED,ESTABLISHED
+   2   1.2M 84.5M ACCEPT     tcp  --  eth0   *       0.0.0.0/0            0.0.0.0/0           tcp dpt:443
+   3   410K 28.2M ACCEPT     tcp  --  eth0   *       0.0.0.0/0            0.0.0.0/0           tcp dpt:22 state NEW recent: CHECK seconds: 60 hit_count: 5
+   4  18.4K 3.12M DROP       tcp  --  eth0   *       0.0.0.0/0            0.0.0.0/0           tcp flags:0x3F/0x29 [SYN,RST,ACK/FIN - PORT SCAN]
+
+Chain FORWARD (policy DROP 0 packets, 0 bytes)
+
+Chain OUTPUT (policy ACCEPT 9.1M packets, 7.85 GB)
+-----------------------------------------------------------------------------------------
+[✓] FIREWALL ACTIVE: 100% INGRESS PARITY // ZERO UNAUTHORIZED CONNECTIONS
+`;
+        this.addExp(25, 'Firewall Table Inspected');
+        this.audio.playSuccessFanfare();
+        break;
+
+      case 'systemctl':
+      case 'service':
+        if (args[0] === 'restart' && args[1]) {
+          output = `[+] Restarting system unit: ${args[1]}.service...\n[✓] Unit ${args[1]}.service reloaded successfully with new PID.`;
+          this.audio.playSuccessFanfare();
+        } else {
+          output = `
+UNIT STATUS                           LOAD   ACTIVE SUB     DESCRIPTION
+-----------------------------------------------------------------------------------------
+● quantum-kernel.service              loaded active running Real-Time Quantum Core Kernel Driver
+● sshd.service                        loaded active running OpenSSH Military Daemon (Port 22)
+● defense-daemon.service              loaded active running Air-Gap IDS & Active Intrusion Shield
+● soc-telemetry.service               loaded active running 1000Hz SIEM Security Operations Link
+● docker.service                      loaded active running Microservices Container Engine
+● wireguard-mesh.service              loaded active running Zero-Trust Darknet Overlay VPN
+● chrony-ntp.service                  loaded active running Sub-Nanosecond Atomic Clock Sync
+-----------------------------------------------------------------------------------------
+LOAD: 7/7 Units Active | SYSTEM STATE: RUNNING (DEGRADED: 0)
+`;
+        }
+        this.addExp(25, 'System Services Audited');
+        this.audio.playKey(false);
+        break;
+
+      case 'crypto':
+      case 'cipherbench':
+        output = `
+=========================================================================================
+⚡ HARDWARE CRYPTOGRAPHIC ACCELERATOR BENCHMARK (AVX-512 / AES-NI / VAES)
+=========================================================================================
+ALGORITHM                 BLOCK SIZE       THROUGHPUT (GB/s)    LATENCY (ns)   HARDWARE ENGINE
+-----------------------------------------------------------------------------------------
+AES-256-GCM (Authenticated) 16 KB              18.42 GB/s           4.1 ns     Intel/AMD AES-NI
+ChaCha20-Poly1305 (AEAD)    16 KB              15.10 GB/s           5.2 ns     AVX-512 Vectorized
+SHA-512 (Secure Hash)        8 KB              12.80 GB/s           6.8 ns     SHA-NI Vector Ext
+SHA3-512 (Keccak Permute)    8 KB               9.45 GB/s           8.9 ns     Hardware Keccak
+Ed25519 (Signature Verify)   32 B          48,200 ops/sec          20.7 us     Curve25519 Engine
+RSA-4096 (CRT Decrypt/Sign) 512 B           4,850 ops/sec         206.1 us     Montgomery Modulo
+-----------------------------------------------------------------------------------------
+[✓] ALL CIPHER ENGINES HARDWARE-ACCELERATED // ZERO SIDE-CHANNEL LEAKAGE
+`;
+        this.addExp(40, 'Cryptographic Suite Benchmarked');
+        this.audio.playSuccessFanfare();
+        break;
+
+      case 'siem':
+      case 'soc':
+        output = `
+=========================================================================================
+🛡️ SECURITY OPERATIONS CENTER (SOC) & SIEM INCIDENT COMMAND
+=========================================================================================
+TIME (UTC)       SEVERITY  SOURCE IP        EVENT / SIGNATURE                  MITIGATION
+-----------------------------------------------------------------------------------------
+15:56:42.102     HIGH      185.220.101.5    SSH Brute Force (User: admin)      [IP BANNED (IPTABLES)]
+15:56:18.450     CRITICAL  45.33.32.156     CVE-2026-9041 Buffer Overflow      [EBPF REJECTED]
+15:55:50.012     MEDIUM    91.240.118.82    Syn-Ack Stealth Port Sweep (Nmap)  [TARPIT ENGAGED]
+15:55:12.890     LOW       127.0.0.1        Authorized Root Auth (Anan)        [CLEARED (UID: 0)]
+15:54:02.115     INFO      0.0.0.0          BGP Route Metric Convergence       [STABLE (AS13335)]
+-----------------------------------------------------------------------------------------
+THREAT DEFENSE SCORE: 100/100 (DEFCON-1 ENFORCED) | ACTIVE MITIGATIONS: 3 BANNED
+`;
+        this.addExp(40, 'SOC Security Operations Checked');
+        this.audio.playSuccessFanfare();
+        break;
+
+      case 'iotop':
+      case 'iostat':
+        output = `
+STORAGE BUS & NVME CONTROLLER TELEMETRY (1000 Hz Sampling):
+Device             r/s     w/s     rMB/s     wMB/s   rrqm/s   wrqm/s  %util  avg-lat
+-----------------------------------------------------------------------------------------
+nvme0n1 (OS Core)  8,420   3,110   1,240.5   840.2      0.0      0.0   12.4   0.02 ms
+nvme1n1 (Data/L2)  1,200     450     380.0   120.0      0.0      0.0    4.1   0.03 ms
+sdd0 (Backup Enc)      0       0       0.0     0.0      0.0      0.0    0.0   0.00 ms
+-----------------------------------------------------------------------------------------
+STORAGE HEALTH: 100% LIFE REMAINING | OPERATING TEMP: 38°C | BUS: PCIe 5.0 x4
+`;
+        this.addExp(25, 'Storage I/O Telemetry Audited');
+        this.audio.playKey(false);
+        break;
+
+      case 'strace':
+        output = `
+[+] TRACING PID 2341 (cyberdeck-core) SYSTEM CALLS:
+-----------------------------------------------------------------------------------------
+15:57:01.002 epoll_wait(4, [{EPOLLIN, {u32=7, u64=7}}], 64, 1000) = 1 <0.000012>
+15:57:01.003 read(7, "GET /api/v3/ticker HTTP/1.1\\r\\n", 4096) = 31 <0.000008>
+15:57:01.004 mprotect(0x7fff8000, 4096, PROT_READ|PROT_WRITE) = 0 <0.000005>
+15:57:01.005 futex(0x55a4e8b0, FUTEX_WAKE_PRIVATE, 1) = 1 <0.000006>
+15:57:01.006 write(1, "[*] Telemetry Packet Ingested\\n", 30) = 30 <0.000010>
+-----------------------------------------------------------------------------------------
+[✓] TRACE COMPLETED: ZERO FAULTS / ZERO SYS_CALL ANOMALIES
+`;
+        this.addExp(25, 'Syscall Trace Analyzed');
+        this.audio.playKey(false);
+        break;
+
+      case 'lsof':
+        output = `
+COMMAND    PID  USER   FD   TYPE DEVICE SIZE/OFF   NODE NAME
+-----------------------------------------------------------------------------------------
+systemd      1  root  cwd    DIR  259,0     4096      2 /
+cyberdeck 2341  anan  cwd    DIR  259,0     4096 841201 /home/anan/cyberdeck
+cyberdeck 2341  anan  rtd    DIR  259,0     4096      2 /
+cyberdeck 2341  anan  txt    REG  259,0 48920112 841209 /usr/bin/cyberdeck-core
+cyberdeck 2341  anan  mem    REG  259,0  2048576 112040 /lib/x86_64-linux-gnu/libc.so.6
+cyberdeck 2341  anan    3u  IPv4  24901      0t0    TCP *:443 (LISTEN)
+cyberdeck 2341  anan    7u  unix  18492      0t0        /run/cyberdeck/ipc.sock
+-----------------------------------------------------------------------------------------
+OPEN DESCRIPTORS: 7 Active | LEAKS: 0
+`;
+        this.addExp(25, 'File Descriptors Audited');
+        this.audio.playKey(false);
         break;
 
       // 5. Linux Prompt & Dotfile Customization

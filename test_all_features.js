@@ -375,6 +375,14 @@ async function runTests() {
   kb.spawnKeystrokeSparks(mockKeyEl, true);
   assert(typeof kb.spawnKeystrokeSparks === 'function', 'Kinetic keystroke sparks and plasma shockwave generator verified');
 
+  // 24. Hardcore Linux SysAdmin & SOC Tooling Verification
+  console.log('\n[24] Testing Linux SysAdmin & SOC Tooling in app.js...');
+  const appSource = await import('fs').then(fs => fs.readFileSync('./js/app.js', 'utf8'));
+  assert(appSource.includes("case 'dmesg':") && appSource.includes("case 'netstat':"), 'dmesg and netstat commands registered');
+  assert(appSource.includes("case 'iptables':") && appSource.includes("case 'systemctl':"), 'iptables and systemctl commands registered');
+  assert(appSource.includes("case 'crypto':") && appSource.includes("case 'siem':"), 'crypto accelerator benchmark and SOC incident command registered');
+  assert(appSource.includes("case 'iotop':") && appSource.includes("case 'strace':") && appSource.includes("case 'lsof':"), 'iotop, strace, and lsof diagnostics registered');
+
   console.log('\n====================================================');
   console.log(`🏁 TEST RESULTS: ${passed}/${total} TESTS PASSED (100%)`);
   console.log('====================================================');
