@@ -343,6 +343,11 @@ async function runTests() {
   mockTabApp.playMatrixScrambleText(mockTextEl, 'ACCESS_GRANTED_ROOT');
   assert(mockTextEl.textContent === 'ACCESS_GRANTED_ROOT', 'Matrix scramble text resolver executed successfully');
 
+  // 21. Help Command Encyclopedia Verification
+  console.log('\n[21] Testing Help Command Encyclopedia...');
+  const appJsCode = await import('fs').then(fs => fs.readFileSync('./js/app.js', 'utf8'));
+  assert(appJsCode.includes('explorer / files / drives') && appJsCode.includes('taskmgr / htop / ps') && appJsCode.includes('wifi / wlan / radar') && appJsCode.includes('radio / music / synthwave'), 'Help command encyclopedic guide includes all newly added OS, Wi-Fi, Task Manager, Radio, and Explorer subsystems');
+
   console.log('\n====================================================');
   console.log(`🏁 TEST RESULTS: ${passed}/${total} TESTS PASSED (100%)`);
   console.log('====================================================');

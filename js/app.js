@@ -1047,63 +1047,64 @@ class WindowsTerminalApp {
         output = `
 AVAILABLE CYBER TERMINAL & REAL-WORLD OS COMMANDS:
 -----------------------------------------------------------------------------------------
-[ REAL APPLICATION LAUNCHER & DESKTOP APPS ]
-  open [app / url / path]  - Launch real PC programs (e.g. 'open chrome', 'open calc', 'open notepad',
-                             'open code', 'open spotify', 'open steam', 'open youtube', 'open discord')
-  launch / run [app]       - Alias for open (e.g. 'launch taskmgr', 'launch explorer')
+[ 🖥️ CYBER OPERATING SYSTEM & WORKSPACE SUITE ]
+  explorer / files / drives    - 📂 Cyber File Explorer & Real Desktop App Matrix (Steam, Games, Drives)
+  taskmgr / htop / ps / top    - 📊 Real System Task Manager with live telemetry waves & Process Killer
+  wifi / wlan / radar / aircrack - 📡 Cyber Wi-Fi Radar & Quantum WPA Handshake Decryptor Minigame
+  radio / music / synthwave    - 🎵 Tron 3D Web Audio FFT Visualizer & Cyberpunk Radio Stations
+  workspace / devmode / gamemode - 🕶️ Mr. Robot 1-Click Batch Workspace Launcher (Dev, Gaming, Chill, Sec)
+  heat / heatmap / biometric   - 🧠 Matrix Biometric Thermal Keyboard Heatmap & Hand Fatigue Analyzer
 
-[ LINUX / UNIX REAL FILE SYSTEM COMMANDS ]
-  ls / dir [path]          - List real files & folders with sizes & color highlights
-  pwd                      - Print real working directory
-  cd [dir / ..]            - Change real current directory on host computer
-  cat / read [file]        - Read and stream actual file contents to terminal
-  mkdir [name]             - Create real directory on computer
-  touch [name]             - Create empty file on computer
-  nano / edit [file]       - Open real file in built-in Cyber Notepad editor
-  
-[ HARDWARE DIAGNOSTICS & SYSTEM INFO ]
-  neofetch / sysinfo       - Hollywood ASCII System Dossier (CPU, RAM, OS, Uptime, Host)
-  ps / top                 - List real processes running on host computer
-  ping [host]              - Real ICMP network latency probe (e.g. 'ping google.com')
-  exec [powershell cmd]    - Run ANY native PowerShell/CMD command directly on host PC
+[ ⚡ IN-APP CODE STUDIO, BROWSER & INTELLIGENCE ]
+  code / vscode / ide [lang]   - ⚡ VS Code Studio (Python, HTML, C++, Rust, SQL) with AI Cyber Tutor
+  browser / web / surf [url]   - 🌐 In-App Chromium Cyber Browser with Picture-in-Picture mode
+  yt / youtube [query]         - 📺 Stream YouTube videos directly inside the terminal browser
+  news / market / btc / intel  - 📈 Live Real-time Binance Crypto (BTC/ETH) & Hacker News Intel Feed
 
-[ CYBER CUSTOMIZATION & LINUX DOTFILES ]
+[ 💻 REAL APPLICATION LAUNCHER & FILESYSTEM ]
+  open [app / url / path]      - Launch real PC programs (Chrome, Calc, Notepad, Spotify, Steam, Discord)
+  launch / run / start [app]   - Alias for open (e.g. 'open code', 'launch taskmgr')
+  ls / dir [path]              - List real files & folders with sizes & color highlights
+  pwd                          - Print real working directory
+  cd [dir / ..]                - Change real current directory on host computer
+  cat / read [file]            - Read and stream actual file contents to terminal
+  mkdir [name]                 - Create real directory on computer
+  touch [name]                 - Create empty file on computer
+  nano / edit [file]           - Open real file in built-in Cyber Notepad editor
+  encrypt [file] [key]         - AES-256 military-grade file encryption
+  shred [file]                 - Secure multi-pass data wiper
+  neofetch / sysinfo           - Hollywood ASCII System Dossier (CPU, RAM, OS, Uptime, Host)
+  ping [host]                  - Real ICMP network latency probe (e.g. 'ping google.com')
+  exec [powershell cmd]        - Run ANY native PowerShell/CMD command directly on host PC
+
+[ 🎮 HACKING SIMULATORS, GAMES & ROGUELITE ]
+  roguelite / rl / crawl       - ✨ Cyberspace Node-Crawl Roguelite (Hacky Minigames & Mainframe Boss)
+  academy [1-10]               - 🎓 Touch Typing Academy (10-Finger Kinesthetic Key Drills)
+  hacker [1-4|stream]          - 💻 Cyber Infiltration Simulator with Live Automated Stream
+  speed [0|15|30|60]           - ⚡ Speed Typing Rush ('speed 0' = Endless Marathon Benchmark)
+  breach / cyberpunk           - 🧩 Cyberpunk 2077 Breach Protocol Hex Matrix Mini-game
+  threat / globe               - 🌍 Watch Dogs Live Global Cyber Threat War Map
+  payload / ducky              - 🦆 Mr. Robot USB Rubber Ducky Attack Payload Compiler & Flasher
+  camhack / cctv               - 📹 CCTV Camera Satellite Video Feed Interceptor
+  sniff / wireshark            - 📡 Real-time Network Packet Sniffer Interceptor
+  emp / sentinel               - ⚡ The Matrix EMP Shockwave Blast (or Ctrl+E)
+  crt / glitch                 - 📺 Retro CRT Phosphor Distortion & Barrel Scanlines
+  scan [target]                - 🔍 Live Hollywood Nmap Port Vulnerability Scanner
+  crack / decrypt              - 🔐 Interactive Matrix Password Hash Cracker
+  bgm [on|off]                 - 🎶 Toggle Procedural Dark Cyber Synthwave Soundtrack
+
+[ 🛠️ CYBER CUSTOMIZATION & SHORTCUTS ]
   prompt [kali|arch|ubuntu|matrix|win] - Customize terminal prompt style
-  alias [key]=[command]    - Register permanent custom command shortcuts
-  theme [name]             - Visual theme ('matrix', 'neon', 'amber', 'red', 'white')
-  sound [preset]           - Audio profile ('hollywood', 'mechanical', 'terminal', 'mute')
-  lang [en|th]             - Switch keyboard layout
-
-[ SHADOW NETWORK & HACKING MISSIONS ]
-  bbs                      - Open Shadow BBS to view hacking contracts & target IPs
-  nmap [ip]                - Scan a target IP for open ports and vulnerabilities
-  ssh [ip]                 - Attempt secure shell infiltration into target server
-  hack                     - Extract confidential data (Must be connected via SSH)
-  clearlogs                - Wipe connection logs to reduce Active Trace level
-  disconnect               - Sever current SSH connection to target
-  shop                     - Access the Black Market to purchase cyber upgrades
-
-[ HACKER MISSIONS, GAMES & ROGUELITE ]
-  roguelite / rl / crawl   - ✨ Cyberspace Node-Crawl Roguelite (Hacky-Inspired)
-  academy [num]            - Touch Typing Academy
-  hacker [1-4|stream]      - Cyber Infiltration Simulator
-  speed [0|15|30|60]       - Speed Benchmark ('speed 0' = Endless Marathon)
-  breach                   - Cyberpunk 2077 Breach Protocol Hex Code Mini-game
-  threat / globe           - Watch Dogs Live Cyber Threat War Map
-  emp / sentinel           - The Matrix EMP Shockwave Blast (or Ctrl+E)
-  crt / glitch             - Retro CRT Monitor Barrel Distortion & Scanlines
-  payload / ducky          - Mr. Robot USB Rubber Ducky Attack Payload Compiler
-  scan [target]            - Live Hollywood Port Vulnerability Scanner
-  crack / decrypt          - Interactive Matrix Password Hash Cracker
-  bgm [on|off]             - Toggle Procedural Dark Cyber Synthwave Soundtrack
-
-[ CONTROL CENTER, ANALYTICS & SHORTCUTS ]
-  palette / menu           - Open Command Palette (or Ctrl+K / Ctrl+P)
-  settings / config        - Terminal Settings & Live Theme/Sound Matrix (or Ctrl+,)
-  dashboard / dossier      - Operator Analytics, WPM Progression & Achievements
-  whoami / stats           - View Quick Netrunner Dossier
-  cls / clear              - Clear screen
-  logout / exit            - Return to login / CMD prompt
+  alias [key]=[command]        - Register permanent custom command shortcuts
+  theme [matrix|neon|amber|red|stealth] - Visual Cyberdeck theme
+  sound [hollywood|mechanical|terminal|mute] - Keyboard switch audio profile
+  lang [en|th]                 - Switch QWERTY / Thai Kedmanee layout
+  palette / menu               - Open Command Palette (or Ctrl+K / Ctrl+P)
+  settings / config            - Terminal Settings & Live Theme/Sound Matrix (or Ctrl+,)
+  dashboard / dossier          - Operator Analytics, WPM Progression & Achievements
+  whoami / stats               - View Quick Netrunner Dossier
+  cls / clear                  - Clear terminal screen history (or Ctrl+L)
+  logout / exit                - Return to Login / CMD prompt
 -----------------------------------------------------------------------------------------
 `;
         break;
