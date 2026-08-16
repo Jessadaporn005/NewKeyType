@@ -4,9 +4,9 @@
  * Supports:
  *   - Creating new terminal or subsystem sessions (+ button / Ctrl+T)
  *   - Shell Profile Dropdown menu (⌄ button) for spawning Browser, VS Code, Roguelite, Academy, Speed
- *   - Switching between active tabs
+ *   - Switching between active tabs with correct view state routing ('cli', 'vscode', 'browser', etc.)
  *   - Closing tabs (✕ button / Ctrl+W)
- *   - Session state persistence
+ *   - Session state persistence (Command history & input buffers)
  */
 
 export const TAB_TYPES = {
@@ -47,10 +47,11 @@ export class TabManager {
 
   bindEvents() {
     if (this.addBtnEl) {
-      this.addBtnEl.addEventListener('click', () => {
+      this.addBtnEl.addEventListener('click', (e) => {
+        e.stopPropagation();
         this.tabCounter++;
         this.createTab(TAB_TYPES.CLI, `CyberDeck (${this.tabCounter})`, true);
-        if (this.sound) this.sound.playKey(false);
+        if (this.sound && typeof this.sound.playKey === 'function') this.sound.playKey(false);
       });
     }
 
@@ -58,7 +59,7 @@ export class TabManager {
       this.dropdownBtnEl.addEventListener('click', (e) => {
         e.stopPropagation();
         this.toggleDropdownMenu();
-        if (this.sound) this.sound.playKey(false);
+        if (this.sound && typeof this.sound.playKey === 'function') this.sound.playKey(false);
       });
     }
 
@@ -99,9 +100,9 @@ export class TabManager {
     const targetTab = this.tabs.find(t => t.id === tabId);
     if (!targetTab) return;
 
-    // Save current active tab's CLI state before switching
+    // 1. Save current active tab's CLI state before switching
     const currentTab = this.tabs.find(t => t.id === this.activeTabId);
-    if (currentTab && currentTab.type === 'cli' && this.app.dom.cliHistory) {
+    if (currentTab && currentTab.type === 'cli' && this.app.dom && this.app.dom.cliHistory) {
       currentTab.historyHtml = this.app.dom.cliHistory.innerHTML;
       currentTab.inputBuffer = this.app.cliInputBuffer || '';
     }
@@ -109,19 +110,23 @@ export class TabManager {
     this.activeTabId = tabId;
     this.renderTabs();
 
-    // Launch or switch to corresponding mode
+    // 2. Launch or switch to corresponding mode with correct view state routing ('cli', 'vscode', etc.)
     if (targetTab.type === 'cli') {
       this.app.state = 'CLI_PROMPT';
-      this.app.switchViewState('viewCli');
-      if (this.app.dom.cliHistory && targetTab.historyHtml !== undefined) {
+      if (typeof this.app.switchViewState === 'function') {
+        this.app.switchViewState('cli');
+      }
+      if (this.app.dom && this.app.dom.cliHistory && targetTab.historyHtml !== undefined) {
         this.app.dom.cliHistory.innerHTML = targetTab.historyHtml;
       }
       this.app.cliInputBuffer = targetTab.inputBuffer || '';
       this.app.cliCursorPos = (targetTab.inputBuffer || '').length;
-      this.app.renderCliPrompt();
-      this.app.focusCliInput();
+      if (typeof this.app.renderCliPrompt === 'function') this.app.renderCliPrompt();
+      if (typeof this.app.focusCliInput === 'function') this.app.focusCliInput();
     } else if (targetTab.type === 'browser') {
-      if (this.app.browserEngine && typeof this.app.browserEngine.openBrowser === 'function') {
+      if (typeof this.app.launchBrowserMode === 'function') {
+        this.app.launchBrowserMode('https://www.google.com');
+      } else if (this.app.browserEngine && typeof this.app.browserEngine.openBrowser === 'function') {
         this.app.browserEngine.openBrowser('https://www.google.com', 'FULL');
       }
     } else if (targetTab.type === 'vscode') {
@@ -139,6 +144,16 @@ export class TabManager {
     if (this.sound && typeof this.sound.playKey === 'function') this.sound.playKey(false);
   }
 
+  updateActiveTabInfo(typeId, title = null, icon = null) {
+    const activeTab = this.tabs.find(t => t.id === this.activeTabId);
+    if (!activeTab) return;
+
+    activeTab.type = typeId;
+    if (title) activeTab.title = title;
+    if (icon) activeTab.icon = icon;
+    this.renderTabs();
+  }
+
   closeTab(tabId, e) {
     if (e) e.stopPropagation();
 
@@ -147,12 +162,13 @@ export class TabManager {
       const tab = this.tabs[0];
       tab.title = 'CyberDeck';
       tab.type = 'cli';
+      tab.icon = '>_';
       tab.mode = 'CLI_PROMPT';
       tab.historyHtml = '';
       tab.inputBuffer = '';
-      if (this.app.dom.cliHistory) this.app.dom.cliHistory.innerHTML = '';
+      if (this.app.dom && this.app.dom.cliHistory) this.app.dom.cliHistory.innerHTML = '';
       this.switchTab(tab.id);
-      if (this.sound) this.sound.playSuccessFanfare();
+      if (this.sound && typeof this.sound.playSuccessFanfare === 'function') this.sound.playSuccessFanfare();
       return;
     }
 
@@ -171,14 +187,11 @@ export class TabManager {
       this.renderTabs();
     }
 
-    if (this.sound) this.sound.playKey(false);
+    if (this.sound && typeof this.sound.playKey === 'function') this.sound.playKey(false);
   }
 
   renderTabs() {
     if (!this.tabStripEl) return;
-
-    // Preserve add and dropdown buttons
-    const existingButtons = this.tabStripEl.querySelectorAll('.tab-add-btn, .tab-dropdown-btn');
 
     this.tabStripEl.innerHTML = '';
 
@@ -264,20 +277,23 @@ export class TabManager {
     `;
 
     // Position menu under dropdown button
-    const rect = this.dropdownBtnEl.getBoundingClientRect();
-    menu.style.position = 'fixed';
-    menu.style.top = `${rect.bottom + 4}px`;
-    menu.style.left = `${rect.left}px`;
-    menu.style.zIndex = '9999';
+    if (this.dropdownBtnEl) {
+      const rect = this.dropdownBtnEl.getBoundingClientRect();
+      menu.style.position = 'fixed';
+      menu.style.top = `${rect.bottom + 4}px`;
+      menu.style.left = `${Math.min(window.innerWidth - 300, rect.left)}px`;
+      menu.style.zIndex = '9999';
+    }
 
     menu.querySelectorAll('.dropdown-item').forEach(item => {
-      item.addEventListener('click', () => {
+      item.addEventListener('click', (e) => {
+        e.stopPropagation();
         const typeKey = item.dataset.type.toUpperCase();
         const tabType = TAB_TYPES[typeKey] || TAB_TYPES.CLI;
         this.tabCounter++;
         this.createTab(tabType, `${tabType.name} (${this.tabCounter})`, true);
         this.closeDropdownMenu();
-        if (this.sound) this.sound.playSuccessFanfare();
+        if (this.sound && typeof this.sound.playSuccessFanfare === 'function') this.sound.playSuccessFanfare();
       });
     });
 

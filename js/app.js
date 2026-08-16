@@ -2148,6 +2148,10 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
     this.kb.clearTargetKeys();
     this.hands.clearTargetGuide();
 
+    if (this.tabManager) {
+      this.tabManager.updateActiveTabInfo('roguelite', 'Cyberspace Matrix', '🎮');
+    }
+
     this.playCyberTransition(
       'CYBERSPACE NODE INFILTRATION',
       'ESTABLISHING DARKNET ROGUELITE TUNNEL...',
@@ -2169,6 +2173,10 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
 
     this.kb.clearTargetKeys();
     this.hands.clearTargetGuide();
+
+    if (this.tabManager) {
+      this.tabManager.updateActiveTabInfo('vscode', `VS Code [${targetLang.toUpperCase()}]`, '⚡');
+    }
 
     this.playCyberTransition(
       'CYBER//CODE STUDIO IDE',
@@ -2193,6 +2201,10 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
 
     this.kb.clearTargetKeys();
     this.hands.clearTargetGuide();
+
+    if (this.tabManager) {
+      this.tabManager.updateActiveTabInfo('browser', 'In-App Browser', '🌐');
+    }
 
     this.playCyberTransition(
       'CYBER IN-APP BROWSER',
@@ -2240,6 +2252,10 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
     this.state = STATES.CLI_PROMPT;
     this.kb.clearTargetKeys();
     this.hands.clearTargetGuide();
+
+    if (this.tabManager) {
+      this.tabManager.updateActiveTabInfo('cli', 'CyberDeck', '>_');
+    }
 
     if (document.activeElement && typeof document.activeElement.blur === 'function') {
       document.activeElement.blur();

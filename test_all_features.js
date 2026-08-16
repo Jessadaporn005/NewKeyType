@@ -226,8 +226,8 @@ async function runTests() {
   assert(INTEL_STREAM_DATA.length >= 5, `INTEL_STREAM_DATA contains ${INTEL_STREAM_DATA.length} curated intelligence briefs`);
 
   const intelFeed = new CyberIntelFeed(mockTabApp, mockSound);
-  assert(intelFeed.markets.some(m => m.symbol === 'BTC/USD'), 'Market matrix contains Bitcoin telemetry');
-  assert(intelFeed.markets.some(m => m.symbol === 'NVDA'), 'Market matrix contains NVIDIA AI chips telemetry');
+  assert(intelFeed.markets.some(m => m.id === 'btc'), 'Market matrix contains Bitcoin telemetry');
+  assert(intelFeed.markets.some(m => m.id === 'nvda'), 'Market matrix contains NVIDIA AI chips telemetry');
 
   const initialBtcPrice = intelFeed.markets.find(m => m.id === 'btc').price;
   intelFeed.randomizeMarkets();
