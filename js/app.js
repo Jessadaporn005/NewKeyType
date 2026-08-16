@@ -2573,9 +2573,9 @@ OPEN DESCRIPTORS: 7 Active | LEAKS: 0
 
       case 'shop':
       case 'blackmarket':
-      case 'cyberware':
-        const curProf = profileStore.getProfile(this.username);
-        const inv = curProf.inventory || ['stock_switches'];
+      case 'cyberware': {
+        const shopProfile = profileStore.getProfile(this.username);
+        const inv = shopProfile.inventory || ['stock_switches'];
         const subAction = args[0] ? args[0].toLowerCase() : '';
         const itemArg = args[1] ? args[1].toLowerCase() : '';
 
@@ -2600,7 +2600,7 @@ OPEN DESCRIPTORS: 7 Active | LEAKS: 0
             } else if (buyRes.reason === 'ALREADY_OWNED') {
               output = `[!] You already own ${targetItem.name}. Type 'shop equip ${itemArg}' to activate.`;
             } else {
-              output = `[✗] INSUFFICIENT FUNDS. You need ${targetItem.cost} CC (Current Balance: ${curProf.credits || 0} CC).\nComplete speed runs or hacking missions to earn credits!`;
+              output = `[✗] INSUFFICIENT FUNDS. You need ${targetItem.cost} CC (Current Balance: ${shopProfile.credits || 0} CC).\nComplete speed runs or hacking missions to earn credits!`;
               this.audio.playErrorSound();
             }
           }
@@ -2619,7 +2619,7 @@ OPEN DESCRIPTORS: 7 Active | LEAKS: 0
           }
         } else {
           output = `
-BLACK MARKET CYBERWARE SHOP // CREDITS: ${curProf.credits || 0} CC
+BLACK MARKET CYBERWARE SHOP // CREDITS: ${shopProfile.credits || 0} CC
 -----------------------------------------------------------------------------------------
 [ HARDWARE & NEURAL AUGMENTATIONS ]
   1. synaptic_booster     [ 600 CC ]  - +20% EXP boost across all typing modes
@@ -2641,6 +2641,7 @@ COMMANDS:
 `;
         }
         break;
+      }
 
       case 'records':
       case 'leaderboard':
@@ -2772,23 +2773,22 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
       case 'disconnect':
         output = this.virtualNet.disconnect();
         break;
-      case 'shop':
-      case 'market':
+      case 'vshop':
+      case 'netshop':
         output = this.virtualNet.openShop(args);
         break;
       // ----------------------------------------
-      case 'profile':
-      case 'whoami':
-        const curProf = profileStore.getProfile(this.username);
+      case 'profile': {
+        const opProf = profileStore.getProfile(this.username);
         output = [
           `========================================================================`,
           `[ 👤 OPERATOR PROFILE & SECURITY CREDENTIALS ]`,
           `========================================================================`,
           `  Principal (User):     ${this.username}`,
-          `  Passphrase Status:    CONFIGURED (Active: ${curProf.password || 'Infinity'})`,
-          `  Security Clearance:   LEVEL ${curProf.level || 1} [ROOT ENCLAVE]`,
-          `  Darknet Credits:      ${(curProf.credits || 0).toLocaleString()} CC`,
-          `  Bitcoin Balance:      ₿ ${curProf.bitcoin || 0}`,
+          `  Passphrase Status:    CONFIGURED (Active: ${opProf.password || 'Infinity'})`,
+          `  Security Clearance:   LEVEL ${opProf.level || 1} [ROOT ENCLAVE]`,
+          `  Darknet Credits:      ${(opProf.credits || 0).toLocaleString()} CC`,
+          `  Bitcoin Balance:      ₿ ${opProf.bitcoin || 0}`,
           `------------------------------------------------------------------------`,
           `  [🔑 Change Credentials Directly via Commands]:`,
           `    passwd <new_pass>     Change PAM login passphrase`,
@@ -2796,6 +2796,7 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
           `========================================================================`
         ].join('\n');
         break;
+      }
 
       case 'passwd':
       case 'password':
