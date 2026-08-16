@@ -21,8 +21,30 @@ export class ToastManager {
     this.container = el;
   }
 
-  show({ title = 'SYSTEM NOTIFICATION', message = '', type = 'info', icon = '⚡', duration = 4000, reward = null }) {
+  show(options, messageArg = '', durationArg = 4000) {
     if (!this.container) this.initContainer();
+
+    let title = 'SYSTEM NOTIFICATION';
+    let message = '';
+    let type = 'info';
+    let icon = '⚡';
+    let duration = 4000;
+    let reward = null;
+
+    if (typeof options === 'string') {
+      type = options.toLowerCase();
+      title = options.toUpperCase();
+      message = messageArg || '';
+      duration = durationArg || 4000;
+      icon = type === 'achievement' ? '🏆' : type === 'danger' ? '🚨' : type === 'success' ? '✓' : '⚡';
+    } else if (options && typeof options === 'object') {
+      title = options.title || 'SYSTEM NOTIFICATION';
+      message = options.message || '';
+      type = options.type || 'info';
+      icon = options.icon || (type === 'achievement' ? '🏆' : type === 'danger' ? '🚨' : type === 'success' ? '✓' : '⚡');
+      duration = options.duration || 4000;
+      reward = options.reward || null;
+    }
 
     const toast = document.createElement('div');
     toast.className = `cyber-toast toast-${type}`;
@@ -48,8 +70,8 @@ export class ToastManager {
 
     this.container.appendChild(toast);
 
-    // Audio cue
-    if (this.sound) {
+    // Audio cue (Strictly muted if boot audio is locked)
+    if (this.sound && !this.sound.isBootLocked) {
       if (type === 'achievement' || type === 'level_up') {
         if (this.sound.playSuccessFanfare) this.sound.playSuccessFanfare();
       } else if (type === 'danger') {

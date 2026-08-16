@@ -145,7 +145,7 @@ export class CyberBrowserEngine {
     this.mBtnMute = this.container.querySelector('#mBtnMute');
 
     this.bindEvents();
-    this.createWebView(this.currentUrl);
+    // WebView will only be instantiated when openBrowser() is invoked by user
   }
 
   createWebView(url) {
@@ -355,7 +355,7 @@ export class CyberBrowserEngine {
       this.createWebView(target);
     }
 
-    if (this.sound) this.sound.playSuccessFanfare();
+    if (this.sound) this.sound.playKey(false);
   }
 
   terminateMediaStream() {
@@ -404,7 +404,7 @@ export class CyberBrowserEngine {
     if (newState === BROWSER_STATES.FULL) {
       win.classList.add('state-full');
       this.app.state = 'MODE_BROWSER';
-      if (this.sound) this.sound.playSuccessFanfare();
+      if (this.sound) this.sound.playKey(false);
     } else if (newState === BROWSER_STATES.PIP || newState === BROWSER_STATES.MARQUEE) {
       if (newState === BROWSER_STATES.PIP) {
         win.classList.add('state-pip');

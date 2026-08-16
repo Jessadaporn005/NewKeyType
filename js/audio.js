@@ -27,6 +27,17 @@ class HackerAudioEngine {
     this.isBgmPlaying = false;
     this.bgmInterval = null;
     this.bgmChordIndex = 0;
+
+    // Master Boot Silence Gate (When true, strictly ONLY boot telemetry ticks can play)
+    this.isBootLocked = true;
+  }
+
+  unlockBootAudio() {
+    this.isBootLocked = false;
+  }
+
+  lockBootAudio() {
+    this.isBootLocked = true;
   }
 
   init() {
@@ -98,7 +109,7 @@ class HackerAudioEngine {
    * Main entry point to play key sound
    */
   playKey(isError = false) {
-    if (this.isMuted || this.preset === 'silent') return;
+    if (this.isBootLocked || this.isMuted || this.preset === 'silent') return;
     this.ensureContext();
     if (!this.ctx) return;
 
@@ -493,7 +504,7 @@ class HackerAudioEngine {
   }
 
   playErrorSound() {
-    if (this.isMuted || this.preset === 'silent') return;
+    if (this.isBootLocked || this.isMuted || this.preset === 'silent') return;
     this.ensureContext();
     if (!this.ctx) return;
 
@@ -515,7 +526,7 @@ class HackerAudioEngine {
   }
 
   playEnterSound() {
-    if (this.isMuted || this.preset === 'silent') return;
+    if (this.isBootLocked || this.isMuted || this.preset === 'silent') return;
     this.ensureContext();
     if (!this.ctx) return;
 
@@ -538,7 +549,7 @@ class HackerAudioEngine {
   }
 
   playComboChime(streak) {
-    if (this.isMuted || this.preset === 'silent') return;
+    if (this.isBootLocked || this.isMuted || this.preset === 'silent') return;
     this.ensureContext();
     if (!this.ctx) return;
 
@@ -562,7 +573,7 @@ class HackerAudioEngine {
   }
 
   playPacketBurst() {
-    if (this.isMuted || this.preset === 'silent') return;
+    if (this.isBootLocked || this.isMuted || this.preset === 'silent') return;
     this.ensureContext();
     if (!this.ctx) return;
 
@@ -586,7 +597,7 @@ class HackerAudioEngine {
   }
 
   playLevelUpFanfare() {
-    if (this.isMuted || this.preset === 'silent') return;
+    if (this.isBootLocked || this.isMuted || this.preset === 'silent') return;
     this.ensureContext();
     if (!this.ctx) return;
 
@@ -609,7 +620,7 @@ class HackerAudioEngine {
   }
 
   playSuccessFanfare() {
-    if (this.isMuted || this.preset === 'silent') return;
+    if (this.isBootLocked || this.isMuted || this.preset === 'silent') return;
     this.ensureContext();
     if (!this.ctx) return;
 
@@ -646,7 +657,7 @@ class HackerAudioEngine {
   }
 
   playEmpBlast() {
-    if (this.isMuted || this.preset === 'silent') return;
+    if (this.isBootLocked || this.isMuted || this.preset === 'silent') return;
     this.ensureContext();
     if (!this.ctx) return;
 
@@ -686,7 +697,7 @@ class HackerAudioEngine {
   }
 
   playUsbMountSound() {
-    if (this.isMuted || this.preset === 'silent') return;
+    if (this.isBootLocked || this.isMuted || this.preset === 'silent') return;
     this.ensureContext();
     if (!this.ctx) return;
 

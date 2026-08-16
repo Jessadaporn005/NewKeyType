@@ -142,8 +142,14 @@ class WindowsTerminalApp {
       if (this.dom.hackerLoginOverlay) this.dom.hackerLoginOverlay.classList.add('hidden');
       if (this.dom.mainTerminalContainer) this.dom.mainTerminalContainer.classList.remove('hidden');
       this.state = STATES.CLI_PROMPT;
+      if (this.audio && typeof this.audio.unlockBootAudio === 'function') {
+        this.audio.unlockBootAudio();
+      }
     } else {
       // Start unskippable cinematic 20s boot sequence immediately
+      if (this.audio && typeof this.audio.lockBootAudio === 'function') {
+        this.audio.lockBootAudio();
+      }
       this.playBootSequence();
     }
 
@@ -808,6 +814,9 @@ class WindowsTerminalApp {
         if (this.dom.bootScreenReady) this.dom.bootScreenReady.classList.remove('hidden');
 
         setTimeout(() => {
+          if (this.audio && typeof this.audio.unlockBootAudio === 'function') {
+            this.audio.unlockBootAudio();
+          }
           if (this.dom.bootScreenOverlay) {
             this.dom.bootScreenOverlay.classList.add('hidden');
             this.dom.bootScreenOverlay.style.display = 'none';
