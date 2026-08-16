@@ -578,8 +578,10 @@ export class AITradingEngine {
       adaptationLevel: 5
     };
 
-    // Seed initial realistic learning journal
-    this.seedInitialAIJournal();
+    // Load persisted training memory from storage or seed baseline
+    if (!this.loadGymState()) {
+      this.seedInitialAIJournal();
+    }
   }
 
   seedInitialAIJournal() {
@@ -876,6 +878,7 @@ export class AITradingEngine {
         if (this.aiJournal.length > 50) this.aiJournal.pop();
 
         this.aiPositions.splice(i, 1);
+        this.saveGymState();
 
         if (this.onAIStatsUpdate) this.onAIStatsUpdate(this.aiStats);
         if (this.onAIJournalUpdate) this.onAIJournalUpdate(this.aiJournal);
@@ -939,6 +942,8 @@ export class AITradingEngine {
 
     if (this.aiJournal.length > 50) this.aiJournal.length = 50;
 
+    this.saveGymState();
+
     if (this.sound && this.sound.playSuccessFanfare) this.sound.playSuccessFanfare();
     if (this.toasts) {
       this.toasts.show('SUCCESS', `⚡ AI FAST-TRAINING COMPLETE: ${count} TRADES PROCESSED (WIN RATE: ${this.aiStats.winRate}%)`, 3000);
@@ -948,7 +953,41 @@ export class AITradingEngine {
     if (this.onAIJournalUpdate) this.onAIJournalUpdate(this.aiJournal);
   }
 
+  saveGymState() {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('cyber_ai_trading_gym_state', JSON.stringify({
+          stats: this.aiStats,
+          journal: this.aiJournal
+        }));
+      }
+    } catch (e) {}
+  }
+
+  loadGymState() {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const raw = localStorage.getItem('cyber_ai_trading_gym_state');
+        if (raw) {
+          const data = JSON.parse(raw);
+          if (data && data.stats && Array.isArray(data.journal)) {
+            this.aiStats = data.stats;
+            this.aiJournal = data.journal;
+            return true;
+          }
+        }
+      }
+    } catch (e) {}
+    return false;
+  }
+
   resetAIMemory() {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('cyber_ai_trading_gym_state');
+      }
+    } catch (e) {}
+
     this.aiStats = {
       totalTrades: 0,
       wins: 0,
