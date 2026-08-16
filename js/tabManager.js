@@ -116,6 +116,10 @@ export class TabManager {
       if (typeof this.app.switchViewState === 'function') {
         this.app.switchViewState('cli');
       }
+      // Hide full browser overlay if returning to CLI tab
+      if (this.app.browserEngine && this.app.browserEngine.container && this.app.browserEngine.state === 'FULL') {
+        this.app.browserEngine.container.classList.add('hidden');
+      }
       if (this.app.dom && this.app.dom.cliHistory && targetTab.historyHtml !== undefined) {
         this.app.dom.cliHistory.innerHTML = targetTab.historyHtml;
       }
@@ -124,10 +128,22 @@ export class TabManager {
       if (typeof this.app.renderCliPrompt === 'function') this.app.renderCliPrompt();
       if (typeof this.app.focusCliInput === 'function') this.app.focusCliInput();
     } else if (targetTab.type === 'browser') {
-      if (typeof this.app.launchBrowserMode === 'function') {
-        this.app.launchBrowserMode('https://www.google.com');
-      } else if (this.app.browserEngine && typeof this.app.browserEngine.openBrowser === 'function') {
-        this.app.browserEngine.openBrowser('https://www.google.com', 'FULL');
+      this.app.state = 'MODE_BROWSER';
+      if (typeof this.app.switchViewState === 'function') {
+        this.app.switchViewState('browser');
+      }
+      if (this.app.browserEngine) {
+        if (this.app.browserEngine.container) {
+          this.app.browserEngine.container.classList.remove('hidden');
+        }
+        if (this.app.browserEngine.state === 'CLOSED') {
+          this.app.browserEngine.openBrowser(targetTab.url || 'https://www.google.com', 'FULL');
+        } else {
+          this.app.browserEngine.setState('FULL');
+          if (targetTab.url && this.app.browserEngine.currentUrl !== targetTab.url) {
+            this.app.browserEngine.navigate(targetTab.url);
+          }
+        }
       }
     } else if (targetTab.type === 'vscode') {
       if (typeof this.app.launchVscodeMode === 'function') this.app.launchVscodeMode();

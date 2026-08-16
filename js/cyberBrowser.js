@@ -440,6 +440,14 @@ export class CyberBrowserEngine {
 
   closeBrowser() {
     this.setState(BROWSER_STATES.CLOSED);
+    if (this.app.tabManager) {
+      const activeTab = this.app.tabManager.tabs.find(t => t.id === this.app.tabManager.activeTabId);
+      if (activeTab && activeTab.type === 'browser') {
+        this.app.tabManager.closeTab(activeTab.id);
+        return;
+      }
+    }
+
     if (this.app.state === 'MODE_BROWSER') {
       this.app.returnToCli();
     } else {

@@ -2202,15 +2202,34 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
     this.kb.clearTargetKeys();
     this.hands.clearTargetGuide();
 
+    let domainTitle = 'In-App Browser';
+    try {
+      if (urlArg && (urlArg.startsWith('http://') || urlArg.startsWith('https://'))) {
+        const u = new URL(urlArg);
+        domainTitle = `Web: ${u.hostname.replace('www.', '')}`;
+      } else if (urlArg) {
+        domainTitle = `Web: ${urlArg.slice(0, 16)}`;
+      }
+    } catch (e) {}
+
     if (this.tabManager) {
-      this.tabManager.updateActiveTabInfo('browser', 'In-App Browser', '🌐');
+      const activeTab = this.tabManager.tabs.find(t => t.id === this.tabManager.activeTabId);
+      if (!activeTab || activeTab.type !== 'browser') {
+        // Create new dedicated browser tab to prevent overwriting terminal tab
+        this.tabManager.tabCounter++;
+        const newTab = this.tabManager.createTab(TAB_TYPES.BROWSER, `${domainTitle} (${this.tabManager.tabCounter})`, true);
+        if (newTab) newTab.url = urlArg;
+      } else {
+        this.tabManager.updateActiveTabInfo('browser', domainTitle, '🌐');
+        activeTab.url = urlArg;
+      }
     }
 
     this.playCyberTransition(
       'CYBER IN-APP BROWSER',
       'CONNECTING TO CHROMIUM WEBVIEW GATEWAY...',
       logs,
-      'cli',
+      'browser',
       () => {
         if (this.browserEngine) {
           this.browserEngine.openBrowser(urlArg || 'https://www.google.com', 'FULL');
