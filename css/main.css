@@ -545,12 +545,14 @@ html, body {
    ========================================================================== */
 
 .secret-gate-card {
+  position: relative;
+  z-index: 30;
   width: 100%;
-  max-width: 480px;
-  background: rgba(3, 8, 5, 0.97);
-  border: 1.5px solid #00ff66;
+  max-width: 500px;
+  background: rgba(4, 10, 6, 0.98);
+  border: 1.5px solid #ff2255;
   border-radius: 8px;
-  box-shadow: 0 0 30px rgba(0, 255, 102, 0.4), inset 0 0 15px rgba(0, 255, 102, 0.05);
+  box-shadow: 0 0 40px rgba(255, 34, 85, 0.5), inset 0 0 20px rgba(0, 0, 0, 0.9);
   padding: 36px 32px;
   display: flex;
   flex-direction: column;
@@ -681,12 +683,14 @@ html, body {
    ========================================================================== */
 
 .login-terminal-card {
+  position: relative;
+  z-index: 30;
   width: 100%;
   max-width: 500px;
-  background: rgba(3, 8, 5, 0.97);
-  border: 1.5px solid #00ff66;
+  background: rgba(4, 10, 6, 0.98);
+  border: 1.5px solid #00f0ff;
   border-radius: 8px;
-  box-shadow: 0 0 30px rgba(0, 255, 102, 0.4), inset 0 0 15px rgba(0, 255, 102, 0.05);
+  box-shadow: 0 0 40px rgba(0, 240, 255, 0.45), inset 0 0 20px rgba(0, 0, 0, 0.9);
   padding: 34px 32px;
   display: flex;
   flex-direction: column;
@@ -3629,7 +3633,8 @@ html, body {
   width: 50%;
   background: linear-gradient(135deg, #0d120f 0%, #030604 100%);
   border: 2px solid rgba(255, 34, 85, 0.4);
-  z-index: 1;
+  z-index: 5;
+  pointer-events: none;
   transition: transform 0.8s cubic-bezier(0.7, 0, 0.3, 1);
   display: flex;
   flex-direction: column;
