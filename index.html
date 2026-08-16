@@ -299,27 +299,27 @@
        STAGE 3: MAIN OPERATING SYSTEM WORKSTATION & MODULAR C2 DOCK
        ========================================================================= -->
   
-  <!-- C2 GLOBAL SYSTEM POLYBAR (MISSION CONTROL HUD) -->
-  <div class="c2-global-polybar" id="c2GlobalPolybar">
-    <div class="poly-cluster-left">
-      <span class="poly-item live-pulse"><span class="status-indicator live"></span> C2 ONLINE</span>
-      <span class="poly-item" id="polyUtcClock">UTC: --:--:--.---</span>
-      <span class="poly-item">HOST: <strong>c2-node-96epyc</strong></span>
+  <div class="terminal-app-container main-terminal-container diegetic-cyberdeck-chassis" id="mainTerminalContainer">
+    <!-- C2 GLOBAL SYSTEM POLYBAR (MISSION CONTROL HUD) -->
+    <div class="c2-global-polybar" id="c2GlobalPolybar">
+      <div class="poly-cluster-left">
+        <span class="poly-item live-pulse"><span class="status-indicator live"></span> C2 ONLINE</span>
+        <span class="poly-item" id="polyUtcClock">UTC: --:--:--.---</span>
+        <span class="poly-item">HOST: <strong>c2-node-96epyc</strong></span>
+      </div>
+      <div class="poly-cluster-center">
+        <span class="poly-item">LOAD: <strong class="c2-val-cyan">0.24, 0.18, 0.12</strong></span>
+        <span class="poly-item">CPU: <strong class="c2-val-green">24% (41°C)</strong></span>
+        <span class="poly-item">RAM: <strong class="c2-val-cyan">32.4 / 128 GB ECC</strong></span>
+        <span class="poly-item">NET: <strong class="c2-val-green">14.2 Gbps (0.12ms)</strong></span>
+      </div>
+      <div class="poly-cluster-right">
+        <span class="poly-item">SECURITY: <strong class="c2-val-amber">DEFCON-1</strong></span>
+        <span class="poly-item">AIR-GAP: <strong class="c2-val-green">ENFORCED</strong></span>
+        <span class="poly-item">SESSION: <strong class="c2-val-cyan" id="polyUserTag">root@c2 (UID 0)</strong></span>
+      </div>
     </div>
-    <div class="poly-cluster-center">
-      <span class="poly-item">LOAD: <strong class="c2-val-cyan">0.24, 0.18, 0.12</strong></span>
-      <span class="poly-item">CPU: <strong class="c2-val-green">24% (41°C)</strong></span>
-      <span class="poly-item">RAM: <strong class="c2-val-cyan">32.4 / 128 GB ECC</strong></span>
-      <span class="poly-item">NET: <strong class="c2-val-green">14.2 Gbps (0.12ms)</strong></span>
-    </div>
-    <div class="poly-cluster-right">
-      <span class="poly-item">SECURITY: <strong class="c2-val-amber">DEFCON-1</strong></span>
-      <span class="poly-item">AIR-GAP: <strong class="c2-val-green">ENFORCED</strong></span>
-      <span class="poly-item">SESSION: <strong class="c2-val-cyan" id="polyUserTag">root@c2 (UID 0)</strong></span>
-    </div>
-  </div>
 
-  <div class="main-terminal-container diegetic-cyberdeck-chassis" id="mainTerminalContainer">
     <!-- Physical Diegetic Chassis Status Bar -->
     <div class="chassis-status-strip">
       <div class="chassis-led-cluster">

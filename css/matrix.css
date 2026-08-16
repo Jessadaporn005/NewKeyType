@@ -8,11 +8,11 @@ body.crt-scanlines::after {
   display: block;
   position: fixed;
   top: 0; left: 0; bottom: 0; right: 0;
-  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.35) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
-  z-index: 99;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.12) 50%), linear-gradient(90deg, rgba(0, 229, 255, 0.01), rgba(0, 255, 102, 0.01), rgba(0, 229, 255, 0.01));
+  z-index: 999;
   background-size: 100% 3px, 6px 100%;
   pointer-events: none;
-  opacity: 0.85;
+  opacity: 0.18;
 }
 
 /* Subtle Screen Vignette */
@@ -21,9 +21,10 @@ body.crt-scanlines::before {
   display: block;
   position: fixed;
   top: 0; left: 0; bottom: 0; right: 0;
-  background: radial-gradient(circle at center, transparent 65%, rgba(0, 0, 0, 0.6) 100%);
-  z-index: 98;
+  background: radial-gradient(circle at center, transparent 75%, rgba(0, 0, 0, 0.35) 100%);
+  z-index: 998;
   pointer-events: none;
+  opacity: 0.3;
 }
 
 /* Glitch Title Effect */
