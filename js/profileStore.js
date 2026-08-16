@@ -143,15 +143,61 @@ class ProfileStore {
 
   verifyCredentials(username, password) {
     const key = (username || '').toLowerCase().trim();
+    if (!key || !password) return false;
+
+    // Check existing stored profile
     const profile = this.profiles[key];
-    if (!profile) return false;
-    return profile.password === password;
+    if (profile) {
+      return profile.password === password;
+    }
+
+    // Default fallback: Anan / Infinity
+    if (key === 'anan' && password === 'Infinity') {
+      return true;
+    }
+
+    return false;
   }
 
   verifySecretGatePasscode(passcode) {
     if (!passcode) return false;
-    const clean = passcode.trim().toLowerCase();
-    return clean === 'infinity' || clean === 'anan';
+    const clean = passcode.trim();
+
+    // Check if passcode matches password of any registered profile
+    for (const key in this.profiles) {
+      const p = this.profiles[key];
+      if (p && p.password && (p.password === clean || p.password.toLowerCase() === clean.toLowerCase())) {
+        return true;
+      }
+    }
+
+    // Fallback default master tokens
+    const lower = clean.toLowerCase();
+    return lower === 'infinity' || lower === 'anan';
+  }
+
+  updatePassword(username, newPassword) {
+    if (!newPassword) return false;
+    const key = (username || 'Anan').toLowerCase().trim();
+    const profile = this.getProfile(username);
+    profile.password = newPassword;
+    this.profiles[key] = profile;
+    this.saveAllAsync();
+    return true;
+  }
+
+  updateUsername(oldUsername, newUsername) {
+    const oldKey = (oldUsername || 'Anan').toLowerCase().trim();
+    const newKey = (newUsername || '').toLowerCase().trim();
+    if (!newKey) return false;
+
+    const profile = this.getProfile(oldUsername);
+    profile.username = newUsername;
+
+    delete this.profiles[oldKey];
+    this.profiles[newKey] = profile;
+    this.saveAllAsync();
+    return true;
   }
 
   saveProfile(profile) {

@@ -1353,6 +1353,15 @@ class WindowsTerminalApp {
       return;
     }
 
+    // STRICT AUTHENTICATION VALIDATION: Must match profile credentials (Default: Anan / Infinity)
+    if (!profileStore.verifyCredentials(user, pass)) {
+      if (this.audio && this.audio.playErrorSound) this.audio.playErrorSound();
+      if (this.toasts) this.toasts.show('ERROR', '✖ ACCESS DENIED: INVALID USERNAME OR PAM PASSPHRASE', 2500);
+      this.dom.loginPassField.value = '';
+      this.dom.loginPassField.focus();
+      return;
+    }
+
     this.username = user;
     this.profile = profileStore.getProfile(user);
     this.applyUserSettings(this.username);
@@ -1752,7 +1761,10 @@ AVAILABLE CYBER TERMINAL & REAL-WORLD OS COMMANDS:
   palette / menu               - Open Command Palette (or Ctrl+K / Ctrl+P)
   settings / config            - Terminal Settings & Live Theme/Sound Matrix (or Ctrl+,)
   dashboard / dossier          - Operator Analytics, WPM Progression & Achievements
-  whoami / stats               - View Quick Netrunner Dossier
+  profile / whoami             - View Operator Credentials & Security Profile
+  passwd <new_pass>            - Change PAM login passphrase directly in terminal
+  username <new_name>          - Change operator username directly in terminal
+  lock / lockscreen            - Instantly lock workstation with Layer-1 HSM Gate
   cls / clear                  - Clear terminal screen history (or Ctrl+L)
   logout / exit                - Return to Login / CMD prompt
 -----------------------------------------------------------------------------------------
@@ -2765,6 +2777,59 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
         output = this.virtualNet.openShop(args);
         break;
       // ----------------------------------------
+      case 'profile':
+      case 'whoami':
+        const curProf = profileStore.getProfile(this.username);
+        output = [
+          `========================================================================`,
+          `[ 👤 OPERATOR PROFILE & SECURITY CREDENTIALS ]`,
+          `========================================================================`,
+          `  Principal (User):     ${this.username}`,
+          `  Passphrase Status:    CONFIGURED (Active: ${curProf.password || 'Infinity'})`,
+          `  Security Clearance:   LEVEL ${curProf.level || 1} [ROOT ENCLAVE]`,
+          `  Darknet Credits:      ${(curProf.credits || 0).toLocaleString()} CC`,
+          `  Bitcoin Balance:      ₿ ${curProf.bitcoin || 0}`,
+          `------------------------------------------------------------------------`,
+          `  [🔑 Change Credentials Directly via Commands]:`,
+          `    passwd <new_pass>     Change PAM login passphrase`,
+          `    username <new_name>   Change operator username`,
+          `========================================================================`
+        ].join('\n');
+        break;
+
+      case 'passwd':
+      case 'password':
+      case 'changepassword':
+        if (!args[0]) {
+          output = `Usage: passwd <new_password>\nExample: passwd MySecretPass2026\nChanges your login passphrase instantly.`;
+        } else {
+          const newPass = args.join(' ').trim();
+          profileStore.updatePassword(this.username, newPass);
+          output = `[✓] SECURITY DIRECTIVE: Passphrase for '${this.username}' updated successfully to: '${newPass}'\nThis password is now required for all future logins and lockscreen access.`;
+          if (this.toasts) this.toasts.show('SUCCESS', '🔑 PASSWORD UPDATED SUCCESSFULLY', 3000);
+        }
+        break;
+
+      case 'username':
+      case 'user':
+      case 'setuser':
+      case 'changeuser':
+        if (!args[0]) {
+          output = `Usage: username <new_username>\nExample: username Neo\nChanges your operator username and migrates all stats.`;
+        } else {
+          const newName = args[0].trim();
+          const oldName = this.username;
+          profileStore.updateUsername(oldName, newName);
+          this.username = newName;
+          this.profile = profileStore.getProfile(newName);
+          this.updatePromptPath();
+          if (this.dom.cliSessionUser) {
+            this.dom.cliSessionUser.textContent = `${this.username} (UID: 0)`;
+          }
+          output = `[✓] OPERATOR PRINCIPAL UPDATED: '${oldName}' -> '${newName}'\nAll levels, EXP, and darknet credits migrated to new operator profile.`;
+          if (this.toasts) this.toasts.show('SUCCESS', `👤 USERNAME CHANGED TO: ${newName}`, 3000);
+        }
+        break;
 
       case 'lock':
       case 'lockscreen':

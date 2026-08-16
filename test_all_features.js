@@ -538,6 +538,30 @@ async function runTests() {
   tradingEngine.resetAIMemory();
   assert(tradingEngine.aiStats.totalTrades === 0, 'AI Agent memory and stats reset to baseline');
 
+  // =========================================================================
+  // SECTION 28: STRICT AUTHENTICATION & DIRECT IN-TERMINAL PROFILE CREDENTIALS
+  // =========================================================================
+  console.log('\n[28/28] Testing Strict Authentication & Direct In-Terminal Credential Updates...');
+  assert(profileStore.verifyCredentials('Anan', 'Infinity') === true, 'Strict Auth: Default credentials (Anan / Infinity) verified');
+  assert(profileStore.verifyCredentials('Anan', 'WrongPassword') === false, 'Strict Auth: Rejected invalid password');
+  assert(profileStore.verifyCredentials('RandomUser', 'Infinity') === false, 'Strict Auth: Rejected non-existent username');
+  assert(profileStore.verifySecretGatePasscode('Infinity') === true, 'Layer-1 HSM Gate passcode verified');
+  assert(profileStore.verifySecretGatePasscode('wrong_code') === false, 'Layer-1 HSM Gate rejected unauthorized passcode');
+
+  // Test In-Terminal Password Change
+  profileStore.updatePassword('Anan', 'CyberPass999');
+  assert(profileStore.verifyCredentials('Anan', 'CyberPass999') === true, 'In-Terminal updatePassword successfully modified active credentials');
+  assert(profileStore.verifyCredentials('Anan', 'Infinity') === false, 'Old password revoked immediately');
+
+  // Test In-Terminal Username Change
+  profileStore.updateUsername('Anan', 'NeoOperator');
+  assert(profileStore.verifyCredentials('NeoOperator', 'CyberPass999') === true, 'In-Terminal updateUsername successfully migrated operator identity');
+
+  // Restore baseline
+  profileStore.updateUsername('NeoOperator', 'Anan');
+  profileStore.updatePassword('Anan', 'Infinity');
+  assert(profileStore.verifyCredentials('Anan', 'Infinity') === true, 'Restored baseline credentials for continuous operational parity');
+
   console.log('\n====================================================');
   console.log(`🏁 TEST RESULTS: ${passed}/${total} TESTS PASSED (100%)`);
   console.log('====================================================');
