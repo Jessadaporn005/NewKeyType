@@ -149,6 +149,11 @@ class WindowsTerminalApp {
     
     this.cacheDOM();
 
+    // Ensure all credential inputs are completely clean on startup
+    if (this.dom.secretGateInput) this.dom.secretGateInput.value = '';
+    if (this.dom.loginUserField) this.dom.loginUserField.value = '';
+    if (this.dom.loginPassField) this.dom.loginPassField.value = '';
+
     // Start background Matrix visual engine immediately for Stage 0/1/2/3
     if (!this.matrix) {
       this.matrix = new MatrixVisualEngine('matrixCanvas', 'particleCanvas');
@@ -1252,6 +1257,26 @@ class WindowsTerminalApp {
     this.dom.gateErrorMsg.classList.add('hidden');
     this.audio.playSuccessFanfare();
 
+    // IF IN LOCKSCREEN MODE -> Directly unlock back to Main Screen!
+    if (this.isLocked) {
+      this.isLocked = false;
+      this.state = STATES.CLI_PROMPT;
+      this.dom.secretGateInput.value = '';
+      if (this.dom.secretGateOverlay) {
+        this.dom.secretGateOverlay.classList.add('hidden');
+        this.dom.secretGateOverlay.classList.remove('gate-unlocked');
+      }
+      if (this.dom.mainTerminalContainer) {
+        this.dom.mainTerminalContainer.classList.remove('hidden');
+      }
+      if (this.toasts) {
+        this.toasts.show('SUCCESS', '🔓 WORKSTATION UNLOCKED: ROOT ACCESS RESTORED', 3000);
+      }
+      this.focusCliInput();
+      return;
+    }
+
+    // NORMAL INITIAL BOOT FLOW -> Continue to Stage 2 PAM Station
     this.dom.gateStreamBox.classList.remove('hidden');
     const lines = [
       `[+] HSM MASTER PASSPHRASE VERIFIED [OK]`,
@@ -1279,17 +1304,54 @@ class WindowsTerminalApp {
           this.dom.secretGateOverlay.classList.remove('gate-unlocked');
           this.dom.hackerLoginOverlay.classList.remove('hidden');
           this.state = STATES.LOGIN;
+          if (this.dom.loginUserField) {
+            this.dom.loginUserField.value = '';
+            this.dom.loginUserField.focus();
+          }
           if (this.dom.loginPassField) {
-            this.dom.loginPassField.focus();
+            this.dom.loginPassField.value = '';
           }
         }, 300);
       }
     }, 120);
   }
 
+  lockWorkstation() {
+    this.isLocked = true;
+    this.state = STATES.GATE;
+    if (this.dom.mainTerminalContainer) this.dom.mainTerminalContainer.classList.add('hidden');
+    if (this.dom.hackerLoginOverlay) this.dom.hackerLoginOverlay.classList.add('hidden');
+    if (this.dom.secretGateOverlay) {
+      this.dom.secretGateOverlay.classList.remove('hidden');
+      this.dom.secretGateOverlay.classList.remove('gate-unlocked');
+    }
+    if (this.dom.secretGateInput) {
+      this.dom.secretGateInput.value = '';
+      this.dom.secretGateInput.focus();
+    }
+    if (this.dom.gateErrorMsg) this.dom.gateErrorMsg.classList.add('hidden');
+    if (this.dom.gateStreamBox) this.dom.gateStreamBox.classList.add('hidden');
+    if (this.dom.gateStreamLines) this.dom.gateStreamLines.innerHTML = '';
+    if (this.audio && this.audio.playAlarmSiren) this.audio.playAlarmSiren();
+    if (this.toasts) this.toasts.show('INFO', '🔒 WORKSTATION LOCKED // LAYER-1 TOKEN PASS REQUIRED', 2500);
+  }
+
   handleLogin() {
     this.audio.ensureContext();
-    const user = this.dom.loginUserField.value.trim() || 'Anan';
+    const user = this.dom.loginUserField.value.trim();
+    const pass = this.dom.loginPassField.value.trim();
+
+    if (!user) {
+      if (this.toasts) this.toasts.show('ERROR', '⚠️ OPERATOR USERNAME REQUIRED', 2000);
+      this.dom.loginUserField.focus();
+      return;
+    }
+
+    if (!pass) {
+      if (this.toasts) this.toasts.show('ERROR', '⚠️ KERBEROS / PAM PASSPHRASE REQUIRED', 2000);
+      this.dom.loginPassField.focus();
+      return;
+    }
 
     this.username = user;
     this.profile = profileStore.getProfile(user);
@@ -1302,6 +1364,9 @@ class WindowsTerminalApp {
 
     this.audio.playEnterSound();
     this.state = STATES.CLI_PROMPT;
+
+    // Clear password input for safety
+    if (this.dom.loginPassField) this.dom.loginPassField.value = '';
 
     this.dom.hackerLoginOverlay.classList.add('hidden');
 
@@ -2701,12 +2766,18 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
         break;
       // ----------------------------------------
 
+      case 'lock':
+      case 'lockscreen':
+        this.lockWorkstation();
+        return;
+
       case 'logout':
         this.state = STATES.LOGIN;
         this.dom.mainTerminalContainer.classList.add('hidden');
         this.dom.hackerLoginOverlay.classList.remove('hidden');
-        this.dom.loginPassField.value = '';
-        this.dom.loginPassField.focus();
+        if (this.dom.loginUserField) this.dom.loginUserField.value = '';
+        if (this.dom.loginPassField) this.dom.loginPassField.value = '';
+        if (this.dom.loginUserField) this.dom.loginUserField.focus();
         return;
 
       case 'exit':
