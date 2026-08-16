@@ -138,6 +138,10 @@ class WindowsTerminalApp {
 
     if (this.isGhostMode) {
       document.body.classList.add('ghost-mode');
+      if (this.audio) {
+        this.audio.isMuted = true;
+        this.audio.volume = 0;
+      }
     }
     
     this.cacheDOM();

@@ -410,7 +410,9 @@ ipcMain.handle('cyber:window-control', (event, action) => {
 server.listen(0, '127.0.0.1', () => {
   const port = server.address().port;
 
-  function createGhostWindow() {
+  function getOrCreateGhostWindow() {
+    if (ghostWindow && !ghostWindow.isDestroyed()) return ghostWindow;
+
     const { width } = screen.getPrimaryDisplay().workAreaSize;
     
     ghostWindow = new BrowserWindow({
@@ -423,6 +425,7 @@ server.listen(0, '127.0.0.1', () => {
       hasShadow: false,
       alwaysOnTop: true,
       skipTaskbar: true,
+      show: false,
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true,
@@ -432,18 +435,29 @@ server.listen(0, '127.0.0.1', () => {
       }
     });
     
+    // Ensure ghost window is completely audio-muted so it never plays sounds in the background
+    ghostWindow.webContents.setAudioMuted(true);
     ghostWindow.loadURL(`http://127.0.0.1:${port}/index.html?ghost=1`);
-    
+
+    ghostWindow.on('closed', () => {
+      ghostWindow = null;
+    });
+
+    return ghostWindow;
+  }
+
+  function setupGhostShortcut() {
     let isVisible = false;
     globalShortcut.register('CommandOrControl+Shift+Space', () => {
-      if (!ghostWindow) return;
+      const win = getOrCreateGhostWindow();
+      const { width } = screen.getPrimaryDisplay().workAreaSize;
       if (isVisible) {
-        ghostWindow.setBounds({ x: 0, y: -600, width: width, height: 600 });
-        ghostWindow.hide();
+        win.setBounds({ x: 0, y: -600, width: width, height: 600 });
+        win.hide();
       } else {
-        ghostWindow.show();
-        ghostWindow.setBounds({ x: 0, y: 0, width: width, height: 600 });
-        ghostWindow.focus();
+        win.show();
+        win.setBounds({ x: 0, y: 0, width: width, height: 600 });
+        win.focus();
       }
       isVisible = !isVisible;
     });
@@ -526,7 +540,7 @@ server.listen(0, '127.0.0.1', () => {
 
   app.whenReady().then(() => {
     createWindow();
-    createGhostWindow();
+    setupGhostShortcut();
 
     const iconPath = path.join(__dirname, 'icon.ico');
     if (fs.existsSync(iconPath)) {
