@@ -339,14 +339,29 @@ export function generateAISignal(candles, asset, patterns = []) {
     { name: `Bollinger Band Position (${currentPrice < (curBBLower + curBBUpper)/2 ? 'Discount Zone' : 'Premium Zone'})`, pass: true }
   ];
 
+  // Market Regime & Strategy Playbook Breakdown
+  let marketRegime = 'SIDEWAY CONSOLIDATION (ช่วงพักฐานสะสมแรง)';
+  let strategyPlaybook = 'Wait for Breakout / Scalp within range (รอจังหวะทะลุกรอบหรือเล่นสั้นในกรอบแนวรับ-ต้าน)';
+  let riskWarning = 'ปริมาณ Volume ยังไม่หนาแน่นพอ ระวัง False Breakout';
+
+  if (curEMA20 > curEMA50 && currentPrice > curEMA20) {
+    marketRegime = 'BULLISH EXPANSION (แนวโน้มขาขึ้นแข็งแกร่ง)';
+    strategyPlaybook = 'Trend Following & Buy on Dip (ถือรันเทรนด์ / ย่อซื้อตามแนวรับ EMA)';
+    riskWarning = curRSI > 65 ? 'RSI เริ่มสูงเข้าใกล้ Overbought ระวังแรงขายทำกำไรระยะสั้น' : 'ตั้ง Stop Loss ใต้แนวรับ EMA50 เพื่อป้องกันความผันผวน';
+  } else if (curEMA20 < curEMA50 && currentPrice < curEMA20) {
+    marketRegime = 'BEARISH DISTRIBUTION (แนวโน้มขาลง / กระจายของ)';
+    strategyPlaybook = 'Sell on Rally / Short at Resistance (เด้งเปิด Short หรือถือเงินสดรอฐานราคา)';
+    riskWarning = curRSI < 35 ? 'RSI Oversold อาจเกิดการ Rebound ดีดกลับทางเทคนิคได้ทุกเมื่อ' : 'หลีกเลี่ยงการเปิด Long สวนเทรนด์ใหญ่จนกว่าจะมีแท่งเทียนกลับตัวชัดเจน';
+  }
+
   // Thai AI Rationale Breakdown
   let rationale = '';
   if (action.includes('BUY')) {
-    rationale = `อัลกอริทึมตรวจพบโมเมนตัมขาขึ้นที่มีนัยสำคัญบนคู่เทรด ${asset.id} โดยราคาเคลื่อนไหวอยู่เหนือแนวรับ EMA20 และค่า RSI (${curRSI}) บ่งชี้ว่าอยู่ในโซนที่มีความได้เปรียบสูง (High Probability Setup) เหมาะสำหรับเปิดสถานะ LONG เพื่อหวังผลกำไรที่เป้าหมาย TP1 ($${tp1}) และ TP2 ($${tp2}) พร้อมตั้งจุดตัดขาดทุน Stop Loss ($${sl})`;
+    rationale = `อัลกอริทึมตรวจพบโมเมนตัมขาขึ้นที่มีนัยสำคัญบนคู่เทรด ${asset.id} โดยราคาเคลื่อนไหวอยู่เหนือแนวรับ EMA20 และค่า RSI (${curRSI}) บ่งชี้ว่าอยู่ในโซนที่มีความได้เปรียบสูง (High Probability Setup) เหมาะสำหรับเปิดสถานะ LONG หรือพิจารณาซื้อสะสมเพื่อหวังผลกำไรที่เป้าหมาย TP1 ($${tp1}) และ TP2 ($${tp2}) พร้อมตั้งจุดตัดขาดทุน Stop Loss ($${sl})`;
   } else if (action.includes('SELL')) {
-    rationale = `ระบบตรวจพบแรงกดดันฝั่งขายที่หนาแน่นบริเวณแนวต้าน และสัญญาณ Overbought/Rejection บนคู่เทรด ${asset.id} แนะนำเปิดสถานะ SHORT หรือทยอย Take Profit เพื่อลดความเสี่ยง โดยมีเป้าหมายทำกำไรขาลงที่ $${tp1} และตัดขาดทุนหากราคาทะลุผ่าน $${sl}`;
+    rationale = `ระบบตรวจพบแรงกดดันฝั่งขายที่หนาแน่นบริเวณแนวต้าน และสัญญาณ Overbought/Rejection บนคู่เทรด ${asset.id} แนะนำเปิดสถานะ SHORT หรือทยอย Take Profit ขายทำกำไรเพื่อลดความเสี่ยง โดยมีเป้าหมายทำกำไรขาลงที่ $${tp1} และตัดขาดทุนหากราคาทะลุผ่าน $${sl}`;
   } else {
-    rationale = `สภาวะตลาดยังอยู่ในช่วงพักฐาน (Consolidation / Sideway) สัญญาณอินดิเคเตอร์ยังไม่มีความสอดคล้องชัดเจน แนะนำรอจังหวะ Breakout หรือรอการยืนยันแท่งเทียนที่แนวรับ/แนวต้านก่อนเข้าออเดอร์`;
+    rationale = `สภาวะตลาดยังอยู่ในช่วงพักฐาน (Consolidation / Sideway) สัญญาณอินดิเคเตอร์ยังไม่มีความสอดคล้องชัดเจน แนะนำรอจังหวะ Breakout หรือรอการยืนยันแท่งเทียนที่แนวรับ/แนวต้านก่อนตัดสินใจ`;
   }
 
   return {
@@ -359,6 +374,9 @@ export function generateAISignal(candles, asset, patterns = []) {
     tp2,
     sl,
     rrRatio: `1 : ${rrRatio}`,
+    marketRegime,
+    strategyPlaybook,
+    riskWarning,
     factors,
     patterns,
     rationale,

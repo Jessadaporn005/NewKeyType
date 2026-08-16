@@ -411,6 +411,9 @@ class WindowsTerminalApp {
       chkBollinger: document.getElementById('chkBollinger'),
       chkPatterns: document.getElementById('chkPatterns'),
       aiSignalBadge: document.getElementById('aiSignalBadge'),
+      aiMarketRegime: document.getElementById('aiMarketRegime'),
+      aiStrategyPlaybook: document.getElementById('aiStrategyPlaybook'),
+      aiRiskWarning: document.getElementById('aiRiskWarning'),
       aiConfidenceVal: document.getElementById('aiConfidenceVal'),
       aiRrVal: document.getElementById('aiRrVal'),
       aiEntryVal: document.getElementById('aiEntryVal'),
@@ -657,6 +660,16 @@ class WindowsTerminalApp {
     if (!signal || !this.dom.aiSignalBadge) return;
     this.dom.aiSignalBadge.className = 'signal-badge ' + signal.badgeClass;
     this.dom.aiSignalBadge.textContent = signal.action;
+
+    if (this.dom.aiMarketRegime && signal.marketRegime) {
+      this.dom.aiMarketRegime.textContent = signal.marketRegime;
+    }
+    if (this.dom.aiStrategyPlaybook && signal.strategyPlaybook) {
+      this.dom.aiStrategyPlaybook.textContent = signal.strategyPlaybook;
+    }
+    if (this.dom.aiRiskWarning && signal.riskWarning) {
+      this.dom.aiRiskWarning.textContent = signal.riskWarning;
+    }
 
     if (this.dom.aiConfidenceVal) this.dom.aiConfidenceVal.textContent = `${signal.confidence}%`;
     if (this.dom.aiRrVal) this.dom.aiRrVal.textContent = signal.rrRatio;
