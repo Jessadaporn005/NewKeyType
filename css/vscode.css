@@ -15,6 +15,16 @@
   font-family: var(--font-mono, 'Segoe UI Mono', monospace);
   overflow: hidden;
   z-index: 40;
+  clip-path: polygon(
+    0 12px,
+    12px 0,
+    calc(100% - 12px) 0,
+    100% 12px,
+    100% calc(100% - 12px),
+    calc(100% - 12px) 100%,
+    12px 100%,
+    0 calc(100% - 12px)
+  );
 }
 
 /* Top Navigation Bar */

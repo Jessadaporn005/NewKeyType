@@ -371,8 +371,6 @@
         </div>
         <button class="tab-add-btn" id="tabAddBtn" title="Open new tab [Ctrl+T]">+</button>
         <button class="tab-dropdown-btn" id="tabDropdownBtn" title="Shell profiles &amp; Subsystems">⌄</button>
-      </div>
-
       <div class="window-controls">
         <button class="win-btn win-min" title="Minimize">─</button>
         <button class="win-btn win-max" title="Maximize">▢</button>
@@ -380,31 +378,31 @@
       </div>
     </header>
 
-    <!-- LIVE CYBER-HUD TELEMETRY -->
+    <!-- HARDCORE MILITARY / SOC / AVIONICS TELEMETRY HUD -->
     <div class="cyber-hud-dashboard hidden" id="cyberHudDashboard">
       <div class="hud-panel cpu-panel">
-        <div class="hud-lbl">CPU [EPYC 9654]</div>
+        <div class="hud-lbl">CPU [EPYC 96-CORE // 14.25 GHz]</div>
         <div class="hud-bar-bg"><div class="hud-bar-fg" id="hudCpuBar" style="width: 25%;"></div></div>
-        <div class="hud-val" id="hudCpuVal">25%</div>
+        <div class="hud-val" id="hudCpuVal">25% (TjMax: 41°C)</div>
       </div>
       <div class="hud-panel ram-panel">
-        <div class="hud-lbl">RAM [ALLOCATED]</div>
+        <div class="hud-lbl">MEM [64.8 / 128 GB // ECC-DDR5]</div>
         <div class="hud-bar-bg"><div class="hud-bar-fg" id="hudRamBar" style="width: 40%;"></div></div>
-        <div class="hud-val" id="hudRamVal">40%</div>
+        <div class="hud-val" id="hudRamVal">40% (0 Page Faults)</div>
       </div>
       <div class="hud-panel net-panel">
-        <div class="hud-lbl">NET [DOWNLINK]</div>
-        <div class="hud-val"><span id="hudNetDown">14.2</span> Gbps</div>
+        <div class="hud-lbl">NET [100GbE INGRESS // BGP]</div>
+        <div class="hud-val"><span id="hudNetDown">14.2</span> Gbps (0.12ms)</div>
       </div>
       <div class="hud-panel net-panel">
-        <div class="hud-lbl">NET [UPLINK]</div>
-        <div class="hud-val"><span id="hudNetUp">8.5</span> Gbps</div>
+        <div class="hud-lbl">NET [EGRESS // TOR MESH]</div>
+        <div class="hud-val"><span id="hudNetUp">8.5</span> Gbps (0% Drop)</div>
       </div>
       <div class="hud-panel credits-panel">
-        <div class="hud-lbl">FUNDS [CC]</div>
-        <div class="hud-val"><span id="hudCredits">0</span> CC</div>
+        <div class="hud-lbl">SECURITY [DEFCON-1 ARMED]</div>
+        <div class="hud-val"><span id="hudCredits">0</span> CC [ROOT]</div>
       </div>
-      <!-- 3D Holographic AI Cyber Companion -->
+      <!-- 3D Holographic AI Cyber Companion (EVA) -->
       <div class="hud-panel ai-companion-panel" id="aiCompanionWidget">
         <div class="ai-companion-avatar">
           <div class="ai-core-sphere" id="aiCoreSphere">
@@ -414,12 +412,12 @@
           <div class="ai-halo-ring"></div>
         </div>
         <div class="ai-companion-info">
-          <div class="ai-name-tag">AI//EVA [COMPANION]</div>
-          <div class="ai-speech-bubble" id="aiCompanionSpeech">"SYSTEMS ONLINE. READY FOR INFILTRATION."</div>
+          <span class="ai-name-tag">EVA // AI TACTICAL SOC</span>
+          <div class="ai-speech-bubble" id="aiCompanionSpeech">"SYSTEMS ARMED. SOC DEFCON-1 ENFORCED."</div>
         </div>
       </div>
       <div class="hud-panel trace-panel hidden" id="hudTracePanel">
-        <div class="hud-lbl" style="color: #ff2244;">WARNING: ACTIVE TRACE</div>
+        <div class="hud-lbl" style="color: #ff2244;">[!] SOC ALERT: ACTIVE TRACE</div>
         <div class="hud-bar-bg"><div class="hud-bar-fg" id="hudTraceBar" style="width: 0%; background: #ff2244; box-shadow: 0 0 10px #ff2244;"></div></div>
         <div class="hud-val" id="hudTraceVal" style="color: #ff2244;">0%</div>
       </div>
@@ -433,10 +431,10 @@
         <div class="cli-main-split">
           <!-- Left Column: Interactive Command Prompt -->
           <div class="cli-terminal-column" id="cliTerminalColumn">
-            <div class="term-line">Microsoft Windows [Version 10.0.26200.9168]</div>
-            <div class="term-line">(c) Microsoft Corporation. All rights reserved.</div>
+            <div class="term-line">QUANTUM AIR-GAPPED WORKSTATION [KERNEL v6.8.9-SOC // X86-64]</div>
+            <div class="term-line">ALL SYSTEM CHANNELS MONITORED // ENCRYPTION: AES-256-GCM / RSA-8192</div>
             <br>
-            <div class="term-line hint-text">Type <strong class="glow-cmd">help</strong> to see available commands, <strong class="glow-cmd">intel</strong> for telemetry, or <strong class="glow-cmd">academy</strong> for typing drills.</div>
+            <div class="term-line hint-text">Execute <strong class="glow-cmd">help</strong> for SOC commands, <strong class="glow-cmd">dmesg</strong> for kernel ring buffer, or <strong class="glow-cmd">siem</strong> for live threat matrix.</div>
             <br>
             
             <!-- Command History Output -->
@@ -454,24 +452,24 @@
 
         <!-- Live Cyber Telemetry Strip at bottom of CMD -->
         <div class="cli-system-status-dock">
-          <span class="status-item"><span class="status-indicator live"></span> SYSTEM: <strong>ONLINE</strong></span>
+          <span class="status-item"><span class="status-indicator live"></span> DEFENSE: <strong>DEFCON-1</strong></span>
           <span class="status-item">KERNEL: <strong>QUANTUM-v6.8.9</strong></span>
-          <span class="status-item">PROCESSOR: <strong>AMD EPYC @ 3.7GHz</strong></span>
-          <span class="status-item">ENCRYPTION: <strong>AES-256-GCM</strong></span>
-          <span class="status-item">SESSION: <strong class="glow-cmd" id="cliSessionUser">asus (UID: 0)</strong></span>
+          <span class="status-item">HARDWARE: <strong>AMD EPYC 96-CORE</strong></span>
+          <span class="status-item">CIPHER: <strong>AES-256-GCM [HARDWARE]</strong></span>
+          <span class="status-item">OPERATOR: <strong class="glow-cmd" id="cliSessionUser">asus (UID: 0 // ROOT)</strong></span>
         </div>
       </div>
 
-      <!-- TOUCH TYPING ACADEMY VIEW -->
+      <!-- TOUCH TYPING ACADEMY VIEW (BIOMECHANICAL NEURAL KINEMATICS) -->
       <div class="terminal-view hidden" id="viewAcademy">
         <div class="mode-header-bar">
-          <span class="mode-tag">[ MODE: TOUCH TYPING ACADEMY ]</span>
-          <span class="mode-sub-tag">Lesson: <span id="academyLessonTitle">Home Row Basics</span> (Type 'exit' to return to CMD)</span>
-          <span class="mode-exp-badge">EXP +15 / KEYSTROKE DRILL</span>
+          <span class="mode-tag">[ SUBSYSTEM: NEURAL KINEMATIC KEYBOARD MATRIX ]</span>
+          <span class="mode-sub-tag">MODULE: <span id="academyLessonTitle">Home Row Basics</span> // ACTUATION DRILL</span>
+          <span class="mode-exp-badge">CALIBRATION: ACTIVE</span>
         </div>
         <div class="academy-metrics-hud">
-          <span>SPEED: <strong id="acadWpm">0 WPM</strong> (<span id="acadCpm">0 CPM</span>)</span>
-          <span>ACCURACY: <strong id="acadAcc">100%</strong> (<span id="acadErr">0 ERR</span>)</span>
+          <span>STRIKE VELOCITY: <strong id="acadWpm">0 WPM</strong> (<span id="acadCpm">0 CPM</span>)</span>
+          <span>PARITY: <strong id="acadAcc">100%</strong> (<span id="acadErr">0 ERR</span>)</span>
           <span>STREAK: <strong id="acadStreak">0x</strong></span>
           <span>PROGRESS: <strong id="acadProg">0%</strong></span>
           <div class="mini-speedometer-container">
@@ -487,28 +485,28 @@
         <div class="academy-typing-canvas" id="academyTypingCanvas" tabindex="0">
           <div class="typing-target-stream" id="targetTextContainer"></div>
           <div class="typing-prompt-hint">
-            <span class="cursor-block">█</span> กดแป้นพิมพ์ตามตัวอักษรที่ส่องสว่าง (สังเกตตำแหน่งนิ้วมือด้านล่าง)
+            <span class="cursor-block">█</span> [SYNAPSE INPUT STREAM READY] Press matching physical keys to complete kinematic calibration.
           </div>
         </div>
       </div>
 
-      <!-- HOLLYWOOD HACKER SIMULATOR VIEW (Interactive Exploit Missions) -->
+      <!-- ELECTRONIC WARFARE & INFILTRATION DECK -->
       <div class="terminal-view hidden" id="viewHacker">
         <div class="mode-header-bar hacker-header-bar">
-          <span class="mode-tag" id="hackerModeTitle">[ MODE: QUANTUM CYBER INFILTRATION SIMULATOR ]</span>
+          <span class="mode-tag" id="hackerModeTitle">[ SUBSYSTEM: ELECTRONIC WARFARE &amp; SIGINT INFILTRATION ]</span>
           <div class="hacker-trace-panel" id="hackerTracePanel">
             <span class="trace-label">SECURITY TRACE:</span>
             <div class="trace-bar-bg"><div class="trace-bar-fg" id="hackerTraceBar" style="width: 0%;"></div></div>
             <span class="trace-val" id="hackerTraceVal">0%</span>
           </div>
           <div class="hacker-hud-badges">
-            <span class="mode-sub-tag"><kbd>Tab</kbd> Toggle Stream / Mission | Type 'map' for Topology | 'exit' to quit</span>
+            <span class="mode-sub-tag"><kbd>Tab</kbd> Toggle Stream / Mission | 'map' Satellite Topology | 'exit' to quit</span>
           </div>
         </div>
         
         <div class="hacker-terminal-canvas" id="hackerTerminalCanvas" tabindex="0">
           <div class="terminal-history" id="hackerTerminalOutput">
-            <div class="term-line">[*] QUANTUM INFILTRATION TUNNEL INITIALIZED...</div>
+            <div class="term-line">[*] QUANTUM INFILTRATION TUNNEL ESTABLISHED // SAT-LINK LOCKED (14.25 GHz)...</div>
           </div>
           
           <div class="hacker-exec-banner hidden" id="hackerExecBanner">
@@ -539,15 +537,15 @@
         </div>
       </div>
 
-      <!-- SPEED RUSH & ENDLESS MARATHON VIEW -->
+      <!-- PRECISION VELOCITY & KINEMATIC AVIONICS BENCHMARK -->
       <div class="terminal-view hidden" id="viewSpeed">
         <div class="mode-header-bar">
-          <span class="mode-tag" id="speedModeTitle">[ MODE: SPEED RUSH WPM BENCHMARK ]</span>
-          <span class="mode-sub-tag">STATUS: <strong id="speedTimer" class="glow-cmd">30s</strong> (Type 'exit' to quit)</span>
-          <span class="mode-exp-badge">DOUBLE EXP MARATHON</span>
+          <span class="mode-tag" id="speedModeTitle">[ SUBSYSTEM: PRECISION KINEMATIC VELOCITY BENCHMARK ]</span>
+          <span class="mode-sub-tag">COUNTDOWN: <strong id="speedTimer" class="glow-cmd">30s</strong> (Type 'exit' to abort)</span>
+          <span class="mode-exp-badge">CALIBRATION: ACTIVE</span>
         </div>
         <div class="academy-metrics-hud">
-          <span>SPEED: <strong id="speedLiveWpm">0 WPM</strong></span>
+          <span>VELOCITY: <strong id="speedLiveWpm">0 WPM</strong></span>
           <span>ACCURACY: <strong id="speedLiveAcc">100%</strong></span>
           <span>STREAK: <strong id="speedLiveStreak" class="flame-streak">0x</strong></span>
           <span id="speedBatchHud" class="hidden">BATCHES: <strong id="speedLiveBatches">0</strong></span>
@@ -562,12 +560,12 @@
           </div>
         </div>
         <div class="batch-execution-banner hidden" id="speedBatchNotice">
-          [⚡ EXECUTING BATCH SCRIPT // TRANSMITTING PAYLOAD TO QUANTUM CORE...]
+          [⚡ TRANSMITTING HIGH-VELOCITY BATCH STREAM TO BUFFER POOL...]
         </div>
         <div class="academy-typing-canvas" id="speedTypingCanvas" tabindex="0">
           <div class="typing-target-stream" id="speedTextContainer"></div>
           <div class="typing-prompt-hint">
-            <span class="cursor-block">█</span> เริ่มพิมพ์คำแรกเพื่อเปิดระบบทดสอบความเร็วทันที
+            <span class="cursor-block">█</span> [HIGH-SPEED SYNAPSE READY] Type the characters to measure key actuation throughput.
           </div>
         </div>
       </div>
@@ -575,11 +573,11 @@
       <!-- FREE SANDBOX VIEW -->
       <div class="terminal-view hidden" id="viewSandbox">
         <div class="mode-header-bar">
-          <span class="mode-tag">[ MODE: FREE TERMINAL NOTEPAD ]</span>
-          <span class="mode-sub-tag">Type anything freely with live finger kinematics and sound effects.</span>
+          <span class="mode-tag">[ SUBSYSTEM: AIR-GAPPED SCRATCHPAD BUFFER ]</span>
+          <span class="mode-sub-tag">Isolated memory buffer for raw shellcode drafting and key testing.</span>
         </div>
         <div class="sandbox-wrapper">
-          <textarea id="sandboxTextarea" class="sandbox-textarea" placeholder="C:\Users\asus\Sandbox> Type anything here... Press Escape to return to CMD."></textarea>
+          <textarea id="sandboxTextarea" class="sandbox-textarea" placeholder="C:\Users\asus\Sandbox> Isolated memory buffer... Press Escape to return to CLI."></textarea>
         </div>
       </div>
 
@@ -598,22 +596,22 @@
         <!-- Dynamically rendered by CyberBrowserEngine -->
       </div>
 
-      <!-- CYBER FILE EXPLORER VIEW -->
+      <!-- REAL SYSTEM TASK MANAGER VIEW -->
+      <div class="terminal-view hidden" id="viewTaskManager">
+        <!-- Dynamically rendered by TaskManagerEngine -->
+      </div>
+
+      <!-- CYBER FILE EXPLORER & REAL STORAGE MATRIX -->
       <div class="terminal-view hidden" id="viewExplorer">
         <!-- Dynamically rendered by CyberExplorerEngine -->
       </div>
 
-      <!-- REAL TASK MANAGER VIEW (htop) -->
-      <div class="terminal-view hidden" id="viewTaskManager">
-        <!-- Dynamically rendered by TaskManagerViewEngine -->
-      </div>
-
-      <!-- TRON 3D AUDIO & RADIO VIEW -->
+      <!-- TRON 3D WEB AUDIO FFT VISUALIZER & RADIO VIEW -->
       <div class="terminal-view hidden" id="viewRadio">
         <!-- Dynamically rendered by CyberRadioEngine -->
       </div>
 
-      <!-- CYBER WI-FI RADAR & QUANTUM DECRYPTOR VIEW -->
+      <!-- CYBER WI-FI 360° RADAR & QUANTUM DECRYPTOR VIEW -->
       <div class="terminal-view hidden" id="viewWifi">
         <!-- Dynamically rendered by CyberWifiEngine -->
       </div>
