@@ -131,6 +131,11 @@ class WindowsTerminalApp {
     
     this.cacheDOM();
 
+    // Start background Matrix visual engine immediately for Stage 0/1/2/3
+    if (!this.matrix) {
+      this.matrix = new MatrixVisualEngine('matrixCanvas', 'particleCanvas');
+    }
+
     if (skipBoot) {
       if (this.dom.bootScreenOverlay) this.dom.bootScreenOverlay.classList.add('hidden');
       if (this.dom.secretGateOverlay) this.dom.secretGateOverlay.classList.add('hidden');
@@ -805,17 +810,17 @@ class WindowsTerminalApp {
         setTimeout(() => {
           if (this.dom.bootScreenOverlay) {
             this.dom.bootScreenOverlay.classList.add('hidden');
-            setTimeout(() => {
-              this.dom.bootScreenOverlay.style.display = 'none';
-              if (this.dom.secretGateOverlay) this.dom.secretGateOverlay.classList.remove('hidden');
-
-              this.state = STATES.GATE;
-              if (this.dom.secretGateInput) {
-                this.dom.secretGateInput.focus();
-              }
-            }, 600);
+            this.dom.bootScreenOverlay.style.display = 'none';
           }
-        }, 1200);
+          if (this.dom.secretGateOverlay) {
+            this.dom.secretGateOverlay.classList.remove('hidden');
+          }
+
+          this.state = STATES.GATE;
+          if (this.dom.secretGateInput) {
+            this.dom.secretGateInput.focus();
+          }
+        }, 350);
       }
     }, 54);
   }
@@ -864,10 +869,12 @@ class WindowsTerminalApp {
           this.dom.secretGateOverlay.classList.remove('gate-unlocked');
           this.dom.hackerLoginOverlay.classList.remove('hidden');
           this.state = STATES.LOGIN;
-          this.dom.loginPassField.focus();
-        }, 800);
+          if (this.dom.loginPassField) {
+            this.dom.loginPassField.focus();
+          }
+        }, 300);
       }
-    }, 150);
+    }, 120);
   }
 
   handleLogin() {

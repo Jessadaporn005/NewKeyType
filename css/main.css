@@ -149,12 +149,11 @@ html, body {
   width: 100vw;
   height: 100vh;
   pointer-events: none;
-  z-index: 0;
 }
 
 #matrixCanvas {
-  opacity: 0.35;
-  z-index: 0;
+  opacity: 0.85;
+  z-index: 1;
 }
 
 #particleCanvas {
@@ -605,8 +604,7 @@ html, body {
   width: 100vw;
   height: 100vh;
   z-index: 500;
-  background: radial-gradient(circle at center, rgba(6, 10, 15, 0.72) 0%, rgba(2, 4, 6, 0.85) 100%);
-  backdrop-filter: blur(4px);
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;

@@ -135,8 +135,8 @@ class HackerAudioEngine {
   }
 
   /**
-   * Ultra-clean, single-layer high-frequency C2 Telemetry Tick for log streaming
-   * (Zero sub-bass harmonics or overlapping oscillator resonance)
+   * Ultra-clean, single-frequency static C2 Telemetry Tick for log streaming
+   * (Pure single 3ms blip with ZERO pitch-glide, echo, or harmonic resonance)
    */
   playBootTelemetryTick() {
     if (this.isMuted || this.preset === 'silent') return;
@@ -146,14 +146,13 @@ class HackerAudioEngine {
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(3400 + (Math.random() - 0.5) * 300, t);
-    osc.frequency.exponentialRampToValueAtTime(1400, t + 0.005);
-    gain.gain.setValueAtTime(0.06, t);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.005);
+    osc.frequency.setValueAtTime(2400, t);
+    gain.gain.setValueAtTime(0.04, t);
+    gain.gain.linearRampToValueAtTime(0.0001, t + 0.003);
     osc.connect(gain);
     gain.connect(this.masterGain);
     osc.start(t);
-    osc.stop(t + 0.006);
+    osc.stop(t + 0.004);
   }
 
   /**
