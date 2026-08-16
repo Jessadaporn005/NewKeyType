@@ -3427,8 +3427,16 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
   bindEvents() {
     if (this.sys.isElectron && window.cyberSystemAPI.onUsbDetected) {
       window.cyberSystemAPI.onUsbDetected((drive) => {
-        this.audio.playSuccessFanfare();
-        alert(`[!] NEW HARDWARE DETECTED: REMOVABLE MEDIA MOUNTED AT ${drive}\n>> SCANNING FOR EXECUTABLES & PAYLOADS...`);
+        // Prevent sound and interruptions while boot sequence or gate login is running
+        if (this.state === STATES.LOADING || this.state === STATES.GATE || this.state === STATES.LOGIN) {
+          return;
+        }
+        if (this.audio && typeof this.audio.playUsbMountSound === 'function') {
+          this.audio.playUsbMountSound();
+        }
+        if (this.toasts) {
+          this.toasts.show('SUCCESS', `REMOVABLE MEDIA MOUNTED AT ${drive}`, 3500);
+        }
         this.addExp(25, 'Hardware Interfaced');
       });
     }

@@ -450,34 +450,47 @@ server.listen(0, '127.0.0.1', () => {
   }
 
   function startUsbDetection(win) {
-    let knownDrives = [];
-    setInterval(() => {
-      exec('wmic logicaldisk get name,volumename,drivetype', (err, stdout) => {
+    let knownDrives = null; // null indicates initial baseline scan not yet established
+
+    const pollDrives = () => {
+      exec('wmic logicaldisk get name,drivetype', (err, stdout) => {
         if (err) return;
         const lines = stdout.split('\n').map(l => l.trim()).filter(l => l);
-        const currentDrives = [];
-        // Parse WMIC output (DriveType 2 = Removable)
+        const currentRemovableDrives = [];
+
+        // DriveType 2 = Removable Drive (USB flash drives, SD cards)
         for (let i = 1; i < lines.length; i++) {
-          const parts = lines[i].split(/\s{2,}/);
+          const parts = lines[i].split(/\s+/);
           if (parts.length >= 2) {
-            const driveType = parts[parts.length - 1]; // usually last column if ordered
-            const name = parts[0];
-            // If it's a removable drive (type 2) or just to detect any new drive:
-            if (driveType === '2' || driveType === '3') {
-               currentDrives.push(name);
+            const driveType = parts[0];
+            const name = parts[1] || parts[0];
+            if (parts.includes('2')) {
+              const driveLetter = parts.find(p => /^[A-Z]:$/i.test(p));
+              if (driveLetter) currentRemovableDrives.push(driveLetter);
             }
           }
         }
         
-        if (knownDrives.length > 0) {
-          const newDrives = currentDrives.filter(d => !knownDrives.includes(d));
-          if (newDrives.length > 0 && win && !win.isDestroyed()) {
-            win.webContents.send('cyber:usb-detected', newDrives[0]);
-          }
+        // If baseline is not established, set baseline silently with zero notifications
+        if (knownDrives === null) {
+          knownDrives = currentRemovableDrives;
+          return;
         }
-        knownDrives = currentDrives;
+
+        const newDrives = currentRemovableDrives.filter(d => !knownDrives.includes(d));
+        if (newDrives.length > 0 && win && !win.isDestroyed()) {
+          newDrives.forEach(drive => {
+            win.webContents.send('cyber:usb-detected', drive);
+          });
+        }
+        knownDrives = currentRemovableDrives;
       });
-    }, 5000);
+    };
+
+    // Run initial baseline immediately without alerting
+    pollDrives();
+    // Subsequent periodic checks every 6 seconds for actual physical USB hotplugs
+    setInterval(pollDrives, 6000);
   }
 
   function createWindow() {
