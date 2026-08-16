@@ -825,7 +825,7 @@ class WindowsTerminalApp {
       this.dom.chkEma.addEventListener('change', (e) => {
         if (this.tradingEngine) {
           this.tradingEngine.showEMA = e.target.checked;
-          this.tradingEngine.render();
+          this.tradingEngine.requestRender();
         }
       });
     }
@@ -833,7 +833,7 @@ class WindowsTerminalApp {
       this.dom.chkBollinger.addEventListener('change', (e) => {
         if (this.tradingEngine) {
           this.tradingEngine.showBollinger = e.target.checked;
-          this.tradingEngine.render();
+          this.tradingEngine.requestRender();
         }
       });
     }
@@ -841,7 +841,7 @@ class WindowsTerminalApp {
       this.dom.chkPatterns.addEventListener('change', (e) => {
         if (this.tradingEngine) {
           this.tradingEngine.showPatterns = e.target.checked;
-          this.tradingEngine.render();
+          this.tradingEngine.requestRender();
         }
       });
     }

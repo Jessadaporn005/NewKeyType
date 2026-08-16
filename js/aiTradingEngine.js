@@ -653,7 +653,7 @@ export class AITradingEngine {
     if (!asset) return;
     this.activeAsset = asset;
     await this.loadCandles();
-    this.render();
+    this.requestRender();
   }
 
   async setTimeframe(tfId) {
@@ -661,7 +661,7 @@ export class AITradingEngine {
     if (!tf) return;
     this.activeTimeframe = tf;
     await this.loadCandles();
-    this.render();
+    this.requestRender();
   }
 
   async loadCandles() {
@@ -747,9 +747,9 @@ export class AITradingEngine {
       this.checkAutoTradeExecution();
     }
 
-    // 3. Recompute Signals and Redraw
+    // 3. Recompute Signals and Redraw smoothly
     this.analyzeMarket();
-    this.render();
+    this.requestRender();
   }
 
   analyzeMarket() {
@@ -974,50 +974,77 @@ export class AITradingEngine {
       this.mouseX = e.clientX - rect.left;
       this.mouseY = e.clientY - rect.top;
       this.isHovering = true;
-      this.render();
+      this.requestRender();
     });
 
     this.canvas.addEventListener('mouseleave', () => {
       this.isHovering = false;
+      this.requestRender();
+    });
+  }
+
+  requestRender() {
+    if (this.animFrameId) return;
+    this.animFrameId = requestAnimationFrame(() => {
+      this.animFrameId = null;
       this.render();
     });
   }
 
   resizeCanvas() {
+    const dpr = Math.max(1, window.devicePixelRatio || 1);
+    this.dpr = dpr;
+
     if (this.canvas && this.canvas.parentElement) {
       const rect = this.canvas.parentElement.getBoundingClientRect();
-      if (rect.width > 50 && rect.height > 50) {
-        this.canvas.width = Math.floor(rect.width);
-        this.canvas.height = Math.floor(rect.height);
-      }
+      const cssW = Math.max(100, Math.floor(rect.width));
+      const cssH = Math.max(100, Math.floor(rect.height));
+
+      this.canvas.width = Math.floor(cssW * dpr);
+      this.canvas.height = Math.floor(cssH * dpr);
+      this.canvas.style.width = `${cssW}px`;
+      this.canvas.style.height = `${cssH}px`;
+      this.cssWidth = cssW;
+      this.cssHeight = cssH;
     }
+
     if (this.subCanvas && this.subCanvas.parentElement) {
       const subRect = this.subCanvas.parentElement.getBoundingClientRect();
-      if (subRect.width > 50) {
-        this.subCanvas.width = Math.floor(subRect.width);
-        this.subCanvas.height = Math.floor(Math.max(50, subRect.height - 24));
-      }
+      const subCssW = Math.max(100, Math.floor(subRect.width));
+      const subCssH = Math.max(40, Math.floor(subRect.height - 20));
+
+      this.subCanvas.width = Math.floor(subCssW * dpr);
+      this.subCanvas.height = Math.floor(subCssH * dpr);
+      this.subCanvas.style.width = `${subCssW}px`;
+      this.subCanvas.style.height = `${subCssH}px`;
+      this.subCssWidth = subCssW;
+      this.subCssHeight = subCssH;
     }
-    this.render();
+
+    this.requestRender();
   }
 
   render() {
     if (!this.canvas || !this.ctx || this.candles.length === 0) return;
 
     const ctx = this.ctx;
-    const width = this.canvas.width;
-    const height = this.canvas.height;
+    const dpr = this.dpr || 1;
+    const width = this.cssWidth || (this.canvas.width / dpr);
+    const height = this.cssHeight || (this.canvas.height / dpr);
+
+    ctx.save();
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, width, height);
 
     const candles = this.candles;
     const candleCount = candles.length;
-    const paddingRight = 70;
-    const paddingBottom = 25;
-    const paddingTop = 25;
+    const paddingRight = 75;
+    const paddingBottom = 22;
+    const paddingTop = 26;
     const chartWidth = width - paddingRight;
     const chartHeight = height - paddingBottom - paddingTop;
 
-    // Calculate Price Min & Max with margin
+    // Calculate Price Min & Max with generous padding
     let minPrice = Infinity;
     let maxPrice = -Infinity;
     let maxVol = 0;
@@ -1028,51 +1055,63 @@ export class AITradingEngine {
       if (c.volume > maxVol) maxVol = c.volume;
     });
 
+    const pMargin = (maxPrice - minPrice) * 0.08 || 1;
+    minPrice -= pMargin;
+    maxPrice += pMargin;
+
     const priceRange = maxPrice - minPrice || 1;
-    const candleWidth = Math.max(3, (chartWidth / candleCount) * 0.7);
     const candleSpacing = chartWidth / candleCount;
+    const candleWidth = Math.max(3, candleSpacing * 0.72);
 
     const getY = (price) => paddingTop + chartHeight - ((price - minPrice) / priceRange) * chartHeight;
     const getX = (index) => index * candleSpacing + candleSpacing / 2;
 
-    // 1. Draw Grid Lines & Price Axis
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+    // 0. Watermark Asset Identifier
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.035)';
+    ctx.font = '900 42px "JetBrains Mono", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${this.activeAsset.id} • ${this.activeTimeframe.label}`, chartWidth / 2, height / 2);
+
+    // 1. Grid Lines & Price Axis
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
     ctx.lineWidth = 1;
-    ctx.font = '10px "Share Tech Mono", monospace';
+    ctx.font = '10px "JetBrains Mono", monospace';
     ctx.fillStyle = '#64748b';
     ctx.textAlign = 'left';
 
-    for (let i = 0; i <= 5; i++) {
-      const p = minPrice + (priceRange / 5) * i;
-      const y = getY(p);
+    const steps = 6;
+    for (let i = 0; i <= steps; i++) {
+      const p = minPrice + (priceRange / steps) * i;
+      const y = Math.round(getY(p)) + 0.5;
       ctx.beginPath();
       ctx.moveTo(0, y);
       ctx.lineTo(chartWidth, y);
       ctx.stroke();
-      ctx.fillText(p.toFixed(this.activeAsset.digits), chartWidth + 6, y + 3);
+      ctx.fillText(p.toFixed(this.activeAsset.digits), chartWidth + 6, y + 3.5);
     }
 
-    // 2. Draw Volume Bars at the bottom
+    // 2. Volume Bars with clear contrast
     if (this.showVolume) {
-      const volHeightMax = chartHeight * 0.25;
+      const volHeightMax = chartHeight * 0.22;
       candles.forEach((c, idx) => {
         const x = getX(idx);
         const vH = (c.volume / (maxVol || 1)) * volHeightMax;
         const y = height - paddingBottom - vH;
-        ctx.fillStyle = c.close >= c.open ? 'rgba(0, 255, 102, 0.18)' : 'rgba(255, 34, 68, 0.18)';
-        ctx.fillRect(x - candleWidth / 2, y, candleWidth, vH);
+        ctx.fillStyle = c.close >= c.open ? 'rgba(0, 255, 136, 0.25)' : 'rgba(255, 51, 85, 0.25)';
+        ctx.fillRect(Math.round(x - candleWidth / 2), Math.round(y), Math.round(candleWidth), Math.round(vH));
       });
     }
 
-    // 3. Draw Bollinger Bands
+    // 3. Bollinger Bands (Cached or Calculated)
     if (this.showBollinger) {
       const bb = calculateBollingerBands(candles, 20, 2);
       ctx.beginPath();
+      let hasStarted = false;
       for (let i = 0; i < candleCount; i++) {
         if (bb.upper[i] !== null) {
           const x = getX(i);
           const y = getY(bb.upper[i]);
-          if (i === 19) ctx.moveTo(x, y);
+          if (!hasStarted) { ctx.moveTo(x, y); hasStarted = true; }
           else ctx.lineTo(x, y);
         }
       }
@@ -1087,17 +1126,18 @@ export class AITradingEngine {
       ctx.fillStyle = 'rgba(0, 229, 255, 0.04)';
       ctx.fill();
 
-      // Lower & Upper line strokes
+      // Band Outline Strokes
       ['upper', 'lower'].forEach(band => {
         ctx.beginPath();
-        ctx.strokeStyle = 'rgba(0, 229, 255, 0.35)';
-        ctx.lineWidth = 1;
+        ctx.strokeStyle = 'rgba(0, 229, 255, 0.4)';
+        ctx.lineWidth = 1.2;
         ctx.setLineDash([3, 3]);
+        let started = false;
         for (let i = 0; i < candleCount; i++) {
           if (bb[band][i] !== null) {
             const x = getX(i);
             const y = getY(bb[band][i]);
-            if (i === 19) ctx.moveTo(x, y);
+            if (!started) { ctx.moveTo(x, y); started = true; }
             else ctx.lineTo(x, y);
           }
         }
@@ -1106,174 +1146,224 @@ export class AITradingEngine {
       });
     }
 
-    // 4. Draw EMA Ribbon Curves (EMA 20 & EMA 50)
+    // 4. EMA Ribbon Curves (EMA 20 & EMA 50)
     if (this.showEMA) {
       const ema20 = calculateEMA(candles, 20);
       const ema50 = calculateEMA(candles, 50);
 
-      // EMA 20 (Cyan)
+      // EMA 20 (Cyan Neon)
       ctx.beginPath();
       ctx.strokeStyle = '#00e5ff';
-      ctx.lineWidth = 1.5;
+      ctx.lineWidth = 1.6;
+      let start20 = false;
       for (let i = 0; i < candleCount; i++) {
         if (ema20[i] !== null) {
           const x = getX(i);
           const y = getY(ema20[i]);
-          if (i === 19) ctx.moveTo(x, y);
+          if (!start20) { ctx.moveTo(x, y); start20 = true; }
           else ctx.lineTo(x, y);
         }
       }
       ctx.stroke();
 
-      // EMA 50 (Gold/Amber)
+      // EMA 50 (Gold Amber)
       ctx.beginPath();
       ctx.strokeStyle = '#ffaa00';
-      ctx.lineWidth = 1.5;
+      ctx.lineWidth = 1.6;
+      let start50 = false;
       for (let i = 0; i < candleCount; i++) {
         if (ema50[i] !== null) {
           const x = getX(i);
           const y = getY(ema50[i]);
-          if (i === 49) ctx.moveTo(x, y);
+          if (!start50) { ctx.moveTo(x, y); start50 = true; }
           else ctx.lineTo(x, y);
         }
       }
       ctx.stroke();
     }
 
-    // 5. Draw Candlesticks (Body + High/Low Wicks)
+    // 5. Candlesticks (Vibrant & Sharp)
     candles.forEach((c, idx) => {
-      const x = getX(idx);
+      const x = Math.round(getX(idx));
       const isGreen = c.close >= c.open;
-      const color = isGreen ? '#00ff66' : '#ff2244';
+      const bodyColor = isGreen ? '#00ff88' : '#ff3355';
 
-      // Wick
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 1.2;
+      // Wick (Crisp 1.5px line)
+      ctx.strokeStyle = bodyColor;
+      ctx.lineWidth = 1.5;
       ctx.beginPath();
-      ctx.moveTo(x, getY(c.high));
-      ctx.lineTo(x, getY(c.low));
+      ctx.moveTo(x + 0.5, Math.round(getY(c.high)));
+      ctx.lineTo(x + 0.5, Math.round(getY(c.low)));
       ctx.stroke();
 
-      // Body
+      // Body (Crisp solid rect)
       const openY = getY(c.open);
       const closeY = getY(c.close);
-      const topY = Math.min(openY, closeY);
-      const bodyH = Math.max(1.5, Math.abs(closeY - openY));
+      const topY = Math.round(Math.min(openY, closeY));
+      const bodyH = Math.max(2, Math.round(Math.abs(closeY - openY)));
 
-      ctx.fillStyle = color;
-      ctx.fillRect(x - candleWidth / 2, topY, candleWidth, bodyH);
+      ctx.fillStyle = bodyColor;
+      ctx.fillRect(Math.round(x - candleWidth / 2), topY, Math.round(candleWidth), bodyH);
     });
 
-    // 6. Draw AI Pattern Badges on Chart
-    if (this.showPatterns && this.patterns.length > 0) {
-      const lastCandleIdx = candleCount - 1;
-      const lastX = getX(lastCandleIdx);
-      const lastY = getY(candles[lastCandleIdx].high) - 15;
+    // 6. Current Live Price Horizontal Tracking Line & Badge
+    const lastCandle = candles[candleCount - 1];
+    const currentPrice = lastCandle.close;
+    const currentY = Math.round(getY(currentPrice)) + 0.5;
+    const isLiveUp = lastCandle.close >= lastCandle.open;
+    const liveColor = isLiveUp ? '#00ff88' : '#ff3355';
 
-      ctx.fillStyle = '#ffaa00';
-      ctx.font = 'bold 10px "Share Tech Mono", monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText(`⚡ [AI: ${this.patterns[0].type}]`, lastX - 20, lastY);
+    ctx.strokeStyle = liveColor;
+    ctx.lineWidth = 1.2;
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath();
+    ctx.moveTo(0, currentY);
+    ctx.lineTo(chartWidth, currentY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Live Price Pill on Axis
+    ctx.fillStyle = liveColor;
+    ctx.fillRect(chartWidth + 2, currentY - 9, paddingRight - 4, 18);
+    ctx.fillStyle = '#000000';
+    ctx.font = '900 10.5px "JetBrains Mono", monospace';
+    ctx.fillText(currentPrice.toFixed(this.activeAsset.digits), chartWidth + 6, currentY + 3.5);
+
+    // 7. Top Banner OHLCV Stats
+    const activeCandle = (this.isHovering && this.mouseX >= 0 && this.mouseX <= chartWidth)
+      ? candles[Math.min(candleCount - 1, Math.max(0, Math.floor(this.mouseX / candleSpacing)))]
+      : lastCandle;
+
+    if (activeCandle) {
+      ctx.font = 'bold 11px "JetBrains Mono", monospace';
+      ctx.textAlign = 'left';
+      const isUp = activeCandle.close >= activeCandle.open;
+      const cColor = isUp ? '#00ff88' : '#ff3355';
+
+      ctx.fillStyle = '#64748b';
+      ctx.fillText('O:', 14, 15);
+      ctx.fillStyle = cColor;
+      ctx.fillText(activeCandle.open.toFixed(this.activeAsset.digits), 28, 15);
+
+      ctx.fillStyle = '#64748b';
+      ctx.fillText('H:', 95, 15);
+      ctx.fillStyle = cColor;
+      ctx.fillText(activeCandle.high.toFixed(this.activeAsset.digits), 108, 15);
+
+      ctx.fillStyle = '#64748b';
+      ctx.fillText('L:', 175, 15);
+      ctx.fillStyle = cColor;
+      ctx.fillText(activeCandle.low.toFixed(this.activeAsset.digits), 188, 15);
+
+      ctx.fillStyle = '#64748b';
+      ctx.fillText('C:', 255, 15);
+      ctx.fillStyle = cColor;
+      ctx.fillText(activeCandle.close.toFixed(this.activeAsset.digits), 268, 15);
+
+      ctx.fillStyle = '#64748b';
+      ctx.fillText('Vol:', 335, 15);
+      ctx.fillStyle = '#00e5ff';
+      ctx.fillText(activeCandle.volume.toString(), 362, 15);
     }
 
-    // 7. Interactive Crosshair & Tooltip
+    // 8. Interactive Crosshair & Tooltip
     if (this.isHovering && this.mouseX >= 0 && this.mouseX <= chartWidth) {
-      const hoveredIdx = Math.min(candleCount - 1, Math.max(0, Math.floor(this.mouseX / candleSpacing)));
-      const hoveredCandle = candles[hoveredIdx];
-
-      // Crosshair Lines
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+      // Vertical & Horizontal Lines
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
       ctx.lineWidth = 1;
-      ctx.setLineDash([4, 4]);
+      ctx.setLineDash([3, 3]);
 
-      // Vertical Line
       ctx.beginPath();
-      ctx.moveTo(this.mouseX, 0);
-      ctx.lineTo(this.mouseX, height - paddingBottom);
+      ctx.moveTo(Math.round(this.mouseX) + 0.5, 0);
+      ctx.lineTo(Math.round(this.mouseX) + 0.5, height - paddingBottom);
       ctx.stroke();
 
-      // Horizontal Line
       ctx.beginPath();
-      ctx.moveTo(0, this.mouseY);
-      ctx.lineTo(chartWidth, this.mouseY);
+      ctx.moveTo(0, Math.round(this.mouseY) + 0.5);
+      ctx.lineTo(chartWidth, Math.round(this.mouseY) + 0.5);
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // Price Tag on Axis
+      // Hover Price Tag on Right Axis
       const hoverPrice = minPrice + ((chartHeight - (this.mouseY - paddingTop)) / chartHeight) * priceRange;
       ctx.fillStyle = '#00e5ff';
-      ctx.fillRect(chartWidth + 2, this.mouseY - 8, paddingRight - 4, 16);
+      ctx.fillRect(chartWidth + 2, this.mouseY - 9, paddingRight - 4, 18);
       ctx.fillStyle = '#000000';
-      ctx.font = 'bold 10px "Share Tech Mono", monospace';
-      ctx.fillText(hoverPrice.toFixed(this.activeAsset.digits), chartWidth + 6, this.mouseY + 4);
-
-      // Top Banner OHLCV Stats
-      if (hoveredCandle) {
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '11px "Share Tech Mono", monospace';
-        ctx.textAlign = 'left';
-        const isUp = hoveredCandle.close >= hoveredCandle.open;
-        const ohlcText = `O: ${hoveredCandle.open.toFixed(this.activeAsset.digits)}  H: ${hoveredCandle.high.toFixed(this.activeAsset.digits)}  L: ${hoveredCandle.low.toFixed(this.activeAsset.digits)}  C: ${hoveredCandle.close.toFixed(this.activeAsset.digits)}  Vol: ${hoveredCandle.volume}`;
-        ctx.fillStyle = isUp ? '#00ff66' : '#ff2244';
-        ctx.fillText(ohlcText, 14, 16);
-      }
+      ctx.font = 'bold 10px "JetBrains Mono", monospace';
+      ctx.fillText(hoverPrice.toFixed(this.activeAsset.digits), chartWidth + 6, this.mouseY + 3.5);
     }
 
-    // Render Sub-Chart (RSI or MACD)
+    ctx.restore();
+
+    // Render Sub-Chart (RSI)
     this.renderSubChart();
   }
 
   renderSubChart() {
     if (!this.subCanvas || !this.subCtx || this.candles.length === 0) return;
     const ctx = this.subCtx;
-    const width = this.subCanvas.width;
-    const height = this.subCanvas.height;
+    const dpr = this.dpr || 1;
+    const width = this.subCssWidth || (this.subCanvas.width / dpr);
+    const height = this.subCssHeight || (this.subCanvas.height / dpr);
+
+    ctx.save();
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, width, height);
 
     const candleCount = this.candles.length;
-    const paddingRight = 70;
+    const paddingRight = 75;
     const chartWidth = width - paddingRight;
     const candleSpacing = chartWidth / candleCount;
     const getX = (index) => index * candleSpacing + candleSpacing / 2;
 
     if (this.subChartMode === 'RSI') {
       const rsi = calculateRSI(this.candles, 14);
+      const getY = (val) => height - 10 - (val / 100) * (height - 20);
 
-      // 70 Overbought & 30 Oversold Levels
-      const getY = (val) => height - (val / 100) * height;
+      // Shaded Oversold / Overbought Zone (30 to 70)
+      ctx.fillStyle = 'rgba(192, 132, 252, 0.05)';
+      ctx.fillRect(0, getY(70), chartWidth, getY(30) - getY(70));
 
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+      // Grid Levels
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
       ctx.lineWidth = 1;
       ctx.setLineDash([2, 2]);
       [70, 50, 30].forEach(level => {
-        const y = getY(level);
+        const y = Math.round(getY(level)) + 0.5;
         ctx.beginPath();
         ctx.moveTo(0, y);
         ctx.lineTo(chartWidth, y);
         ctx.stroke();
         ctx.fillStyle = '#64748b';
-        ctx.font = '9px monospace';
-        ctx.fillText(level, chartWidth + 6, y + 3);
+        ctx.font = '9px "JetBrains Mono", monospace';
+        ctx.fillText(level.toString(), chartWidth + 6, y + 3);
       });
       ctx.setLineDash([]);
 
-      // RSI Curve (Purple/Cyan)
+      // RSI Curve
       ctx.beginPath();
       ctx.strokeStyle = '#c084fc';
       ctx.lineWidth = 1.8;
+      let rsiStarted = false;
       for (let i = 0; i < candleCount; i++) {
-        const x = getX(i);
-        const y = getY(rsi[i]);
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
+        if (rsi[i] !== null) {
+          const x = getX(i);
+          const y = getY(rsi[i]);
+          if (!rsiStarted) { ctx.moveTo(x, y); rsiStarted = true; }
+          else ctx.lineTo(x, y);
+        }
       }
       ctx.stroke();
 
-      // Legend
+      // Legend & Current Value Badge
+      const curRsi = rsi[rsi.length - 1] || 50;
       ctx.fillStyle = '#c084fc';
-      ctx.font = 'bold 10px "Share Tech Mono", monospace';
-      ctx.fillText(`RSI (14): ${rsi[rsi.length - 1] || 50}`, 10, 14);
+      ctx.font = 'bold 10px "JetBrains Mono", monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText(`RSI (14): ${curRsi}`, 10, 14);
     }
+
+    ctx.restore();
   }
 
   // Paper Trading Operations
