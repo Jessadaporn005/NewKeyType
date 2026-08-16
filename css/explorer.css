@@ -1,0 +1,376 @@
+/* ==========================================================================
+   CYBER//TYPE FILE EXPLORER & STORAGE MATRIX STYLES
+   ========================================================================== */
+
+.cyber-explorer-window {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  background: rgba(3, 10, 6, 0.92);
+  border: 1px solid rgba(0, 255, 102, 0.3);
+  border-radius: 8px;
+  overflow: hidden;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.95);
+}
+
+/* 1. Explorer Header Navigation Bar */
+.explorer-header-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  background: rgba(2, 6, 4, 0.96);
+  border-bottom: 1px solid rgba(0, 255, 102, 0.2);
+  user-select: none;
+}
+
+.explorer-nav-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.exp-nav-btn {
+  background: rgba(0, 255, 102, 0.08);
+  border: 1px solid rgba(0, 255, 102, 0.25);
+  color: #00ff66;
+  font-family: 'Consolas', monospace;
+  font-size: 11px;
+  font-weight: bold;
+  padding: 4px 9px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.exp-nav-btn:hover {
+  background: rgba(0, 255, 102, 0.25);
+  border-color: #00ff66;
+  box-shadow: 0 0 8px rgba(0, 255, 102, 0.4);
+}
+
+.exp-btn-exit {
+  margin-left: auto;
+  background: rgba(255, 34, 68, 0.15);
+  border-color: rgba(255, 34, 68, 0.4);
+  color: #ff3366;
+}
+
+.exp-btn-exit:hover {
+  background: rgba(255, 34, 68, 0.35);
+  border-color: #ff3366;
+}
+
+/* Breadcrumbs */
+.explorer-breadcrumbs {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 255, 102, 0.04);
+  border: 1px solid rgba(0, 255, 102, 0.18);
+  border-radius: 5px;
+  padding: 4px 10px;
+  overflow-x: auto;
+  font-family: 'Consolas', monospace;
+  font-size: 11.5px;
+}
+
+.crumb-item {
+  color: #c0ffda;
+  cursor: pointer;
+  padding: 1px 4px;
+  border-radius: 3px;
+  transition: all 0.12s ease;
+  white-space: nowrap;
+}
+
+.crumb-item:hover {
+  background: rgba(0, 255, 102, 0.2);
+  color: #00ff66;
+  text-shadow: 0 0 6px rgba(0, 255, 102, 0.6);
+}
+
+.crumb-sep {
+  color: #446655;
+  font-size: 10px;
+}
+
+/* Search Box */
+.explorer-search-box {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 255, 102, 0.06);
+  border: 1px solid rgba(0, 255, 102, 0.2);
+  border-radius: 5px;
+  padding: 4px 10px;
+  width: 180px;
+}
+
+.exp-search-input {
+  background: transparent;
+  border: none;
+  color: #00ff66;
+  font-family: 'Consolas', monospace;
+  font-size: 11px;
+  width: 100%;
+  outline: none;
+}
+
+.exp-search-input::placeholder {
+  color: #557762;
+}
+
+/* 2. Explorer Body Split */
+.explorer-body-split {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+/* Sidebar */
+.explorer-sidebar {
+  width: 220px;
+  background: rgba(2, 8, 4, 0.9);
+  border-right: 1px solid rgba(0, 255, 102, 0.18);
+  padding: 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+}
+
+.sidebar-section-title {
+  font-family: 'Consolas', monospace;
+  font-size: 10px;
+  font-weight: 800;
+  color: #00e5ff;
+  letter-spacing: 0.8px;
+  margin-bottom: 4px;
+}
+
+.sidebar-links-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sidebar-drive-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 9px;
+  background: rgba(0, 255, 102, 0.04);
+  border: 1px solid rgba(0, 255, 102, 0.12);
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sidebar-drive-item:hover {
+  background: rgba(0, 255, 102, 0.15);
+  border-color: #00ff66;
+  transform: translateX(3px);
+}
+
+.drive-icon {
+  font-size: 15px;
+}
+
+.drive-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.drive-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.drive-space {
+  font-size: 9px;
+  color: #72a382;
+}
+
+.sidebar-actions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.exp-action-btn {
+  background: rgba(0, 255, 102, 0.06);
+  border: 1px solid rgba(0, 255, 102, 0.2);
+  color: #c0ffda;
+  font-family: 'Consolas', monospace;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.12s ease;
+}
+
+.exp-action-btn:hover {
+  background: rgba(0, 255, 102, 0.2);
+  color: #00ff66;
+  border-color: #00ff66;
+}
+
+.exp-btn-danger:hover {
+  background: rgba(255, 34, 68, 0.25) !important;
+  color: #ff3366 !important;
+  border-color: #ff3366 !important;
+}
+
+/* Main File Matrix Table */
+.explorer-file-matrix {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: rgba(3, 10, 6, 0.85);
+  overflow: hidden;
+}
+
+.file-matrix-header {
+  display: flex;
+  align-items: center;
+  padding: 7px 14px;
+  background: rgba(2, 6, 4, 0.95);
+  border-bottom: 1px solid rgba(0, 255, 102, 0.18);
+  font-family: 'Consolas', monospace;
+  font-size: 10px;
+  font-weight: 800;
+  color: #00ff66;
+  letter-spacing: 0.8px;
+  user-select: none;
+}
+
+.col-name { flex: 2.5; display: flex; align-items: center; gap: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.col-size { flex: 0.8; font-family: 'Consolas', monospace; }
+.col-type { flex: 1.2; }
+.col-date { flex: 1.2; color: #72a382; }
+
+.file-matrix-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.file-row {
+  display: flex;
+  align-items: center;
+  padding: 6px 14px;
+  font-size: 11px;
+  color: #e0faea;
+  border-bottom: 1px solid rgba(0, 255, 102, 0.05);
+  cursor: pointer;
+  transition: all 0.12s ease;
+  user-select: none;
+}
+
+.file-row:hover {
+  background: rgba(0, 255, 102, 0.1);
+  color: #00ff66;
+}
+
+.file-row.selected {
+  background: rgba(0, 255, 102, 0.22);
+  color: #00ff66;
+  border-left: 3px solid #00ff66;
+  font-weight: 700;
+}
+
+.file-row .f-icon {
+  font-size: 14px;
+}
+
+.file-row.is-dir .f-name {
+  color: #00e5ff;
+  font-weight: 700;
+}
+
+/* 3. Bottom Status Bar */
+.explorer-status-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 5px 14px;
+  background: rgba(2, 6, 4, 0.96);
+  border-top: 1px solid rgba(0, 255, 102, 0.18);
+  font-family: 'Consolas', monospace;
+  font-size: 10px;
+  color: #72a382;
+}
+
+.status-sep { color: #335544; }
+.status-glow { color: #00ff66; font-weight: bold; margin-left: auto; }
+
+/* Hologram Preview Modal */
+.hologram-preview-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.88);
+  backdrop-filter: blur(12px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.holo-preview-card {
+  max-width: 80vw;
+  max-height: 80vh;
+  background: rgba(4, 12, 8, 0.96);
+  border: 1.5px solid #00ff66;
+  border-radius: 8px;
+  box-shadow: 0 0 35px rgba(0, 255, 102, 0.35);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.holo-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 14px;
+  background: rgba(2, 6, 4, 0.98);
+  border-bottom: 1px solid rgba(0, 255, 102, 0.3);
+  font-family: 'Consolas', monospace;
+  font-size: 11px;
+  font-weight: 800;
+  color: #00ff66;
+}
+
+.holo-close-btn {
+  background: transparent;
+  border: none;
+  color: #ff3366;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.holo-image-stage {
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-height: 70vh;
+  overflow: auto;
+}
+
+.holo-image-stage img {
+  max-width: 100%;
+  max-height: 65vh;
+  border-radius: 4px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+}

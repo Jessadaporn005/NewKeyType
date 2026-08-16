@@ -25,7 +25,9 @@ class SystemBridge {
       return await window.cyberSystemAPI.launch(target);
     } else {
       // Browser fallback simulation
-      window.open(target.startsWith('http') ? target : `https://www.google.com/search?q=${encodeURIComponent(target)}`, '_blank');
+      if (typeof window !== 'undefined' && typeof window.open === 'function') {
+        window.open(target.startsWith('http') ? target : `https://www.google.com/search?q=${encodeURIComponent(target)}`, '_blank');
+      }
       return { success: true, message: `[Simulated Launch] Target: ${target}` };
     }
   }
@@ -167,6 +169,102 @@ class SystemBridge {
     } else {
       return { success: false, error: 'Simulation mode does not support window tiling.' };
     }
+  }
+
+  // --- Real-World Windows/Linux Process Management ---
+  async getProcesses() {
+    if (this.isElectron) {
+      try {
+        const psRes = await this.exec('powershell -NoProfile -Command "Get-Process | Select-Object -First 35 Id, ProcessName, WorkingSet64, CPU | ConvertTo-Json"');
+        if (psRes && psRes.success && psRes.stdout) {
+          const list = JSON.parse(psRes.stdout);
+          const raw = Array.isArray(list) ? list : [list];
+          return {
+            success: true,
+            processes: raw.map(p => ({
+              pid: p.Id,
+              name: p.ProcessName,
+              memMB: Math.round((p.WorkingSet64 || 0) / (1024 * 1024)),
+              cpu: p.CPU ? p.CPU.toFixed(1) : '0.0',
+              status: 'RUNNING'
+            }))
+          };
+        }
+      } catch (e) {}
+    }
+
+    // Fallback simulation processes
+    return {
+      success: true,
+      processes: [
+        { pid: 4892, name: 'System Idle Process', memMB: 16, cpu: '0.0', status: 'RUNNING' },
+        { pid: 1420, name: 'chrome.exe', memMB: 1420, cpu: '3.4', status: 'RUNNING' },
+        { pid: 8912, name: 'Code.exe (VS Code)', memMB: 840, cpu: '2.1', status: 'RUNNING' },
+        { pid: 6540, name: 'Discord.exe', memMB: 390, cpu: '0.8', status: 'RUNNING' },
+        { pid: 7280, name: 'Spotify.exe', memMB: 280, cpu: '0.5', status: 'RUNNING' },
+        { pid: 9140, name: 'steam.exe', memMB: 460, cpu: '1.2', status: 'RUNNING' },
+        { pid: 3120, name: 'explorer.exe', memMB: 210, cpu: '0.3', status: 'RUNNING' },
+        { pid: 5540, name: 'CyberType.exe', memMB: 185, cpu: '1.8', status: 'RUNNING' },
+        { pid: 2190, name: 'powershell.exe', memMB: 95, cpu: '0.1', status: 'RUNNING' },
+        { pid: 7810, name: 'node.exe', memMB: 320, cpu: '1.5', status: 'RUNNING' }
+      ]
+    };
+  }
+
+  async killProcess(pid) {
+    if (this.isElectron) {
+      try {
+        const res = await this.exec(`powershell -NoProfile -Command "Stop-Process -Id ${pid} -Force"`);
+        return { success: res.success, message: `Process PID [${pid}] terminated.` };
+      } catch (e) {
+        return { success: false, error: e.message };
+      }
+    }
+    return { success: true, message: `[Simulated] Process PID [${pid}] terminated.` };
+  }
+
+  async getDrives() {
+    if (this.isElectron) {
+      try {
+        const driveRes = await this.exec('powershell -NoProfile -Command "Get-PSDrive -PSProvider FileSystem | Select-Object Name, Root, Free, Used | ConvertTo-Json"');
+        if (driveRes && driveRes.success && driveRes.stdout) {
+          const list = JSON.parse(driveRes.stdout);
+          const raw = Array.isArray(list) ? list : [list];
+          return {
+            success: true,
+            drives: raw.map(d => ({
+              name: `${d.Name}:\\`,
+              path: d.Root || `${d.Name}:\\`,
+              freeGB: d.Free ? Math.round(d.Free / (1024 * 1024 * 1024)) : 0,
+              usedGB: d.Used ? Math.round(d.Used / (1024 * 1024 * 1024)) : 0
+            }))
+          };
+        }
+      } catch (e) {}
+    }
+
+    return {
+      success: true,
+      drives: [
+        { name: 'C:\\ [System NVMe]', path: 'C:\\', freeGB: 420, usedGB: 580 },
+        { name: 'D:\\ [Cyber Storage]', path: 'D:\\', freeGB: 890, usedGB: 1110 },
+        { name: 'Desktop', path: 'C:\\Users\\asus\\Desktop', freeGB: 420, usedGB: 580 },
+        { name: 'Documents', path: 'C:\\Users\\asus\\Documents', freeGB: 420, usedGB: 580 },
+        { name: 'Downloads', path: 'C:\\Users\\asus\\Downloads', freeGB: 420, usedGB: 580 }
+      ]
+    };
+  }
+
+  async deleteFile(filePath) {
+    if (this.isElectron) {
+      try {
+        const res = await this.exec(`powershell -NoProfile -Command "Remove-Item -Path '${filePath}' -Force -Recurse"`);
+        return { success: res.success, message: `Removed '${filePath}'.` };
+      } catch (e) {
+        return { success: false, error: e.message };
+      }
+    }
+    return { success: true, message: `[Simulated] Removed '${filePath}'.` };
   }
 }
 

@@ -18,6 +18,9 @@
   <link rel="stylesheet" href="css/vscode.css">
   <link rel="stylesheet" href="css/browser.css">
   <link rel="stylesheet" href="css/intelFeed.css">
+  <link rel="stylesheet" href="css/explorer.css">
+  <link rel="stylesheet" href="css/taskManager.css">
+  <link rel="stylesheet" href="css/radio.css">
 </head>
 <body class="crt-scanlines">
   <!-- Initial Boot Sequence Screen -->
@@ -502,6 +505,21 @@
       <!-- IN-APP CYBER BROWSER VIEW -->
       <div class="terminal-view hidden" id="viewBrowser">
         <!-- Dynamically rendered by CyberBrowserEngine -->
+      </div>
+
+      <!-- CYBER FILE EXPLORER VIEW -->
+      <div class="terminal-view hidden" id="viewExplorer">
+        <!-- Dynamically rendered by CyberExplorerEngine -->
+      </div>
+
+      <!-- REAL TASK MANAGER VIEW (htop) -->
+      <div class="terminal-view hidden" id="viewTaskManager">
+        <!-- Dynamically rendered by TaskManagerViewEngine -->
+      </div>
+
+      <!-- TRON 3D AUDIO & RADIO VIEW -->
+      <div class="terminal-view hidden" id="viewRadio">
+        <!-- Dynamically rendered by CyberRadioEngine -->
       </div>
 
     </main>

@@ -1,0 +1,283 @@
+/* ==========================================================================
+   CYBER//TYPE REAL-WORLD TASK MANAGER & PROCESS MATRIX STYLES (htop)
+   ========================================================================== */
+
+.cyber-taskmgr-window {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  background: rgba(3, 10, 6, 0.92);
+  border: 1px solid rgba(0, 255, 102, 0.3);
+  border-radius: 8px;
+  overflow: hidden;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.95);
+}
+
+/* 1. Header Bar */
+.taskmgr-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  background: rgba(2, 6, 4, 0.96);
+  border-bottom: 1px solid rgba(0, 255, 102, 0.2);
+  user-select: none;
+}
+
+.taskmgr-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.taskmgr-title {
+  font-family: 'Consolas', monospace;
+  font-size: 12px;
+  font-weight: 800;
+  color: #00ff66;
+  letter-spacing: 1px;
+}
+
+.taskmgr-sub {
+  font-size: 9px;
+  font-weight: 700;
+  color: #00e5ff;
+  background: rgba(0, 229, 255, 0.12);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  padding: 1px 6px;
+  border-radius: 8px;
+}
+
+.taskmgr-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.taskmgr-search-box {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 255, 102, 0.06);
+  border: 1px solid rgba(0, 255, 102, 0.2);
+  border-radius: 5px;
+  padding: 4px 10px;
+  width: 220px;
+}
+
+.taskmgr-search-input {
+  background: transparent;
+  border: none;
+  color: #00ff66;
+  font-family: 'Consolas', monospace;
+  font-size: 11px;
+  width: 100%;
+  outline: none;
+}
+
+.taskmgr-search-input::placeholder {
+  color: #557762;
+}
+
+.taskmgr-ctrl-btn {
+  background: rgba(0, 255, 102, 0.08);
+  border: 1px solid rgba(0, 255, 102, 0.25);
+  color: #00ff66;
+  font-family: 'Consolas', monospace;
+  font-size: 10px;
+  font-weight: bold;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.taskmgr-ctrl-btn:hover {
+  background: rgba(0, 255, 102, 0.25);
+  border-color: #00ff66;
+}
+
+.taskmgr-btn-exit {
+  background: rgba(255, 34, 68, 0.15);
+  border-color: rgba(255, 34, 68, 0.4);
+  color: #ff3366;
+}
+
+/* 2. Telemetry HUD Cards */
+.taskmgr-telemetry-hud {
+  display: grid;
+  grid-template-columns: 1fr 1fr 0.8fr;
+  gap: 10px;
+  padding: 10px 14px;
+  background: rgba(1, 5, 3, 0.8);
+  border-bottom: 1px solid rgba(0, 255, 102, 0.15);
+}
+
+.telemetry-card {
+  background: rgba(0, 255, 102, 0.04);
+  border: 1px solid rgba(0, 255, 102, 0.18);
+  border-radius: 6px;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tel-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tel-label {
+  font-family: 'Consolas', monospace;
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #72a382;
+}
+
+.tel-val {
+  font-family: 'Consolas', monospace;
+  font-size: 13px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.tel-graph-box {
+  height: 36px;
+  width: 100%;
+  margin-top: 2px;
+}
+
+.tel-wave-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.tel-tasks-card {
+  justify-content: center;
+}
+
+.tel-tasks-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9.5px;
+  color: #72a382;
+  font-family: 'Consolas', monospace;
+  margin-top: 4px;
+}
+
+.tel-tasks-meta strong {
+  color: #00e5ff;
+}
+
+/* 3. Process Table Matrix */
+.taskmgr-table-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.taskmgr-table-header {
+  display: flex;
+  align-items: center;
+  padding: 7px 14px;
+  background: rgba(2, 6, 4, 0.95);
+  border-bottom: 1px solid rgba(0, 255, 102, 0.2);
+  font-family: 'Consolas', monospace;
+  font-size: 10px;
+  font-weight: 800;
+  color: #00ff66;
+  user-select: none;
+}
+
+.t-col {
+  cursor: pointer;
+  transition: color 0.12s ease;
+}
+
+.t-col:hover {
+  color: #c0ffda;
+}
+
+.t-col.active-sort {
+  color: #00e5ff;
+}
+
+.t-pid { flex: 0.8; font-family: 'Consolas', monospace; }
+.t-name { flex: 2.4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.t-mem { flex: 1.2; font-family: 'Consolas', monospace; }
+.t-cpu { flex: 0.8; font-family: 'Consolas', monospace; }
+.t-status { flex: 1; }
+.t-action { flex: 0.8; text-align: right; }
+
+.taskmgr-table-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2px 0;
+}
+
+.task-row {
+  display: flex;
+  align-items: center;
+  padding: 6px 14px;
+  font-size: 11px;
+  color: #e0faea;
+  border-bottom: 1px solid rgba(0, 255, 102, 0.05);
+  transition: background 0.12s ease;
+  user-select: none;
+}
+
+.task-row:hover {
+  background: rgba(0, 255, 102, 0.1);
+}
+
+.status-badge {
+  font-size: 8.5px;
+  font-family: 'Consolas', monospace;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: rgba(0, 255, 102, 0.12);
+  color: #00ff66;
+  border: 1px solid rgba(0, 255, 102, 0.3);
+}
+
+.btn-kill-proc {
+  background: rgba(255, 34, 68, 0.12);
+  border: 1px solid rgba(255, 34, 68, 0.35);
+  color: #ff3366;
+  font-family: 'Consolas', monospace;
+  font-size: 9.5px;
+  font-weight: bold;
+  padding: 2px 7px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.btn-kill-proc:hover {
+  background: rgba(255, 34, 68, 0.35);
+  color: #ffffff;
+  box-shadow: 0 0 8px rgba(255, 34, 68, 0.6);
+}
+
+/* 4. Bottom Status Dock */
+.taskmgr-status-dock {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 14px;
+  background: rgba(2, 6, 4, 0.96);
+  border-top: 1px solid rgba(0, 255, 102, 0.18);
+  font-family: 'Consolas', monospace;
+  font-size: 10px;
+  color: #72a382;
+}
+
+.dock-sep { color: #335544; }
+.dock-glow { color: #00ff66; font-weight: bold; margin-left: auto; }

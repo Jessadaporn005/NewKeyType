@@ -31,6 +31,10 @@ import { VscodeEngine } from './vscodeEngine.js';
 import { CyberBrowserEngine } from './cyberBrowser.js';
 import { TabManager, TAB_TYPES } from './tabManager.js';
 import { CyberIntelFeed } from './cyberIntelFeed.js';
+import { CyberExplorerEngine } from './cyberExplorer.js';
+import { TaskManagerViewEngine } from './taskManagerView.js';
+import { WorkspaceLauncherEngine } from './workspaceLauncher.js';
+import { CyberRadioEngine } from './cyberRadio.js';
 
 // Application States
 const STATES = {
@@ -45,7 +49,10 @@ const STATES = {
   MODE_SANDBOX: 'MODE_SANDBOX',
   MODE_ROGUELITE: 'MODE_ROGUELITE',
   MODE_VSCODE: 'MODE_VSCODE',
-  MODE_BROWSER: 'MODE_BROWSER'
+  MODE_BROWSER: 'MODE_BROWSER',
+  MODE_EXPLORER: 'MODE_EXPLORER',
+  MODE_TASKMGR: 'MODE_TASKMGR',
+  MODE_RADIO: 'MODE_RADIO'
 };
 
 class WindowsTerminalApp {
@@ -224,7 +231,10 @@ class WindowsTerminalApp {
         sandbox: document.getElementById('viewSandbox'),
         roguelite: document.getElementById('viewRoguelite'),
         vscode: document.getElementById('viewVscode'),
-        browser: document.getElementById('viewBrowser')
+        browser: document.getElementById('viewBrowser'),
+        explorer: document.getElementById('viewExplorer'),
+        taskmgr: document.getElementById('viewTaskManager'),
+        radio: document.getElementById('viewRadio')
       },
 
       // CLI Elements
@@ -530,6 +540,23 @@ class WindowsTerminalApp {
       this.browserEngine = new CyberBrowserEngine(this, this.audio);
       this.browserEngine.init(this.dom.views.browser);
     }
+
+    if (this.dom.views.explorer) {
+      this.explorerEngine = new CyberExplorerEngine(this, this.audio, this.toasts);
+      this.explorerEngine.init(this.dom.views.explorer);
+    }
+
+    if (this.dom.views.taskmgr) {
+      this.taskmgrEngine = new TaskManagerViewEngine(this, this.audio, this.toasts);
+      this.taskmgrEngine.init(this.dom.views.taskmgr);
+    }
+
+    if (this.dom.views.radio) {
+      this.radioEngine = new CyberRadioEngine(this, this.audio);
+      this.radioEngine.init(this.dom.views.radio);
+    }
+
+    this.workspaceEngine = new WorkspaceLauncherEngine(this, this.audio, this.toasts);
 
     this.controlCenter = new ControlCenter(this, this.audio, this.toasts);
 
@@ -1442,6 +1469,51 @@ AVAILABLE CYBER TERMINAL & REAL-WORLD OS COMMANDS:
         this.openDuckyModal();
         return;
 
+      // Cyber File Explorer & Real Storage Matrix
+      case 'explorer':
+      case 'files':
+      case 'drives':
+      case 'storage':
+        this.launchExplorerMode(args[0]);
+        return;
+
+      // Real Task Manager (htop) & Process Matrix
+      case 'htop':
+      case 'ps':
+      case 'top':
+      case 'taskmgr':
+      case 'processes':
+        this.launchTaskManagerMode();
+        return;
+
+      // Tron 3D Audio Visualizer & Cyber Radio
+      case 'radio':
+      case 'music':
+      case 'synthwave':
+      case 'equalizer':
+        this.launchRadioMode();
+        return;
+
+      // Mr. Robot Workspace Automator
+      case 'workspace':
+      case 'workspaces':
+      case 'devmode':
+      case 'gamemode':
+        const profId = cmd === 'devmode' ? 'dev_mode' : cmd === 'gamemode' ? 'gaming_rig' : (args[0] || 'dev_mode');
+        this.launchWorkspaceProfile(profId);
+        return;
+
+      // Matrix Biometric Thermal Keyboard Heatmap
+      case 'heat':
+      case 'heatmap':
+      case 'biometric':
+        const isHeatActive = this.kb.toggleHeatmap();
+        output = isHeatActive 
+          ? `[+] MATRIX BIOMETRIC THERMAL KEYBOARD HEATMAP: ACTIVE [COOL CYAN ➔ NEON RED]`
+          : `[-] MATRIX BIOMETRIC THERMAL KEYBOARD HEATMAP: DISABLED`;
+        this.audio.playKey(false);
+        break;
+
       // VS Code Multi-Language Interactive Playground & Academy
       case 'code':
       case 'vscode':
@@ -2268,6 +2340,135 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
         setTimeout(() => this.hands.updatePositions(), 50);
       }
     );
+  }
+
+  launchExplorerMode(pathArg) {
+    const logs = generateEntranceLogs('hacker', `Cyber File Explorer [${pathArg || 'C:\\'}]`);
+    this.state = STATES.MODE_EXPLORER;
+
+    this.kb.clearTargetKeys();
+    this.hands.clearTargetGuide();
+
+    let targetTab = null;
+    if (this.tabManager) {
+      const activeTab = this.tabManager.tabs.find(t => t.id === this.tabManager.activeTabId);
+      if (!activeTab || activeTab.type !== 'explorer') {
+        this.tabManager.tabCounter++;
+        targetTab = this.tabManager.createTab(TAB_TYPES.EXPLORER, `Cyber Explorer (${this.tabManager.tabCounter})`, false);
+        if (targetTab) {
+          this.tabManager.activeTabId = targetTab.id;
+          this.tabManager.renderTabs();
+        }
+      } else {
+        this.tabManager.updateActiveTabInfo('explorer', 'Cyber Explorer', '📂');
+        targetTab = activeTab;
+      }
+    }
+
+    this.playCyberTransition(
+      'CYBER FILE EXPLORER & STORAGE MATRIX',
+      'CONNECTING DIRECT TO HOST STORAGE & DRIVES...',
+      logs,
+      'explorer',
+      () => {
+        if (this.explorerEngine && pathArg) {
+          this.explorerEngine.navigateTo(pathArg, true);
+        }
+        if (this.tabManager && targetTab) {
+          this.tabManager.activeTabId = targetTab.id;
+          this.tabManager.renderTabs();
+        }
+        setTimeout(() => this.hands.updatePositions(), 50);
+      }
+    );
+  }
+
+  launchTaskManagerMode() {
+    const logs = generateEntranceLogs('hacker', 'Real Task Manager (htop)');
+    this.state = STATES.MODE_TASKMGR;
+
+    this.kb.clearTargetKeys();
+    this.hands.clearTargetGuide();
+
+    let targetTab = null;
+    if (this.tabManager) {
+      const activeTab = this.tabManager.tabs.find(t => t.id === this.tabManager.activeTabId);
+      if (!activeTab || activeTab.type !== 'taskmgr') {
+        this.tabManager.tabCounter++;
+        targetTab = this.tabManager.createTab(TAB_TYPES.TASKMGR, `Task Manager (${this.tabManager.tabCounter})`, false);
+        if (targetTab) {
+          this.tabManager.activeTabId = targetTab.id;
+          this.tabManager.renderTabs();
+        }
+      } else {
+        this.tabManager.updateActiveTabInfo('taskmgr', 'Task Manager', '📊');
+        targetTab = activeTab;
+      }
+    }
+
+    this.playCyberTransition(
+      'CYBER PROCESS MONITOR & TELEMETRY (htop)',
+      'ATTACHING KERNEL DEBUGGER & PROCESS THREADS...',
+      logs,
+      'taskmgr',
+      () => {
+        if (this.taskmgrEngine) {
+          this.taskmgrEngine.fetchProcesses();
+        }
+        if (this.tabManager && targetTab) {
+          this.tabManager.activeTabId = targetTab.id;
+          this.tabManager.renderTabs();
+        }
+        setTimeout(() => this.hands.updatePositions(), 50);
+      }
+    );
+  }
+
+  launchRadioMode() {
+    const logs = generateEntranceLogs('hacker', 'Tron 3D Cyber Radio');
+    this.state = STATES.MODE_RADIO;
+
+    this.kb.clearTargetKeys();
+    this.hands.clearTargetGuide();
+
+    let targetTab = null;
+    if (this.tabManager) {
+      const activeTab = this.tabManager.tabs.find(t => t.id === this.tabManager.activeTabId);
+      if (!activeTab || activeTab.type !== 'radio') {
+        this.tabManager.tabCounter++;
+        targetTab = this.tabManager.createTab(TAB_TYPES.RADIO, `Cyber Radio (${this.tabManager.tabCounter})`, false);
+        if (targetTab) {
+          this.tabManager.activeTabId = targetTab.id;
+          this.tabManager.renderTabs();
+        }
+      } else {
+        this.tabManager.updateActiveTabInfo('radio', 'Cyber Radio', '🎵');
+        targetTab = activeTab;
+      }
+    }
+
+    this.playCyberTransition(
+      'TRON 3D AUDIO EQUALIZER & CYBER RADIO',
+      'INITIALIZING WEB AUDIO ANALYSER & SYNTH MATRIX...',
+      logs,
+      'radio',
+      () => {
+        if (this.radioEngine) {
+          this.radioEngine.togglePlayback();
+        }
+        if (this.tabManager && targetTab) {
+          this.tabManager.activeTabId = targetTab.id;
+          this.tabManager.renderTabs();
+        }
+        setTimeout(() => this.hands.updatePositions(), 50);
+      }
+    );
+  }
+
+  launchWorkspaceProfile(profileId) {
+    if (this.workspaceEngine) {
+      return this.workspaceEngine.launchProfile(profileId);
+    }
   }
 
   startSpeedCountdown() {
@@ -3167,6 +3368,7 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
       }
 
       this.kb.setKeyActive(e.code, true);
+      this.kb.recordKeyHit(e.code);
       const finger = this.kb.getFingerForCode(e.code);
       if (finger) {
         this.hands.pressKeyWithFinger(e.code, finger);

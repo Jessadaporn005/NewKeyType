@@ -39,7 +39,8 @@ global.document = {
   }),
   createElement: (tag) => ({
     tagName: tag,
-    classList: { add: () => {}, remove: () => {} },
+    dataset: {},
+    classList: { add: () => {}, remove: () => {}, toggle: () => {} },
     style: {},
     appendChild: () => {},
     addEventListener: () => {},
@@ -236,6 +237,75 @@ async function runTests() {
 
   const sparkline = intelFeed.generateSparkline([90000, 92000, 95000, 96420], true);
   assert(sparkline.includes('<svg') && sparkline.includes('polyline'), 'Sparkline generator produces valid SVG vector charts');
+
+  // 13. Cyber File Explorer & Real Storage Matrix
+  console.log('\n[13] Testing Cyber File Explorer & Real Storage Matrix...');
+  const { CyberExplorerEngine } = await import('./js/cyberExplorer.js');
+  const explorer = new CyberExplorerEngine(mockTabApp, mockSound, null);
+  assert(explorer.currentPath.includes('Users'), 'Explorer default currentPath initialized');
+  assert(explorer.getFileIcon({ isDir: true, name: 'Projects' }) === '📁', 'Folder icon mapped correctly');
+  assert(explorer.getFileIcon({ isDir: false, name: 'app.exe' }) === '⚡', 'Executable icon mapped correctly');
+  assert(explorer.getFileIcon({ isDir: false, name: 'track.mp3' }) === '🎵', 'Audio icon mapped correctly');
+  assert(explorer.getFileIcon({ isDir: false, name: 'script.py' }) === '🐍', 'Python script icon mapped correctly');
+  assert(explorer.formatSize(1048576) === '1 MB', 'File size formatted accurately to 1 MB');
+
+  // 14. Real Task Manager & Process Monitor (htop)
+  console.log('\n[14] Testing Real Task Manager & Process Monitor (htop)...');
+  const { TaskManagerViewEngine } = await import('./js/taskManagerView.js');
+  const taskmgr = new TaskManagerViewEngine(mockTabApp, mockSound, null);
+  await taskmgr.fetchProcesses();
+  assert(taskmgr.processes.length > 0, `Task Manager loaded ${taskmgr.processes.length} active processes`);
+  assert(taskmgr.processes.some(p => p.name.includes('CyberType') || p.name.includes('chrome') || p.name.includes('System')), 'Process list contains real/simulated system tasks');
+  
+  const waveSvg = taskmgr.generateWaveSvg([10, 25, 40, 60, 30], '#00ff66', 100);
+  assert(waveSvg.includes('<svg') && waveSvg.includes('polyline'), 'Task Manager SVG telemetry wave generated');
+
+  // 15. Mr. Robot Workspace Automator
+  console.log('\n[15] Testing Mr. Robot Workspace Automator...');
+  const { WorkspaceLauncherEngine, WORKSPACE_PROFILES } = await import('./js/workspaceLauncher.js');
+  assert(WORKSPACE_PROFILES.length >= 4, `WORKSPACE_PROFILES contains ${WORKSPACE_PROFILES.length} preset environments`);
+  assert(WORKSPACE_PROFILES.some(p => p.id === 'dev_mode'), 'Dev Mode workspace profile defined');
+  assert(WORKSPACE_PROFILES.some(p => p.id === 'gaming_rig'), 'Gaming Rig workspace profile defined');
+
+  const wsLauncher = new WorkspaceLauncherEngine(mockTabApp, mockSound, null);
+  const launchRes = await wsLauncher.launchProfile('dev_mode');
+  assert(launchRes.success, 'Dev Mode workspace profile executed successfully');
+
+  // 16. Tron 3D Audio Visualizer & Cyber Radio
+  console.log('\n[16] Testing Tron 3D Audio Visualizer & Cyber Radio...');
+  const { CyberRadioEngine, RADIO_STATIONS } = await import('./js/cyberRadio.js');
+  assert(RADIO_STATIONS.length >= 4, `RADIO_STATIONS contains ${RADIO_STATIONS.length} cyber channels`);
+  assert(RADIO_STATIONS.some(s => s.id === 'synthwave'), 'Night City Synthwave station exists');
+
+  const radio = new CyberRadioEngine(mockTabApp, mockSound);
+  assert(radio.currentStation && radio.currentStation.name.includes('Synthwave'), 'Radio initialized with default Synthwave station');
+  radio.switchStation(RADIO_STATIONS[1]);
+  assert(radio.currentStation.id === RADIO_STATIONS[1].id, 'Radio switched station cleanly');
+
+  // 17. Matrix Biometric Thermal Keystroke Heatmap
+  console.log('\n[17] Testing Matrix Biometric Thermal Keystroke Heatmap...');
+  const { KeyboardVisualizer } = await import('./js/keyboard.js');
+  const mockKbContainer = {
+    appendChild: () => {},
+    classList: { add: () => {}, remove: () => {}, toggle: () => {} },
+    innerHTML: ''
+  };
+  const kb = new KeyboardVisualizer(mockKbContainer);
+  kb.render();
+  
+  kb.recordKeyHit('KeyA');
+  kb.recordKeyHit('KeyA');
+  kb.recordKeyHit('KeyS');
+  kb.recordKeyHit('KeyD');
+  kb.recordKeyHit('KeyF');
+  
+  const heatStats = kb.getHeatmapStats();
+  assert(heatStats.totalHits === 5, 'Recorded 5 cumulative key strikes');
+  assert(heatStats.leftPct === 100, 'Hand balance calculated 100% Left Hand keystrokes');
+  assert(heatStats.topKeys.length > 0 && heatStats.topKeys[0][0] === 'KeyA', 'KeyA identified as highest frequency heat key');
+  
+  const isHeatToggled = kb.toggleHeatmap(true);
+  assert(isHeatToggled === true, 'Thermal heatmap visual overlay activated');
 
   console.log('\n====================================================');
   console.log(`🏁 TEST RESULTS: ${passed}/${total} TESTS PASSED (100%)`);

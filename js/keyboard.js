@@ -251,4 +251,99 @@ export class KeyboardVisualizer {
     const keyEl = this.keyElementsMap.get(code);
     return keyEl ? keyEl.dataset.finger : null;
   }
+
+  // --- MATRIX BIOMETRIC THERMAL KEYSTROKE HEATMAP ---
+  recordKeyHit(code) {
+    if (!this.keyHitCounts) this.keyHitCounts = new Map();
+    const current = this.keyHitCounts.get(code) || 0;
+    this.keyHitCounts.set(code, current + 1);
+
+    if (this.isHeatmapActive) {
+      this.updateHeatmapVisuals();
+    }
+  }
+
+  toggleHeatmap(enable = null) {
+    this.isHeatmapActive = enable !== null ? enable : !this.isHeatmapActive;
+    if (this.container) {
+      this.container.classList.toggle('heatmap-mode', this.isHeatmapActive);
+    }
+    if (this.isHeatmapActive) {
+      this.updateHeatmapVisuals();
+    } else {
+      this.clearHeatmapVisuals();
+    }
+    return this.isHeatmapActive;
+  }
+
+  updateHeatmapVisuals() {
+    if (!this.keyHitCounts || this.keyHitCounts.size === 0) return;
+
+    let maxHits = 1;
+    this.keyHitCounts.forEach(val => {
+      if (val > maxHits) maxHits = val;
+    });
+
+    this.keyElementsMap.forEach((el, code) => {
+      const hits = this.keyHitCounts.get(code) || 0;
+      const ratio = Math.min(1, hits / maxHits);
+
+      if (hits > 0) {
+        // Dynamic Neon Thermal Gradient: Cool Cyan (low) -> Yellow (med) -> Blazing Infrared Red (high)
+        let glowColor = 'rgba(0, 229, 255, 0.4)';
+        let borderGlow = 'rgba(0, 229, 255, 0.6)';
+        if (ratio > 0.65) {
+          glowColor = 'rgba(255, 34, 68, 0.65)';
+          borderGlow = 'rgba(255, 34, 68, 0.9)';
+        } else if (ratio > 0.35) {
+          glowColor = 'rgba(255, 200, 0, 0.55)';
+          borderGlow = 'rgba(255, 200, 0, 0.8)';
+        }
+
+        el.style.background = glowColor;
+        el.style.borderColor = borderGlow;
+        el.style.boxShadow = `0 0 ${Math.round(ratio * 16 + 4)}px ${borderGlow}`;
+      }
+    });
+  }
+
+  clearHeatmapVisuals() {
+    this.keyElementsMap.forEach((el) => {
+      el.style.background = '';
+      el.style.borderColor = '';
+      el.style.boxShadow = '';
+    });
+  }
+
+  getHeatmapStats() {
+    let totalHits = 0;
+    let leftHandHits = 0;
+    let rightHandHits = 0;
+
+    if (this.keyHitCounts) {
+      this.keyHitCounts.forEach((hits, code) => {
+        totalHits += hits;
+        const finger = this.getFingerForCode(code);
+        if (['lp', 'lr', 'lm', 'li', 'lt'].includes(finger)) {
+          leftHandHits += hits;
+        } else if (['rp', 'rr', 'rm', 'ri', 'rt', 'th'].includes(finger)) {
+          rightHandHits += hits;
+        }
+      });
+    }
+
+    const leftPct = totalHits > 0 ? Math.round((leftHandHits / totalHits) * 100) : 50;
+    const rightPct = totalHits > 0 ? Math.round((rightHandHits / totalHits) * 100) : 50;
+    const fatigueIndex = Math.min(100, Math.round(totalHits * 0.12));
+
+    return {
+      totalHits,
+      leftPct,
+      rightPct,
+      fatigueIndex,
+      topKeys: Array.from(this.keyHitCounts ? this.keyHitCounts.entries() : [])
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+    };
+  }
 }

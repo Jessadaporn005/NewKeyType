@@ -11,6 +11,9 @@
 
 export const TAB_TYPES = {
   CLI: { id: 'cli', name: 'CyberDeck', icon: '>_', mode: 'CLI_PROMPT' },
+  EXPLORER: { id: 'explorer', name: 'Cyber Explorer', icon: '📂', mode: 'MODE_EXPLORER' },
+  TASKMGR: { id: 'taskmgr', name: 'Task Manager', icon: '📊', mode: 'MODE_TASKMGR' },
+  RADIO: { id: 'radio', name: 'Cyber Radio', icon: '🎵', mode: 'MODE_RADIO' },
   BROWSER: { id: 'browser', name: 'In-App Browser', icon: '🌐', mode: 'MODE_BROWSER' },
   VSCODE: { id: 'vscode', name: 'VS Code Studio', icon: '⚡', mode: 'MODE_VSCODE' },
   ROGUELITE: { id: 'roguelite', name: 'Cyberspace Matrix', icon: '🎮', mode: 'MODE_ROGUELITE' },
@@ -145,6 +148,12 @@ export class TabManager {
           }
         }
       }
+    } else if (targetTab.type === 'explorer') {
+      if (typeof this.app.launchExplorerMode === 'function') this.app.launchExplorerMode();
+    } else if (targetTab.type === 'taskmgr') {
+      if (typeof this.app.launchTaskManagerMode === 'function') this.app.launchTaskManagerMode();
+    } else if (targetTab.type === 'radio') {
+      if (typeof this.app.launchRadioMode === 'function') this.app.launchRadioMode();
     } else if (targetTab.type === 'vscode') {
       if (typeof this.app.launchVscodeMode === 'function') this.app.launchVscodeMode();
     } else if (targetTab.type === 'roguelite') {
@@ -263,6 +272,27 @@ export class TabManager {
           <span class="d-sub">PowerShell & Real CLI Prompt [Ctrl+T]</span>
         </div>
       </div>
+      <div class="dropdown-item" data-type="explorer">
+        <span class="d-icon">📂</span>
+        <div class="d-info">
+          <span class="d-title">Cyber File Explorer</span>
+          <span class="d-sub">Real PC Drives, Files & App Launcher</span>
+        </div>
+      </div>
+      <div class="dropdown-item" data-type="taskmgr">
+        <span class="d-icon">📊</span>
+        <div class="d-info">
+          <span class="d-title">Real Task Manager (htop)</span>
+          <span class="d-sub">Live Windows Processes & Task Killer</span>
+        </div>
+      </div>
+      <div class="dropdown-item" data-type="radio">
+        <span class="d-icon">🎵</span>
+        <div class="d-info">
+          <span class="d-title">Tron 3D Cyber Radio</span>
+          <span class="d-sub">Synthwave, Lofi & 3D Audio Visualizer</span>
+        </div>
+      </div>
       <div class="dropdown-item" data-type="browser">
         <span class="d-icon">🌐</span>
         <div class="d-info">
@@ -315,7 +345,13 @@ export class TabManager {
         const typeKey = item.dataset.type;
         this.closeDropdownMenu();
 
-        if (typeKey === 'browser') {
+        if (typeKey === 'explorer') {
+          if (this.app.launchExplorerMode) this.app.launchExplorerMode();
+        } else if (typeKey === 'taskmgr') {
+          if (this.app.launchTaskManagerMode) this.app.launchTaskManagerMode();
+        } else if (typeKey === 'radio') {
+          if (this.app.launchRadioMode) this.app.launchRadioMode();
+        } else if (typeKey === 'browser') {
           if (this.app.launchBrowserMode) this.app.launchBrowserMode('https://www.google.com');
         } else if (typeKey === 'vscode') {
           if (this.app.launchVscodeMode) this.app.launchVscodeMode();
