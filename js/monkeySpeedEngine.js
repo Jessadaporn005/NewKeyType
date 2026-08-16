@@ -154,8 +154,11 @@ export class MonkeySpeedEngine {
     const charSpans = this.charElements[this.wordIndex];
     let targetEl = null;
 
-    if (typeof this.wordsContainer.getBoundingClientRect !== 'function') return;
-    const contRect = this.wordsContainer.getBoundingClientRect();
+    const wrapper = this.wordsContainer.parentElement || this.wordsContainer;
+    if (typeof wrapper.getBoundingClientRect !== 'function') return;
+    const wrapperRect = wrapper.getBoundingClientRect();
+
+    const caretHeight = this.caretEl.offsetHeight || 36;
 
     if (charSpans && this.charIndex < charSpans.length) {
       targetEl = charSpans[this.charIndex];
@@ -164,14 +167,16 @@ export class MonkeySpeedEngine {
       const lastChar = charSpans[charSpans.length - 1];
       if (lastChar && typeof lastChar.getBoundingClientRect === 'function') {
         const rect = lastChar.getBoundingClientRect();
-        this.caretEl.style.transform = `translate(${rect.right - contRect.left}px, ${rect.top - contRect.top}px)`;
+        const topY = rect.top - wrapperRect.top + Math.max(0, (rect.height - caretHeight) / 2);
+        this.caretEl.style.transform = `translate(${rect.right - wrapperRect.left}px, ${topY}px)`;
       }
       return;
     }
 
     if (targetEl && typeof targetEl.getBoundingClientRect === 'function') {
       const rect = targetEl.getBoundingClientRect();
-      this.caretEl.style.transform = `translate(${rect.left - contRect.left}px, ${rect.top - contRect.top}px)`;
+      const topY = rect.top - wrapperRect.top + Math.max(0, (rect.height - caretHeight) / 2);
+      this.caretEl.style.transform = `translate(${rect.left - wrapperRect.left}px, ${topY}px)`;
     }
   }
 
@@ -469,13 +474,19 @@ export class MonkeySpeedEngine {
   checkSmoothLineRoll(activeWordDiv) {
     if (!this.wordsContainer || !activeWordDiv) return;
 
-    const containerTop = this.wordsContainer.offsetTop;
     const wordTop = activeWordDiv.offsetTop;
-    const diff = wordTop - containerTop;
+    const lineHeight = activeWordDiv.offsetHeight || this.lineHeight || 52;
+    this.lineHeight = lineHeight;
 
-    // If active word is on line 2 or 3, smoothly shift container up
-    if (diff >= this.lineHeight * 2) {
-      this.currentLineOffset += this.lineHeight;
+    const relativeWordTop = wordTop - this.currentLineOffset;
+
+    // Roll up when active word progresses past line 2
+    if (relativeWordTop >= lineHeight * 2) {
+      this.currentLineOffset = wordTop - lineHeight;
+      this.wordsContainer.style.transform = `translateY(-${this.currentLineOffset}px)`;
+    } else if (wordTop < this.currentLineOffset) {
+      // Roll down if user backspaced to a previous line
+      this.currentLineOffset = Math.max(0, wordTop);
       this.wordsContainer.style.transform = `translateY(-${this.currentLineOffset}px)`;
     }
   }
