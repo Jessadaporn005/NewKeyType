@@ -1,0 +1,511 @@
+/* ==========================================================================
+   CYBER//TYPE WI-FI RADAR & QUANTUM DECRYPTOR STYLES
+   ========================================================================== */
+
+.cyber-wifi-window {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  background: rgba(2, 8, 4, 0.94);
+  border: 1px solid rgba(0, 255, 102, 0.3);
+  border-radius: 8px;
+  overflow: hidden;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.95);
+}
+
+/* 1. Header Bar */
+.wifi-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: rgba(1, 6, 3, 0.96);
+  border-bottom: 1px solid rgba(0, 255, 102, 0.2);
+  user-select: none;
+}
+
+.wifi-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.wifi-radar-icon {
+  font-size: 20px;
+  animation: radarPulse 1.5s infinite alternate;
+}
+
+@keyframes radarPulse {
+  0% { transform: scale(1); filter: drop-shadow(0 0 4px #00ff66); }
+  100% { transform: scale(1.15); filter: drop-shadow(0 0 12px #00ff66); }
+}
+
+.wifi-header-title {
+  font-family: 'Consolas', monospace;
+  font-size: 12px;
+  font-weight: 800;
+  color: #00ff66;
+  letter-spacing: 1px;
+}
+
+.wifi-status-badge {
+  font-family: 'Consolas', monospace;
+  font-size: 9.5px;
+  color: #72a382;
+  background: rgba(0, 255, 102, 0.08);
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 255, 102, 0.2);
+}
+
+.wifi-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wifi-search-box {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 255, 102, 0.05);
+  border: 1px solid rgba(0, 255, 102, 0.2);
+  border-radius: 4px;
+  padding: 4px 8px;
+  width: 180px;
+}
+
+.wifi-search-input {
+  background: transparent;
+  border: none;
+  color: #00ff66;
+  font-family: 'Consolas', monospace;
+  font-size: 11px;
+  width: 100%;
+  outline: none;
+}
+
+.wifi-btn {
+  background: rgba(0, 255, 102, 0.08);
+  border: 1px solid rgba(0, 255, 102, 0.25);
+  color: #00ff66;
+  font-family: 'Consolas', monospace;
+  font-size: 10.5px;
+  font-weight: bold;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.wifi-btn:hover {
+  background: rgba(0, 255, 102, 0.25);
+  border-color: #00ff66;
+  box-shadow: 0 0 10px rgba(0, 255, 102, 0.4);
+}
+
+.wifi-btn-exit {
+  background: rgba(255, 34, 68, 0.15);
+  border-color: rgba(255, 34, 68, 0.4);
+  color: #ff3366;
+}
+
+.wifi-btn-exit:hover {
+  background: rgba(255, 34, 68, 0.35);
+  border-color: #ff3366;
+}
+
+/* 2. Main Body Split Stage */
+.wifi-body-stage {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+/* Left Radar Pane */
+.wifi-radar-pane {
+  width: 360px;
+  background: rgba(1, 5, 3, 0.95);
+  border-right: 1px solid rgba(0, 255, 102, 0.18);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  user-select: none;
+}
+
+.radar-hud-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: 'Consolas', monospace;
+  font-size: 10px;
+  font-weight: 800;
+  color: #00ff66;
+}
+
+.hud-freq-tag {
+  color: #00e5ff;
+  font-size: 9px;
+}
+
+.radar-canvas-box {
+  border: 1px solid rgba(0, 255, 102, 0.3);
+  border-radius: 50%;
+  box-shadow: 0 0 25px rgba(0, 255, 102, 0.2), inset 0 0 15px rgba(0, 255, 102, 0.1);
+  overflow: hidden;
+}
+
+.radar-telemetry-strip {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  font-family: 'Consolas', monospace;
+  font-size: 9.5px;
+  color: #72a382;
+  background: rgba(0, 255, 102, 0.04);
+  padding: 6px 10px;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 255, 102, 0.12);
+}
+
+/* Right Matrix Pane */
+.wifi-matrix-pane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: rgba(2, 8, 4, 0.85);
+  overflow: hidden;
+}
+
+.wifi-networks-table-box {
+  flex: 1.2;
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid rgba(0, 255, 102, 0.18);
+  overflow: hidden;
+}
+
+.wifi-table-header {
+  display: flex;
+  align-items: center;
+  padding: 7px 14px;
+  background: rgba(1, 6, 3, 0.98);
+  border-bottom: 1px solid rgba(0, 255, 102, 0.15);
+  font-family: 'Consolas', monospace;
+  font-size: 10px;
+  font-weight: 800;
+  color: #00ff66;
+  letter-spacing: 0.8px;
+  user-select: none;
+}
+
+.col-ssid { flex: 2; display: flex; align-items: center; gap: 8px; font-weight: bold; color: #ffffff; }
+.col-signal { flex: 1.2; display: flex; align-items: center; gap: 6px; }
+.col-channel { flex: 1; font-family: 'Consolas', monospace; color: #00e5ff; }
+.col-auth { flex: 1.2; }
+.col-action { flex: 1.4; display: flex; gap: 4px; }
+
+.wifi-table-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.wifi-row {
+  display: flex;
+  align-items: center;
+  padding: 8px 14px;
+  border-bottom: 1px solid rgba(0, 255, 102, 0.06);
+  font-size: 11px;
+  color: #e0faea;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.wifi-row:hover {
+  background: rgba(0, 255, 102, 0.08);
+}
+
+.wifi-row.selected {
+  background: rgba(0, 255, 102, 0.18);
+  border-left: 3px solid #00ff66;
+}
+
+.signal-bar-wrap {
+  width: 50px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.signal-fill {
+  display: block;
+  height: 100%;
+}
+
+.signal-pct {
+  font-family: 'Consolas', monospace;
+  font-size: 9.5px;
+  color: #72a382;
+}
+
+.auth-pill {
+  font-size: 9px;
+  font-family: 'Consolas', monospace;
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid rgba(0, 255, 102, 0.3);
+  color: #00ff66;
+}
+
+.pill-wpa3 { border-color: #00e5ff; color: #00e5ff; }
+
+.wifi-action-btn {
+  background: rgba(0, 255, 102, 0.08);
+  border: 1px solid rgba(0, 255, 102, 0.25);
+  color: #00ff66;
+  font-family: 'Consolas', monospace;
+  font-size: 9px;
+  font-weight: bold;
+  padding: 3px 6px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.wifi-action-btn:hover {
+  background: rgba(0, 255, 102, 0.25);
+  border-color: #00ff66;
+}
+
+/* Quantum Decryptor Panel */
+.quantum-decryptor-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: rgba(1, 4, 2, 0.98);
+  padding: 12px 16px;
+}
+
+.decryptor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(0, 255, 102, 0.15);
+  padding-bottom: 6px;
+  margin-bottom: 10px;
+}
+
+.dec-title {
+  font-family: 'Consolas', monospace;
+  font-size: 11px;
+  font-weight: 800;
+  color: #00ff66;
+}
+
+.dec-target-badge {
+  font-size: 9.5px;
+  color: #ffaa00;
+  font-family: 'Consolas', monospace;
+}
+
+.dec-instructions {
+  font-size: 11.5px;
+  color: #72a382;
+  text-align: center;
+  padding: 20px 0;
+  line-height: 1.6;
+}
+
+.decryptor-active-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dec-telemetry-row {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'Consolas', monospace;
+  font-size: 10px;
+  color: #72a382;
+}
+
+.dec-progress-bar-bg {
+  width: 100%;
+  height: 8px;
+  background: rgba(0, 255, 102, 0.1);
+  border: 1px solid rgba(0, 255, 102, 0.25);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.dec-progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #00ff66, #00e5ff);
+  box-shadow: 0 0 10px #00ff66;
+  transition: width 0.15s ease;
+}
+
+.dec-typing-challenge-stream {
+  background: rgba(0, 255, 102, 0.04);
+  border: 1px solid rgba(0, 255, 102, 0.2);
+  border-radius: 6px;
+  padding: 12px;
+  text-align: center;
+}
+
+.dec-target-prompt {
+  font-size: 10px;
+  color: #72a382;
+  font-family: 'Consolas', monospace;
+  margin-bottom: 6px;
+}
+
+.dec-target-word {
+  font-family: 'Share Tech Mono', 'Fira Code', monospace;
+  font-size: 18px;
+  letter-spacing: 2px;
+}
+
+.dec-char-correct { color: #00ff66; text-shadow: 0 0 8px #00ff66; font-weight: bold; }
+.dec-char-current { color: #ffffff; background: rgba(0, 255, 102, 0.4); border-radius: 2px; }
+.dec-char-pending { color: #557762; }
+
+.dec-typing-hint {
+  font-size: 10px;
+  color: #72a382;
+  text-align: center;
+}
+
+.dec-success-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 14px;
+  background: rgba(0, 255, 102, 0.08);
+  border: 1px solid #00ff66;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.dec-success-headline {
+  color: #00ff66;
+  font-family: 'Consolas', monospace;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.dec-success-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  color: #e0faea;
+}
+
+/* 3. Bottom Status Bar */
+.wifi-status-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 5px 14px;
+  background: rgba(1, 6, 3, 0.98);
+  border-top: 1px solid rgba(0, 255, 102, 0.18);
+  font-family: 'Consolas', monospace;
+  font-size: 10px;
+  color: #72a382;
+}
+
+.status-sep { color: #335544; }
+.status-glow { color: #00ff66; font-weight: bold; margin-left: auto; }
+
+/* Connect Modal */
+.wifi-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(10px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wifi-modal-card {
+  width: 380px;
+  background: rgba(3, 10, 5, 0.98);
+  border: 1.5px solid #00ff66;
+  border-radius: 8px;
+  box-shadow: 0 0 30px rgba(0, 255, 102, 0.35);
+  overflow: hidden;
+}
+
+.wifi-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: rgba(1, 6, 3, 0.98);
+  border-bottom: 1px solid rgba(0, 255, 102, 0.3);
+  font-family: 'Consolas', monospace;
+  font-size: 11px;
+  font-weight: 800;
+  color: #00ff66;
+}
+
+.wifi-modal-close {
+  background: transparent;
+  border: none;
+  color: #ff3366;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.wifi-modal-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.wifi-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 11px;
+  color: #72a382;
+}
+
+.wifi-modal-input {
+  background: rgba(0, 255, 102, 0.06);
+  border: 1px solid rgba(0, 255, 102, 0.3);
+  border-radius: 4px;
+  padding: 8px 10px;
+  color: #00ff66;
+  font-family: 'Consolas', monospace;
+  font-size: 12px;
+  outline: none;
+}
+
+.wifi-modal-input:focus {
+  border-color: #00ff66;
+  box-shadow: 0 0 10px rgba(0, 255, 102, 0.4);
+}
+
+.wifi-btn-confirm {
+  width: 100%;
+  padding: 8px;
+  font-size: 11px;
+}

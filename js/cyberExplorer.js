@@ -149,10 +149,22 @@ export class CyberExplorerEngine {
         <div class="holo-preview-card">
           <div class="holo-header">
             <span id="holoModalTitle">HOLOGRAM IMAGE PREVIEW</span>
+            <div class="holo-header-controls">
+              <button class="holo-tool-btn" id="holoBtnZoomIn" title="Zoom In">🔍 +</button>
+              <button class="holo-tool-btn" id="holoBtnZoomOut" title="Zoom Out">🔎 -</button>
+              <button class="holo-tool-btn" id="holoBtnRotate" title="Rotate 90°">🔄 90°</button>
+              <button class="holo-tool-btn" id="holoBtnMatrix" title="Matrix Filter">💚 Matrix</button>
+              <button class="holo-tool-btn" id="holoBtnReset" title="Reset View">⟲ Reset</button>
+            </div>
             <button class="holo-close-btn" id="holoModalClose">✕</button>
           </div>
-          <div class="holo-image-stage">
+          <div class="holo-image-stage" id="holoImageStage">
             <img id="holoModalImg" src="" alt="Preview" />
+          </div>
+          <div class="holo-footer-meta" id="holoFooterMeta">
+            <span>ZOOM: <strong id="holoZoomVal">100%</strong></span>
+            <span>ROTATION: <strong id="holoRotVal">0°</strong></span>
+            <span>FILTER: <strong id="holoFilterVal">NORMAL</strong></span>
           </div>
         </div>
       </div>
@@ -217,6 +229,54 @@ export class CyberExplorerEngine {
       modalClose.addEventListener('click', () => {
         const modal = this.container.querySelector('#expImageModal');
         if (modal) modal.classList.add('hidden');
+      });
+    }
+
+    const btnZoomIn = this.container.querySelector('#holoBtnZoomIn');
+    const btnZoomOut = this.container.querySelector('#holoBtnZoomOut');
+    const btnRotate = this.container.querySelector('#holoBtnRotate');
+    const btnMatrix = this.container.querySelector('#holoBtnMatrix');
+    const btnReset = this.container.querySelector('#holoBtnReset');
+
+    if (btnZoomIn) {
+      btnZoomIn.addEventListener('click', () => {
+        this.imageZoom = Math.min(3, this.imageZoom + 0.25);
+        this.updateImageTransform();
+        if (this.sound) this.sound.playKey(false);
+      });
+    }
+
+    if (btnZoomOut) {
+      btnZoomOut.addEventListener('click', () => {
+        this.imageZoom = Math.max(0.5, this.imageZoom - 0.25);
+        this.updateImageTransform();
+        if (this.sound) this.sound.playKey(false);
+      });
+    }
+
+    if (btnRotate) {
+      btnRotate.addEventListener('click', () => {
+        this.imageRot = (this.imageRot + 90) % 360;
+        this.updateImageTransform();
+        if (this.sound) this.sound.playKey(false);
+      });
+    }
+
+    if (btnMatrix) {
+      btnMatrix.addEventListener('click', () => {
+        this.isMatrixFilter = !this.isMatrixFilter;
+        this.updateImageTransform();
+        if (this.sound) this.sound.playKey(false);
+      });
+    }
+
+    if (btnReset) {
+      btnReset.addEventListener('click', () => {
+        this.imageZoom = 1;
+        this.imageRot = 0;
+        this.isMatrixFilter = false;
+        this.updateImageTransform();
+        if (this.sound) this.sound.playKey(false);
       });
     }
 
@@ -704,16 +764,42 @@ export class CyberExplorerEngine {
   }
 
   showHologramImage(title, src) {
-    const modal = this.container.querySelector('#expImageModal');
-    const titleEl = this.container.querySelector('#holoModalTitle');
-    const imgEl = this.container.querySelector('#holoModalImg');
+    this.imageZoom = 1;
+    this.imageRot = 0;
+    this.isMatrixFilter = false;
 
-    if (modal && titleEl && imgEl) {
-      titleEl.textContent = `HOLOGRAM IMAGE: ${title.toUpperCase()}`;
-      imgEl.src = src;
-      modal.classList.remove('hidden');
-      if (this.sound) this.sound.playSuccessFanfare();
+    if (this.container) {
+      const modal = this.container.querySelector('#expImageModal');
+      const titleEl = this.container.querySelector('#holoModalTitle');
+      const imgEl = this.container.querySelector('#holoModalImg');
+
+      if (modal && titleEl && imgEl) {
+        titleEl.textContent = `HOLOGRAM IMAGE: ${title.toUpperCase()}`;
+        imgEl.src = src;
+        this.updateImageTransform();
+        modal.classList.remove('hidden');
+      }
     }
+    if (this.sound) this.sound.playSuccessFanfare();
+  }
+
+  updateImageTransform() {
+    if (!this.container) return;
+    const imgEl = this.container.querySelector('#holoModalImg');
+    const zoomVal = this.container.querySelector('#holoZoomVal');
+    const rotVal = this.container.querySelector('#holoRotVal');
+    const filterVal = this.container.querySelector('#holoFilterVal');
+
+    if (imgEl) {
+      imgEl.style.transform = `scale(${this.imageZoom}) rotate(${this.imageRot}deg)`;
+      imgEl.style.filter = this.isMatrixFilter
+        ? 'sepia(100%) hue-rotate(85deg) saturate(350%) drop-shadow(0 0 15px #00ff66)'
+        : 'drop-shadow(0 0 20px rgba(0, 0, 0, 0.8))';
+    }
+
+    if (zoomVal) zoomVal.textContent = `${Math.round(this.imageZoom * 100)}%`;
+    if (rotVal) rotVal.textContent = `${this.imageRot}°`;
+    if (filterVal) filterVal.textContent = this.isMatrixFilter ? 'MATRIX NEON' : 'NORMAL';
   }
 
   goBack() {

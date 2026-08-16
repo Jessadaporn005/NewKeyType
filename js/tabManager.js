@@ -11,6 +11,7 @@
 
 export const TAB_TYPES = {
   CLI: { id: 'cli', name: 'CyberDeck', icon: '>_', mode: 'CLI_PROMPT' },
+  WIFI: { id: 'wifi', name: 'Cyber Wi-Fi Radar', icon: '📡', mode: 'MODE_WIFI' },
   EXPLORER: { id: 'explorer', name: 'Cyber Explorer', icon: '📂', mode: 'MODE_EXPLORER' },
   TASKMGR: { id: 'taskmgr', name: 'Task Manager', icon: '📊', mode: 'MODE_TASKMGR' },
   RADIO: { id: 'radio', name: 'Cyber Radio', icon: '🎵', mode: 'MODE_RADIO' },
@@ -148,6 +149,8 @@ export class TabManager {
           }
         }
       }
+    } else if (targetTab.type === 'wifi') {
+      if (typeof this.app.launchWifiMode === 'function') this.app.launchWifiMode();
     } else if (targetTab.type === 'explorer') {
       if (typeof this.app.launchExplorerMode === 'function') this.app.launchExplorerMode();
     } else if (targetTab.type === 'taskmgr') {
@@ -272,11 +275,18 @@ export class TabManager {
           <span class="d-sub">PowerShell & Real CLI Prompt [Ctrl+T]</span>
         </div>
       </div>
+      <div class="dropdown-item" data-type="wifi">
+        <span class="d-icon">📡</span>
+        <div class="d-info">
+          <span class="d-title">Cyber Wi-Fi Radar & Quantum Decryptor</span>
+          <span class="d-sub">Scan Local Airwaves & WPA Handshake Cracking</span>
+        </div>
+      </div>
       <div class="dropdown-item" data-type="explorer">
         <span class="d-icon">📂</span>
         <div class="d-info">
-          <span class="d-title">Cyber File Explorer</span>
-          <span class="d-sub">Real PC Drives, Files & App Launcher</span>
+          <span class="d-title">Cyber Desktop Mirror & File Explorer</span>
+          <span class="d-sub">Live Reflection of Desktop Shortcuts & Drives</span>
         </div>
       </div>
       <div class="dropdown-item" data-type="taskmgr">
@@ -345,7 +355,9 @@ export class TabManager {
         const typeKey = item.dataset.type;
         this.closeDropdownMenu();
 
-        if (typeKey === 'explorer') {
+        if (typeKey === 'wifi') {
+          if (this.app.launchWifiMode) this.app.launchWifiMode();
+        } else if (typeKey === 'explorer') {
           if (this.app.launchExplorerMode) this.app.launchExplorerMode();
         } else if (typeKey === 'taskmgr') {
           if (this.app.launchTaskManagerMode) this.app.launchTaskManagerMode();

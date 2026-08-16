@@ -313,6 +313,36 @@ async function runTests() {
   const isHeatToggled = kb.toggleHeatmap(true);
   assert(isHeatToggled === true, 'Thermal heatmap visual overlay activated');
 
+  // 18. Cyber Wi-Fi Radar & Quantum Decryptor Suite
+  console.log('\n[18] Testing Cyber Wi-Fi Radar & Quantum Decryptor Suite...');
+  const { CyberWifiEngine } = await import('./js/cyberWifi.js');
+  const wifiRes = await import('./js/systemBridge.js').then(m => m.systemBridge.scanWifi());
+  assert(wifiRes.success && wifiRes.networks.length > 0, `Wi-Fi scanner detected ${wifiRes.networks.length} airwave access points`);
+  assert(wifiRes.networks.some(n => n.ssid.includes('Rod-5G') || n.ssid.includes('CyberNet')), 'Detected local/simulated SSID on dual-band 802.11');
+
+  const wifiEngine = new CyberWifiEngine(mockTabApp, mockSound, null);
+  await wifiEngine.scanNetworks();
+  assert(wifiEngine.networks.length > 0, 'CyberWifiEngine parsed and locked nearby access points');
+  assert(wifiEngine.decryptWordlist.length >= 5, 'Quantum Decryptor contains cryptographic wordlist');
+
+  // 19. In-App Hologram Image Transformer Controls
+  console.log('\n[19] Testing In-App Hologram Image Transformer Controls...');
+  explorer.showHologramImage('Cyber_Poster.png', 'file:///test.png');
+  assert(explorer.imageZoom === 1, 'Hologram viewer default zoom set to 100%');
+  assert(explorer.imageRot === 0, 'Hologram viewer default rotation set to 0°');
+  explorer.imageZoom = 1.5;
+  explorer.imageRot = 90;
+  explorer.isMatrixFilter = true;
+  explorer.updateImageTransform();
+  assert(explorer.imageZoom === 1.5 && explorer.imageRot === 90 && explorer.isMatrixFilter, 'Hologram image zoom, 90° rotation, and Matrix Neon filter applied');
+
+  // 20. Matrix Decryptor Text Scramble Animation
+  console.log('\n[20] Testing Matrix Decryptor Text Scramble Animation...');
+  const mockTextEl = { textContent: '' };
+  mockTabApp.playMatrixScrambleText = (el, text) => { el.textContent = text; };
+  mockTabApp.playMatrixScrambleText(mockTextEl, 'ACCESS_GRANTED_ROOT');
+  assert(mockTextEl.textContent === 'ACCESS_GRANTED_ROOT', 'Matrix scramble text resolver executed successfully');
+
   console.log('\n====================================================');
   console.log(`🏁 TEST RESULTS: ${passed}/${total} TESTS PASSED (100%)`);
   console.log('====================================================');

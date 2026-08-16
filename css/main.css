@@ -1500,6 +1500,38 @@ html, body {
   50% { opacity: 0; }
 }
 
+/* ==========================================================================
+   CYBER HACKER TYPOGRAPHY & SCRAMBLE DECRYPTOR ANIMATION SUITE
+   ========================================================================== */
+
+.typing-scramble-char {
+  display: inline-block;
+  color: #00ff66;
+  text-shadow: 0 0 8px rgba(0, 255, 102, 0.8);
+  font-family: 'Share Tech Mono', 'Fira Code', monospace;
+  animation: matrixGlowPulse 0.15s ease infinite alternate;
+}
+
+@keyframes matrixGlowPulse {
+  0% { color: #00ff66; text-shadow: 0 0 6px #00ff66; }
+  100% { color: #88ffcc; text-shadow: 0 0 12px #00ff66, 0 0 20px #00e5ff; }
+}
+
+.laser-cursor-glow {
+  box-shadow: 0 0 12px var(--theme-primary), 0 0 24px var(--theme-primary) !important;
+  animation: laserPulse 0.6s infinite alternate !important;
+}
+
+@keyframes laserPulse {
+  0% { transform: scaleY(1); opacity: 1; }
+  100% { transform: scaleY(1.15); opacity: 0.85; filter: drop-shadow(0 0 6px #00ff66); }
+}
+
+.text-matrix-scramble {
+  font-family: 'Share Tech Mono', 'VT323', monospace;
+  letter-spacing: 1px;
+}
+
 .cli-system-status-dock {
   margin-top: auto;
   padding: 8px 14px;

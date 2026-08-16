@@ -35,6 +35,7 @@ import { CyberExplorerEngine } from './cyberExplorer.js';
 import { TaskManagerViewEngine } from './taskManagerView.js';
 import { WorkspaceLauncherEngine } from './workspaceLauncher.js';
 import { CyberRadioEngine } from './cyberRadio.js';
+import { CyberWifiEngine } from './cyberWifi.js';
 
 // Application States
 const STATES = {
@@ -52,7 +53,8 @@ const STATES = {
   MODE_BROWSER: 'MODE_BROWSER',
   MODE_EXPLORER: 'MODE_EXPLORER',
   MODE_TASKMGR: 'MODE_TASKMGR',
-  MODE_RADIO: 'MODE_RADIO'
+  MODE_RADIO: 'MODE_RADIO',
+  MODE_WIFI: 'MODE_WIFI'
 };
 
 class WindowsTerminalApp {
@@ -234,7 +236,8 @@ class WindowsTerminalApp {
         browser: document.getElementById('viewBrowser'),
         explorer: document.getElementById('viewExplorer'),
         taskmgr: document.getElementById('viewTaskManager'),
-        radio: document.getElementById('viewRadio')
+        radio: document.getElementById('viewRadio'),
+        wifi: document.getElementById('viewWifi')
       },
 
       // CLI Elements
@@ -554,6 +557,11 @@ class WindowsTerminalApp {
     if (this.dom.views.radio) {
       this.radioEngine = new CyberRadioEngine(this, this.audio);
       this.radioEngine.init(this.dom.views.radio);
+    }
+
+    if (this.dom.views.wifi) {
+      this.wifiEngine = new CyberWifiEngine(this, this.audio, this.toasts);
+      this.wifiEngine.init(this.dom.views.wifi);
     }
 
     this.workspaceEngine = new WorkspaceLauncherEngine(this, this.audio, this.toasts);
@@ -1492,6 +1500,15 @@ AVAILABLE CYBER TERMINAL & REAL-WORLD OS COMMANDS:
       case 'synthwave':
       case 'equalizer':
         this.launchRadioMode();
+        return;
+
+      // Cyber Wi-Fi Radar & Quantum Decryptor
+      case 'wifi':
+      case 'wlan':
+      case 'radar':
+      case 'aircrack':
+      case 'decrypt':
+        this.launchWifiMode();
         return;
 
       // Mr. Robot Workspace Automator
@@ -2463,6 +2480,76 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
         setTimeout(() => this.hands.updatePositions(), 50);
       }
     );
+  }
+
+  launchWifiMode() {
+    const logs = generateEntranceLogs('hacker', 'Cyber Wi-Fi Radar & Quantum Decryptor');
+    this.state = STATES.MODE_WIFI;
+
+    this.kb.clearTargetKeys();
+    this.hands.clearTargetGuide();
+
+    let targetTab = null;
+    if (this.tabManager) {
+      const activeTab = this.tabManager.tabs.find(t => t.id === this.tabManager.activeTabId);
+      if (!activeTab || activeTab.type !== 'wifi') {
+        this.tabManager.tabCounter++;
+        targetTab = this.tabManager.createTab(TAB_TYPES.WIFI, `Wi-Fi Radar (${this.tabManager.tabCounter})`, false);
+        if (targetTab) {
+          this.tabManager.activeTabId = targetTab.id;
+          this.tabManager.renderTabs();
+        }
+      } else {
+        this.tabManager.updateActiveTabInfo('wifi', 'Wi-Fi Radar', '📡');
+        targetTab = activeTab;
+      }
+    }
+
+    this.playCyberTransition(
+      'CYBER WI-FI RADAR & AIRWAVE SPECTROMETER',
+      'SCANNING SURROUNDING 802.11 FREQUENCY BEACONS...',
+      logs,
+      'wifi',
+      () => {
+        if (this.wifiEngine) {
+          this.wifiEngine.scanNetworks();
+        }
+        if (this.tabManager && targetTab) {
+          this.tabManager.activeTabId = targetTab.id;
+          this.tabManager.renderTabs();
+        }
+        setTimeout(() => this.hands.updatePositions(), 50);
+      }
+    );
+  }
+
+  playMatrixScrambleText(element, finalText, durationMs = 350) {
+    if (!element) return;
+    const chars = '01ABCDEF#@!$%&¥§*+=-<>[]{}~/\\';
+    const totalFrames = Math.max(6, Math.floor(durationMs / 35));
+    let frame = 0;
+
+    const interval = setInterval(() => {
+      frame++;
+      let progress = frame / totalFrames;
+      let revealedChars = Math.floor(progress * finalText.length);
+      let output = '';
+
+      for (let i = 0; i < finalText.length; i++) {
+        if (i < revealedChars) {
+          output += finalText[i];
+        } else {
+          output += chars[Math.floor(Math.random() * chars.length)];
+        }
+      }
+
+      element.textContent = output;
+
+      if (frame >= totalFrames) {
+        clearInterval(interval);
+        element.textContent = finalText;
+      }
+    }, 35);
   }
 
   launchWorkspaceProfile(profileId) {
