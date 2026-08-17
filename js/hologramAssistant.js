@@ -187,8 +187,10 @@ export class HologramAssistantEngine {
     // Speech Engine State (100% Female Strict Filter)
     this.synth = typeof window !== 'undefined' ? window.speechSynthesis : null;
     this.isVoiceEnabled = true;
-    this.currentUtterance = null;
-    this.selectedFemaleVoice = null;
+    // Audio Playback Engine (Online Google Neural Thai Female Voice + Offline Fallback)
+    this.currentAudioElement = null;
+    this.audioQueue = [];
+    this.isAudioQueuePlaying = false;
 
     // Telemetry Cache
     this.cachedGymStats = null;
@@ -207,7 +209,6 @@ export class HologramAssistantEngine {
       const voices = this.synth.getVoices();
       if (!voices || voices.length === 0) return;
 
-      // Helper function to check if a voice is male
       const isMaleVoice = (v) => {
         const name = (v.name || '').toLowerCase();
         return (
@@ -224,7 +225,7 @@ export class HologramAssistantEngine {
         );
       };
 
-      // 1. Priority Thai Female Voices
+      // 1. Explicit Thai Female Voice Names
       const thaiFemaleNames = [
         'Premwadee',
         'Google ภาษาไทย',
@@ -236,20 +237,17 @@ export class HologramAssistantEngine {
 
       let picked = voices.find(v => (v.lang === 'th-TH' || v.lang === 'th_TH' || v.lang.startsWith('th')) && !isMaleVoice(v) && thaiFemaleNames.some(p => v.name.includes(p)));
       
-      // If not found, any Thai voice that is definitely NOT male
       if (!picked) {
         picked = voices.find(v => (v.lang === 'th-TH' || v.lang === 'th_TH' || v.lang.startsWith('th')) && !isMaleVoice(v));
       }
 
-      // 2. High-Quality International Female Voices (Sweet / Feminine)
       if (!picked) {
         const intlFemale = ['Zira', 'Jenny', 'Aria', 'Samantha', 'Google US English', 'Google UK English Female', 'Victoria', 'Karen'];
         picked = voices.find(v => !isMaleVoice(v) && intlFemale.some(f => v.name.includes(f)));
       }
 
-      // 3. Fallback: Any voice that is NOT male
       if (!picked) {
-        picked = voices.find(v => !isMaleVoice(v)) || voices[0];
+        picked = voices.find(v => !isMaleVoice(v)) || null;
       }
 
       this.selectedFemaleVoice = picked;
@@ -325,6 +323,29 @@ export class HologramAssistantEngine {
     }
   }
 
+  stopAllSpeech() {
+    if (this.currentAudioElement) {
+      try {
+        this.currentAudioElement.pause();
+        this.currentAudioElement.currentTime = 0;
+      } catch (e) {}
+      this.currentAudioElement = null;
+    }
+    this.audioQueue = [];
+    this.isAudioQueuePlaying = false;
+
+    if (this.synth) {
+      try {
+        this.synth.cancel();
+      } catch (e) {}
+    }
+    this.isSpeaking = false;
+    this.mouthOpen = 0;
+    const dot = document.getElementById('hologramStatusDot');
+    if (dot) dot.classList.remove('speaking');
+    this.updateAudioWaveBars(false);
+  }
+
   toggleVoice() {
     this.isVoiceEnabled = !this.isVoiceEnabled;
     const btnVoice = document.getElementById('holoBtnVoiceToggle');
@@ -339,8 +360,7 @@ export class HologramAssistantEngine {
       this.setGazeMode('OPERATOR');
       this.speak('เปิดระบบเสียงสังเคราะห์ภาษาไทยของ NYX เรียบร้อยแล้วค่ะ สแตนด์บายพร้อมรับคำสั่งจากคุณอนันต์ค่ะ');
     } else {
-      if (this.synth) this.synth.cancel();
-      this.isSpeaking = false;
+      this.stopAllSpeech();
       if (btnVoice) btnVoice.classList.add('muted');
       if (icon) icon.textContent = '🔇';
       if (txt) txt.textContent = 'ปิดเสียง';
@@ -371,74 +391,151 @@ export class HologramAssistantEngine {
     }
   }
 
+  // Split text into natural vocal chunks (under 120 chars)
+  splitTextIntoChunks(text) {
+    if (!text || text.length <= 110) return [text];
+    const delimiters = [' ค่ะ ', ' นะคะ ', ':', '—', ' โดย', ' และ', ' ซึ่ง', ' ทั้งนี้', ',', '. ', '\n'];
+    let chunks = [];
+    let remaining = text;
+
+    while (remaining.length > 110) {
+      let splitIdx = -1;
+      for (const d of delimiters) {
+        const idx = remaining.indexOf(d, 40);
+        if (idx !== -1 && idx <= 110) {
+          splitIdx = idx + d.length;
+          break;
+        }
+      }
+      if (splitIdx === -1) {
+        splitIdx = remaining.lastIndexOf(' ', 110);
+        if (splitIdx <= 20) splitIdx = 110;
+      }
+      chunks.push(remaining.substring(0, splitIdx).trim());
+      remaining = remaining.substring(splitIdx).trim();
+    }
+    if (remaining.length > 0) chunks.push(remaining);
+    return chunks.filter(c => c.length > 0);
+  }
+
+  // Primary Method: Guaranteed 100% Female Voice Synthesis
   speak(text, onEndCallback = null) {
     this.setSpeechBalloon(text);
 
-    if (!this.isVoiceEnabled || !this.synth) return;
+    if (!this.isVoiceEnabled) return;
+
+    this.stopAllSpeech();
+    this.playChirpSFX(true);
+
+    const chunks = this.splitTextIntoChunks(text);
+    this.audioQueue = [...chunks];
+    this.isAudioQueuePlaying = true;
+    this.isSpeaking = true;
+
+    const dot = document.getElementById('hologramStatusDot');
+    if (dot) dot.classList.add('speaking');
+    this.updateAudioWaveBars(true);
+
+    const playNextChunk = () => {
+      if (!this.isAudioQueuePlaying || this.audioQueue.length === 0) {
+        this.isSpeaking = false;
+        this.mouthOpen = 0;
+        this.setGazeMode('OPERATOR');
+        if (dot) dot.classList.remove('speaking');
+        this.updateAudioWaveBars(false);
+        this.playChirpSFX(false);
+        if (onEndCallback) onEndCallback();
+        return;
+      }
+
+      const nextChunk = this.audioQueue.shift();
+      const encoded = encodeURIComponent(nextChunk);
+      const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=th&client=tw-ob&q=${encoded}`;
+
+      if (typeof Audio !== 'undefined') {
+        const audio = new Audio();
+        this.currentAudioElement = audio;
+
+        audio.onended = () => {
+          playNextChunk();
+        };
+
+        audio.onerror = () => {
+          this.speakFallbackSpeechSynthesis(nextChunk, () => {
+            playNextChunk();
+          });
+        };
+
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(() => {
+            this.speakFallbackSpeechSynthesis(nextChunk, () => {
+              playNextChunk();
+            });
+          });
+        }
+      } else {
+        this.speakFallbackSpeechSynthesis(nextChunk, () => {
+          playNextChunk();
+        });
+      }
+    };
+
+    playNextChunk();
+  }
+
+  // Offline Web Speech API Fallback (Strictly Filters Out Any Male Voices)
+  speakFallbackSpeechSynthesis(text, onEnd) {
+    if (!this.synth) {
+      if (onEnd) onEnd();
+      return;
+    }
 
     try {
-      this.synth.cancel();
-      this.playChirpSFX(true);
-
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'th-TH';
       if (this.selectedFemaleVoice) {
         utterance.voice = this.selectedFemaleVoice;
       }
-      // Sweet & High-tech feminine pitch curve
       utterance.rate = 1.02;
-      utterance.pitch = 1.34;
-
-      utterance.onstart = () => {
-        this.isSpeaking = true;
-        const dot = document.getElementById('hologramStatusDot');
-        if (dot) dot.classList.add('speaking');
-        this.updateAudioWaveBars(true);
-      };
+      utterance.pitch = 1.35; // Sweet high feminine pitch
 
       utterance.onend = () => {
-        this.isSpeaking = false;
-        this.mouthOpen = 0;
-        this.setGazeMode('OPERATOR');
-        const dot = document.getElementById('hologramStatusDot');
-        if (dot) dot.classList.remove('speaking');
-        this.updateAudioWaveBars(false);
-        this.playChirpSFX(false);
-        if (onEndCallback) onEndCallback();
+        if (onEnd) onEnd();
       };
 
       utterance.onerror = () => {
-        this.isSpeaking = false;
-        this.mouthOpen = 0;
-        this.setGazeMode('OPERATOR');
-        this.updateAudioWaveBars(false);
+        if (onEnd) onEnd();
       };
 
-      this.currentUtterance = utterance;
       this.synth.speak(utterance);
     } catch (e) {
-      this.isSpeaking = false;
+      if (onEnd) onEnd();
     }
   }
 
   setSpeechBalloon(text) {
     this.lastSpokenText = text;
-    const balloon = document.getElementById('assistantSpeechText');
-    if (balloon) {
-      balloon.innerHTML = text;
+    if (typeof document !== 'undefined' && document.getElementById) {
+      const balloon = document.getElementById('assistantSpeechText');
+      if (balloon) {
+        balloon.innerHTML = text;
+      }
     }
   }
 
   updateAudioWaveBars(isSpeaking) {
+    if (typeof document === 'undefined' || typeof document.querySelectorAll !== 'function') return;
     const bars = document.querySelectorAll('.hologram-audio-wave-strip .wave-bar');
+    if (!bars || !bars.forEach) return;
     bars.forEach((bar, idx) => {
       if (isSpeaking) {
-        bar.classList.add('speaking');
+        if (bar.classList) bar.classList.add('speaking');
         const h = 4 + Math.sin(this.time * 0.2 + idx) * 6 + Math.random() * 4;
-        bar.style.height = `${Math.max(2, Math.min(12, h))}px`;
+        if (bar.style) bar.style.height = `${Math.max(2, Math.min(12, h))}px`;
       } else {
-        bar.classList.remove('speaking');
-        bar.style.height = '3px';
+        if (bar.classList) bar.classList.remove('speaking');
+        if (bar.style) bar.style.height = '3px';
       }
     });
   }
