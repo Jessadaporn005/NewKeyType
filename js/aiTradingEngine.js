@@ -902,6 +902,17 @@ export class AITradingEngine {
 
     // Start background MT5 ingestion stream immediately
     this.startMT5BackgroundStream();
+
+    // Auto-save on Alt+F4 or sudden tab closure
+    if (typeof window !== 'undefined' && window.addEventListener) {
+      window.addEventListener('beforeunload', () => this.saveGymState());
+      window.addEventListener('pagehide', () => this.saveGymState());
+    }
+    if (typeof document !== 'undefined' && document.addEventListener) {
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') this.saveGymState();
+      });
+    }
   }
 
   startLiveAutoExecution(config = {}) {
@@ -1082,7 +1093,11 @@ export class AITradingEngine {
         const raw = localStorage.getItem('cyber_ai_trading_gym_state');
         if (raw) {
           const parsed = JSON.parse(raw);
-          if (parsed.stats) this.aiStats = { ...this.aiStats, ...parsed.stats };
+          if (parsed.stats) {
+            this.aiStats = { ...this.aiStats, ...parsed.stats };
+            // Ensure 1-indexed level is correctly calculated from samples
+            this.aiStats.adaptationLevel = Math.min(10, Math.floor((this.aiStats.samplesStudied || 0) / 700) + 1);
+          }
           if (Array.isArray(parsed.journal)) this.aiJournal = parsed.journal;
           if (parsed.weights) this.strategyWeights = { ...DEFAULT_STRATEGY_WEIGHTS, ...parsed.weights };
           return true;
@@ -1497,6 +1512,10 @@ export class AITradingEngine {
 
       if (this.onAIProfileUpdate) {
         this.onAIProfileUpdate(this.getAIProfileDetails());
+      }
+
+      if (this.aiStats.samplesStudied % 10 === 0) {
+        this.saveGymState();
       }
     }
 

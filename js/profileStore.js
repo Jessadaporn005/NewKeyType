@@ -75,6 +75,10 @@ class ProfileStore {
     this.profiles = {};
     this.isElectron = typeof window !== 'undefined' && window.cyberSystemAPI && window.cyberSystemAPI.isElectron;
     this.onAchievementUnlocked = null;
+    if (typeof window !== 'undefined' && window.addEventListener) {
+      window.addEventListener('beforeunload', () => this.saveAllAsync());
+      window.addEventListener('pagehide', () => this.saveAllAsync());
+    }
     this.initStore();
   }
 
