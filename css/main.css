@@ -6237,6 +6237,91 @@ body.mode-trading .sub-chart-container {
   background: #000000;
 }
 
+/* XM PORTAL & INTERACTIVE CHART WRAPPER */
+.xm-portal-view-wrapper {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #060913;
+}
+
+.xm-portal-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 14px;
+  background: rgba(15, 23, 42, 0.9);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.xm-banner-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #e2e8f0;
+}
+
+.xm-logo-tag {
+  background: #ff2244;
+  color: #ffffff;
+  font-weight: 900;
+  font-size: 9px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  letter-spacing: 0.5px;
+}
+
+.xm-banner-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.xm-portal-btn {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 4px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.18s ease;
+}
+
+.btn-launch-xm {
+  background: rgba(0, 255, 136, 0.15);
+  border: 1px solid #00ff88;
+  color: #00ff88;
+}
+
+.btn-launch-xm:hover {
+  background: #00ff88;
+  color: #000000;
+  box-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+}
+
+.btn-xm-member {
+  background: rgba(255, 215, 0, 0.15);
+  border: 1px solid #ffd700;
+  color: #ffd700;
+}
+
+.btn-xm-member:hover {
+  background: #ffd700;
+  color: #000000;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+.xm-chart-stage {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
 .quant-matrix-preview-box {
   width: 100%;
   height: 100%;

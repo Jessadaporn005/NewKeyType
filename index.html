@@ -1104,9 +1104,27 @@
                 <iframe id="iframeMT5Terminal" src="https://trade.mql5.com/trade?servers=XMGlobal-Demo%2CXMGlobal-Real&trade_server=XMGlobal-Demo" class="embedded-broker-iframe" title="MetaTrader 5 Web Terminal"></iframe>
               </div>
 
-              <!-- View 2: XM WebTrader -->
+              <!-- View 2: XM WebTrader & Live Market Gateway -->
               <div class="embedded-view-container hidden-view" id="viewXMWebtrader">
-                <iframe id="iframeXMWebtrader" src="https://webtrader.xm.com/" class="embedded-broker-iframe" title="XM WebTrader"></iframe>
+                <div class="xm-portal-view-wrapper">
+                  <div class="xm-portal-banner">
+                    <div class="xm-banner-left">
+                      <span class="xm-logo-tag">XM GLOBAL</span>
+                      <strong>OFFICIAL XM BROKER GATEWAY & LIVE FEED</strong>
+                    </div>
+                    <div class="xm-banner-actions">
+                      <a href="https://webtrader.xm.com/" target="_blank" rel="noopener noreferrer" class="xm-portal-btn btn-launch-xm">
+                        <span>🔗 OPEN XM WEBTRADER (NEW WINDOW)</span>
+                      </a>
+                      <a href="https://my.xm.com/member" target="_blank" rel="noopener noreferrer" class="xm-portal-btn btn-xm-member">
+                        <span>👤 XM MEMBERS AREA</span>
+                      </a>
+                    </div>
+                  </div>
+                  <div class="xm-chart-stage">
+                    <iframe id="iframeXMChart" src="https://s.tradingview.com/widgetembed/?symbol=OANDA%3AXAUUSD&interval=5&hidesidetoolbar=0&symboledit=1&saveimage=1&toolbarbg=0a0f19&studies=%5B%5D&theme=dark&style=1&timezone=Asia%2FBangkok&studies_overrides=%7B%7D&overrides=%7B%7D&enabled_features=%5B%5D&disabled_features=%5B%5D&locale=th_TH" class="embedded-broker-iframe" title="XM Gold Live Chart"></iframe>
+                  </div>
+                </div>
               </div>
 
               <!-- View 3: Quant Matrix High Precision Chart -->
