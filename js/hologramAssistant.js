@@ -201,7 +201,7 @@ export class HologramAssistantEngine {
     this.initStrictFemaleVoiceEngine();
   }
 
-  // 100% STRICT FEMALE VOICE SELECTOR (NO MALE VOICES ALLOWED)
+  // 100% STRICT FEMALE VOICE SELECTOR (PRIORITIZE AVA / SIRI / PREMWADEE - NO MALE VOICES ALLOWED)
   initStrictFemaleVoiceEngine() {
     if (!this.synth) return;
 
@@ -209,45 +209,55 @@ export class HologramAssistantEngine {
       const voices = this.synth.getVoices();
       if (!voices || voices.length === 0) return;
 
-      const isMaleVoice = (v) => {
-        const name = (v.name || '').toLowerCase();
+      const isBannedMaleVoice = (v) => {
+        if (!v || !v.name) return true;
+        const name = v.name.toLowerCase();
         return (
           name.includes('niwat') ||
+          name.includes('pattara') ||
+          name.includes('phirun') ||
+          name.includes('somchai') ||
+          name.includes('narin') ||
           name.includes('david') ||
           name.includes('george') ||
           name.includes('mark') ||
           name.includes('james') ||
           name.includes('richard') ||
+          name.includes('guy') ||
           name.includes('male') ||
-          name.includes(' guy') ||
           name.includes(' man') ||
           name.includes(' boy')
         );
       };
 
-      // 1. Explicit Thai Female Voice Names
-      const thaiFemaleNames = [
-        'Premwadee',
-        'Google ภาษาไทย',
-        'Achara',
-        'Thai Female',
-        'th-TH-Neural2-C',
-        'th-TH-Standard-A'
-      ];
+      // 1. AVA (Microsoft Natural Ava AI Female Voice)
+      let picked = voices.find(v => !isBannedMaleVoice(v) && v.name.toLowerCase().includes('ava'));
 
-      let picked = voices.find(v => (v.lang === 'th-TH' || v.lang === 'th_TH' || v.lang.startsWith('th')) && !isMaleVoice(v) && thaiFemaleNames.some(p => v.name.includes(p)));
-      
+      // 2. SIRI / SAMANTHA (Apple Siri Female Voice)
       if (!picked) {
-        picked = voices.find(v => (v.lang === 'th-TH' || v.lang === 'th_TH' || v.lang.startsWith('th')) && !isMaleVoice(v));
+        picked = voices.find(v => !isBannedMaleVoice(v) && (v.name.toLowerCase().includes('siri') || v.name.toLowerCase().includes('samantha')));
       }
 
+      // 3. Thai Female Voices (Premwadee, Google ภาษาไทย, Achara)
       if (!picked) {
-        const intlFemale = ['Zira', 'Jenny', 'Aria', 'Samantha', 'Google US English', 'Google UK English Female', 'Victoria', 'Karen'];
-        picked = voices.find(v => !isMaleVoice(v) && intlFemale.some(f => v.name.includes(f)));
+        const thaiFemaleKeywords = ['premwadee', 'achara', 'ภาษาไทย', 'th-th-neural2-c', 'th-th-standard-a'];
+        picked = voices.find(v => !isBannedMaleVoice(v) && (v.lang.startsWith('th') || v.lang === 'th-TH') && thaiFemaleKeywords.some(k => v.name.toLowerCase().includes(k)));
       }
 
+      // 4. Natural AI Female Voices (Aria, Jenny, Zira, Google Female)
       if (!picked) {
-        picked = voices.find(v => !isMaleVoice(v)) || null;
+        const topFemaleVoices = ['aria', 'jenny', 'zira', 'google uk english female', 'google us english', 'victoria', 'karen'];
+        picked = voices.find(v => !isBannedMaleVoice(v) && topFemaleVoices.some(f => v.name.toLowerCase().includes(f)));
+      }
+
+      // 5. Any voice marked as female that is not male
+      if (!picked) {
+        picked = voices.find(v => !isBannedMaleVoice(v) && (v.name.toLowerCase().includes('female') || v.name.toLowerCase().includes('natural')));
+      }
+
+      // 6. Fallback non-male voice
+      if (!picked) {
+        picked = voices.find(v => !isBannedMaleVoice(v)) || null;
       }
 
       this.selectedFemaleVoice = picked;
@@ -257,6 +267,18 @@ export class HologramAssistantEngine {
     if (typeof window !== 'undefined' && window.speechSynthesis) {
       window.speechSynthesis.onvoiceschanged = pickStrictFemaleVoice;
     }
+  }
+
+  setVoiceByName(targetName = '') {
+    if (!this.synth) return false;
+    const voices = this.synth.getVoices() || [];
+    const lower = targetName.toLowerCase();
+    const found = voices.find(v => v.name.toLowerCase().includes(lower));
+    if (found) {
+      this.selectedFemaleVoice = found;
+      return found.name;
+    }
+    return null;
   }
 
   init(containerEl) {
@@ -493,9 +515,11 @@ export class HologramAssistantEngine {
 
     try {
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'th-TH';
       if (this.selectedFemaleVoice) {
         utterance.voice = this.selectedFemaleVoice;
+        utterance.lang = this.selectedFemaleVoice.lang || 'en-US';
+      } else {
+        utterance.lang = 'en-US';
       }
       utterance.rate = 1.02;
       utterance.pitch = 1.35; // Sweet high feminine pitch
@@ -945,7 +969,22 @@ export class HologramAssistantEngine {
       };
     }
 
-    // 0.1 Quick Selection by Number (1 to 6)
+    // 0.1 Voice Selection & Testing ('nyx voice ava', 'nyx voice siri', 'nyx ava', 'nyx siri')
+    if (q.startsWith('voice ') || q === 'ava' || q === 'siri' || (q.includes('เสียง') && !q.includes('มีข่าว'))) {
+      const voiceTarget = q.replace('voice ', '').replace('เสียง', '').trim() || 'ava';
+      const switchedName = this.setVoiceByName(voiceTarget);
+      const activeVoiceName = switchedName || this.selectedFemaleVoice?.name || 'Ava / Google Thai Female';
+      const notifySpeech = `สลับมาใช้เสียง ${activeVoiceName} เรียบร้อยแล้วค่ะคุณอนันต์`;
+      this.speak(notifySpeech);
+      return {
+        category: '🎙️ FEMALE VOICE SELECTOR',
+        title: `สลับเสียงผู้หญิง: ${activeVoiceName}`,
+        detail: `เสียงที่ใช้งานปัจจุบัน: ${activeVoiceName} (ตัดเสียงผู้ชาย Niwat ออกถาวร 100%)`,
+        speech: notifySpeech
+      };
+    }
+
+    // 0.2 Quick Selection by Number (1 to 6)
     if (/^(1|ข้อ 1|ข่าว 1|หมวด 1|no 1)$/.test(q)) {
       q = 'บ้านเมือง';
     } else if (/^(2|ข้อ 2|ข่าว 2|หมวด 2|no 2)$/.test(q)) {
