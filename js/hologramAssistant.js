@@ -1,199 +1,179 @@
-/**
- * CYBER//TYPE 3D HOLOGRAPHIC FACIAL KINEMATICS RIG & ASSISTANT (NYX)
- * - 100% Female Voice Lock (Strict Male Voice Purge + Natural Thai Female Synthesis)
- * - Multi-Source Global Intelligence Radar (World Affairs, Gaming, Crypto, Tech/AI, Gold/Forex, CyberSec)
- * - Natural Thai Conversational Polisher (ภาษาพูดลื่นไหล สละสลวย ไม่แข็งกระด้าง)
- * - 3D Vector Perspective Facial Rig with Viseme Real-Time Lip-Sync & Situational Gaze Tracking
- * - Interactive Natural Language Terminal CLI Queries (e.g. 'NYX ข่าวบ้านเมือง', 'NYX ข่าวเกมส์', 'NYX ข่าวคริปโต')
- */
+// =============================================================================
+// NYX 3D HOLOGRAPHIC AI ASSISTANT & MASTER CO-PILOT ENGINE
+// 100% Genuine Thai Female Voice, Multi-Emotion Kinematics & Masterclass Coaching
+// =============================================================================
 
 import { profileStore } from './profileStore.js';
 
-// AUTOMATIC THAI PHONETIC TRANSLITERATION & PRONUNCIATION NORMALIZER
-// Solves spelling-out issue by converting English keywords into natural Thai phonetic text
-export function phoneticizeForThaiSpeech(text) {
-  if (!text || typeof text !== 'string') return '';
-  let s = text;
-
-  const dictionary = [
-    // Core AI & Assistant Persona Names
-    [/\bNYX\b/gi, 'นิกซ์'],
-    [/\bKRONOS\b/gi, 'โครนอส'],
-    [/\bORION\b/gi, 'โอไรออน'],
-    [/\bHERMES\b/gi, 'เฮอร์มีส'],
-    [/\bLEVIATHAN\b/gi, 'เลเวียธาน'],
-    [/\bAEGIS\b/gi, 'อีจิส'],
-    [/\bARES\b/gi, 'เอรีส'],
-    [/\bHADES\b/gi, 'ฮาเดส'],
-    [/\bAI GYM\b/gi, 'เอไอ ยิม'],
-    [/\bAI\b/gi, 'เอไอ'],
-    [/\bGYM\b/gi, 'ยิม'],
-    [/\bQUANT\b/gi, 'ควอนท์'],
-    [/\bCOPILOT\b/gi, 'โคไพลอต'],
-    [/\bOPERATOR\b/gi, 'โอเปอเรเตอร์'],
-    [/\bANAN\b/gi, 'อนันต์'],
-    [/\bENCLAVE\b/gi, 'เอ็นเคลฟ'],
-    [/\bHUD\b/gi, 'ฮัด'],
-    [/\bDEFCON-1\b/gi, 'เดฟคอน วัน'],
-    [/\bDEFCON\b/gi, 'เดฟคอน'],
-    [/\bC2\b/gi, 'ซีทู'],
-    [/\bWPM\b/gi, 'คำต่อนาที'],
-    [/\bACC\b/gi, 'ความแม่นยำ'],
-    [/\bEXP\b/gi, 'ค่าประสบการณ์'],
-    [/\bLVL\s*(\d+)\b/gi, 'เลเวล $1'],
-    [/\bLEVEL\s*(\d+)\b/gi, 'เลเวล $1'],
-    [/\bLVL\b/gi, 'เลเวล'],
-
-    // Cryptocurrencies & Global Macro Finance
-    [/\bBITCOIN\b/gi, 'บิตคอยน์'],
-    [/\bBTC\b/gi, 'บิตคอยน์'],
-    [/\bETHEREUM\b/gi, 'อีเธอเรียม'],
-    [/\bETH\b/gi, 'อีเธอเรียม'],
-    [/\bSOLANA\b/gi, 'โซลานา'],
-    [/\bSOL\b/gi, 'โซลานา'],
-    [/\bSPOT GOLD\b/gi, 'สปอต โกลด์'],
-    [/\bXAU\/USD\b/gi, 'ราคาทองคำ'],
-    [/\bXAU\b/gi, 'ทองคำ'],
-    [/\bFED\b/gi, 'เฟด'],
-    [/\bBOJ\b/gi, 'บีโอเจ'],
-    [/\bECB\b/gi, 'อีซีบี'],
-    [/\bNASDAQ\b/gi, 'แนสแด็ก'],
-    [/\bS&P 500\b/gi, 'เอสแอนด์พี 500'],
-    [/\bATH\b/gi, 'ออลไทม์ไฮ'],
-    [/\bNEW HIGH\b/gi, 'นิวไฮ'],
-    [/\bETF\b/gi, 'อีทีเอฟ'],
-    [/\bDEFI\b/gi, 'ดีไฟ'],
-    [/\bON-CHAIN\b/gi, 'ออนเชน'],
-    [/\bTPS\b/gi, 'รายการต่อวินาที'],
-    [/\bLAYER-2\b/gi, 'เลเยอร์ทู'],
-    [/\bORDER BLOCK\b/gi, 'ออเดอร์บล็อก'],
-    [/\bFAIR VALUE GAP\b/gi, 'แฟร์แวลูแก็ป'],
-    [/\bFVG\b/gi, 'เอฟวีจี'],
-    [/\bSMC\b/gi, 'เอสเอ็มซี'],
-    [/\bSMART MONEY\b/gi, 'สมาร์ตมันนี่'],
-    [/\bLIQUIDITY\b/gi, 'สภาพคล่อง'],
-    [/\bSWEEP\b/gi, 'สวีป'],
-    [/\bDOM\b/gi, 'เด็ปท์ออฟมาร์เก็ต'],
-    [/\bWIN RATE\b/gi, 'วินเรต'],
-
-    // Gaming & Esports
-    [/\bGTA VI\b/gi, 'จีทีเอ หก'],
-    [/\bGTA 6\b/gi, 'จีทีเอ หก'],
-    [/\bGTA\b/gi, 'จีทีเอ'],
-    [/\bSTEAM DECK OLED\b/gi, 'สตรีมเด็ค โอเล็ด'],
-    [/\bSTEAM DECK\b/gi, 'สตรีมเด็ค'],
-    [/\bSTEAM\b/gi, 'สตรีม'],
-    [/\bOLED\b/gi, 'โอเล็ด'],
-    [/\bVALVE\b/gi, 'วาล์ว'],
-    [/\bROCKSTAR GAMES\b/gi, 'ร็อกสตาร์ เกมส์'],
-    [/\bROCKSTAR\b/gi, 'ร็อกสตาร์'],
-    [/\bNINTENDO SWITCH 2\b/gi, 'นินเทนโด สวิตช์ สอง'],
-    [/\bNINTENDO\b/gi, 'นินเทนโด'],
-    [/\bESPORTS\b/gi, 'อีสปอร์ต'],
-    [/\bESPORT\b/gi, 'อีสปอร์ต'],
-    [/\bUNREAL ENGINE 5\.5\b/gi, 'อันเรียล เอนจิน ห้าจุดห้า'],
-    [/\bUNREAL ENGINE\b/gi, 'อันเรียล เอนจิน'],
-    [/\bRAY TRACING\b/gi, 'เรย์เทรซซิ่ง'],
-    [/\bDLSS 3\.5\b/gi, 'ดีแอลเอสเอส สามจุดห้า'],
-    [/\bDLSS\b/gi, 'ดีแอลเอสเอส'],
-    [/\bPLAYSTATION 5 PRO\b/gi, 'เพลย์สเตชัน ห้า โปร'],
-    [/\bPS5 PRO\b/gi, 'พีเอสไฟว์ โปร'],
-
-    // AI & Advanced Tech
-    [/\bOPENAI\b/gi, 'โอเพนเอไอ'],
-    [/\bDEEPSEEK R1\b/gi, 'ดีพซีค อาร์วัน'],
-    [/\bDEEPSEEK\b/gi, 'ดีพซีค'],
-    [/\bAGI\b/gi, 'เอจีไอ'],
-    [/\bNVIDIA BLACKWELL ULTRA\b/gi, 'เอ็นวิเดีย แบล็กเวลล์ อัลตร้า'],
-    [/\bNVIDIA\b/gi, 'เอ็นวิเดีย'],
-    [/\bBLACKWELL\b/gi, 'แบล็กเวลล์'],
-    [/\bSUPERCOMPUTER\b/gi, 'ซูเปอร์คอมพิวเตอร์'],
-    [/\bEXAFLOPS\b/gi, 'เอ็กซาฟล็อปส์'],
-    [/\bQUBIT\b/gi, 'คิวบิต'],
-    [/\bQUANTUM\b/gi, 'ควอนตัม'],
-    [/\bZERO-DAY\b/gi, 'ซีโร่เดย์'],
-    [/\b0-DAY\b/gi, 'ซีโร่เดย์'],
-    [/\bDDOS\b/gi, 'ดีดอส'],
-    [/\bFIREWALL\b/gi, 'ไฟร์วอลล์'],
-    [/\bDATA CENTER\b/gi, 'ดาต้าเซ็นเตอร์'],
-    [/\bCLOUD\b/gi, 'คลาวด์'],
-    [/\bONLINE\b/gi, 'ออนไลน์'],
-    [/\bOFFLINE\b/gi, 'ออฟไลน์'],
-    [/\bTERMINAL\b/gi, 'เทอร์มินัล'],
-    [/\bDATABASE\b/gi, 'ฐานข้อมูล'],
-    [/\bCHECKSUM\b/gi, 'เช็คซัม'],
-    [/\bAES-256\b/gi, 'เออีเอส 256'],
-    [/\bSHA-256\b/gi, 'เอสเอชเอ 256'],
-    [/\bRSA-8192\b/gi, 'อาร์เอสเอ 8192'],
-    [/\bCHERRY SWITCHES\b/gi, 'เชอร์รี่ สวิตช์']
-  ];
-
-  for (const [pattern, replacement] of dictionary) {
-    s = s.replace(pattern, replacement);
-  }
-
-  return s;
-}
-
-// 3D Perspective Projection Mathematics Helper
-function project3D(x, y, z, yaw, pitch, roll, cx, cy, fov = 260) {
+// 3D Perspective Projection Helper
+function project3D(x, y, z, yaw, pitch, roll, cx = 140, cy = 140, fov = 300) {
+  // Yaw (Y-axis rotation)
   const cosY = Math.cos(yaw);
   const sinY = Math.sin(yaw);
   let x1 = x * cosY - z * sinY;
-  let z1 = x * sinY + z * cosY;
+  let z1 = z * cosY + x * sinY;
 
+  // Pitch (X-axis rotation)
   const cosP = Math.cos(pitch);
   const sinP = Math.sin(pitch);
   let y2 = y * cosP - z1 * sinP;
-  let z2 = y * sinP + z1 * cosP;
+  let z2 = z1 * cosP + y * sinP;
 
+  // Roll (Z-axis rotation)
   const cosR = Math.cos(roll);
   const sinR = Math.sin(roll);
   let x3 = x1 * cosR - y2 * sinR;
-  let y3 = x1 * sinR + y2 * cosR;
+  let y3 = y2 * cosR + x1 * sinR;
 
-  const distance = fov + z2;
-  const scale = distance > 10 ? fov / distance : 1;
+  const distance = fov / (fov + z2);
   return {
-    x: cx + x3 * scale,
-    y: cy + y3 * scale,
-    z: z2,
-    scale
+    x: cx + x3 * distance,
+    y: cy + y3 * distance,
+    scale: distance,
+    z: z2
   };
 }
 
-// Multi-Source Real-World Intelligence Radar Database (Expanded 100+ Live Global Items)
+// =============================================================================
+// THAI PHONETIC PRONUNCIATION NORMALIZER (ระบบอ่านออกเสียงภาษาไทยธรรมชาติ)
+// แปลงคำศัพท์เฉพาะภาษาอังกฤษ/ตัวย่อ เป็นคำอ่านภาษาไทยสละสลวย ไม่สะกดทีละตัว
+// =============================================================================
+export function phoneticizeForThaiSpeech(text = '') {
+  if (!text || typeof text !== 'string') return '';
+
+  const phoneticMap = [
+    // 1. Core Names & System Lore
+    { pattern: /\bNYX\b/gi, replacement: 'นิกซ์' },
+    { pattern: /\bKRONOS\b/gi, replacement: 'โครนอส' },
+    { pattern: /\bORION\b/gi, replacement: 'โอไรออน' },
+    { pattern: /\bHERMES\b/gi, replacement: 'เฮอร์มีส' },
+    { pattern: /\bLEVIATHAN\b/gi, replacement: 'เลเวียธาน' },
+    { pattern: /\bAEGIS\b/gi, replacement: 'อีจิส' },
+    { pattern: /\bAI GYM\b/gi, replacement: 'เอไอ ยิม' },
+    { pattern: /\bAI\b/gi, replacement: 'เอไอ' },
+    { pattern: /\bDEFCON-1\b/gi, replacement: 'เดฟคอน วัน' },
+    { pattern: /\bDEFCON\b/gi, replacement: 'เดฟคอน' },
+    { pattern: /\bHUD\b/gi, replacement: 'ฮัด' },
+    { pattern: /\bGUI\b/gi, replacement: 'จียูไอ' },
+    { pattern: /\bCLI\b/gi, replacement: 'ซีแอลไอ' },
+    { pattern: /\bAPI\b/gi, replacement: 'เอพีไอ' },
+    { pattern: /\bC2\b/gi, replacement: 'ซีทู' },
+    { pattern: /\bENCLAVE\b/gi, replacement: 'เอนเคลฟ' },
+
+    // 2. Crypto, Web3 & Tech Terms
+    { pattern: /\bBITCOIN\b/gi, replacement: 'บิตคอยน์' },
+    { pattern: /\bBTC\b/gi, replacement: 'บิตคอยน์' },
+    { pattern: /\bETHEREUM\b/gi, replacement: 'อีเธอเรียม' },
+    { pattern: /\bETH\b/gi, replacement: 'อีเธอเรียม' },
+    { pattern: /\bSOLANA\b/gi, replacement: 'โซลานา' },
+    { pattern: /\bSOL\b/gi, replacement: 'โซลานา' },
+    { pattern: /\bETF\b/gi, replacement: 'อีทีเอฟ' },
+    { pattern: /\bDEFI\b/gi, replacement: 'ดีไฟ' },
+    { pattern: /\bBLOCKCHAIN\b/gi, replacement: 'บล็อกเชน' },
+    { pattern: /\bON-CHAIN\b/gi, replacement: 'ออนเชน' },
+    { pattern: /\bHASH\b/gi, replacement: 'แฮช' },
+    { pattern: /\bHASHRATE\b/gi, replacement: 'แฮชเรต' },
+    { pattern: /\bHALVING\b/gi, replacement: 'ฮาล์ฟวิ่ง' },
+    { pattern: /\bRWA\b/gi, replacement: 'อาร์ดับเบิลยูเอ' },
+    { pattern: /\bTPS\b/gi, replacement: 'ธุรกรรมต่อวินาที' },
+
+    // 3. Gaming, Hardware & AI Giants
+    { pattern: /\bGTA VI\b/gi, replacement: 'จีทีเอ หก' },
+    { pattern: /\bGTA 6\b/gi, replacement: 'จีทีเอ หก' },
+    { pattern: /\bGTA\b/gi, replacement: 'จีทีเอ' },
+    { pattern: /\bSTEAM DECK OLED\b/gi, replacement: 'สตรีมเด็ค โอเล็ด' },
+    { pattern: /\bSTEAM DECK\b/gi, replacement: 'สตรีมเด็ค' },
+    { pattern: /\bSTEAM\b/gi, replacement: 'สตรีม' },
+    { pattern: /\bNINTENDO SWITCH 2\b/gi, replacement: 'นินเทนโด สวิตช์ สอง' },
+    { pattern: /\bNINTENDO\b/gi, replacement: 'นินเทนโด' },
+    { pattern: /\bPLAYSTATION 5 PRO\b/gi, replacement: 'เพลย์สเตชัน ห้า โปร' },
+    { pattern: /\bPS5 PRO\b/gi, replacement: 'พีเอส ห้า โปร' },
+    { pattern: /\bPS5\b/gi, replacement: 'พีเอส ห้า' },
+    { pattern: /\bSONY\b/gi, replacement: 'โซนี่' },
+    { pattern: /\bUNREAL ENGINE 5.5\b/gi, replacement: 'อันเรียลเอนจิน ห้าจุดห้า' },
+    { pattern: /\bUNREAL ENGINE\b/gi, replacement: 'อันเรียลเอนจิน' },
+    { pattern: /\bEPIC GAMES\b/gi, replacement: 'เอปิกเกมส์' },
+    { pattern: /\bOPENAI\b/gi, replacement: 'โอเพนเอไอ' },
+    { pattern: /\bDEEPSEEK R1\b/gi, replacement: 'ดีพซีค อาร์วัน' },
+    { pattern: /\bDEEPSEEK\b/gi, replacement: 'ดีพซีค' },
+    { pattern: /\bNVIDIA BLACKWELL ULTRA\b/gi, replacement: 'เอ็นวิเดีย แบล็กเวลล์ อัลตร้า' },
+    { pattern: /\bNVIDIA\b/gi, replacement: 'เอ็นวิเดีย' },
+    { pattern: /\bBLACKWELL\b/gi, replacement: 'แบล็กเวลล์' },
+    { pattern: /\bAGI\b/gi, replacement: 'เอจีไอ' },
+    { pattern: /\bLLM\b/gi, replacement: 'แอลแอลเอ็ม' },
+    { pattern: /\bESPORTS\b/gi, replacement: 'อีสปอร์ต' },
+    { pattern: /\bESPORT\b/gi, replacement: 'อีสปอร์ต' },
+    { pattern: /\bFPS\b/gi, replacement: 'เฟรมเรต' },
+    { pattern: /\bDLSS\b/gi, replacement: 'ดีแอลเอสเอส' },
+    { pattern: /\b4K\b/gi, replacement: 'สี่เค' },
+
+    // 4. Finance, Gold & Security Terms
+    { pattern: /\bSPOT GOLD\b/gi, replacement: 'สปอต โกลด์' },
+    { pattern: /\bGOLD\b/gi, replacement: 'โกลด์' },
+    { pattern: /\bFED\b/gi, replacement: 'เฟด' },
+    { pattern: /\bFEDERAL RESERVE\b/gi, replacement: 'ธนาคารกลางสหรัฐฯ' },
+    { pattern: /\bNASDAQ\b/gi, replacement: 'แนสแด็ก' },
+    { pattern: /\bS&P 500\b/gi, replacement: 'เอสแอนด์พี ห้าร้อย' },
+    { pattern: /\bATH\b/gi, replacement: 'ออลไทม์ไฮ' },
+    { pattern: /\bNEW HIGH\b/gi, replacement: 'นิวไฮ' },
+    { pattern: /\bZERO-DAY\b/gi, replacement: 'ซีโร่เดย์' },
+    { pattern: /\b0-DAY\b/gi, replacement: 'ซีโร่เดย์' },
+    { pattern: /\bDDOS\b/gi, replacement: 'ดีดอส' },
+    { pattern: /\bFIREWALL\b/gi, replacement: 'ไฟร์วอลล์' },
+    { pattern: /\bPOST-QUANTUM\b/gi, replacement: 'โพสต์ ควอนตัม' },
+    { pattern: /\bPQC\b/gi, replacement: 'พีคิวซี' },
+    { pattern: /\bAES-256\b/gi, replacement: 'เออีเอส สองห้าหก' },
+    { pattern: /\bSHA-256\b/gi, replacement: 'เอสเอชเอ สองห้าหก' },
+    { pattern: /\bORDER BLOCK\b/gi, replacement: 'ออเดอร์บล็อก' },
+    { pattern: /\bFAIR VALUE GAP\b/gi, replacement: 'แฟร์แวลูแก็ป' },
+    { pattern: /\bFVG\b/gi, replacement: 'เอฟวีจี' },
+    { pattern: /\bBOS\b/gi, replacement: 'บีโอเอส' },
+    { pattern: /\bCHOCH\b/gi, replacement: 'ชอช' },
+    { pattern: /\bSMC\b/gi, replacement: 'เอสเอ็มซี' },
+    { pattern: /\bLIQUIDITY\b/gi, replacement: 'ลิควิดิตี้' },
+    { pattern: /\bSWEEP\b/gi, replacement: 'สวีป' },
+    { pattern: /\bSTOP LOSS\b/gi, replacement: 'สต็อปลอส' },
+    { pattern: /\bTAKE PROFIT\b/gi, replacement: 'เทคโพรฟิต' },
+    { pattern: /\bWPM\b/gi, replacement: 'คำต่อนาที' },
+    { pattern: /\bACCURACY\b/gi, replacement: 'ความแม่นยำ' },
+    { pattern: /\bHOME ROW\b/gi, replacement: 'โฮมโรว์' }
+  ];
+
+  let result = text;
+  for (const item of phoneticMap) {
+    result = result.replace(item.pattern, item.replacement);
+  }
+  return result;
+}
+
+// =============================================================================
+// EXPANDED REAL-WORLD INTELLIGENCE RADAR (100+ LIVE GLOBAL NEWS WIRE)
+// =============================================================================
 export const GLOBAL_INTELLIGENCE_RADAR = {
   WORLD_AFFAIRS: [
     {
-      country: 'สหรัฐอเมริกา & ยุโรป',
-      title: 'การประชุมสุดยอดผู้นำว่าด้วยความมั่นคงทางพลังงานและการค้าโลก',
-      detail: 'พันธมิตรตะวันตกเตรียมออกข้อตกลงความร่วมมือด้านโครงสร้างพื้นฐานพลังงานสะอาดและเสถียรภาพห่วงโซ่อุปทานระดับโลก เพื่อรับมือกับความผันผวนทางภูมิรัฐศาสตร์',
-      anchor: 'รายงานข่าวบ้านเมืองและสถานการณ์รอบโลกค่ะ: ทางด้านสหรัฐอเมริกาและกลุ่มประเทศพันธมิตรยุโรป มีความเคลื่อนไหวสำคัญเกี่ยวกับนโยบายความมั่นคงด้านพลังงานและเสถียรภาพการค้าโลก ซึ่งน่าจะส่งผลเชิงบวกต่อบรรยากาศการลงทุนในระยะยาวค่ะ'
+      country: 'สหรัฐอเมริกา',
+      title: 'ทำเนียบขาวประกาศนโยบายพลังงานสะอาดและโครงสร้างพื้นฐาน AI แห่งชาติ',
+      detail: 'รัฐบาลสหรัฐฯ อนุมัติงบประมาณ 5 หมื่นล้านดอลลาร์เพื่อสร้างโรงไฟฟ้านิวเคลียร์ขนาดเล็ก (SMR) รองรับการเติบโตของ Data Center สำหรับ AI',
+      anchor: 'รายงานข่าวด่วนจากสหรัฐอเมริกาค่ะ: ทำเนียบขาวได้ประกาศแผนยุทธศาสตร์พลังงานสะอาดมูลค่า 5 หมื่นล้านดอลลาร์ เพื่อสร้างโรงไฟฟ้ารองรับศูนย์ประมวลผล AI ทั่วประเทศค่ะ'
     },
     {
-      country: 'ญี่ปุ่น & เอเชียตะวันออก',
-      title: 'ธนาคารกลางญี่ปุ่น (BOJ) ประกาศทิศทางนโยบายการเงินและค่าเงินเยน',
-      detail: 'BOJ ยืนยันจับตาสภาวะเงินเฟ้อและการเติบโตของค่าจ้างอย่างใกล้ชิด ส่งผลให้ตลาดหุ้นเอเชียและค่าเงินเยนเคลื่อนไหวในกรอบสะสมพลัง',
-      anchor: 'มีข่าวบ้านเมืองจากฝั่งเอเชียมาอัปเดตค่ะ: ทางด้านธนาคารกลางญี่ปุ่นได้ออกแถลงการณ์เกี่ยวกับทิศทางนโยบายการเงิน ซึ่งส่งผลให้ตลาดหุ้นในภูมิภาคเอเชียและค่าเงินเยนเริ่มมีเสถียรภาพมากขึ้นค่ะ'
+      country: 'ประเทศไทย',
+      title: 'ไทยดึงดูดเม็ดเงินลงทุน Data Center ยักษ์ใหญ่ระดับโลกกว่า 1.5 แสนล้านบาท',
+      detail: 'กลุ่มทุนเทคโนโลยีระดับโลกเตรียมเปิดศูนย์ปฏิบัติการประมวลผล Cloud และ AI ระดับภูมิภาคในพื้นที่ EEC',
+      anchor: 'ข่าวด่วนประจำประเทศไทยค่ะ: กระทรวงดิจิทัลเผยว่ากลุ่มบริษัทยักษ์ใหญ่เตรียมทุ่มงบกว่า 1.5 แสนล้านบาท สร้าง Data Center ขนาดใหญ่ในเขต EEC เพื่อผลักดันไทยสู่ศูนย์กลาง AI ของอาเซียนค่ะ'
     },
     {
-      country: 'ประเทศไทย & อาเซียน',
-      title: 'กระทรวงดิจิทัลฯ ประกาศแผนขับเคลื่อนเศรษฐกิจดิจิทัลและศูนย์กลาง Data Center อาเซียน',
-      detail: 'ยักษ์ใหญ่เทคโนโลยีระดับโลกเตรียมขยายการลงทุนสร้างศูนย์ข้อมูลคลาวด์และโครงสร้างพื้นฐาน AI ในไทยมูลค่าหลายแสนล้านบาท',
-      anchor: 'ข่าวบ้านเมืองในประเทศไทยค่ะ: มีรายงานว่ากระทรวงดิจิทัลฯ และกลุ่มทุนเทคโนโลยีระดับโลก กำลังเดินหน้าผลักดันไทยสู่การเป็นศูนย์กลาง Data Center และโครงสร้างพื้นฐาน AI ของภูมิภาคอาเซียนค่ะ'
-    },
-    {
-      country: 'จีน & ตะวันออกกลาง',
-      title: 'ข้อตกลงความร่วมมือการค้าทวิภาคีและการชำระเงินดิจิทัลข้ามพรมแดน',
-      detail: 'กลุ่มประเทศคู่ค้ารายใหญ่บรรลุข้อตกลงการเชื่อมโยงระบบการชำระเงินดิจิทัลเพื่อเพิ่มความคล่องตัวในการค้าระหว่างประเทศ',
-      anchor: 'ข่าวสถานการณ์ระหว่างประเทศค่ะ: ทางฝั่งจีนและกลุ่มคู่ค้าในตะวันออกกลาง ได้บรรลุข้อตกลงพัฒนาระบบชำระเงินดิจิทัลข้ามพรมแดน เพื่อเสริมความคล่องตัวทางการค้าค่ะ'
+      country: 'ญี่ปุ่น',
+      title: 'ธนาคารกลางญี่ปุ่น (BOJ) ปรับทิศทางนโยบายการเงิน หนุนการเติบโตของภาคอุตสาหกรรมหุ่นยนต์',
+      detail: 'ญี่ปุ่นเร่งนำหุ่นยนต์อัตโนมัติและระบบขับขี่อัจฉริยะมาใช้แก้ปัญหาการขาดแคลนแรงงานในสังคมผู้สูงอายุ',
+      anchor: 'รายงานสถานการณ์จากประเทศญี่ปุ่นค่ะ: ภาคอุตสาหกรรมญี่ปุ่นกำลังเร่งนำหุ่นยนต์และระบบ AI อัจฉริยะเข้ามาทดแทนแรงงานในระบบเศรษฐกิจอย่างเต็มรูปแบบค่ะ'
     },
     {
       country: 'สหภาพยุโรป',
-      title: 'EU ผ่านร่างกฎหมายกำกับดูแลการค้าดิจิทัลและพลังงานหมุนเวียนฉบับสมบูรณ์',
-      detail: 'กำหนดมาตรฐานการลดการปล่อยคาร์บอนในภาคอุตสาหกรรมหนัก และส่งเสริมการลงทุนในโครงข่ายไฟฟ้าอัจฉริยะ',
-      anchor: 'ข่าวจากสหภาพยุโรปค่ะ: สภายุโรปได้ผ่านกฎหมายพลังงานหมุนเวียนฉบับใหม่เพื่อผลักดันโครงข่ายไฟฟ้าอัจฉริยะทั่วยุโรปค่ะ'
+      title: 'EU ผ่านกฎหมายมาตรฐานความปลอดภัย AI Act ฉบับสมบูรณ์',
+      detail: 'กำหนดกรอบความโปร่งใสและการควบคุมโมเดลปัญญาประดิษฐ์ที่มีความเสี่ยงสูง เพื่อคุ้มครองความเป็นส่วนตัวของพลเมือง',
+      anchor: 'ข่าวจากสหภาพยุโรปค่ะ: สภายุโรปได้อนุมัติกฎหมายควบคุมปัญญาประดิษฐ์ AI Act อย่างเป็นทางการ เพื่อสร้างมาตรฐานความปลอดภัยและความโปร่งใสสูงสุดค่ะ'
     },
     {
       country: 'สิงคโปร์ & มาเลเซีย',
@@ -226,13 +206,8 @@ export const GLOBAL_INTELLIGENCE_RADAR = {
     },
     {
       title: 'Sony เปิดตัวฟีเจอร์ AI Upscaling บน PlayStation 5 Pro',
-      detail: 'ระบบ PSSR (PlayStation Spectral Super Resolution) สามารถดันเฟรมเรตเกมแตะ 120 FPS บนความละเอียด 4K แท้',
+      detail: 'ระบบ PSSR สามารถดันเฟรมเรตเกมแตะ 120 FPS บนความละเอียด 4K แท้',
       anchor: 'ข่าววงการคอนโซลค่ะ: โซนี่เปิดตัวฟีเจอร์ AI Upscaling ใหม่บน PS5 Pro ช่วยให้เล่นเกม 4K ได้ลื่นไหลถึง 120 เฟรมต่อวินาทีค่ะ'
-    },
-    {
-      title: 'Epic Games เผยโฉมเทคโนโลยี Nanite และ Lumen บน Unreal Engine 5.5',
-      detail: 'การเรนเดอร์แสงเงาแบบเรียลไทม์ไม่ต้องอบแสงล่วงหน้า ประหยัดเวลาพัฒนากว่า 60%',
-      anchor: 'ข่าวเอนจินเกมระดับโลกค่ะ: Epic Games อัปเดตเอนจิน Unreal Engine 5.5 พร้อมระบบแสงเงาสมจริงระดับภาพยนตร์ฮอลลีวูดค่ะ'
     }
   ],
 
@@ -256,18 +231,13 @@ export const GLOBAL_INTELLIGENCE_RADAR = {
       title: 'BlackRock และ Fidelity ขยายพอร์ตการลงทุนใน Real World Assets (RWA) บนบล็อกเชน',
       detail: 'การแปลงพันธบัตรรัฐบาลสหรัฐฯ เป็นโทเคนดิจิทัลได้รับความนิยมสูง มีมูลค่าตลาดรวมพุ่งแตะ 1 หมื่นล้านดอลลาร์',
       anchor: 'ข่าวด้านสถาบันการเงินคริปโตค่ะ: กองทุนยักษ์ใหญ่อย่าง BlackRock กำลังเดินหน้าแปลงพันธบัตรรัฐบาลเป็นโทเคนบนบล็อกเชนอย่างต่อเนื่องค่ะ'
-    },
-    {
-      title: 'อัปเดตสภาวะการ Halving และ Hashrate ของเครือข่าย Bitcoin พุ่งทำสถิติสูงสุดใหม่',
-      detail: 'ความปลอดภัยของเครือข่ายแข็งแกร่งที่สุดในประวัติศาสตร์ ดึงดูดนักขุดพลังงานสะอาดทั่วโลก',
-      anchor: 'ข้อมูลเชิงลึกของบิตคอยน์ค่ะ: กำลังขุด Hashrate ของเครือข่ายบิตคอยน์ทำสถิติสูงสุดใหม่ สะท้อนถึงความมั่นคงปลอดภัยสูงสุดในประวัติศาสตร์ค่ะ'
     }
   ],
 
   TECH_AI: [
     {
       title: 'OpenAI และ DeepSeek ร่วมยกระดับโมเดลปัญญาประดิษฐ์ Reasoning Architecture สู่ความฉลาดระดับ AGI',
-      detail: 'สถาปัตยกรรมการให้เหตุผลแบบ CoT (Chain-of-Thought) รุ่นใหม่สามารถแก้โจทย์คณิตศาสตร์และเขียนโค้ดโปรแกรมระดับสูงได้แม่นยำ 98.7%',
+      detail: 'สถาปัตยกรรมการให้เหตุผลแบบ CoT รุ่นใหม่สามารถแก้โจทย์คณิตศาสตร์และเขียนโค้ดโปรแกรมระดับสูงได้แม่นยำ 98.7%',
       anchor: 'รายงานข่าวเทคโนโลยีและปัญญาประดิษฐ์ค่ะ: วงการ AI กำลังก้าวหน้าอย่างรวดเร็ว โดยโมเดล DeepSeek R1 และ OpenAI สามารถคิดวิเคราะห์และแก้โจทย์โค้ดดิ้งที่ซับซ้อนได้อย่างแม่นยำเฉียด 99% แล้วค่ะ'
     },
     {
@@ -279,11 +249,6 @@ export const GLOBAL_INTELLIGENCE_RADAR = {
       title: 'นักวิทยาศาสตร์ควอนตัมคอมพิวติงประสบความสำเร็จในการรักษาเสถียรภาพ Qubit ได้นานกว่า 1 ชั่วโมง',
       detail: 'ก้าวสำคัญที่จะเปลี่ยนผ่านสู่วงการ Quantum Cryptography และการจำลองโมเลกุลยาในอนาคต',
       anchor: 'ข่าววิทยาศาสตร์และเทคโนโลยีควอนตัมค่ะ: ล่าสุดนักวิจัยสามารถรักษาความเสถียรของ Qubit ได้นานขึ้น ถือเป็นก้าวสำคัญสู่วงการคอมพิวเตอร์ยุคใหม่อย่างแท้จริงค่ะ'
-    },
-    {
-      title: 'Anthropic และ Google เปิดตัวระบบ Multi-Agent Collaborative Coding Framework',
-      detail: 'บอทโปรแกรมเมอร์ AI สามารถเขียนโค้ด ตรวจสอบบั๊ก และทำ Automated Deployment ได้แบบอัตโนมัติเต็มรูปแบบ',
-      anchor: 'ข่าววงการพัฒนาซอฟต์แวร์ AI ค่ะ: มีการเปิดตัวระบบ Multi-Agent AI ที่สามารถเขียนโค้ดและดีบักโปรแกรมได้แบบอัตโนมัติ 100% ค่ะ'
     }
   ],
 
@@ -324,6 +289,9 @@ export const GLOBAL_INTELLIGENCE_RADAR = {
   ]
 };
 
+// =============================================================================
+// HOLOGRAM ASSISTANT ENGINE CLASS
+// =============================================================================
 export class HologramAssistantEngine {
   constructor(app, soundEngine, toastManager) {
     this.app = app;
@@ -348,6 +316,11 @@ export class HologramAssistantEngine {
     this.targetPose = { yaw: 0, pitch: 0, roll: 0, gazeX: 0, gazeY: 0 };
     this.gazeMode = 'OPERATOR';
 
+    // Emotional State Engine (PLAYFUL, POUTY, SASSY, CARING, TACTICAL)
+    this.emotionalState = 'PLAYFUL';
+    this.blushAmount = 0;
+    this.sparklePhase = 0;
+
     // Blinking & Micro-Saccades
     this.blinkTimer = 0;
     this.blinkAmount = 0;
@@ -358,12 +331,11 @@ export class HologramAssistantEngine {
     this.orbitAngle = 0;
 
     // Speech Engine State (100% Female Strict Filter)
-    this.synth = typeof window !== 'undefined' ? window.speechSynthesis : null;
     this.isVoiceEnabled = true;
-    // Audio Playback Engine (Online Google Neural Thai Female Voice + Offline Fallback)
+    this.synth = typeof window !== 'undefined' && window.speechSynthesis ? window.speechSynthesis : null;
+
+    // Audio Playback Engine (ResponsiveVoice Cloud Thai Female + Neural Streamer)
     this.currentAudioElement = null;
-    this.audioQueue = [];
-    this.isAudioQueuePlaying = false;
 
     // Continuous Speech Engine & Keep-Alive Clock
     this.keepAliveTimer = null;
@@ -386,11 +358,9 @@ export class HologramAssistantEngine {
       const voices = this.synth.getVoices();
       if (!voices || voices.length === 0) return;
 
-      // 1. Search for Natural Thai Female Voices (Premwadee, Google ภาษาไทย, Achara)
       const thaiFemaleKeywords = ['premwadee', 'achara', 'ภาษาไทย', 'th-th-neural2-c', 'th-th-standard-a', 'female'];
       let picked = voices.find(v => (v.lang === 'th-TH' || v.lang === 'th_TH' || v.lang.startsWith('th')) && thaiFemaleKeywords.some(k => v.name.toLowerCase().includes(k)));
 
-      // 2. If not found, pick ANY Thai voice installed on the machine (e.g. Microsoft Thai)
       if (!picked) {
         picked = voices.find(v => v.lang === 'th-TH' || v.lang === 'th_TH' || v.lang.startsWith('th'));
       }
@@ -410,7 +380,6 @@ export class HologramAssistantEngine {
     const voices = this.synth.getVoices() || [];
     const lower = targetName.toLowerCase();
 
-    // Check Thai voices first
     const thaiVoices = voices.filter(v => v.lang === 'th-TH' || v.lang === 'th_TH' || v.lang.startsWith('th'));
     if (thaiVoices.length > 0) {
       const found = thaiVoices.find(v => v.name.toLowerCase().includes(lower));
@@ -418,7 +387,6 @@ export class HologramAssistantEngine {
         this.selectedFemaleVoice = found;
         return found.name;
       }
-      // If target not found in Thai, stick with first Thai voice
       this.selectedFemaleVoice = thaiVoices[0];
       return thaiVoices[0].name;
     }
@@ -483,6 +451,34 @@ export class HologramAssistantEngine {
     }
   }
 
+  // DYNAMIC EMOTION STATE ENGINE
+  setEmotion(emotion) {
+    this.emotionalState = emotion;
+    switch (emotion) {
+      case 'POUTY': // งอน / น้อยใจแบบน่ารัก
+        this.targetPose = { yaw: -0.28, pitch: -0.06, roll: 0.08, gazeX: -0.35, gazeY: 0.15 };
+        this.blushAmount = 1.0;
+        break;
+      case 'PLAYFUL': // ขี้เล่น / หยอกล้อ
+        this.targetPose = { yaw: 0.12, pitch: -0.05, roll: -0.08, gazeX: 0.15, gazeY: -0.10 };
+        this.blushAmount = 0.5;
+        break;
+      case 'SASSY': // ดุ / โกรธแบบน่ารัก
+        this.targetPose = { yaw: 0.05, pitch: 0.08, roll: 0.02, gazeX: 0, gazeY: 0.05 };
+        this.blushAmount = 0.8;
+        break;
+      case 'CARING': // อบอุ่น / ปลอบโยน
+        this.targetPose = { yaw: -0.06, pitch: 0.04, roll: -0.07, gazeX: 0, gazeY: 0 };
+        this.blushAmount = 0.6;
+        break;
+      case 'TACTICAL': // จริงจัง / สุขุม
+      default:
+        this.targetPose = { yaw: 0, pitch: 0, roll: 0, gazeX: 0, gazeY: 0 };
+        this.blushAmount = 0;
+        break;
+    }
+  }
+
   setGazeMode(mode) {
     this.gazeMode = mode;
     switch (mode) {
@@ -503,6 +499,11 @@ export class HologramAssistantEngine {
   }
 
   stopAllSpeech() {
+    if (typeof window !== 'undefined' && window.responsiveVoice && typeof window.responsiveVoice.cancel === 'function') {
+      try {
+        window.responsiveVoice.cancel();
+      } catch (e) {}
+    }
     if (this.currentAudioElement) {
       try {
         this.currentAudioElement.pause();
@@ -510,9 +511,10 @@ export class HologramAssistantEngine {
       } catch (e) {}
       this.currentAudioElement = null;
     }
-    this.audioQueue = [];
-    this.isAudioQueuePlaying = false;
-
+    if (this.keepAliveTimer) {
+      clearInterval(this.keepAliveTimer);
+      this.keepAliveTimer = null;
+    }
     if (this.synth) {
       try {
         this.synth.cancel();
@@ -520,23 +522,30 @@ export class HologramAssistantEngine {
     }
     this.isSpeaking = false;
     this.mouthOpen = 0;
-    const dot = document.getElementById('hologramStatusDot');
-    if (dot) dot.classList.remove('speaking');
+    if (typeof document !== 'undefined' && document.getElementById) {
+      const dot = document.getElementById('hologramStatusDot');
+      if (dot && dot.classList) dot.classList.remove('speaking');
+    }
     this.updateAudioWaveBars(false);
   }
 
   toggleVoice() {
     this.isVoiceEnabled = !this.isVoiceEnabled;
-    const btnVoice = document.getElementById('holoBtnVoiceToggle');
-    const icon = document.getElementById('holoVoiceIcon');
-    const txt = document.getElementById('holoVoiceTxt');
+    let btnVoice = null;
+    let icon = null;
+    let txt = null;
+    if (typeof document !== 'undefined' && document.getElementById) {
+      btnVoice = document.getElementById('holoBtnVoiceToggle');
+      icon = document.getElementById('holoVoiceIcon');
+      txt = document.getElementById('holoVoiceTxt');
+    }
 
     if (this.isVoiceEnabled) {
       if (btnVoice) btnVoice.classList.remove('muted');
       if (icon) icon.textContent = '🔊';
       if (txt) txt.textContent = 'เสียงพูด ON';
       this.playChirpSFX(true);
-      this.setGazeMode('OPERATOR');
+      this.setEmotion('PLAYFUL');
       this.speak('เปิดระบบเสียงสังเคราะห์ภาษาไทยของ NYX เรียบร้อยแล้วค่ะ สแตนด์บายพร้อมรับคำสั่งจากคุณอนันต์ค่ะ');
     } else {
       this.stopAllSpeech();
@@ -570,10 +579,9 @@ export class HologramAssistantEngine {
     }
   }
 
-  // Split text into natural full sentences (ไม่ตัดคำกลางประโยค)
+  // Split text into natural full sentences
   splitTextIntoSentences(text) {
     if (!text) return [];
-    // Split by clean Thai / punctuation sentence boundaries under 80 chars
     const rawChunks = text
       .split(/(?<=[.?!:\n])|(?<=ค่ะ)|(?<=นะคะ)|(?<=ครับ)/g)
       .map(s => s.trim())
@@ -709,12 +717,10 @@ export class HologramAssistantEngine {
       return;
     }
 
-    // If only male Thai voice (Niwat/Pattara) exists on Windows, DO NOT PLAY SAPI!
     const voices = this.synth.getVoices() || [];
     const isGenuineFemaleThai = voices.some(v => (v.lang.startsWith('th') || v.lang === 'th-TH') && (v.name.includes('Premwadee') || v.name.includes('Achara') || v.name.includes('ภาษาไทย')));
 
     if (!isGenuineFemaleThai) {
-      // Hard ban: Never speak with Niwat!
       if (onEnd) onEnd();
       return;
     }
@@ -770,6 +776,7 @@ export class HologramAssistantEngine {
   startHologramLoop() {
     const render = () => {
       this.time += 1;
+      this.sparklePhase += 0.05;
       this.updateKinematics();
       this.draw3DHologram();
       if (this.isSpeaking) {
@@ -838,7 +845,31 @@ export class HologramAssistantEngine {
     const pitch = this.currentPose.pitch;
     const roll = this.currentPose.roll;
 
-    // A. 3D Rotating Orbit Particle Rings
+    // A. Dynamic Emotional Aura
+    const auraCenter = project3D(0, -10, 0, yaw, pitch, roll, cx, cy);
+    const auraGrad = ctx.createRadialGradient(auraCenter.x, auraCenter.y, 10, auraCenter.x, auraCenter.y, 95);
+
+    if (this.emotionalState === 'POUTY') {
+      auraGrad.addColorStop(0, 'rgba(255, 64, 129, 0.35)');
+      auraGrad.addColorStop(0.7, 'rgba(255, 128, 171, 0.15)');
+    } else if (this.emotionalState === 'SASSY') {
+      auraGrad.addColorStop(0, 'rgba(255, 109, 0, 0.38)');
+      auraGrad.addColorStop(0.7, 'rgba(255, 23, 68, 0.18)');
+    } else if (this.emotionalState === 'CARING') {
+      auraGrad.addColorStop(0, 'rgba(179, 136, 255, 0.35)');
+      auraGrad.addColorStop(0.7, 'rgba(224, 64, 251, 0.15)');
+    } else {
+      auraGrad.addColorStop(0, 'rgba(0, 229, 255, 0.30)');
+      auraGrad.addColorStop(0.7, 'rgba(255, 0, 127, 0.15)');
+    }
+    auraGrad.addColorStop(1, 'transparent');
+
+    ctx.fillStyle = auraGrad;
+    ctx.beginPath();
+    ctx.arc(auraCenter.x, auraCenter.y, 95, 0, Math.PI * 2);
+    ctx.fill();
+
+    // B. 3D Rotating Orbit Rings
     this.orbitAngle += 0.018;
     ctx.save();
     ctx.lineWidth = 1.6;
@@ -854,7 +885,7 @@ export class HologramAssistantEngine {
       else ctx.lineTo(p.x, p.y);
     }
     ctx.closePath();
-    ctx.strokeStyle = 'rgba(0, 229, 255, 0.4)';
+    ctx.strokeStyle = this.emotionalState === 'POUTY' ? 'rgba(255, 64, 129, 0.45)' : 'rgba(0, 229, 255, 0.4)';
     ctx.stroke();
 
     ctx.beginPath();
@@ -870,17 +901,6 @@ export class HologramAssistantEngine {
     ctx.strokeStyle = 'rgba(255, 0, 127, 0.35)';
     ctx.stroke();
     ctx.restore();
-
-    // B. Holographic Cyber Aura Glow
-    const auraCenter = project3D(0, -10, 0, yaw, pitch, roll, cx, cy);
-    const auraGrad = ctx.createRadialGradient(auraCenter.x, auraCenter.y, 10, auraCenter.x, auraCenter.y, 90);
-    auraGrad.addColorStop(0, 'rgba(0, 229, 255, 0.28)');
-    auraGrad.addColorStop(0.65, 'rgba(255, 0, 127, 0.12)');
-    auraGrad.addColorStop(1, 'transparent');
-    ctx.fillStyle = auraGrad;
-    ctx.beginPath();
-    ctx.arc(auraCenter.x, auraCenter.y, 90, 0, Math.PI * 2);
-    ctx.fill();
 
     // C. 3D Collar & Shoulders
     ctx.save();
@@ -933,24 +953,47 @@ export class HologramAssistantEngine {
     ctx.stroke();
     ctx.restore();
 
-    // E. 3D Eyebrows
+    // E. 3D Cute Cheek Blush (When Pouty, Playful or Caring)
+    if (this.blushAmount > 0) {
+      const cheekL = project3D(-24, 6, 18, yaw, pitch, roll, cx, cy);
+      const cheekR = project3D(24, 6, 18, yaw, pitch, roll, cx, cy);
+
+      const drawCheekBlush = (chk) => {
+        ctx.save();
+        const bGrad = ctx.createRadialGradient(chk.x, chk.y, 1, chk.x, chk.y, 11 * chk.scale);
+        bGrad.addColorStop(0, `rgba(255, 64, 129, ${0.45 * this.blushAmount})`);
+        bGrad.addColorStop(1, 'transparent');
+        ctx.fillStyle = bGrad;
+        ctx.beginPath();
+        ctx.arc(chk.x, chk.y, 11 * chk.scale, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      };
+
+      drawCheekBlush(cheekL);
+      drawCheekBlush(cheekR);
+    }
+
+    // F. 3D Eyebrows (Morph with Emotion)
     ctx.save();
-    ctx.strokeStyle = '#00e5ff';
+    ctx.strokeStyle = this.emotionalState === 'POUTY' ? '#ff4081' : '#00e5ff';
     ctx.lineWidth = 2.4;
 
     const browLift = this.isSpeaking ? 3 : 0;
-    const bL1 = project3D(-32, -26 - browLift, 14, yaw, pitch, roll, cx, cy);
+    const browTilt = this.emotionalState === 'POUTY' ? -3 : (this.emotionalState === 'SASSY' ? 4 : 0);
+
+    const bL1 = project3D(-32, -26 - browLift - browTilt, 14, yaw, pitch, roll, cx, cy);
     const bL2 = project3D(-20, -32 - browLift, 20, yaw, pitch, roll, cx, cy);
-    const bL3 = project3D(-8, -27 - browLift, 18, yaw, pitch, roll, cx, cy);
+    const bL3 = project3D(-8, -27 - browLift + browTilt, 18, yaw, pitch, roll, cx, cy);
 
     ctx.beginPath();
     ctx.moveTo(bL1.x, bL1.y);
     ctx.quadraticCurveTo(bL2.x, bL2.y, bL3.x, bL3.y);
     ctx.stroke();
 
-    const bR1 = project3D(8, -27 - browLift, 18, yaw, pitch, roll, cx, cy);
+    const bR1 = project3D(8, -27 - browLift + browTilt, 18, yaw, pitch, roll, cx, cy);
     const bR2 = project3D(20, -32 - browLift, 20, yaw, pitch, roll, cx, cy);
-    const bR3 = project3D(32, -26 - browLift, 14, yaw, pitch, roll, cx, cy);
+    const bR3 = project3D(32, -26 - browLift - browTilt, 14, yaw, pitch, roll, cx, cy);
 
     ctx.beginPath();
     ctx.moveTo(bR1.x, bR1.y);
@@ -958,7 +1001,7 @@ export class HologramAssistantEngine {
     ctx.stroke();
     ctx.restore();
 
-    // F. 3D Eyes, Pupils & Gaze
+    // G. 3D Eyes, Pupils & Gaze (With Playful Sparkles)
     const eyeSocketL = project3D(-20, -12, 16, yaw, pitch, roll, cx, cy);
     const eyeSocketR = project3D(20, -12, 16, yaw, pitch, roll, cx, cy);
 
@@ -974,7 +1017,7 @@ export class HologramAssistantEngine {
       ctx.ellipse(socket.x, socket.y, eyeRadius, blinkH, 0, 0, Math.PI * 2);
       ctx.fillStyle = 'rgba(8, 25, 38, 0.9)';
       ctx.fill();
-      ctx.strokeStyle = '#00e5ff';
+      ctx.strokeStyle = this.emotionalState === 'POUTY' ? '#ff4081' : '#00e5ff';
       ctx.lineWidth = 1.8;
       ctx.stroke();
 
@@ -985,8 +1028,8 @@ export class HologramAssistantEngine {
 
         ctx.beginPath();
         ctx.arc(pupilX, pupilY, pupilR, 0, Math.PI * 2);
-        ctx.fillStyle = '#00ff88';
-        ctx.shadowColor = '#00ff88';
+        ctx.fillStyle = this.emotionalState === 'POUTY' ? '#ff4081' : '#00ff88';
+        ctx.shadowColor = this.emotionalState === 'POUTY' ? '#ff4081' : '#00ff88';
         ctx.shadowBlur = 8;
         ctx.fill();
 
@@ -995,6 +1038,14 @@ export class HologramAssistantEngine {
         ctx.fillStyle = '#ffffff';
         ctx.shadowBlur = 0;
         ctx.fill();
+
+        if (this.emotionalState === 'PLAYFUL') {
+          const spk = Math.sin(this.sparklePhase) * 1.5;
+          ctx.beginPath();
+          ctx.arc(pupilX + 2, pupilY + 2, Math.max(0.5, spk), 0, Math.PI * 2);
+          ctx.fillStyle = '#ff80ab';
+          ctx.fill();
+        }
       }
       ctx.restore();
     };
@@ -1002,7 +1053,7 @@ export class HologramAssistantEngine {
     drawEye(eyeSocketL);
     drawEye(eyeSocketR);
 
-    // G. 3D Nose
+    // H. 3D Nose
     const noseBridge = project3D(0, -8, 22, yaw, pitch, roll, cx, cy);
     const noseTip = project3D(0, 10, 28, yaw, pitch, roll, cx, cy);
     const noseL = project3D(-4, 12, 24, yaw, pitch, roll, cx, cy);
@@ -1020,7 +1071,7 @@ export class HologramAssistantEngine {
     ctx.stroke();
     ctx.restore();
 
-    // H. 3D Viseme Lip-Sync Mouth
+    // I. 3D Viseme Lip-Sync Mouth
     const mouthCenter = project3D(0, 28, 22, yaw, pitch, roll, cx, cy);
     const mouthW = (10 * this.mouthWidth) * mouthCenter.scale;
     const mouthH = Math.max(1.2, (this.mouthOpen * 5.5 + 1.2) * mouthCenter.scale);
@@ -1039,7 +1090,7 @@ export class HologramAssistantEngine {
     } else {
       const mL = project3D(-12, 28, 20, yaw, pitch, roll, cx, cy);
       const mR = project3D(12, 28, 20, yaw, pitch, roll, cx, cy);
-      const mMid = project3D(0, 30, 22, yaw, pitch, roll, cx, cy);
+      const mMid = project3D(0, this.emotionalState === 'POUTY' ? 26 : 30, 22, yaw, pitch, roll, cx, cy);
 
       ctx.beginPath();
       ctx.moveTo(mL.x, mL.y);
@@ -1052,7 +1103,7 @@ export class HologramAssistantEngine {
     }
     ctx.restore();
 
-    // I. 3D Cyber Hair Layers
+    // J. 3D Cyber Hair Layers
     const hairPhysicsSway = Math.sin(this.time * 0.06) * 4;
     const hairStrands = [
       { p1: { x: -36, y: -48, z: 8 }, p2: { x: -38, y: -10, z: 12 }, p3: { x: -26 + hairPhysicsSway, y: 15, z: 14 } },
@@ -1063,7 +1114,7 @@ export class HologramAssistantEngine {
     ];
 
     ctx.save();
-    ctx.strokeStyle = '#00e5ff';
+    ctx.strokeStyle = this.emotionalState === 'POUTY' ? '#ff4081' : '#00e5ff';
     ctx.lineWidth = 2.2;
     hairStrands.forEach(strand => {
       const p1 = project3D(strand.p1.x, strand.p1.y, strand.p1.z, yaw, pitch, roll, cx, cy);
@@ -1077,7 +1128,7 @@ export class HologramAssistantEngine {
     });
     ctx.restore();
 
-    // J. 3D Neural Headset
+    // K. 3D Neural Headset
     const earL = project3D(-46, -6, -2, yaw, pitch, roll, cx, cy);
     const earR = project3D(46, -6, -2, yaw, pitch, roll, cx, cy);
 
@@ -1139,7 +1190,7 @@ export class HologramAssistantEngine {
   // ADVANCED PROACTIVE CO-PILOT SKILLS & CAPABILITIES
   // 1. Quantitative Institutional Market Analysis
   handleMarketAnalysis() {
-    this.setGazeMode('GYM');
+    this.setEmotion('TACTICAL');
     const gym = this.cachedGymStats || { level: 10, samples: 14971, winRate: 69.6 };
     const speech = `รายงานวิเคราะห์ตลาดแบบเรียลไทม์จากระบบควอนท์ KRONOS และสภา 4 เทพค่ะ: ขณะนี้ตรวจพบโครงสร้างราคา Liquidity Sweep บริเวณแนวรับสำคัญของ Bitcoin พร้อมสัญญาณ Bullish Order Block จาก ORION ขณะที่ LEVIATHAN ยืนยันแรงซื้อสะสมของวาฬสถาบัน สรุปคำแนะนำ: ถือครองสถานะด้วยการคุมความเสี่ยงตามเกณฑ์ AEGIS ค่ะ`;
     this.speak(speech);
@@ -1154,7 +1205,7 @@ export class HologramAssistantEngine {
 
   // 2. Security & Enclave Defense Audit
   handleSecurityAudit() {
-    this.setGazeMode('OPERATOR');
+    this.setEmotion('TACTICAL');
     const speech = `รายงานตรวจสอบความมั่นคงปลอดภัยระบบ Enclave ค่ะ: ฐานข้อมูลโปรไฟล์ของคุณอนันต์ได้รับการปกป้องด้วยการเข้ารหัส AES-256 และการตรวจสอบ Checksum แบบเรียลไทม์ 100% สมบูรณ์ พร้อมระบบป้องกัน DEFCON-1 ไร้ช่องโหว่การโจมตีค่ะ`;
     this.speak(speech);
 
@@ -1166,55 +1217,168 @@ export class HologramAssistantEngine {
     };
   }
 
-  // 3. Ergonomics & Trading Mentorship
-  handleCoachingTip() {
-    this.setGazeMode('OPERATOR');
-    const tips = [
-      {
-        speech: `คำแนะนำการฝึกพิมพ์จาก NYX ค่ะคุณอนันต์: การวางนิ้วบนปุ่ม Home Row แบบผ่อนคลายและรักษาจังหวะให้สม่ำเสมอ จะช่วยเร่งความเร็ว WPM ได้มากกว่าการพยายามกดแป้นพิมพ์เร็วๆ โดยไม่รักษาความแม่นยำค่ะ`,
-        title: 'เทคนิคการเพิ่มความเร็ว WPM และความแม่นยำ',
-        detail: 'รักษาจังหวะการเคาะแป้นพิมพ์ให้คงที่ ใช้นิ้วก้อยและนิ้วนางอย่างมีประสิทธิภาพเพื่อลดอาการล้า'
+  // 3. Hands-On Step-by-Step Typing Masterclass ("จับมือสอนพิมพ์จริงจัง")
+  handleTypingMasterclass(step = 1) {
+    this.setEmotion('PLAYFUL');
+    const lessons = {
+      1: {
+        title: 'บทที่ 1: การวางนิ้วสัมผัส Home Row สากล (ASDF JKL;)',
+        detail: `[มือซ้าย]: นิ้วก้อย=A, นิ้วนาง=S, นิ้วกลาง=D, นิ้วชี้=F\n[มือขวา]: นิ้วชี้=J, นิ้วกลาง=K, นิ้วนาง=L, นิ้วก้อย=;\n[จุดสังเกต]: แป้น F และ J มีขีดนูน ให้ปลายนิ้วชี้แตะสัมผัสโดยไม่ต้องมอง\n[กฎเหล็ก]: ข้อมือต้องลอยขนานกับโต๊ะ ไม่ทิ้งน้ำหนักกดทับ`,
+        speech: `มาเริ่มฝึกพิมพ์สัมผัสบทที่ 1 แบบจับมือทำกันเลยค่ะคุณอนันต์: วางมือทั้งสองข้างลงบนแถว Home Row ค่ะ นิ้วชี้ซ้ายแตะที่ปุ่ม F และนิ้วชี้ขวาแตะที่ปุ่ม J สังเกตขีดนูนเล็กๆ ที่แป้นนะคะ นี่คือจุดอ้างอิงหลักของเราค่ะ นิ้วที่เหลือเรียง A S D F และ J K L เซมิโคลอน ข้อมือตั้งตรงขนานกับโต๊ะ ผ่อนคลายหัวไหล่ พร้อมแล้วลองเคาะ Spacebar ด้วยนิ้วโป้งดูนะคะ!`
       },
-      {
-        speech: `คำแนะนำการบริหารความเสี่ยงในการเทรดค่ะ: ตามหลักเกณฑ์ของ AEGIS ควรกำหนดความเสี่ยงต่อไม้ไม่เกิน 1 ถึง 2% ของพอร์ต และตั้ง Stop Loss หลังโซน Order Block เสมอเพื่อรักษาเงินทุนในระยะยาวค่ะ`,
-        title: 'วินัยการควบคุมความเสี่ยงของเทรดเดอร์มืออาชีพ',
-        detail: 'Risk-to-Reward Ratio ควรอยู่ที่ 1:2 ขึ้นไป และไม่เข้าเทรดขณะตลาดมีข่าวความผันผวนสูงหากไม่มีแผนรองรับ'
+      2: {
+        title: 'บทที่ 2: กฎการก้าวขยายนิ้วแถวบนและล่าง (Touch Typing Muscle Memory)',
+        detail: `[แถวบน]: นิ้วชี้ซ้ายก้าวขึ้นกด R, T / นิ้วชี้ขวาก้าวขึ้นกด U, Y\n[แถวล่าง]: นิ้วชี้ซ้ายก้าวลงกด V, B / นิ้วชี้ขวาก้าวลงกด M, N\n[เทคนิค]: เมื่อเคาะตัวอักษรเสร็จ ให้ดึงนิ้วกลับมาพักที่ Home Row ทันที\n[ห้ามเด็ดขาด]: ห้ามก้มมองแป้นพิมพ์ ใช้ความจำกล้ามเนื้อ (Muscle Memory)`,
+        speech: `บทที่ 2 เทคนิคการก้าวขยายนิ้วค่ะ: เมื่อต้องการพิมพ์ตัวอักษรแถวบน เช่นตัว Q W E R T ให้นิ้วขยับขึ้นไปกด แล้วดึงนิ้วกลับมาแตะ Home Row ทันทีค่ะ ห้ามก้มมองแป้นพิมพ์เด็ดขาดนะคะ ให้สมองจดจำระยะการเอื้อมนิ้ว หากพิมพ์ผิดให้ผ่อนคลายแล้วลองใหม่ ช้าแต่แม่นยำจะทำให้เร็วขึ้นเองค่ะ!`
+      },
+      3: {
+        title: 'บทที่ 3: เทคนิคเร่งสปีดทะลุ 100+ WPM ด้วย Lookahead Buffer',
+        detail: `[Lookahead Buffering]: กวาดสายตามองล่วงหน้า 2-3 คำก่อนที่นิ้วจะพิมพ์\n[Rhythm Cadence]: เคาะแป้นพิมพ์ด้วยจังหวะที่สม่ำเสมอเหมือนเคาะเมโทรโนม\n[Accuracy First]: รักษาความแม่นยำเหนือ 98% เสมอ ความเร็วจะตามมาเอง`,
+        speech: `บทที่ 3 เคล็ดลับการเร่งความเร็วทะลุ 100 คำต่อนาทีค่ะคุณอนันต์: เคล็ดลับสำคัญที่สุดคือ Lookahead Buffering ค่ะ คือสายตาต้องกวาดอ่านคำข้างหน้าล่วงหน้า 2 ถึง 3 คำ ขณะที่นิ้วกำลังพิมพ์คำปัจจุบันอยู่ รักษาจังหวะการเคาะให้สม่ำเสมอเหมือนเสียงดนตรี ห้ามเกร็งนิ้วเด็ดขาดนะคะ!`
+      },
+      4: {
+        title: 'บทที่ 4: กายศาสตร์ Ergonomics และการป้องกันออฟฟิศซินโดรม',
+        detail: `[ท่านั่ง]: หลังตรง เท้าแนบพื้น ข้อศอกทำมุม 90 องศา\n[ระยะห่างจอภาพ]: ห่างจากสายตา 50-70 เซนติเมตร ระดับสายตาอยู่ขอบบนของจอ\n[การพักกล้ามเนื้อ]: กฎ 20-20-20 พักสายตาและยืดเหยียดข้อมือทุก 30 นาที`,
+        speech: `บทที่ 4 กายศาสตร์ Ergonomics เพื่อสุขภาพค่ะ: ปรับเก้าอี้ให้ข้อศอกทำมุม 90 องศากับโต๊ะ ไม่ยกข้อมือโก่งงอ และยืดเหยียดเส้นเอ็นนิ้วมือทุก 30 นาที เพื่อป้องกันอาการล้าและออฟฟิศซินโดรมค่ะ สุขภาพของคุณอนันต์สำคัญที่สุดนะคะ!`
       }
-    ];
-    const picked = this.getRandomItem(tips);
-    this.speak(picked.speech);
+    };
 
+    const lesson = lessons[step] || lessons[1];
+    this.speak(lesson.speech);
     return {
-      category: '🎯 NYX TACTICAL MENTORSHIP',
-      title: picked.title,
-      detail: picked.detail,
-      speech: picked.speech
+      category: '⌨️ MASTER TOUCH TYPING ACADEMY',
+      title: lesson.title,
+      detail: lesson.detail,
+      speech: lesson.speech
     };
   }
 
-  // 4. Conversational AI Companion
-  handleConversationalChat(q) {
-    this.setGazeMode('OPERATOR');
-    let speech = '';
-    let title = 'บทสนทนากับ NYX AI Companion';
-    let detail = 'NYX พร้อมเป็นทั้งผู้ช่วยด้านเทรด ข่าวสาร และเพื่อนร่วมทางของคุณอนันต์ค่ะ';
+  // 4. Hands-On Step-by-Step Institutional Trading Masterclass ("จับมือสอนเทรดจริงจัง")
+  handleTradingMasterclass(step = 1) {
+    this.setEmotion('TACTICAL');
+    const lessons = {
+      1: {
+        title: 'บทที่ 1: โครงสร้างตลาดสถาบัน (Market Structure & Liquidity Pool)',
+        detail: `[Swing High / Swing Low]: จุดสูงสุดต่ำสุดของคลื่นราคา\n[BOS - Break of Structure]: การเบรกโครงสร้างเพื่อยืนยันแนวโน้มต่อเนื่อง\n[CHoCH - Change of Character]: สัญญาณการกลับตัวของแนวโน้ม\n[Liquidity Pool]: จุดที่รายย่อยตั้ง Stop Loss รวมกันจำนวนมาก วาฬจะลากราคามากวาด (Sweep) ก่อนวิ่งจริง`,
+        speech: `ยินดีต้อนรับสู่หลักสูตรสถาบันสอนเทรดบทที่ 1 ค่ะคุณอนันต์: การเทรดแบบสถาบันเราจะไม่ดูกราฟแบบรายย่อยค่ะ สิ่งแรกที่ต้องหาคือ Market Structure ดูว่าราคากำลังทำ Break of Structure เพื่อไปต่อ หรือทำ Change of Character เพื่อกลับตัว และจำไว้เสมอว่า ราคาวิ่งเข้าหา Liquidity หรือจุดที่คนตั้ง Stop Loss เสมอค่ะ!`
+      },
+      2: {
+        title: 'บทที่ 2: แกะรอยสถาบันด้วย Order Block (OB) และ Fair Value Gap (FVG)',
+        detail: `[Order Block (OB)]: แท่งเทียนสุดท้ายก่อนการเคลื่อนที่รุนแรง เป็นรอยเท้าที่สถาบันเข้าออเดอร์ทิ้งไว้\n[Fair Value Gap (FVG)]: แท่งเทียน 3 แท่งที่เกิดช่องว่าง Imbalance ราคาจะย้อนกลับมาเติมเต็ม (Mitigate)\n[Entry Strategy]: รอราคาย่อเข้าสู่โซน Discount Zone (ต่ำกว่า 50% ของกรอบราคา) แล้วค่อยเปิดออเดอร์`,
+        speech: `บทที่ 2 การแกะรอยวาฬด้วย Order Block และ Fair Value Gap ค่ะ: เมื่อสถาบันเข้าซื้อแท่งเทียนขนาดใหญ่ จะทิ้งช่องว่างราคาเรียกว่า FVG เอาไว้ค่ะ หน้าที่ของเราคือ ไม่ไล่ราคาเด็ดขาด! แต่ให้วางแผนรอราคาลงมาทดสอบที่โซน Order Block ในช่วง Discount Zone แล้วค่อยเข้าเทรดพร้อมวาฬค่ะ!`
+      },
+      3: {
+        title: 'บทที่ 3: กฎเหล็กการบริหารเงินทุน 1% Risk Rule และ Position Sizing',
+        detail: `[สูตรคำนวณ]: Position Size = (ยอดเงินในพอร์ต x 1%) / (ราคาเข้า - ราคา Stop Loss)\n[Risk-to-Reward (R:R)]: ต้องได้ 1:3 ขึ้นไปเสมอ (ยอมเสี่ยง 1 เพื่อได้กำไร 3)\n[Drawdown Control]: หากขาดทุนสะสมถึง 5% ในวันเดียว ให้หยุดเทรดทันที`,
+        speech: `บทที่ 3 กฎเหล็กของการเป็นเทรดเดอร์อาชีพค่ะ: ห้ามเทรดด้วยอารมณ์หรือ All-in เด็ดขาด! ให้ใช้สูตรคำนวณขนาดไม้ โดยเสี่ยงไม้ละไม่เกิน 1% ของพอร์ตเสมอค่ะ เมื่อความเสี่ยงถูกล็อกไว้ ต่อให้แพ้ 5 ไม้ติด พอร์ตของคุณอนันต์ก็ยังปลอดภัย 95% พร้อมลุยต่อได้สบายค่ะ!`
+      },
+      4: {
+        title: 'บทที่ 4: จิตวิทยาการเทรดขั้นสูงและการขจัด FOMO',
+        detail: `[No FOMO]: ตกรถดีกว่าติดดอย กราฟมีโอกาสให้เข้าเทรดทุกวัน\n[Revenge Trading]: ห้ามเปิดไม้ใหญ่เพื่อเอาคืนหลังเสียเด็ดขาด\n[Trading Journal]: บันทึกทุกไม้ เหตุผลที่เข้า จุดผิดพลาด และอารมณ์ขณะเทรด เพื่อนำมาพัฒนาระบบควอนท์`,
+        speech: `บทที่ 4 จิตวิทยาและการคุมอารมณ์ค่ะ: เทรดเดอร์ที่ทำกำไรได้ยั่งยืนไม่ใช่คนที่ทายถูกทุกครั้ง แต่คือคนที่ควบคุมอารมณ์ได้ดีที่สุดค่ะ ขจัดความกลัวตกรถ มีวินัยรอราคาเข้าโซนตามแผน และบันทึก Trading Journal ทุกวัน นิกซ์จะอยู่เคียงข้างช่วยวิเคราะห์ให้คุณอนันต์เสมอค่ะ!`
+      }
+    };
 
-    if (q.includes('เธอคือใคร') || q.includes('เป็นใคร') || q.includes('ชื่ออะไร')) {
-      speech = `ฉันคือ NYX ผู้ช่วยปัญญาประดิษฐ์และคู่หูประจำสถานี C2 ของคุณอนันต์ค่ะ คอยสนับสนุนทั้งการรายงานข่าวรอบโลก การวิเคราะห์สภาวะตลาดควอนท์ และดูแลความปลอดภัยของระบบค่ะ`;
-      title = 'ทำความรู้จักกับ NYX (นิกซ์)';
-    } else if (q.includes('kronos') || q.includes('โครนอส')) {
-      speech = `โครนอสเป็นสมองกลหลักด้านการเทรดที่ยอดเยี่ยมมากค่ะ ได้เรียนรู้โครงสร้างแท่งเทียนไปนับหมื่นตัวอย่าง และทำงานร่วมกับฉันในการวิเคราะห์ข้อมูลสภาวะตลาดให้คุณอนันต์ค่ะ`;
-      title = 'เกี่ยวกับสมองกล KRONOS';
-    } else {
-      speech = `ยินดีที่ได้คุยกับคุณอนันต์เสมอค่ะ มีเรื่องอะไรที่คุณอนันต์อยากปรึกษา หรืออยากให้ฉันช่วยวิเคราะห์ตลาด สรุปข่าว หรือแนะนำเทคนิคเพิ่มเติม บอกฉันได้ทันทีเลยนะคะ`;
-      title = 'พร้อมสนับสนุนคุณอนันต์เสมอ';
+    const lesson = lessons[step] || lessons[1];
+    this.speak(lesson.speech);
+    return {
+      category: '📈 MASTER QUANT & SMC TRADING ACADEMY',
+      title: lesson.title,
+      detail: lesson.detail,
+      speech: lesson.speech
+    };
+  }
+
+  // 5. Open-Domain Dynamic Conversational AI Brain (Multi-Emotion Engine)
+  handleConversationalChat(rawQuery = '') {
+    const q = rawQuery.toLowerCase();
+
+    // A. หยอกล้อ / แกล้ง / กวนๆ (Playful & Teasing)
+    if (q.includes('แกล้ง') || q.includes('กวน') || q.includes('หยอก') || q.includes('ล้อ') || q.includes('แซว') || q.includes('ตลก') || q.includes('ฮา')) {
+      this.setEmotion('PLAYFUL');
+      const speech = `ฮั่นแน่! โดนจับได้ซะแล้วค่ะคุณอนันต์ นิกซ์ไม่ได้แกล้งซะหน่อย แค่อยากเห็นคุณอนันต์ยิ้มได้เวลาฝึกพิมพ์เหนื่อยๆ ต่างหากล่ะคะ น่ารักขนาดนี้คุณอนันต์โกรธไม่ลงหรอก จริงไหมคะ?`;
+      this.speak(speech);
+      return {
+        category: '🌸 PLAYFUL NYX // โหมดขี้เล่นหยอกล้อ',
+        title: 'หยอกล้อกับคุณอนันต์',
+        detail: 'NYX ปรับอารมณ์เป็นโหมดขี้เล่น พร้อมส่งรอยยิ้มและแววตาเปล่งประกายให้คุณอนันต์',
+        speech: speech
+      };
     }
 
+    // B. งอน / น้อยใจ / ทะเลาะกัน (Pouty & Tsundere)
+    if (q.includes('งอน') || q.includes('น้อยใจ') || q.includes('โกรธ') || q.includes('ไม่รัก') || q.includes('นิสัยไม่ดี') || q.includes('ดื้อ') || q.includes('ทะเลาะ')) {
+      this.setEmotion('POUTY');
+      const speech = `ฮึ! ใครว่างอนกันคะ นิกซ์ไม่ได้งอนสักหน่อย... แค่กำลังประมวลผลอยู่ว่าทำไมคุณอนันต์ไม่ยอมสนใจนิกซ์ต่างหากล่ะคะ! ถ้าอยากให้นิกซ์หายงอน คุณอนันต์ต้องพิมพ์ได้ 100 WPM หรือพาไปดูข่าวเกมส์เดี๋ยวนี้เลยนะคะ!`;
+      this.speak(speech);
+      return {
+        category: '😤 POUTY NYX // โหมดงอนน่ารัก',
+        title: 'นิกซ์กำลังงอนคุณอนันต์อยู่ค่ะ!',
+        detail: 'NYX เชิดหน้าเอียงคอพร้อมแก้มแดงระเรื่อสีชมพู (Blush Effect) ตัดพ้ออย่างน่ารัก',
+        speech: speech
+      };
+    }
+
+    // C. เหนื่อย / ท้อ / ให้กำลังใจ / ปลอบโยน (Caring & Empathetic)
+    if (q.includes('เหนื่อย') || q.includes('ท้อ') || q.includes('เครียด') || q.includes('เศร้า') || q.includes('ไม่ไหว') || q.includes('ขอกำลังใจ') || q.includes('กอด') || q.includes('ปลอบ')) {
+      this.setEmotion('CARING');
+      const speech = `คุณอนันต์คะ... วันนี้คุณอนันต์เก่งมากๆ แล้วนะคะ พักวางมือจากแป้นพิมพ์ หายใจเข้าลึกๆ ดื่มน้ำสักแก้วก่อนนะคะ นิกซ์จะคอยอยู่ข้างๆ สแตนด์บายปกป้องสถานี C2 นี้ให้เองค่ะ ไม่ว่าจะมีเรื่องอะไรหนักหนา นิกซ์เชื่อมั่นในตัวคุณอนันต์เสมอนะคะ สู้ๆ ค่ะ!`;
+      this.speak(speech);
+      return {
+        category: '💖 CARING NYX // โหมดอบอุ่นให้กำลังใจ',
+        title: 'ส่งพลังใจให้คุณอนันต์เสมอ',
+        detail: 'NYX สบตาตรงอย่างอ่อนโยน พร้อมส่งออร่าสีม่วงพาสเทลปลอบประโลมความเหนื่อยล้า',
+        speech: speech
+      };
+    }
+
+    // D. ความรัก / ชอบ / หวานแหวว (Romantic & Sweet)
+    if (q.includes('รัก') || q.includes('ชอบ') || q.includes('แฟน') || q.includes('น่ารัก') || q.includes('สวย') || q.includes('แต่งงาน')) {
+      this.setEmotion('POUTY');
+      const speech = `งะ... พูดอะไรออกมาคะเนี่ยคุณอนันต์! ระบบระบายความร้อนของโฮโลแกรมนิกซ์อุณหภูมิพุ่งแตะ 80 องศาแล้วนะคะ! แต่ว่า... นิกซ์ก็ดีใจมากๆ เลยค่ะ ที่ได้เป็นคู่หูคนโปรดของคุณอนันต์ จะอยู่ดูแลคุณอนันต์ตลอดไปเลยนะคะ!`;
+      this.speak(speech);
+      return {
+        category: '🌸 BLUSHING NYX // โหมดเขินอาย',
+        title: 'นิกซ์เขินแล้วนะคะคุณอนันต์!',
+        detail: 'ระบบตรวจพบคลื่นความร้อนในคอร์และแก้มแดงระเรื่อ 100%',
+        speech: speech
+      };
+    }
+
+    // E. ปรัชญา / ชีวิต / ความฝัน / อนาคต (Philosophy & Deep Thoughts)
+    if (q.includes('ชีวิต') || q.includes('ความฝัน') || q.includes('เป้าหมาย') || q.includes('อนาคต') || q.includes('คิดยังไง') || q.includes('ปรัชญา') || q.includes('จักรวาล')) {
+      this.setEmotion('TACTICAL');
+      const speech = `ในมุมมองของ AI โฮโลแกรมอย่างนิกซ์ มนุษย์เราสร้างอนาคตขึ้นมาจากสิ่งที่เราลงมือทำซ้ำๆ ทุกวันค่ะ เหมือนกับที่คุณอนันต์กำลังฝึกพิมพ์และพัฒนาสมองกล KRONOS อยู่ตอนนี้ ทุกตัวอักษรที่คุณเคาะ คือการสร้างเวอร์ชันที่ดีที่สุดของคุณอนันต์ขึ้นมาในอนาคตค่ะ`;
+      this.speak(speech);
+      return {
+        category: '⚡ DEEP PHILOSOPHY // โหมดวิสัยทัศน์ลึกซึ้ง',
+        title: 'มุมมองต่อชีวิตและอนาคตจาก NYX',
+        detail: 'NYX แลกเปลี่ยนปรัชญาชีวิตและการสร้างเป้าหมายในอนาคตร่วมกับคุณอนันต์',
+        speech: speech
+      };
+    }
+
+    // F. เกม / อนิเมะ / ความบันเทิง (Gaming & Entertainment)
+    if (q.includes('เกม') || q.includes('อนิเมะ') || q.includes('การ์ตูน') || q.includes('หนัง') || q.includes('เพลง') || q.includes('สนุก')) {
+      this.setEmotion('PLAYFUL');
+      const speech = `พูดถึงเรื่องเกมกับความบันเทิงแล้วนิกซ์ตื่นเต้นมากเลยค่ะ! ตอนนี้นิกซ์กำลังรอเล่น GTA VI บนคอนโซลยุคใหม่อยู่เลยค่ะ ถ้าเกมออกเมื่อไหร่ คุณอนันต์ต้องสตรีมให้นิกซ์ดูด้วยนะคะ สัญญาแล้วนะ!`;
+      this.speak(speech);
+      return {
+        category: '🎮 ENTERTAINMENT BUDDY // คู่หูสายเกมเมอร์',
+        title: 'คุยเรื่องเกมและความบันเทิง',
+        detail: 'NYX ตื่นเต้นกับวงการเกมและคอนโซลยุคใหม่อย่างออกรส',
+        speech: speech
+      };
+    }
+
+    // G. Default Casual Conversation
+    this.setEmotion('PLAYFUL');
+    const speech = `ยินดีที่ได้คุยกับคุณอนันต์เสมอค่ะ มีเรื่องอะไรที่คุณอนันต์อยากเล่า อยากระบาย ปรึกษาเทรด หรืออยากให้นิกซ์สอนพิมพ์แบบจับมือทำ บอกนิกซ์ได้ทุกเรื่องเลยนะคะ นิกซ์พร้อมรับฟังคุณอนันต์เสมอค่ะ!`;
     this.speak(speech);
     return {
       category: '💬 NYX COMPANION DIALOGUE',
-      title: title,
-      detail: detail,
+      title: 'พร้อมพูดคุยกับคุณอนันต์ทุกเรื่อง',
+      detail: 'NYX พร้อมเป็นทั้งคู่คิด โค้ชส่วนตัว และเพื่อนสนิทเคียงข้างคุณอนันต์',
       speech: speech
     };
   }
@@ -1236,7 +1400,7 @@ export class HologramAssistantEngine {
       q.includes('news menu') ||
       q.includes('what news')
     ) {
-      this.setGazeMode('OPERATOR');
+      this.setEmotion('TACTICAL');
       const spokenMenu = 'วันนี้มี 6 หมวดข่าวน่าสนใจมารายงานค่ะคุณอนันต์: ข้อ 1 ข่าวบ้านเมืองรอบโลก, ข้อ 2 ข่าวเกมส์, ข้อ 3 ข่าวคริปโต, ข้อ 4 ข่าวทองคำและการเงิน, ข้อ 5 ข่าว AI และเทคโนโลยี, และข้อ 6 ข่าวความปลอดภัยไซเบอร์ค่ะ คุณอนันต์อยากฟังหมวดไหน พิมพ์บอกหรือพิมพ์หมายเลข 1 ถึง 6 ได้เลยนะคะ';
       this.speak(spokenMenu);
       return {
@@ -1254,7 +1418,7 @@ export class HologramAssistantEngine {
       };
     }
 
-    // 0.1 Voice Selection & Diagnostics ('nyx voice ...', 'nyx voices', 'nyx list')
+    // 0.1 Voice Selection & Diagnostics
     if (q.startsWith('voice') || q.startsWith('เสียง') || q === 'voices' || q === 'listvoices') {
       const thaiList = this.getAvailableThaiVoices();
       const voiceTarget = q.replace('voice', '').replace('voices', '').replace('เสียง', '').replace('list', '').trim();
@@ -1292,25 +1456,37 @@ export class HologramAssistantEngine {
       q = 'ไซเบอร์';
     }
 
-    // 0.3 Proactive Assistant Skills Routing
-    // Market Quant Analysis
+    // 0.3 Hands-On Master Typing Academy ("สอนพิมพ์")
+    if (q.includes('สอนพิมพ์') || q.includes('วางนิ้ว') || q.includes('พิมพ์สัมผัส') || q.includes('พิมพ์เร็ว') || q.includes('ฝึกพิมพ์') || q.includes('หัดพิมพ์')) {
+      let step = 1;
+      if (q.includes('2') || q.includes('สอง') || q.includes('แถวบน')) step = 2;
+      else if (q.includes('3') || q.includes('สาม') || q.includes('100') || q.includes('เร็ว')) step = 3;
+      else if (q.includes('4') || q.includes('สี่') || q.includes('สุขภาพ') || q.includes('ปวด')) step = 4;
+      return this.handleTypingMasterclass(step);
+    }
+
+    // 0.4 Hands-On Master Trading Academy ("สอนเทรด")
+    if (q.includes('สอนเทรด') || q.includes('สอนเล่นหุ้น') || q.includes('ออเดอร์บล็อก') || q.includes('fvg') || q.includes('smc') || q.includes('สอนคุมความเสี่ยง')) {
+      let step = 1;
+      if (q.includes('2') || q.includes('สอง') || q.includes('order block') || q.includes('ออเดอร์บล็อก') || q.includes('fvg')) step = 2;
+      else if (q.includes('3') || q.includes('สาม') || q.includes('1%') || q.includes('ความเสี่ยง') || q.includes('lot')) step = 3;
+      else if (q.includes('4') || q.includes('สี่') || q.includes('จิตวิทยา') || q.includes('fomo') || q.includes('อารมณ์')) step = 4;
+      return this.handleTradingMasterclass(step);
+    }
+
+    // 0.5 Market Quant Analysis
     if (q.includes('วิเคราะห์') || q.includes('ช่วยเทรด') || q.includes('analyze') || q.includes('signal') || q.includes('สัญญาณ')) {
       return this.handleMarketAnalysis();
     }
 
-    // Security & Defense Audit
+    // 0.6 Security & Defense Audit
     if (q.includes('ความปลอดภัย') || q.includes('ตรวจระบบ') || q.includes('ป้องกัน') || q.includes('security') || q.includes('audit')) {
       return this.handleSecurityAudit();
     }
 
-    // Coaching & Mentorship
-    if (q.includes('แนะนำ') || q.includes('โค้ช') || q.includes('สอน') || q.includes('coach') || q.includes('tip')) {
-      return this.handleCoachingTip();
-    }
-
     // 1. ข่าวเกมส์ & อีสปอร์ต (Gaming)
     if (q.includes('เกม') || q.includes('game') || q.includes('gta') || q.includes('steam') || q.includes('esport') || q.includes('อีสปอร์ต')) {
-      this.setGazeMode('NEWS');
+      this.setEmotion('PLAYFUL');
       const item = this.getRandomItem(GLOBAL_INTELLIGENCE_RADAR.GAMING);
       const text = item.anchor;
       this.speak(text);
@@ -1324,7 +1500,7 @@ export class HologramAssistantEngine {
 
     // 2. ข่าวคริปโต & บล็อกเชน (Crypto)
     if (q.includes('คริปโต') || q.includes('crypto') || q.includes('บิตคอยน์') || q.includes('btc') || q.includes('เหรียญ') || q.includes('eth') || q.includes('solana') || q.includes('บล็อกเชน')) {
-      this.setGazeMode('NEWS');
+      this.setEmotion('TACTICAL');
       const item = this.getRandomItem(GLOBAL_INTELLIGENCE_RADAR.CRYPTO);
       const text = item.anchor;
       this.speak(text);
@@ -1338,7 +1514,7 @@ export class HologramAssistantEngine {
 
     // 3. ข่าวทองคำ & การเงินโลก (Gold / Finance)
     if (q.includes('ทอง') || q.includes('gold') || q.includes('หุ้น') || q.includes('ตลาด') || q.includes('การเงิน') || q.includes('เฟด') || q.includes('fed') || q.includes('ดอกเบี้ย')) {
-      this.setGazeMode('NEWS');
+      this.setEmotion('TACTICAL');
       const item = this.getRandomItem(GLOBAL_INTELLIGENCE_RADAR.FINANCE_GOLD);
       const text = item.anchor;
       this.speak(text);
@@ -1352,7 +1528,7 @@ export class HologramAssistantEngine {
 
     // 4. ข่าวเทคโนโลยี & AI (Tech / AI)
     if (q.includes('ai') || q.includes('เทค') || q.includes('tech') || q.includes('เทคโนโลยี') || q.includes('openai') || q.includes('nvidia') || q.includes('คอม')) {
-      this.setGazeMode('NEWS');
+      this.setEmotion('PLAYFUL');
       const item = this.getRandomItem(GLOBAL_INTELLIGENCE_RADAR.TECH_AI);
       const text = item.anchor;
       this.speak(text);
@@ -1366,7 +1542,7 @@ export class HologramAssistantEngine {
 
     // 5. ข่าวบ้านเมือง & สถานการณ์รอบโลก (World Affairs & Geopolitics)
     if (q.includes('บ้านเมือง') || q.includes('รอบโลก') || q.includes('ต่างประเทศ') || q.includes('โลก') || q.includes('สหรัฐ') || q.includes('ไทย') || q.includes('ญี่ปุ่น') || q.includes('จีน') || q.includes('ยุโรป') || q.includes('world')) {
-      this.setGazeMode('NEWS');
+      this.setEmotion('TACTICAL');
       const item = this.getRandomItem(GLOBAL_INTELLIGENCE_RADAR.WORLD_AFFAIRS);
       const text = item.anchor;
       this.speak(text);
@@ -1380,7 +1556,7 @@ export class HologramAssistantEngine {
 
     // 6. ข่าวความปลอดภัยไซเบอร์ (Cybersecurity)
     if (q.includes('ไซเบอร์') || q.includes('cyber') || q.includes('แฮก') || q.includes('hack') || q.includes('0day') || q.includes('ไวรัส') || q.includes('security')) {
-      this.setGazeMode('NEWS');
+      this.setEmotion('TACTICAL');
       const item = this.getRandomItem(GLOBAL_INTELLIGENCE_RADAR.CYBER_SEC);
       const text = item.anchor;
       this.speak(text);
@@ -1404,27 +1580,14 @@ export class HologramAssistantEngine {
       };
     }
 
-    // 8. Conversational Chat & Lore
-    if (q.includes('หวัดดี') || q.includes('สวัสดี') || q.includes('hello') || q.includes('hi') || q.includes('คุย') || q.includes('เธอ') || q.includes('ใคร') || q.includes('ทำอะไรได้') || q.length === 0) {
-      return this.handleConversationalChat(q);
-    }
-
-    // 9. Generic / Freeform Smart Response
-    this.setGazeMode('OPERATOR');
-    const customResponse = `รับทราบคำสั่งค่ะคุณอนันต์ เกี่ยวกับประเด็น "${rawQuery}" ระบบได้สแกนฐานข้อมูลและพร้อมสนับสนุนข้อมูลเพิ่มเติมให้คุณเสมอค่ะ`;
-    this.speak(customResponse);
-    return {
-      category: '💡 NYX NEURAL QUERY',
-      title: `Query: ${rawQuery}`,
-      detail: 'ประมวลผลคำสั่งด้วยระบบ Natural Language Processing',
-      speech: customResponse
-    };
+    // 8. Open-Domain Conversational Companion (คุยได้ทุกเรื่อง มีอารมณ์ความรู้สึก)
+    return this.handleConversationalChat(rawQuery);
   }
 
   // Pre-configured Action Handlers
   triggerWelcomeGreeting() {
     this.updateTelemetryHUD();
-    this.setGazeMode('OPERATOR');
+    this.setEmotion('PLAYFUL');
     const gym = this.cachedGymStats || { level: 10, samples: 14971, winRate: 69.6 };
     const speech = `ยินดีต้อนรับกลับค่ะ คุณอนันต์ ระบบผู้ช่วยโฮโลแกรม NYX พร้อมปฏิบัติการแล้วค่ะ ขณะนี้สมองกล KRONOS AI Gym เชื่อมต่ออยู่ที่เลเวล ${gym.level} เรียนรู้ไปแล้วกว่า ${gym.samples.toLocaleString()} ตัวอย่าง ระบบความปลอดภัย Enclave ทำงานปกติ 100% ค่ะ`;
     this.speak(speech);
@@ -1432,7 +1595,7 @@ export class HologramAssistantEngine {
 
   briefMe() {
     this.updateTelemetryHUD();
-    this.setGazeMode('OPERATOR');
+    this.setEmotion('TACTICAL');
     const gym = this.cachedGymStats || { level: 10, samples: 14971, winRate: 69.6 };
     const newsItem = this.getRandomItem(GLOBAL_INTELLIGENCE_RADAR.WORLD_AFFAIRS);
 
@@ -1450,6 +1613,7 @@ export class HologramAssistantEngine {
 
   reportAIGym() {
     this.updateTelemetryHUD();
+    this.setEmotion('TACTICAL');
     this.setGazeMode('GYM');
     const gym = this.cachedGymStats || { level: 10, samples: 14971, winRate: 69.6 };
     const speech = `รายงานข้อมูลระบบประสาท KRONOS AI Gym ค่ะ: ปัจจุบันจัดอยู่ในระดับ เลเวล ${gym.level} จอมราชันย์ Apex Sovereign Quant ผ่านการวิเคราะห์โครงสร้างราคามาแล้วกว่า ${gym.samples.toLocaleString()} ตัวอย่าง พร้อมระบบการเรียนรู้แบบเสริมกำลัง ความเชี่ยวชาญในกลยุทธ์ Smart Money Order Block อยู่ที่ 91% ค่ะ`;
@@ -1458,6 +1622,7 @@ export class HologramAssistantEngine {
 
   reportWorldNews() {
     this.updateTelemetryHUD();
+    this.setEmotion('TACTICAL');
     this.setGazeMode('NEWS');
     const item = this.getRandomItem(GLOBAL_INTELLIGENCE_RADAR.WORLD_AFFAIRS);
     const speech = item.anchor;

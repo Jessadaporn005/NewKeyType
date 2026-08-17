@@ -839,6 +839,16 @@ async function runTests() {
   assistant.setGazeMode('NEWS');
   assert(assistant.targetPose.pitch > 0.05, `World news gaze target shifts 3D pitch/yaw (Pitch = ${assistant.targetPose.pitch})`);
 
+  // Test Dynamic Emotion Engine
+  assistant.setEmotion('POUTY');
+  assert(assistant.emotionalState === 'POUTY' && assistant.blushAmount === 1.0, 'Dynamic Emotion: POUTY activates head tilt and 100% blush');
+  assistant.setEmotion('PLAYFUL');
+  assert(assistant.emotionalState === 'PLAYFUL' && assistant.blushAmount === 0.5, 'Dynamic Emotion: PLAYFUL activates eye twinkle and sparkle');
+  assistant.setEmotion('CARING');
+  assert(assistant.emotionalState === 'CARING', 'Dynamic Emotion: CARING activates gentle lilac empathy aura');
+  assistant.setEmotion('TACTICAL');
+  assert(assistant.emotionalState === 'TACTICAL', 'Dynamic Emotion: TACTICAL activates focused laser C2 mode');
+
   assistant.updateKinematics();
   assert(assistant.currentPose.yaw !== undefined, '3D Kinematics interpolation calculated smoothly');
 
@@ -884,20 +894,39 @@ async function runTests() {
   const qNum4 = assistant.handleUserQuery('4');
   assert(qNum4.category.includes('GOLD'), `Numeric Query: '4' -> Category: ${qNum4.category}`);
 
-  // Test Proactive Co-Pilot Skills
-  const qQuant = assistant.handleUserQuery('วิเคราะห์ตลาด');
-  assert(qQuant.category.includes('QUANT'), `Proactive Skill: 'วิเคราะห์ตลาด' -> Category: ${qQuant.category}`);
-  assert(qQuant.speech.includes('KRONOS') || qQuant.speech.includes('ORION'), 'NYX vocalizes institutional quant analysis');
+  // Test Hands-On Typing Masterclass ("จับมือสอนพิมพ์")
+  const qType1 = assistant.handleUserQuery('สอนพิมพ์ 1');
+  assert(qType1.category.includes('TOUCH TYPING') && (qType1.title.includes('Home Row') || qType1.speech.includes('Home Row')), 'Hands-On Typing Masterclass Lesson 1 (Home Row)');
+  assert(qType1.speech.includes('Home Row') || qType1.speech.includes('ปุ่ม F'), 'Vocal instructions for Home Row finger placement');
 
-  const qSec = assistant.handleUserQuery('ตรวจความปลอดภัย');
-  assert(qSec.category.includes('SECURITY'), `Proactive Skill: 'ตรวจความปลอดภัย' -> Category: ${qSec.category}`);
-  assert(qSec.speech.includes('AES-256') || qSec.speech.includes('DEFCON-1'), 'NYX vocalizes enclave security audit');
+  const qType3 = assistant.handleUserQuery('สอนพิมพ์เร็ว 100 wpm');
+  assert(qType3.detail.includes('Lookahead') || qType3.speech.includes('Lookahead'), 'Hands-On Typing Masterclass Lesson 3 (100+ WPM Lookahead Buffering)');
 
-  const qMentor = assistant.handleUserQuery('แนะนำการเทรด');
-  assert(qMentor.category.includes('MENTORSHIP'), `Proactive Skill: 'แนะนำการเทรด' -> Category: ${qMentor.category}`);
+  // Test Hands-On Trading Masterclass ("จับมือสอนเทรด")
+  const qTrade1 = assistant.handleUserQuery('สอนเทรด 1');
+  assert(qTrade1.category.includes('TRADING ACADEMY') && qTrade1.detail.includes('Structure'), 'Hands-On Trading Masterclass Lesson 1 (Market Structure)');
 
-  const qChat = assistant.handleUserQuery('เธอคือใคร');
-  assert(qChat.category.includes('COMPANION'), `Proactive Skill: 'เธอคือใคร' -> Category: ${qChat.category}`);
+  const qTrade2 = assistant.handleUserQuery('ออเดอร์บล็อกคืออะไร');
+  assert(qTrade2.detail.includes('Order Block') || qTrade2.detail.includes('FVG'), 'Hands-On Trading Masterclass Lesson 2 (Order Block & FVG)');
+
+  const qTrade3 = assistant.handleUserQuery('สอนคุมความเสี่ยง');
+  assert(qTrade3.detail.includes('1%') || qTrade3.speech.includes('1%'), 'Hands-On Trading Masterclass Lesson 3 (1% Risk Rule)');
+
+  // Test Multi-Emotion Conversational AI Brain
+  const qTease = assistant.handleUserQuery('แกล้งฉันทำไม');
+  assert(qTease.category.includes('PLAYFUL') && assistant.emotionalState === 'PLAYFUL', 'Conversational Brain: Playful Teasing response & emotion');
+
+  const qPout = assistant.handleUserQuery('งอนแล้วนะ');
+  assert(qPout.category.includes('POUTY') && assistant.emotionalState === 'POUTY', 'Conversational Brain: Pouty Tsundere response & emotion');
+
+  const qTired = assistant.handleUserQuery('วันนี้เหนื่อยมาก');
+  assert(qTired.category.includes('CARING') && assistant.emotionalState === 'CARING', 'Conversational Brain: Caring Empathy response & emotion');
+
+  const qLove = assistant.handleUserQuery('รักนิกซ์นะ');
+  assert(qLove.category.includes('BLUSHING') || qLove.speech.includes('เขิน'), 'Conversational Brain: Romantic Blushing response');
+
+  const qPhilo = assistant.handleUserQuery('ความฝันและชีวิตคืออะไร');
+  assert(qPhilo.category.includes('PHILOSOPHY'), 'Conversational Brain: Deep Philosophy & Vision response');
 
   console.log('\n====================================================');
   console.log(`🏁 TEST RESULTS: ${passed}/${total} TESTS PASSED (100%)`);
