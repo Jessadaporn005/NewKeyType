@@ -846,6 +846,9 @@ export class AITradingEngine {
     this.replayInterval = null;
     this.fullHistoricalCandles = [];
 
+    // Infinite Distilled Knowledge Weights Matrix
+    this.strategyWeights = JSON.parse(JSON.stringify(DEFAULT_STRATEGY_WEIGHTS));
+
     // Callbacks
     this.onSignalUpdate = options.onSignalUpdate || null;
     this.onPositionsUpdate = options.onPositionsUpdate || null;
@@ -860,6 +863,35 @@ export class AITradingEngine {
     if (!this.loadGymState()) {
       this.seedInitialAIJournal();
     }
+  }
+
+  saveGymState() {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const state = {
+          stats: this.aiStats,
+          journal: this.aiJournal ? this.aiJournal.slice(0, 30) : [],
+          weights: this.strategyWeights
+        };
+        localStorage.setItem('cyber_ai_trading_gym_state', JSON.stringify(state));
+      }
+    } catch (e) {}
+  }
+
+  loadGymState() {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const raw = localStorage.getItem('cyber_ai_trading_gym_state');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed.stats) this.aiStats = { ...this.aiStats, ...parsed.stats };
+          if (Array.isArray(parsed.journal)) this.aiJournal = parsed.journal;
+          if (parsed.weights) this.strategyWeights = { ...DEFAULT_STRATEGY_WEIGHTS, ...parsed.weights };
+          return true;
+        }
+      }
+    } catch (e) {}
+    return false;
   }
 
   setRiskPercent(risk) {
