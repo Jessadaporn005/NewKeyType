@@ -48,38 +48,36 @@ export class HologramAssistantEngine {
   initVoiceEngine() {
     if (!this.synth) return;
 
-    const findFemaleVoice = () => {
+    const findThaiFemaleVoice = () => {
       const voices = this.synth.getVoices();
       if (!voices || voices.length === 0) return;
 
-      // Priority list of high-fidelity natural female voices
-      const priorityVoices = [
-        'Google UK English Female',
-        'Microsoft Zira',
-        'Microsoft Jenny',
-        'Google US English',
-        'Samantha',
-        'Victoria',
-        'Karen',
+      // Priority list of natural Thai female voices
+      const priorityThaiVoices = [
+        'Premwadee',
         'Google ภาษาไทย',
-        'Premwadee'
+        'Niwat',
+        'Thai',
+        'th-TH',
+        'th_TH'
       ];
 
-      for (const name of priorityVoices) {
-        const found = voices.find(v => v.name.includes(name) || (v.lang.startsWith('en') && v.name.toLowerCase().includes('female')));
-        if (found) {
-          this.selectedVoice = found;
-          return;
-        }
+      // 1. Try finding exact Thai female voice
+      let found = voices.find(v => (v.lang === 'th-TH' || v.lang === 'th_TH' || v.lang.startsWith('th')) && priorityThaiVoices.some(p => v.name.includes(p)));
+      if (!found) {
+        found = voices.find(v => v.lang === 'th-TH' || v.lang === 'th_TH' || v.lang.startsWith('th'));
+      }
+      // 2. Fallback to English female if no Thai voice installed on OS
+      if (!found) {
+        found = voices.find(v => v.name.includes('Zira') || v.name.includes('Google US English') || v.name.includes('Samantha') || v.lang.startsWith('en'));
       }
 
-      // Fallback: Pick any English voice with higher pitch
-      this.selectedVoice = voices.find(v => v.lang.startsWith('en')) || voices[0];
+      this.selectedVoice = found || voices[0];
     };
 
-    findFemaleVoice();
+    findThaiFemaleVoice();
     if (typeof window !== 'undefined' && window.speechSynthesis) {
-      window.speechSynthesis.onvoiceschanged = findFemaleVoice;
+      window.speechSynthesis.onvoiceschanged = findThaiFemaleVoice;
     }
   }
 
@@ -137,16 +135,16 @@ export class HologramAssistantEngine {
     if (this.isVoiceEnabled) {
       if (btnVoice) btnVoice.classList.remove('muted');
       if (icon) icon.textContent = '🔊';
-      if (txt) txt.textContent = 'VOICE ON';
+      if (txt) txt.textContent = 'เสียงพูด ON';
       this.playChirpSFX(true);
-      this.setSpeechBalloon('Voice transmission system online. Standing by, Operator.');
+      this.setSpeechBalloon('เปิดระบบเสียงสังเคราะห์ภาษาไทยเรียบร้อยแล้วค่ะ สแตนด์บายพร้อมรับคำสั่งจากคุณอนันต์ค่ะ');
     } else {
       if (this.synth) this.synth.cancel();
       this.isSpeaking = false;
       if (btnVoice) btnVoice.classList.add('muted');
       if (icon) icon.textContent = '🔇';
-      if (txt) txt.textContent = 'MUTED';
-      this.setSpeechBalloon('Voice synthesizer muted. Visual HUD telemetry active.');
+      if (txt) txt.textContent = 'ปิดเสียง';
+      this.setSpeechBalloon('ปิดเสียงพูดชั่วคราวแล้วค่ะ สลับมารายงานผลผ่านหน้าต่างข้อความ HUD ค่ะ');
     }
   }
 
@@ -183,11 +181,12 @@ export class HologramAssistantEngine {
       this.playChirpSFX(true);
 
       const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'th-TH'; // Enforce Thai speech synthesis
       if (this.selectedVoice) {
         utterance.voice = this.selectedVoice;
       }
-      utterance.rate = 1.05;
-      utterance.pitch = 1.25; // High-tech feminine cyber pitch
+      utterance.rate = 1.02;
+      utterance.pitch = 1.15; // Pleasant high-tech feminine pitch
 
       utterance.onstart = () => {
         this.isSpeaking = true;
@@ -434,17 +433,17 @@ export class HologramAssistantEngine {
 
     this.cachedGymStats = { level: gymLevel, samples: gymSamples, winRate: gymWinRate };
     if (gymBadge) {
-      gymBadge.textContent = `LVL ${gymLevel} (${gymSamples.toLocaleString()} SAMPLES | ${gymWinRate}%)`;
+      gymBadge.textContent = `LVL ${gymLevel} (${gymSamples.toLocaleString()} ตัวอย่าง | ${gymWinRate}%)`;
     }
 
     // 2. Global News Wire
     const newsBadge = document.getElementById('holoNewsBadge');
-    let newsTitle = 'US Federal Reserve Signals Liquidity Easing; Global Crypto Inflows Surge';
+    let newsTitle = 'ธนาคารกลางสหรัฐฯ ส่งสัญญาณผ่อนคลายสภาพคล่อง เงินทุนไหลเข้าคริปโตและทองคำ';
     if (this.app && this.app.tradingEngine && this.app.tradingEngine.activeNews) {
       newsTitle = this.app.tradingEngine.activeNews.title || this.app.tradingEngine.activeNews.headline || newsTitle;
     }
     if (typeof newsTitle !== 'string') {
-      newsTitle = 'US Federal Reserve Signals Liquidity Easing; Global Crypto Inflows Surge';
+      newsTitle = 'ธนาคารกลางสหรัฐฯ ส่งสัญญาณผ่อนคลายสภาพคล่อง เงินทุนไหลเข้าคริปโตและทองคำ';
     }
     this.cachedNews = newsTitle;
     if (newsBadge) {
@@ -453,33 +452,33 @@ export class HologramAssistantEngine {
     }
   }
 
-  // Briefing Actions
+  // Briefing Actions (ภาษาไทยสไตล์ผู้ช่วยไซเบอร์เนติกส์)
   triggerWelcomeGreeting() {
     this.updateTelemetryHUD();
     const gym = this.cachedGymStats || { level: 10, samples: 14971, winRate: 69.6 };
-    const speech = `Welcome back, Operator Anan. NYX Neural Copilot active. KRONOS AI Gym is synchronized at Level ${gym.level} with ${gym.samples.toLocaleString()} market samples. All enclave systems operational.`;
+    const speech = `ยินดีต้อนรับกลับค่ะ คุณอนันต์ ระบบผู้ช่วยโฮโลแกรม NYX พร้อมปฏิบัติการแล้วค่ะ ขณะนี้สมองกล KRONOS AI Gym เชื่อมต่ออยู่ที่เลเวล ${gym.level} เรียนรู้ไปแล้วกว่า ${gym.samples.toLocaleString()} ตัวอย่าง ระบบความปลอดภัย Enclave ทำงานปกติ 100% ค่ะ`;
     this.speak(speech);
   }
 
   briefMe() {
     this.updateTelemetryHUD();
     const gym = this.cachedGymStats || { level: 10, samples: 14971, winRate: 69.6 };
-    const news = this.cachedNews || 'Global market telemetry stable';
-    const speech = `Executive Situation Report: KRONOS AI Gym is currently at Level ${gym.level} (Apex Sovereign Quant) with a ${gym.winRate}% win rate across ${gym.samples.toLocaleString()} training bars. Breaking Intel: ${news}. System DEFCON-1 defense is active.`;
+    const news = this.cachedNews || 'สภาวะตลาดโลกและสภาพคล่องอยู่ในเกณฑ์ปกติ';
+    const speech = `รายงานสถานการณ์ภาพรวมค่ะ: สมองกล KRONOS AI Gym ทำงานอยู่ที่เลเวล ${gym.level} ระดับ Apex Sovereign Quant ด้วยอัตราความแม่นยำ ${gym.winRate}% จากข้อมูลตลาด ${gym.samples.toLocaleString()} แท่งเทียน ข่าวด่วนล่าสุด: ${news} ระบบป้องกันความเสี่ยงระดับ DEFCON-1 พร้อมทำงานค่ะ`;
     this.speak(speech);
   }
 
   reportAIGym() {
     this.updateTelemetryHUD();
     const gym = this.cachedGymStats || { level: 10, samples: 14971, winRate: 69.6 };
-    const speech = `KRONOS AI Gym Neural Telemetry: Current rank is Level ${gym.level} Apex Sovereign Quant. The model has ingested ${gym.samples.toLocaleString()} historical price samples with dynamic reinforcement learning. Smart Money Order Block strategy mastery is rated at 91%.`;
+    const speech = `รายงานข้อมูลระบบประสาท KRONOS AI Gym ค่ะ: ปัจจุบันจัดอยู่ในระดับ เลเวล ${gym.level} จอมราชันย์ Apex Sovereign Quant ผ่านการวิเคราะห์โครงสร้างราคามาแล้วกว่า ${gym.samples.toLocaleString()} ตัวอย่าง พร้อมระบบการเรียนรู้แบบเสริมกำลัง ความเชี่ยวชาญในกลยุทธ์ Smart Money Order Block อยู่ที่ 91% ค่ะ`;
     this.speak(speech);
   }
 
   reportWorldNews() {
     this.updateTelemetryHUD();
-    const news = this.cachedNews || 'Federal Reserve and global liquidity indices indicate high volume accumulation.';
-    const speech = `Global Intelligence Wire: ${news}. Dynamic spread and volatility filters have been recalibrated across Binance and XM Global pairs.`;
+    const news = this.cachedNews || 'ธนาคารกลางและดัชนีสภาพคล่องโลกส่งสัญญาณการเข้าสะสมวอลุ่มปริมาณมหาศาล';
+    const speech = `รายงานข่าวกรองตลาดโลกค่ะ: ${news} ระบบได้ทำการปรับจูนค่าสเปรดและความผันผวนของคู่เงิน Binance และ XM Global เรียบร้อยแล้วค่ะ`;
     this.speak(speech);
   }
 }
