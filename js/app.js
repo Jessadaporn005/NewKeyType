@@ -39,6 +39,7 @@ import { CyberRadioEngine } from './cyberRadio.js';
 import { CyberWifiEngine } from './cyberWifi.js';
 import { AICompanionEngine } from './aiCompanion.js';
 import { AITradingEngine } from './aiTradingEngine.js';
+import { HologramAssistantEngine } from './hologramAssistant.js';
 
 // Application States
 const STATES = {
@@ -94,6 +95,7 @@ class WindowsTerminalApp {
     this.controlCenter = null;
     this.tabManager = null;
     this.intelFeed = null;
+    this.hologramAssistant = null;
     this.toasts = new ToastManager(this.audio);
     this.particles = new ParticleEffectEngine();
     this.holoAvatar = new HologramAvatar();
@@ -605,6 +607,12 @@ class WindowsTerminalApp {
 
     this.aiCompanion = new AICompanionEngine(this, this.audio);
     this.aiCompanion.init();
+
+    const holoPod = document.getElementById('aiHologramPod');
+    if (holoPod) {
+      this.hologramAssistant = new HologramAssistantEngine(this, this.audio, this.toasts);
+      this.hologramAssistant.init(holoPod);
+    }
   }
 
   ensureViewEngineInitialized(mode) {
@@ -672,10 +680,12 @@ class WindowsTerminalApp {
 
           this.tradingEngine.onNewsUpdate = (news) => {
             this.updateTradingNewsUI(news);
+            if (this.hologramAssistant) this.hologramAssistant.updateTelemetryHUD();
           };
 
           this.tradingEngine.onAIStatsUpdate = (stats) => {
             this.updateAIStatsUI(stats);
+            if (this.hologramAssistant) this.hologramAssistant.updateTelemetryHUD();
           };
 
           this.tradingEngine.onAIJournalUpdate = (journal) => {
@@ -684,6 +694,7 @@ class WindowsTerminalApp {
 
           this.tradingEngine.onAIProfileUpdate = (profile) => {
             this.updateAIProfileUI(profile);
+            if (this.hologramAssistant) this.hologramAssistant.updateTelemetryHUD();
           };
 
           this.tradingEngine.onKnowledgeStreamUpdate = (logs, latestLog) => {
@@ -3035,6 +3046,38 @@ OPEN DESCRIPTORS: 7 Active | LEAKS: 0
       case 'hashcrack':
         this.runHashCracker(args[0] || 'e99a18c428cb38d5f260853678922e03');
         return;
+
+      // LUMINA // Female Hologram AI Copilot Commands
+      case 'lumina':
+      case 'ava':
+      case 'assistant':
+      case 'copilot':
+        if (args[0] === 'gym') {
+          if (this.hologramAssistant) this.hologramAssistant.reportAIGym();
+          output = `[+] LUMINA: Transmitting AI Gym Neural Telemetry Report...`;
+        } else if (args[0] === 'news' || args[0] === 'world') {
+          if (this.hologramAssistant) this.hologramAssistant.reportWorldNews();
+          output = `[+] LUMINA: Broadcasting Global Intelligence Wire...`;
+        } else if (args[0] === 'voice' || args[0] === 'mute' || args[0] === 'toggle') {
+          if (this.hologramAssistant) this.hologramAssistant.toggleVoice();
+          output = `[+] LUMINA Voice Synthesizer: ${this.hologramAssistant?.isVoiceEnabled ? 'ONLINE [VOICE ON]' : 'MUTED'}`;
+        } else {
+          if (this.hologramAssistant) this.hologramAssistant.briefMe();
+          output = `[+] LUMINA: Delivering Executive Situation Report...`;
+        }
+        break;
+
+      case 'speak':
+      case 'voice':
+        if (args.length > 0) {
+          const phrase = args.join(' ');
+          if (this.hologramAssistant) this.hologramAssistant.speak(phrase);
+          output = `[+] LUMINA Transmitting: "${phrase}"`;
+        } else {
+          if (this.hologramAssistant) this.hologramAssistant.toggleVoice();
+          output = `[+] LUMINA Voice Synthesizer: ${this.hologramAssistant?.isVoiceEnabled ? 'ONLINE [VOICE ON]' : 'MUTED'}`;
+        }
+        break;
 
       case 'bgm':
       case 'music':

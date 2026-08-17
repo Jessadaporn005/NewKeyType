@@ -1,0 +1,321 @@
+/**
+ * CYBER//TYPE ANIMATED FEMALE HOLOGRAM AI ASSISTANT (LUMINA)
+ * 2-Column Workstation Layout, Hologram Pod, Speech Balloon, Audio Waveform Visualizer
+ */
+
+/* 2-Column Bottom Workstation Deck */
+.bottom-workstation-deck {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  max-width: 1540px;
+  margin: 0 auto;
+  padding: 0 12px 6px 12px;
+  box-sizing: border-box;
+}
+
+.bottom-workstation-deck .keyboard-hardware-wrapper {
+  flex: 1 1 65%;
+  min-width: 0;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Hologram AI Assistant Pod (Right Column) */
+.ai-hologram-pod {
+  flex: 0 0 420px;
+  max-width: 440px;
+  min-width: 380px;
+  background: rgba(8, 14, 20, 0.82);
+  border: 1px solid rgba(0, 229, 255, 0.35);
+  border-radius: 8px;
+  padding: 10px 12px;
+  box-shadow: 0 0 25px rgba(0, 229, 255, 0.08), inset 0 0 20px rgba(0, 229, 255, 0.03);
+  backdrop-filter: blur(8px);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.ai-hologram-pod::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #00e5ff, #ff007f, transparent);
+  animation: hologramTopGlow 3s infinite alternate;
+}
+
+@keyframes hologramTopGlow {
+  0% { opacity: 0.4; }
+  100% { opacity: 1; filter: drop-shadow(0 0 8px #00e5ff); }
+}
+
+/* Pod Header Bar */
+.hologram-pod-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(0, 229, 255, 0.18);
+  padding-bottom: 6px;
+  margin-bottom: 8px;
+}
+
+.hologram-identity {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hologram-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #00ff88;
+  box-shadow: 0 0 8px #00ff88;
+  animation: holoPulse 1.5s infinite;
+}
+
+.hologram-status-dot.speaking {
+  background: #ff007f;
+  box-shadow: 0 0 10px #ff007f;
+}
+
+@keyframes holoPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.85); }
+}
+
+.hologram-name {
+  font-family: 'Orbitron', 'Kanit', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #00e5ff;
+  text-shadow: 0 0 6px rgba(0, 229, 255, 0.6);
+}
+
+.hologram-role-tag {
+  font-size: 9px;
+  color: #8b9cb0;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.hologram-voice-toggle-btn {
+  background: rgba(0, 229, 255, 0.1);
+  border: 1px solid rgba(0, 229, 255, 0.35);
+  color: #00e5ff;
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s ease;
+}
+
+.hologram-voice-toggle-btn:hover {
+  background: rgba(0, 229, 255, 0.25);
+  box-shadow: 0 0 8px rgba(0, 229, 255, 0.4);
+}
+
+.hologram-voice-toggle-btn.muted {
+  color: #ff4466;
+  border-color: rgba(255, 68, 102, 0.4);
+  background: rgba(255, 68, 102, 0.1);
+}
+
+/* Stage: Canvas Visualizer + Telemetry Chips */
+.hologram-stage-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.hologram-canvas-box {
+  width: 140px;
+  height: 140px;
+  flex: 0 0 140px;
+  position: relative;
+  background: radial-gradient(circle at center, rgba(0, 229, 255, 0.12) 0%, rgba(5, 10, 15, 0.8) 70%);
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: inset 0 0 15px rgba(0, 229, 255, 0.15);
+}
+
+.hologram-canvas-box canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.hologram-scanline-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.15) 1px, transparent 1px, transparent 2px);
+  pointer-events: none;
+}
+
+/* Telemetry & Quick Metrics Column */
+.hologram-telemetry-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.telemetry-badge-card {
+  background: rgba(12, 20, 28, 0.7);
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  border-radius: 4px;
+  padding: 5px 8px;
+}
+
+.telemetry-label {
+  font-size: 9px;
+  color: #8b9cb0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.telemetry-val-gym {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: #00ff88;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.telemetry-val-news {
+  font-size: 10px;
+  color: #e9d5ff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Audio Waveform Equalizer Strip */
+.hologram-audio-wave-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 12px;
+  gap: 2px;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid rgba(0, 229, 255, 0.15);
+}
+
+.wave-bar {
+  flex: 1;
+  height: 3px;
+  background: #00e5ff;
+  border-radius: 1px;
+  transition: height 0.08s ease;
+}
+
+.wave-bar.speaking {
+  background: linear-gradient(180deg, #ff007f, #00e5ff);
+}
+
+/* Speech Balloon & Transmission Dialogue */
+.hologram-speech-balloon {
+  background: rgba(5, 12, 18, 0.9);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  position: relative;
+  min-height: 52px;
+  max-height: 68px;
+  overflow-y: auto;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.6);
+}
+
+.speech-balloon-text {
+  font-family: 'Kanit', 'Share Tech Mono', sans-serif;
+  font-size: 11px;
+  line-height: 1.45;
+  color: #d1f4ff;
+}
+
+.speech-balloon-text strong {
+  color: #00ff88;
+}
+
+/* Action Chips Command Row */
+.hologram-actions-row {
+  display: flex;
+  gap: 6px;
+}
+
+.holo-action-btn {
+  flex: 1;
+  background: rgba(0, 229, 255, 0.08);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  color: #00e5ff;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 4px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: all 0.2s ease;
+}
+
+.holo-action-btn:hover {
+  background: rgba(0, 229, 255, 0.2);
+  border-color: #00e5ff;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.35);
+  transform: translateY(-1px);
+}
+
+.holo-action-btn:active {
+  transform: translateY(0);
+}
+
+.holo-action-btn.active {
+  background: rgba(0, 255, 136, 0.15);
+  border-color: #00ff88;
+  color: #00ff88;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+  .bottom-workstation-deck {
+    flex-direction: column;
+  }
+  .ai-hologram-pod {
+    max-width: 100%;
+    flex: 1 1 auto;
+  }
+}

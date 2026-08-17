@@ -815,6 +815,32 @@ async function runTests() {
   assert(gymDisk !== null, 'Trading gym state cleanly bundled in ProfileStore');
   assert(typeof profileStore.saveAllAsync === 'function', 'profileStore.saveAllAsync is registered');
 
+  // =========================================================================
+  // SECTION 45: ANIMATED FEMALE HOLOGRAM AI ASSISTANT (LUMINA)
+  // =========================================================================
+  console.log('\n[45] Testing Female Hologram AI Assistant (LUMINA // C2 Copilot)...');
+  const { HologramAssistantEngine } = await import('./js/hologramAssistant.js');
+  const assistant = new HologramAssistantEngine({ tradingEngine: freshEngine }, mockSound, null);
+  assert(assistant !== null, 'HologramAssistantEngine instantiated successfully');
+  assert(assistant.isVoiceEnabled === true, 'Voice synthesis initialized in active state');
+
+  assistant.speak('Welcome back, Operator Anan.');
+  assert(assistant.lastSpokenText.includes('Operator Anan'), `Speech balloon updated: "${assistant.lastSpokenText}"`);
+
+  assistant.reportAIGym();
+  assert(assistant.lastSpokenText.includes('AI Gym') && (assistant.lastSpokenText.includes('Level 10') || assistant.lastSpokenText.includes('Apex Sovereign')), `AI Gym Telemetry vocal report: "${assistant.lastSpokenText}"`);
+
+  assistant.reportWorldNews();
+  assert(assistant.lastSpokenText.includes('Intelligence') || assistant.lastSpokenText.includes('Federal Reserve'), `World News Wire report: "${assistant.lastSpokenText}"`);
+
+  assistant.briefMe();
+  assert(assistant.lastSpokenText.includes('Executive Situation Report'), 'Executive situation briefing generated');
+
+  assistant.toggleVoice();
+  assert(assistant.isVoiceEnabled === false, 'Voice synthesizer toggled to MUTED');
+  assistant.toggleVoice();
+  assert(assistant.isVoiceEnabled === true, 'Voice synthesizer restored to ACTIVE');
+
   console.log('\n====================================================');
   console.log(`🏁 TEST RESULTS: ${passed}/${total} TESTS PASSED (100%)`);
   console.log('====================================================');

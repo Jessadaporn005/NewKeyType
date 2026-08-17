@@ -22,6 +22,7 @@
   <link rel="stylesheet" href="css/taskManager.css">
   <link rel="stylesheet" href="css/radio.css">
   <link rel="stylesheet" href="css/wifi.css">
+  <link rel="stylesheet" href="css/hologramAssistant.css">
 </head>
 <body class="crt-scanlines">
   <!-- STAGE 0: UEFI HARDWARE INITIALIZATION & KERNEL POST TERMINAL -->
@@ -1297,14 +1298,88 @@
         </div>
       </div>
 
-      <!-- Centered Keyboard Chassis Wrapper -->
-      <div class="keyboard-hardware-wrapper">
-        <div class="keyboard-hand-stage">
-          <!-- Physical Glowing Keyboard -->
-          <div class="cyber-keyboard" id="cyberKeyboard"></div>
+      <!-- Bottom 2-Column Workstation Deck (Keyboard on Left, Hologram AI Copilot on Right) -->
+      <div class="bottom-workstation-deck">
+        <!-- Left: Physical Glowing Cyber Keyboard & Hands Rig -->
+        <div class="keyboard-hardware-wrapper">
+          <div class="keyboard-hand-stage">
+            <div class="cyber-keyboard" id="cyberKeyboard"></div>
+            <div class="cyber-finger-rig-stage" id="cyberHandsContainer"></div>
+          </div>
+        </div>
 
-          <!-- Dynamic Pixel-Perfect Finger Kinematics Rig -->
-          <div class="cyber-finger-rig-stage" id="cyberHandsContainer"></div>
+        <!-- Right: Animated Female Hologram AI Assistant Pod (LUMINA) -->
+        <div class="ai-hologram-pod" id="aiHologramPod">
+          <!-- Pod Header -->
+          <div class="hologram-pod-header">
+            <div class="hologram-identity">
+              <span class="hologram-status-dot" id="hologramStatusDot"></span>
+              <span class="hologram-name">LUMINA // AI COPILOT</span>
+              <span class="hologram-role-tag">NEURAL AVATAR</span>
+            </div>
+            <button class="hologram-voice-toggle-btn" id="holoBtnVoiceToggle" title="Toggle Female Voice Audio">
+              <span id="holoVoiceIcon">🔊</span>
+              <span id="holoVoiceTxt">VOICE ON</span>
+            </button>
+          </div>
+
+          <!-- Hologram Visual Stage + Telemetry -->
+          <div class="hologram-stage-row">
+            <!-- 2D Canvas Animated Vector Avatar Box -->
+            <div class="hologram-canvas-box">
+              <canvas id="hologramAssistantCanvas" width="140" height="140"></canvas>
+              <div class="hologram-scanline-overlay"></div>
+            </div>
+
+            <!-- Telemetry Metrics Column -->
+            <div class="hologram-telemetry-col">
+              <div class="telemetry-badge-card">
+                <div class="telemetry-label">
+                  <span>AI GYM ADAPTATION</span>
+                  <span>SYNCED</span>
+                </div>
+                <div class="telemetry-val-gym" id="holoGymBadge">LVL 10 (14,971 SAMPLES | 69.6%)</div>
+              </div>
+
+              <div class="telemetry-badge-card">
+                <div class="telemetry-label">
+                  <span>GLOBAL INTEL WIRE</span>
+                  <span>LIVE</span>
+                </div>
+                <div class="telemetry-val-news" id="holoNewsBadge">US Fed Signals Liquidity Easing...</div>
+              </div>
+
+              <!-- Audio Wave Equalizer Strip -->
+              <div class="hologram-audio-wave-strip">
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Speech Balloon & Interactive Telemetry Log -->
+          <div class="hologram-speech-balloon" id="assistantSpeechBalloon">
+            <div class="speech-balloon-text" id="assistantSpeechText">
+              LUMINA Neural Copilot online. Standing by for Operator commands.
+            </div>
+          </div>
+
+          <!-- Quick Action Commands Row -->
+          <div class="hologram-actions-row">
+            <button class="holo-action-btn" id="holoBtnBrief">🎙️ Brief Me</button>
+            <button class="holo-action-btn" id="holoBtnGym">🧠 AI Gym</button>
+            <button class="holo-action-btn" id="holoBtnNews">🌍 World News</button>
+          </div>
         </div>
       </div>
     </section>
