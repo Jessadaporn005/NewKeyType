@@ -1201,8 +1201,9 @@ export class AITradingEngine {
   }
 
   getAIProfileDetails() {
-    const level = this.aiStats.adaptationLevel || 1;
     const samples = this.aiStats.samplesStudied || 0;
+    const level = Math.min(10, Math.floor(samples / 700) + 1);
+    this.aiStats.adaptationLevel = level;
     const wins = this.aiStats.wins || 0;
     const losses = this.aiStats.losses || 0;
 
@@ -1482,7 +1483,7 @@ export class AITradingEngine {
       // Real-Time Live Continuous Cognition Progression
       const prevLevel = this.aiStats.adaptationLevel;
       this.aiStats.samplesStudied += 1;
-      const newLevel = Math.min(10, Math.max(1, Math.floor(this.aiStats.samplesStudied / 700)));
+      const newLevel = Math.min(10, Math.floor(this.aiStats.samplesStudied / 700) + 1);
       this.aiStats.adaptationLevel = newLevel;
 
       // Level-Up Event Trigger
@@ -1619,7 +1620,7 @@ export class AITradingEngine {
         this.aiStats.winRate = Number(((this.aiStats.wins / this.aiStats.totalTrades) * 100).toFixed(1));
         this.aiStats.netPnlUSD += tradeRecord.pnlUSD;
         this.aiStats.samplesStudied += 25;
-        this.aiStats.adaptationLevel = Math.min(10, Math.floor(this.aiStats.samplesStudied / 700));
+        this.aiStats.adaptationLevel = Math.min(10, Math.floor(this.aiStats.samplesStudied / 700) + 1);
 
         this.aiJournal.unshift(tradeRecord);
         if (this.aiJournal.length > 50) this.aiJournal.pop();
@@ -1683,7 +1684,7 @@ export class AITradingEngine {
       this.aiStats.winRate = Number(((this.aiStats.wins / this.aiStats.totalTrades) * 100).toFixed(1));
       this.aiStats.netPnlUSD += trade.pnlUSD;
       this.aiStats.samplesStudied += 35;
-      this.aiStats.adaptationLevel = Math.min(10, Math.floor(this.aiStats.samplesStudied / 700));
+      this.aiStats.adaptationLevel = Math.min(10, Math.floor(this.aiStats.samplesStudied / 700) + 1);
 
       this.aiJournal.unshift(trade);
     }
