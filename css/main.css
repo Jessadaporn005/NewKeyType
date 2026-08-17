@@ -6536,6 +6536,271 @@ body.mode-trading .sub-chart-container {
   box-shadow: 0 0 20px rgba(255, 34, 68, 0.8);
 }
 
+/* ========================================================================= */
+/* DEEP AI COGNITION & ADAPTIVE REGIME STYLES                                */
+/* ========================================================================= */
+
+.trading-regime-hud {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.regime-badge-chip {
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 3px;
+  letter-spacing: 0.5px;
+}
+
+.regime-bull {
+  background: rgba(0, 255, 136, 0.15);
+  border: 1px solid #00ff88;
+  color: #00ff88;
+}
+
+.regime-bear {
+  background: rgba(255, 51, 85, 0.15);
+  border: 1px solid #ff3355;
+  color: #ff3355;
+}
+
+.regime-range {
+  background: rgba(255, 215, 0, 0.15);
+  border: 1px solid #ffd700;
+  color: #ffd700;
+}
+
+.regime-shock {
+  background: rgba(255, 34, 68, 0.25);
+  border: 1px solid #ff2244;
+  color: #ff2244;
+  animation: pulseNews 1s infinite alternate;
+}
+
+.regime-hunt {
+  background: rgba(192, 132, 252, 0.2);
+  border: 1px solid #c084fc;
+  color: #c084fc;
+}
+
+.monte-carlo-pill {
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  color: #8b9cb0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.monte-carlo-pill strong {
+  color: #00ff88;
+}
+
+.risk-appetite-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.ra-lbl {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 800;
+  color: #64748b;
+}
+
+.sel-risk-appetite {
+  background: transparent;
+  border: none;
+  color: #00e5ff;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 800;
+  outline: none;
+  cursor: pointer;
+}
+
+.sel-risk-appetite option {
+  background: #0a0f1d;
+  color: #ffffff;
+}
+
+.signal-probe {
+  background: rgba(192, 132, 252, 0.2) !important;
+  border-color: #c084fc !important;
+  color: #c084fc !important;
+}
+
+/* ADVERSARIAL DEBATE CARD */
+.adversarial-debate-card {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  border-radius: 6px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.debate-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.debate-title {
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  font-weight: 800;
+  color: #00e5ff;
+  letter-spacing: 0.5px;
+}
+
+.debate-outcome-badge {
+  font-family: var(--font-mono);
+  font-size: 7.5px;
+  font-weight: 800;
+  background: rgba(0, 255, 136, 0.15);
+  border: 1px solid #00ff88;
+  color: #00ff88;
+  padding: 1px 5px;
+  border-radius: 2px;
+}
+
+.debate-teams-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.debate-team {
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 4px;
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bull-team {
+  border-left: 2px solid #00ff88;
+}
+
+.bear-team {
+  border-left: 2px solid #ff3355;
+}
+
+.team-title {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 800;
+  color: #e2e8f0;
+}
+
+.team-arguments {
+  font-family: var(--font-mono);
+  font-size: 7.5px;
+  color: #8b9cb0;
+  line-height: 1.35;
+}
+
+/* AI GOLDEN RULESBOOK CARD */
+.ai-golden-rules-card {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 215, 0, 0.25);
+  border-radius: 6px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.rules-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 6px;
+}
+
+.rules-title-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rules-title {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 800;
+  color: #ffd700;
+  letter-spacing: 0.5px;
+}
+
+.rules-sub {
+  font-size: 7.5px;
+  color: #64748b;
+}
+
+.rules-tag {
+  font-family: var(--font-mono);
+  font-size: 7.5px;
+  font-weight: 800;
+  background: rgba(255, 215, 0, 0.15);
+  border: 1px solid #ffd700;
+  color: #ffd700;
+  padding: 1px 5px;
+  border-radius: 2px;
+}
+
+.rules-axioms-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.rule-axiom-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 3px;
+  padding: 5px 8px;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  line-height: 1.35;
+  color: #cbd5e1;
+}
+
+.rule-axiom-num {
+  color: #ffd700;
+  font-weight: 900;
+}
+
+.rule-axiom-tag {
+  margin-left: auto;
+  font-size: 7px;
+  font-weight: 800;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 1px 4px;
+  border-radius: 2px;
+  color: #8b9cb0;
+  white-space: nowrap;
+}
+
 
 
 

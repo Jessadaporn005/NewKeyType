@@ -682,6 +682,25 @@
             <label class="toggle-chip"><input type="checkbox" id="chkPatterns" checked> <span>AI Scanner</span></label>
           </div>
 
+          <!-- MARKET REGIME & MONTE CARLO PROBABILITY HUD -->
+          <div class="trading-regime-hud" id="tradingRegimeHud">
+            <span class="regime-badge-chip regime-bull" id="tradingRegimeBadge">🟢 BULLISH MOMENTUM</span>
+            <div class="monte-carlo-pill" id="monteCarloPill" title="Monte Carlo Target Probability">
+              <span class="mc-icon">🎲</span>
+              <span>TP1 PROB: <strong id="monteCarloProbVal">78.4%</strong></span>
+            </div>
+          </div>
+
+          <!-- ADAPTIVE RISK APPETITE EXPLORATION DIAL -->
+          <div class="risk-appetite-group">
+            <span class="ra-lbl">APETITE:</span>
+            <select class="sel-risk-appetite" id="selRiskAppetite">
+              <option value="conservative">🛡️ CONSERVATIVE (ชัวร์)</option>
+              <option value="balanced" selected>⚖️ BALANCED (สมดุล)</option>
+              <option value="alpha_hunter">🚀 ALPHA HUNTER (กล้าได้กล้าเสีย)</option>
+            </select>
+          </div>
+
           <!-- REAL-TIME BROKER SPREAD & BID/ASK MONITOR -->
           <div class="trading-spread-monitor" id="tradingSpreadMonitor">
             <div class="spread-quote-box bid-box">
@@ -846,6 +865,29 @@
                   </div>
                 </div>
 
+                <!-- Adversarial Bull vs Bear Deliberation Card -->
+                <div class="adversarial-debate-card" id="aiAdversarialDebateCard">
+                  <div class="debate-header">
+                    <span class="debate-icon">⚔️</span>
+                    <span class="debate-title">ADVERSARIAL DEBATE // สภาโต้เถียงหาจุดอ่อน</span>
+                    <span class="debate-outcome-badge" id="aiDebateOutcomeBadge">UNANIMOUS BULL</span>
+                  </div>
+                  <div class="debate-teams-grid">
+                    <div class="debate-team bull-team">
+                      <div class="team-title">🐂 BULL ADVOCATE (ข้อดี)</div>
+                      <div class="team-arguments" id="aiBullArgsList">
+                        <span>• RSI โซนสะสมราคา มี Room ให้ราคาดีดตัวขึ้น</span>
+                      </div>
+                    </div>
+                    <div class="debate-team bear-team">
+                      <div class="team-title">🐻 BEAR SKEPTIC (จับผิดข้อเสีย)</div>
+                      <div class="team-arguments" id="aiBearArgsList">
+                        <span>• ไม่พบสัญญาณขัดแย้งที่รุนแรง</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <!-- Chain-of-Thought (CoT) Visual Reasoning Tree -->
                 <div class="cot-reasoning-tree-card" id="aiCotTreeCard">
                   <div class="cot-header">
@@ -991,6 +1033,23 @@
 
                   <!-- Live Stream Feed List -->
                   <div class="ai-knowledge-feed-stream" id="aiKnowledgeStreamFeed">
+                    <!-- Dynamically rendered by app.js -->
+                  </div>
+                </div>
+
+                <!-- RED BOX 3: THE AI GOLDEN RULESBOOK & DISTILLED WISDOM -->
+                <div class="ai-golden-rules-card" id="aiGoldenRulesCard">
+                  <div class="rules-header">
+                    <div class="rules-title-group">
+                      <span class="rules-icon">📜</span>
+                      <div>
+                        <div class="rules-title">THE AI GOLDEN RULESBOOK // กฎทองคำที่ AI ตกผลึกเอง</div>
+                        <div class="rules-sub">AUTONOMOUSLY EXTRACTED FROM HISTORICAL STOP LOSSES & MISTAKES</div>
+                      </div>
+                    </div>
+                    <span class="rules-tag">6 AXIOMS ACTIVE</span>
+                  </div>
+                  <div class="rules-axioms-list" id="aiGoldenRulesList">
                     <!-- Dynamically rendered by app.js -->
                   </div>
                 </div>

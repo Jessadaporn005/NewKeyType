@@ -632,8 +632,8 @@ async function runTests() {
   // =========================================================================
   console.log('\n[33] Testing Multi-Agent Quant Desk Consensus Engine...');
   const sigDesk = generateAISignal(mockCandles, TRADING_ASSETS[0], [], null, null, null);
-  assert(sigDesk.quantDesk && Array.isArray(sigDesk.quantDesk.agents), 'generateAISignal outputs quantDesk with 3 specialized agents');
-  assert(sigDesk.quantDesk.agents.length === 3, 'Quant Desk contains SMC, Macro, and CRO Risk Officer');
+  assert(sigDesk.quantDesk && Array.isArray(sigDesk.quantDesk.agents), 'generateAISignal outputs quantDesk with specialized multi-agent council');
+  assert(sigDesk.quantDesk.agents.length >= 3, 'Quant Desk contains specialized multi-agent quant council (SMC, Macro, CRO, Whale)');
   assert(sigDesk.quantDesk.consensusType !== undefined, `Consensus Type generated: ${sigDesk.quantDesk.consensusType}`);
 
   // Test CRO VETO functionality when spread is dangerously widened
@@ -647,7 +647,7 @@ async function runTests() {
   // =========================================================================
   console.log('\n[34] Testing Chain-of-Thought (CoT) Visual Reasoning Tree...');
   assert(Array.isArray(sigDesk.cotNodes) && sigDesk.cotNodes.length === 5, 'generateAISignal outputs 5 sequential CoT reasoning nodes');
-  assert(sigDesk.cotNodes[0].title.includes('TREND') && sigDesk.cotNodes[4].title.includes('CONSENSUS'), 'CoT nodes start from Trend Structure to Final Consensus Execution');
+  assert(sigDesk.cotNodes[0].title.includes('REGIME') && sigDesk.cotNodes[4].title.includes('DECISION'), 'CoT nodes start from Market Regime to Final Decision Execution');
 
   // =========================================================================
   // SECTION 35: INSTITUTIONAL MONEY MANAGEMENT & DYNAMIC LOT SIZING
@@ -719,6 +719,59 @@ async function runTests() {
   assert(killRes.success === true, 'emergencyKillAll executed successfully');
   assert(tradingEngine.isLiveExecutionActive === false, 'Emergency Kill-Switch paused live auto-execution');
   assert(tradingEngine.liveAccountState.positions.length === 0, 'Emergency Kill-Switch purged all open positions');
+
+  // =========================================================================
+  // SECTION 39: DYNAMIC MARKET REGIME DETECTION & MONTE CARLO PROBABILITY
+  // =========================================================================
+  console.log('\n[39] Testing Market Regime Detection & Monte Carlo Probability...');
+  const { detectMarketRegime, calculateMonteCarloProbability, evaluateAdversarialDebate, extractGoldenRulesFromJournal } = await import('./js/aiTradingEngine.js');
+
+  const regimeTest = detectMarketRegime(mockCandles);
+  assert(regimeTest && typeof regimeTest.label === 'string', `detectMarketRegime identified regime: ${regimeTest.label}`);
+  assert(regimeTest.volatilityRatio > 0, `Market Regime calculated volatility ratio: ${regimeTest.volatilityRatio}`);
+
+  const mcTest = calculateMonteCarloProbability(2748.50, 2775.50, 2735.00, regimeTest, 45);
+  assert(mcTest.tpProbabilityPercent >= 35 && mcTest.tpProbabilityPercent <= 95, `Monte Carlo TP probability computed: ${mcTest.tpProbabilityPercent}% (${mcTest.confidenceRating})`);
+  assert(mcTest.slRiskPercent === Number((100 - mcTest.tpProbabilityPercent).toFixed(1)), 'Monte Carlo probability risk parity maintained');
+
+  // =========================================================================
+  // SECTION 40: ADVERSARIAL MULTI-AGENT COUNCIL & WHALE FLOW AGENT
+  // =========================================================================
+  console.log('\n[40] Testing Adversarial Multi-Agent Council & Whale Flow Specialist...');
+  const debateTest = evaluateAdversarialDebate(patterns, regimeTest, mockMT5Packet.dom_depth, 42, 2748.50);
+  assert(debateTest.bullAdvocate.arguments.length > 0, 'Bull Advocate generated bullish thesis arguments');
+  assert(debateTest.bearSkeptic.arguments.length > 0, 'Bear Skeptic generated counter-arguments & risk scrutiny');
+  assert(debateTest.whaleSpecialist.verdict.includes('WHALE'), `Whale Specialist evaluated L2 DOM orderflow: ${debateTest.whaleSpecialist.verdict}`);
+  assert(typeof debateTest.debateOutcome === 'string', `Adversarial debate resolved outcome: ${debateTest.debateOutcome}`);
+
+  // =========================================================================
+  // SECTION 41: ADAPTIVE RISK EXPLORATION ENGINE & RISK APPETITE DIAL
+  // =========================================================================
+  console.log('\n[41] Testing Adaptive Risk Exploration Engine & Risk Appetite...');
+  tradingEngine.setRiskAppetite('alpha_hunter');
+  assert(tradingEngine.riskAppetite === 'alpha_hunter', 'setRiskAppetite switched to ALPHA_HUNTER mode');
+
+  const hunterSignal = generateAISignal(mockCandles, TRADING_ASSETS[0], patterns, null, null, null, null, 'alpha_hunter');
+  assert(hunterSignal.regime !== undefined, 'Signal synthesizes real-time Market Regime');
+  assert(hunterSignal.adversarialDebate !== undefined, 'Signal synthesizes Adversarial Debate outcome');
+  assert(hunterSignal.monteCarlo !== undefined, 'Signal synthesizes Monte Carlo target probability');
+
+  // =========================================================================
+  // SECTION 42: THE AI GOLDEN RULESBOOK & SETUP MASTERY MATRIX
+  // =========================================================================
+  console.log('\n[42] Testing AI Golden Rulesbook & Setup Mastery Matrix...');
+  const goldenRules = extractGoldenRulesFromJournal(tradingEngine.aiJournal);
+  assert(Array.isArray(goldenRules) && goldenRules.length >= 5, `Autonomous Golden Rulesbook extracted ${goldenRules.length} axioms from post-mortem memory`);
+  assert(goldenRules[0].text.length > 10, `Golden Rule #1: ${goldenRules[0].text}`);
+
+  const masteryList = tradingEngine.getSetupMastery();
+  assert(Array.isArray(masteryList) && masteryList.length >= 5, `Setup Mastery Matrix evaluated ${masteryList.length} distinct SMC strategies`);
+  assert(masteryList[0].mastery >= 70, `Mastery Leader: ${masteryList[0].name} (${masteryList[0].mastery}% Mastery)`);
+
+  const profDetails = tradingEngine.getAIProfileDetails();
+  assert(profDetails.goldenRules.length >= 5, 'getAIProfileDetails bundles active Golden Rules');
+  assert(profDetails.setupMastery.length >= 5, 'getAIProfileDetails bundles Setup Mastery Matrix');
+  assert(profDetails.riskAppetite === 'alpha_hunter', 'getAIProfileDetails reflects active Risk Appetite');
 
   console.log('\n====================================================');
   console.log(`🏁 TEST RESULTS: ${passed}/${total} TESTS PASSED (100%)`);

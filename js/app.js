@@ -868,6 +868,35 @@ class WindowsTerminalApp {
       });
     }
 
+    // Render Market Regime & Monte Carlo Probability
+    const regimeBadge = document.getElementById('tradingRegimeBadge');
+    if (regimeBadge && signal.regime) {
+      regimeBadge.className = `regime-badge-chip ${signal.regime.badgeClass}`;
+      regimeBadge.textContent = `${signal.regime.icon} ${signal.regime.label}`;
+    }
+    const mcVal = document.getElementById('monteCarloProbVal');
+    if (mcVal && signal.monteCarlo) {
+      mcVal.textContent = `${signal.monteCarlo.tpProbabilityPercent}%`;
+    }
+
+    // Render Adversarial Debate (Bull vs Bear)
+    const debateBadge = document.getElementById('aiDebateOutcomeBadge');
+    const bullArgs = document.getElementById('aiBullArgsList');
+    const bearArgs = document.getElementById('aiBearArgsList');
+    if (signal.adversarialDebate) {
+      if (debateBadge) {
+        debateBadge.textContent = signal.adversarialDebate.debateOutcome;
+        debateBadge.style.color = signal.adversarialDebate.debateColor;
+        debateBadge.style.borderColor = signal.adversarialDebate.debateColor;
+      }
+      if (bullArgs && Array.isArray(signal.adversarialDebate.bullAdvocate.arguments)) {
+        bullArgs.innerHTML = signal.adversarialDebate.bullAdvocate.arguments.map(a => `<div>• ${a}</div>`).join('');
+      }
+      if (bearArgs && Array.isArray(signal.adversarialDebate.bearSkeptic.arguments)) {
+        bearArgs.innerHTML = signal.adversarialDebate.bearSkeptic.arguments.map(a => `<div>• ${a}</div>`).join('');
+      }
+    }
+
     // Render Chain-of-Thought (CoT) Visual Tree
     const cotFlow = document.getElementById('aiCotStepsFlow');
     if (signal.cotNodes && cotFlow) {
@@ -1253,6 +1282,15 @@ class WindowsTerminalApp {
         if (this.toasts) this.toasts.show('DANGER', '🚨 EMERGENCY KILL-SWITCH: ALL POSITIONS CLOSED', 5000);
       });
     }
+
+    // Risk Appetite Dial
+    const selAppetite = document.getElementById('selRiskAppetite');
+    if (selAppetite) {
+      selAppetite.addEventListener('change', (e) => {
+        if (this.tradingEngine) this.tradingEngine.setRiskAppetite(e.target.value);
+        if (this.toasts) this.toasts.show('INFO', `🎯 RISK APPETITE UPDATED: ${e.target.value.toUpperCase()}`, 2500);
+      });
+    }
   }
 
   switchTradingMarket(market = 'binance') {
@@ -1359,6 +1397,21 @@ class WindowsTerminalApp {
         chip.className = `skill-mastery-chip ${sk.statusClass}`;
         chip.innerHTML = `<span>${sk.name}</span><strong>${sk.winRate}% (x${sk.weight})</strong>`;
         skillsGrid.appendChild(chip);
+      });
+    }
+
+    const rulesList = document.getElementById('aiGoldenRulesList');
+    if (rulesList && Array.isArray(profile.goldenRules)) {
+      rulesList.innerHTML = '';
+      profile.goldenRules.forEach((rule, idx) => {
+        const row = document.createElement('div');
+        row.className = 'rule-axiom-item';
+        row.innerHTML = `
+          <span class="rule-axiom-num">#${idx + 1}</span>
+          <span class="rule-axiom-txt">${rule.text}</span>
+          <span class="rule-axiom-tag">${rule.tag}</span>
+        `;
+        rulesList.appendChild(row);
       });
     }
   }
