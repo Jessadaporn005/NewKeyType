@@ -3056,7 +3056,7 @@ OPEN DESCRIPTORS: 7 Active | LEAKS: 0
       case 'ask':
         if (this.hologramAssistant) {
           const rawQuery = args.join(' ');
-          const result = this.hologramAssistant.handleUserQuery(rawQuery);
+          const result = await this.hologramAssistant.handleUserQuery(rawQuery);
           output = `
 [+] NYX NEURAL COPILOT // ${result.category}
 ------------------------------------------------------------------

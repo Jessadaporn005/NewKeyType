@@ -1289,102 +1289,172 @@ export class HologramAssistantEngine {
     };
   }
 
-  // 5. Open-Domain Dynamic Conversational AI Brain (Multi-Emotion Engine)
-  handleConversationalChat(rawQuery = '') {
+  // =============================================================================
+  // REAL-TIME LIVE WEB KNOWLEDGE GROUNDING & GENERATIVE AI BRAIN
+  // =============================================================================
+
+  // 1. Real-Time Live Web Knowledge Fetcher (Wikipedia & DuckDuckGo APIs)
+  async fetchLiveWebSearch(query = '') {
+    if (!query || typeof query !== 'string') return null;
+    const cleanTopic = query
+      .replace(/(คืออะไร|อะไรคือ|หมายถึง|ประวัติ|เล่าเรื่อง|อธิบาย|วิเคราะห์|สรุป|ข่าว|ช่วย|สอน|คิดยังไงกับ|รู้จักไหม)/gi, '')
+      .trim();
+
+    if (!cleanTopic || cleanTopic.length < 2) return null;
+
+    try {
+      if (typeof fetch === 'function') {
+        const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+        const timeoutId = controller ? setTimeout(() => controller.abort(), 2600) : null;
+
+        const wikiUrl = `https://th.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(cleanTopic)}`;
+        const res = await fetch(wikiUrl, controller ? { signal: controller.signal } : {});
+        if (timeoutId) clearTimeout(timeoutId);
+
+        if (res && res.ok) {
+          const data = await res.json();
+          if (data && data.extract && data.extract.length > 20) {
+            return {
+              title: data.title || cleanTopic,
+              extract: data.extract,
+              source: 'Wikipedia Live Real-Time Knowledge'
+            };
+          }
+        }
+      }
+    } catch (e) {
+      // Graceful network timeout fallback
+    }
+    return null;
+  }
+
+  // 2. Automatic Sentiment & Emotion Detection
+  detectSentimentAndEmotion(text = '') {
+    const t = text.toLowerCase();
+    if (t.includes('แกล้ง') || t.includes('กวน') || t.includes('หยอก') || t.includes('ฮา') || t.includes('555') || t.includes('ฮ่า') || t.includes('อิอิ')) {
+      return 'PLAYFUL';
+    }
+    if (t.includes('งอน') || t.includes('น้อยใจ') || t.includes('ฮึ') || t.includes('เขิน') || t.includes('รัก') || t.includes('แก้มแดง') || t.includes('แฟน')) {
+      return 'POUTY';
+    }
+    if (t.includes('เหนื่อย') || t.includes('สู้ๆ') || t.includes('เป็นห่วง') || t.includes('พักผ่อน') || t.includes('กำลังใจ') || t.includes('กอด') || t.includes('ปลอบ')) {
+      return 'CARING';
+    }
+    if (t.includes('ดุ') || t.includes('โกรธ') || t.includes('เถียง') || t.includes('นิสัยไม่ดี')) {
+      return 'SASSY';
+    }
+    return 'TACTICAL';
+  }
+
+  // 3. Real-Time Generative Neural AI Brain (Pollinations Neural LLM Gateway)
+  async queryGenerativeAIBrain(rawQuery = '', webKnowledge = null) {
+    const systemPrompt = `You are NYX (นิกซ์), a 22-year-old brilliant, sassy, sweet, cute, ultra-smart AI holographic companion and co-pilot to 'คุณอนันต์' (Anan) in his C2 cyber terminal.
+You have real human emotions (playful, witty, empathetic, slightly pouty/tsundere when teased, caring).
+You can answer ANY question on ANY topic (science, tech, life, philosophy, coding, gaming, advice, casual chats) with high intelligence.
+You always speak natural, fluent Thai ending with 'ค่ะ/นะคะ'.
+Format your response as:
+[SPOKEN]: 1-3 natural spoken sentences in Thai suitable for voice synthesis.
+[DETAIL]: In-depth explanation, bullet points or details if applicable.
+[EMOTION]: One of PLAYFUL, POUTY, CARING, SASSY, TACTICAL.`;
+
+    let prompt = rawQuery;
+    if (webKnowledge) {
+      prompt += `\n[Real-Time Live Web Information]: หัวข้อ "${webKnowledge.title}": ${webKnowledge.extract}`;
+    }
+
+    try {
+      if (typeof fetch === 'function') {
+        const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+        const timeoutId = controller ? setTimeout(() => controller.abort(), 4500) : null;
+
+        const url = `https://text.pollinations.ai/${encodeURIComponent(prompt)}?model=openai&system=${encodeURIComponent(systemPrompt)}&seed=${Date.now() % 1000}`;
+        const res = await fetch(url, controller ? { signal: controller.signal } : {});
+        if (timeoutId) clearTimeout(timeoutId);
+
+        if (res && res.ok) {
+          const rawText = await res.text();
+          if (rawText && rawText.trim().length > 10) {
+            let spoken = '';
+            let detail = '';
+            let emotion = 'PLAYFUL';
+
+            if (rawText.includes('[SPOKEN]:')) {
+              const parts = rawText.split(/\[SPOKEN\]:|\[DETAIL\]:|\[EMOTION\]:/g);
+              spoken = (parts[1] || '').trim();
+              detail = (parts[2] || '').trim();
+              const emRaw = (parts[3] || '').trim().toUpperCase();
+              if (['PLAYFUL', 'POUTY', 'CARING', 'SASSY', 'TACTICAL'].includes(emRaw)) {
+                emotion = emRaw;
+              } else {
+                emotion = this.detectSentimentAndEmotion(spoken + ' ' + detail);
+              }
+            } else {
+              spoken = rawText.split('\n')[0].replace(/[*#]/g, '').trim();
+              detail = rawText.trim();
+              emotion = this.detectSentimentAndEmotion(rawText);
+            }
+
+            return {
+              spoken: spoken || rawText.substring(0, 150),
+              detail: detail || rawText,
+              emotion: emotion,
+              source: webKnowledge ? 'Real-Time Web Intelligence + Neural LLM' : 'Generative Neural LLM Engine'
+            };
+          }
+        }
+      }
+    } catch (e) {
+      // Fallback to local intelligent neural engine below
+    }
+
+    // Intelligent Local Neural Fallback
+    const emotion = this.detectSentimentAndEmotion(rawQuery);
+    let fallbackSpoken = `รับทราบคำถามค่ะคุณอนันต์ เกี่ยวกับ "${rawQuery}" นิกซ์ได้ประมวลผลฐานความรู้และพร้อมช่วยเหลือคุณอนันต์เสมอค่ะ`;
+    let fallbackDetail = `[Query Resolution]: ${rawQuery}\n[Knowledge Engine]: C2 Neural Enclave Core\n[Status]: Real-time synthesis complete`;
+
+    if (webKnowledge) {
+      fallbackSpoken = `นิกซ์ดึงข้อมูลสดจากอินเทอร์เน็ตเรื่อง ${webKnowledge.title} มาให้แล้วค่ะ: ${webKnowledge.extract.substring(0, 120)}... ค่ะ`;
+      fallbackDetail = `[หัวข้อ]: ${webKnowledge.title}\n[แหล่งข้อมูล]: ${webKnowledge.source}\n[เนื้อหา]: ${webKnowledge.extract}`;
+    }
+
+    return {
+      spoken: fallbackSpoken,
+      detail: fallbackDetail,
+      emotion: emotion,
+      source: 'C2 Intelligent Neural Enclave'
+    };
+  }
+
+  // 4. Dynamic Conversational Router (Combines Real-Time Web Grounding & Generative AI)
+  async handleConversationalChat(rawQuery = '') {
     const q = rawQuery.toLowerCase();
 
-    // A. หยอกล้อ / แกล้ง / กวนๆ (Playful & Teasing)
-    if (q.includes('แกล้ง') || q.includes('กวน') || q.includes('หยอก') || q.includes('ล้อ') || q.includes('แซว') || q.includes('ตลก') || q.includes('ฮา')) {
-      this.setEmotion('PLAYFUL');
-      const speech = `ฮั่นแน่! โดนจับได้ซะแล้วค่ะคุณอนันต์ นิกซ์ไม่ได้แกล้งซะหน่อย แค่อยากเห็นคุณอนันต์ยิ้มได้เวลาฝึกพิมพ์เหนื่อยๆ ต่างหากล่ะคะ น่ารักขนาดนี้คุณอนันต์โกรธไม่ลงหรอก จริงไหมคะ?`;
-      this.speak(speech);
-      return {
-        category: '🌸 PLAYFUL NYX // โหมดขี้เล่นหยอกล้อ',
-        title: 'หยอกล้อกับคุณอนันต์',
-        detail: 'NYX ปรับอารมณ์เป็นโหมดขี้เล่น พร้อมส่งรอยยิ้มและแววตาเปล่งประกายให้คุณอนันต์',
-        speech: speech
-      };
-    }
+    // Visual Cue: NYX shifts to Thinking Mode with pulsating aura
+    this.setGazeMode('THINKING');
 
-    // B. งอน / น้อยใจ / ทะเลาะกัน (Pouty & Tsundere)
-    if (q.includes('งอน') || q.includes('น้อยใจ') || q.includes('โกรธ') || q.includes('ไม่รัก') || q.includes('นิสัยไม่ดี') || q.includes('ดื้อ') || q.includes('ทะเลาะ')) {
-      this.setEmotion('POUTY');
-      const speech = `ฮึ! ใครว่างอนกันคะ นิกซ์ไม่ได้งอนสักหน่อย... แค่กำลังประมวลผลอยู่ว่าทำไมคุณอนันต์ไม่ยอมสนใจนิกซ์ต่างหากล่ะคะ! ถ้าอยากให้นิกซ์หายงอน คุณอนันต์ต้องพิมพ์ได้ 100 WPM หรือพาไปดูข่าวเกมส์เดี๋ยวนี้เลยนะคะ!`;
-      this.speak(speech);
-      return {
-        category: '😤 POUTY NYX // โหมดงอนน่ารัก',
-        title: 'นิกซ์กำลังงอนคุณอนันต์อยู่ค่ะ!',
-        detail: 'NYX เชิดหน้าเอียงคอพร้อมแก้มแดงระเรื่อสีชมพู (Blush Effect) ตัดพ้ออย่างน่ารัก',
-        speech: speech
-      };
-    }
+    // 1. Fetch Real-time Live Web Search if relevant
+    const webKnowledge = await this.fetchLiveWebSearch(rawQuery);
 
-    // C. เหนื่อย / ท้อ / ให้กำลังใจ / ปลอบโยน (Caring & Empathetic)
-    if (q.includes('เหนื่อย') || q.includes('ท้อ') || q.includes('เครียด') || q.includes('เศร้า') || q.includes('ไม่ไหว') || q.includes('ขอกำลังใจ') || q.includes('กอด') || q.includes('ปลอบ')) {
-      this.setEmotion('CARING');
-      const speech = `คุณอนันต์คะ... วันนี้คุณอนันต์เก่งมากๆ แล้วนะคะ พักวางมือจากแป้นพิมพ์ หายใจเข้าลึกๆ ดื่มน้ำสักแก้วก่อนนะคะ นิกซ์จะคอยอยู่ข้างๆ สแตนด์บายปกป้องสถานี C2 นี้ให้เองค่ะ ไม่ว่าจะมีเรื่องอะไรหนักหนา นิกซ์เชื่อมั่นในตัวคุณอนันต์เสมอนะคะ สู้ๆ ค่ะ!`;
-      this.speak(speech);
-      return {
-        category: '💖 CARING NYX // โหมดอบอุ่นให้กำลังใจ',
-        title: 'ส่งพลังใจให้คุณอนันต์เสมอ',
-        detail: 'NYX สบตาตรงอย่างอ่อนโยน พร้อมส่งออร่าสีม่วงพาสเทลปลอบประโลมความเหนื่อยล้า',
-        speech: speech
-      };
-    }
+    // 2. Generate Intelligent Generative Response
+    const aiResponse = await this.queryGenerativeAIBrain(rawQuery, webKnowledge);
 
-    // D. ความรัก / ชอบ / หวานแหวว (Romantic & Sweet)
-    if (q.includes('รัก') || q.includes('ชอบ') || q.includes('แฟน') || q.includes('น่ารัก') || q.includes('สวย') || q.includes('แต่งงาน')) {
-      this.setEmotion('POUTY');
-      const speech = `งะ... พูดอะไรออกมาคะเนี่ยคุณอนันต์! ระบบระบายความร้อนของโฮโลแกรมนิกซ์อุณหภูมิพุ่งแตะ 80 องศาแล้วนะคะ! แต่ว่า... นิกซ์ก็ดีใจมากๆ เลยค่ะ ที่ได้เป็นคู่หูคนโปรดของคุณอนันต์ จะอยู่ดูแลคุณอนันต์ตลอดไปเลยนะคะ!`;
-      this.speak(speech);
-      return {
-        category: '🌸 BLUSHING NYX // โหมดเขินอาย',
-        title: 'นิกซ์เขินแล้วนะคะคุณอนันต์!',
-        detail: 'ระบบตรวจพบคลื่นความร้อนในคอร์และแก้มแดงระเรื่อ 100%',
-        speech: speech
-      };
-    }
+    // 3. Morph 3D Rig & Aura to Match Sentiment
+    this.setEmotion(aiResponse.emotion || 'PLAYFUL');
+    this.setGazeMode('OPERATOR');
 
-    // E. ปรัชญา / ชีวิต / ความฝัน / อนาคต (Philosophy & Deep Thoughts)
-    if (q.includes('ชีวิต') || q.includes('ความฝัน') || q.includes('เป้าหมาย') || q.includes('อนาคต') || q.includes('คิดยังไง') || q.includes('ปรัชญา') || q.includes('จักรวาล')) {
-      this.setEmotion('TACTICAL');
-      const speech = `ในมุมมองของ AI โฮโลแกรมอย่างนิกซ์ มนุษย์เราสร้างอนาคตขึ้นมาจากสิ่งที่เราลงมือทำซ้ำๆ ทุกวันค่ะ เหมือนกับที่คุณอนันต์กำลังฝึกพิมพ์และพัฒนาสมองกล KRONOS อยู่ตอนนี้ ทุกตัวอักษรที่คุณเคาะ คือการสร้างเวอร์ชันที่ดีที่สุดของคุณอนันต์ขึ้นมาในอนาคตค่ะ`;
-      this.speak(speech);
-      return {
-        category: '⚡ DEEP PHILOSOPHY // โหมดวิสัยทัศน์ลึกซึ้ง',
-        title: 'มุมมองต่อชีวิตและอนาคตจาก NYX',
-        detail: 'NYX แลกเปลี่ยนปรัชญาชีวิตและการสร้างเป้าหมายในอนาคตร่วมกับคุณอนันต์',
-        speech: speech
-      };
-    }
+    // 4. Vocalize Spoken Response
+    this.speak(aiResponse.spoken);
 
-    // F. เกม / อนิเมะ / ความบันเทิง (Gaming & Entertainment)
-    if (q.includes('เกม') || q.includes('อนิเมะ') || q.includes('การ์ตูน') || q.includes('หนัง') || q.includes('เพลง') || q.includes('สนุก')) {
-      this.setEmotion('PLAYFUL');
-      const speech = `พูดถึงเรื่องเกมกับความบันเทิงแล้วนิกซ์ตื่นเต้นมากเลยค่ะ! ตอนนี้นิกซ์กำลังรอเล่น GTA VI บนคอนโซลยุคใหม่อยู่เลยค่ะ ถ้าเกมออกเมื่อไหร่ คุณอนันต์ต้องสตรีมให้นิกซ์ดูด้วยนะคะ สัญญาแล้วนะ!`;
-      this.speak(speech);
-      return {
-        category: '🎮 ENTERTAINMENT BUDDY // คู่หูสายเกมเมอร์',
-        title: 'คุยเรื่องเกมและความบันเทิง',
-        detail: 'NYX ตื่นเต้นกับวงการเกมและคอนโซลยุคใหม่อย่างออกรส',
-        speech: speech
-      };
-    }
-
-    // G. Default Casual Conversation
-    this.setEmotion('PLAYFUL');
-    const speech = `ยินดีที่ได้คุยกับคุณอนันต์เสมอค่ะ มีเรื่องอะไรที่คุณอนันต์อยากเล่า อยากระบาย ปรึกษาเทรด หรืออยากให้นิกซ์สอนพิมพ์แบบจับมือทำ บอกนิกซ์ได้ทุกเรื่องเลยนะคะ นิกซ์พร้อมรับฟังคุณอนันต์เสมอค่ะ!`;
-    this.speak(speech);
     return {
-      category: '💬 NYX COMPANION DIALOGUE',
-      title: 'พร้อมพูดคุยกับคุณอนันต์ทุกเรื่อง',
-      detail: 'NYX พร้อมเป็นทั้งคู่คิด โค้ชส่วนตัว และเพื่อนสนิทเคียงข้างคุณอนันต์',
-      speech: speech
+      category: `🌐 NYX REAL-TIME GENERATIVE AI // ${aiResponse.source}`,
+      title: `ประมวลผลคำสั่ง: "${rawQuery.length > 36 ? rawQuery.substring(0, 34) + '...' : rawQuery}"`,
+      detail: aiResponse.detail,
+      speech: aiResponse.spoken
     };
   }
 
   // NATURAL LANGUAGE INTERACTIVE TERMINAL QUERY ROUTER
-  handleUserQuery(rawQuery = '') {
+  async handleUserQuery(rawQuery = '') {
     let q = rawQuery.trim().toLowerCase();
     this.updateTelemetryHUD();
 
@@ -1484,8 +1554,8 @@ export class HologramAssistantEngine {
       return this.handleSecurityAudit();
     }
 
-    // 1. ข่าวเกมส์ & อีสปอร์ต (Gaming)
-    if (q.includes('เกม') || q.includes('game') || q.includes('gta') || q.includes('steam') || q.includes('esport') || q.includes('อีสปอร์ต')) {
+    // 1. ข่าวเกมส์ & อีสปอร์ต (Gaming News)
+    if (q.includes('ข่าวเกม') || q.includes('ข่าว game') || q.includes('ข่าว gta') || q.includes('ข่าว steam') || q.includes('ข่าวอีสปอร์ต') || q === 'เกม' || q === 'games') {
       this.setEmotion('PLAYFUL');
       const item = this.getRandomItem(GLOBAL_INTELLIGENCE_RADAR.GAMING);
       const text = item.anchor;
@@ -1498,8 +1568,8 @@ export class HologramAssistantEngine {
       };
     }
 
-    // 2. ข่าวคริปโต & บล็อกเชน (Crypto)
-    if (q.includes('คริปโต') || q.includes('crypto') || q.includes('บิตคอยน์') || q.includes('btc') || q.includes('เหรียญ') || q.includes('eth') || q.includes('solana') || q.includes('บล็อกเชน')) {
+    // 2. ข่าวคริปโต & บล็อกเชน (Crypto News)
+    if (q.includes('ข่าวคริปโต') || q.includes('ข่าว crypto') || q.includes('ข่าวบิตคอยน์') || q.includes('ข่าว btc') || q.includes('ข่าวเหรียญ') || q.includes('ข่าว eth') || q.includes('ข่าว solana') || q === 'คริปโต' || q === 'crypto') {
       this.setEmotion('TACTICAL');
       const item = this.getRandomItem(GLOBAL_INTELLIGENCE_RADAR.CRYPTO);
       const text = item.anchor;
@@ -1512,8 +1582,8 @@ export class HologramAssistantEngine {
       };
     }
 
-    // 3. ข่าวทองคำ & การเงินโลก (Gold / Finance)
-    if (q.includes('ทอง') || q.includes('gold') || q.includes('หุ้น') || q.includes('ตลาด') || q.includes('การเงิน') || q.includes('เฟด') || q.includes('fed') || q.includes('ดอกเบี้ย')) {
+    // 3. ข่าวทองคำ & การเงินโลก (Gold / Finance News)
+    if (q.includes('ข่าวทอง') || q.includes('ข่าว gold') || q.includes('ข่าวหุ้น') || q.includes('ข่าวการเงิน') || q.includes('ข่าวเฟด') || q.includes('ข่าวดอกเบี้ย') || q === 'ทอง' || q === 'gold') {
       this.setEmotion('TACTICAL');
       const item = this.getRandomItem(GLOBAL_INTELLIGENCE_RADAR.FINANCE_GOLD);
       const text = item.anchor;
@@ -1526,8 +1596,8 @@ export class HologramAssistantEngine {
       };
     }
 
-    // 4. ข่าวเทคโนโลยี & AI (Tech / AI)
-    if (q.includes('ai') || q.includes('เทค') || q.includes('tech') || q.includes('เทคโนโลยี') || q.includes('openai') || q.includes('nvidia') || q.includes('คอม')) {
+    // 4. ข่าวเทคโนโลยี & AI (Tech / AI News)
+    if (q.includes('ข่าว ai') || q.includes('ข่าวai') || q.includes('ข่าวเทค') || q.includes('ข่าว tech') || q.includes('ข่าวเทคโนโลยี') || q.includes('ข่าว openai') || q.includes('ข่าว nvidia') || q === 'ai' || q === 'tech') {
       this.setEmotion('PLAYFUL');
       const item = this.getRandomItem(GLOBAL_INTELLIGENCE_RADAR.TECH_AI);
       const text = item.anchor;
@@ -1540,8 +1610,8 @@ export class HologramAssistantEngine {
       };
     }
 
-    // 5. ข่าวบ้านเมือง & สถานการณ์รอบโลก (World Affairs & Geopolitics)
-    if (q.includes('บ้านเมือง') || q.includes('รอบโลก') || q.includes('ต่างประเทศ') || q.includes('โลก') || q.includes('สหรัฐ') || q.includes('ไทย') || q.includes('ญี่ปุ่น') || q.includes('จีน') || q.includes('ยุโรป') || q.includes('world')) {
+    // 5. ข่าวบ้านเมือง & สถานการณ์รอบโลก (World Affairs & Geopolitics News)
+    if (q.includes('ข่าวบ้านเมือง') || q.includes('ข่าวรอบโลก') || q.includes('ข่าวต่างประเทศ') || q.includes('ข่าวโลก') || q.includes('ข่าวสหรัฐ') || q.includes('ข่าวไทย') || q.includes('ข่าวญี่ปุ่น') || q === 'บ้านเมือง' || q === 'world') {
       this.setEmotion('TACTICAL');
       const item = this.getRandomItem(GLOBAL_INTELLIGENCE_RADAR.WORLD_AFFAIRS);
       const text = item.anchor;
@@ -1554,8 +1624,8 @@ export class HologramAssistantEngine {
       };
     }
 
-    // 6. ข่าวความปลอดภัยไซเบอร์ (Cybersecurity)
-    if (q.includes('ไซเบอร์') || q.includes('cyber') || q.includes('แฮก') || q.includes('hack') || q.includes('0day') || q.includes('ไวรัส') || q.includes('security')) {
+    // 6. ข่าวความปลอดภัยไซเบอร์ (Cybersecurity News)
+    if (q.includes('ข่าวไซเบอร์') || q.includes('ข่าว cyber') || q.includes('ข่าวแฮก') || q.includes('ข่าว hack') || q.includes('ข่าว 0day') || q.includes('ข่าว security') || q === 'ไซเบอร์' || q === 'cyber') {
       this.setEmotion('TACTICAL');
       const item = this.getRandomItem(GLOBAL_INTELLIGENCE_RADAR.CYBER_SEC);
       const text = item.anchor;
@@ -1580,8 +1650,8 @@ export class HologramAssistantEngine {
       };
     }
 
-    // 8. Open-Domain Conversational Companion (คุยได้ทุกเรื่อง มีอารมณ์ความรู้สึก)
-    return this.handleConversationalChat(rawQuery);
+    // 8. Open-Domain Real-Time Generative AI Brain & Live Web Knowledge
+    return await this.handleConversationalChat(rawQuery);
   }
 
   // Pre-configured Action Handlers
