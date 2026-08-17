@@ -3047,24 +3047,25 @@ OPEN DESCRIPTORS: 7 Active | LEAKS: 0
         this.runHashCracker(args[0] || 'e99a18c428cb38d5f260853678922e03');
         return;
 
-      // NYX // Female Hologram AI Copilot Commands
+      // NYX // Female Hologram AI Copilot Commands (Natural Language Queries & Speech)
       case 'nyx':
       case 'lumina':
       case 'ava':
       case 'assistant':
       case 'copilot':
-        if (args[0] === 'gym') {
-          if (this.hologramAssistant) this.hologramAssistant.reportAIGym();
-          output = `[+] NYX: Transmitting KRONOS AI Gym Neural Telemetry Report...`;
-        } else if (args[0] === 'news' || args[0] === 'world') {
-          if (this.hologramAssistant) this.hologramAssistant.reportWorldNews();
-          output = `[+] NYX: Broadcasting Global Intelligence Wire...`;
-        } else if (args[0] === 'voice' || args[0] === 'mute' || args[0] === 'toggle') {
-          if (this.hologramAssistant) this.hologramAssistant.toggleVoice();
-          output = `[+] NYX Voice Synthesizer: ${this.hologramAssistant?.isVoiceEnabled ? 'ONLINE [VOICE ON]' : 'MUTED'}`;
+      case 'ask':
+        if (this.hologramAssistant) {
+          const rawQuery = args.join(' ');
+          const result = this.hologramAssistant.handleUserQuery(rawQuery);
+          output = `
+[+] NYX NEURAL COPILOT // ${result.category}
+------------------------------------------------------------------
+📌 ${result.title}
+💬 "${result.speech}"
+------------------------------------------------------------------
+* รายละเอียด: ${result.detail}`;
         } else {
-          if (this.hologramAssistant) this.hologramAssistant.briefMe();
-          output = `[+] NYX: Delivering Executive Situation Report...`;
+          output = `[-] NYX Hologram Copilot Engine is offline.`;
         }
         break;
 

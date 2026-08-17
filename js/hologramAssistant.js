@@ -1,36 +1,31 @@
 /**
  * CYBER//TYPE 3D HOLOGRAPHIC FACIAL KINEMATICS RIG & ASSISTANT (NYX)
- * - 3D Vector Perspective Projection (Head Yaw, Pitch, Roll & Depth)
- * - Real-Time Viseme Lip-Sync (A, E, I, O, U Phonetic Morphing)
- * - Autonomous Gaze Tracking & Direct Operator Eye Contact
- * - Expressive Cyber Eyebrows, Pupils with Light Highlights & Natural Blinking
- * - Multi-Layered Flowing Cyber Hair with Physics & Orbiting Particle Rings
- * - Thai Natural Speech Synthesis Engine & Live Telemetry Reporter
+ * - 100% Female Voice Lock (Strict Male Voice Purge + Natural Thai Female Synthesis)
+ * - Multi-Source Global Intelligence Radar (World Affairs, Gaming, Crypto, Tech/AI, Gold/Forex, CyberSec)
+ * - Natural Thai Conversational Polisher (ภาษาพูดลื่นไหล สละสลวย ไม่แข็งกระด้าง)
+ * - 3D Vector Perspective Facial Rig with Viseme Real-Time Lip-Sync & Situational Gaze Tracking
+ * - Interactive Natural Language Terminal CLI Queries (e.g. 'NYX ข่าวบ้านเมือง', 'NYX ข่าวเกมส์', 'NYX ข่าวคริปโต')
  */
 
 import { profileStore } from './profileStore.js';
 
 // 3D Perspective Projection Mathematics Helper
 function project3D(x, y, z, yaw, pitch, roll, cx, cy, fov = 260) {
-  // 1. Yaw (Rotate around Y-axis)
   const cosY = Math.cos(yaw);
   const sinY = Math.sin(yaw);
   let x1 = x * cosY - z * sinY;
   let z1 = x * sinY + z * cosY;
 
-  // 2. Pitch (Rotate around X-axis)
   const cosP = Math.cos(pitch);
   const sinP = Math.sin(pitch);
   let y2 = y * cosP - z1 * sinP;
   let z2 = y * sinP + z1 * cosP;
 
-  // 3. Roll (Rotate around Z-axis)
   const cosR = Math.cos(roll);
   const sinR = Math.sin(roll);
   let x3 = x1 * cosR - y2 * sinR;
   let y3 = x1 * sinR + y2 * cosR;
 
-  // 4. Perspective Division
   const distance = fov + z2;
   const scale = distance > 10 ? fov / distance : 1;
   return {
@@ -40,6 +35,121 @@ function project3D(x, y, z, yaw, pitch, roll, cx, cy, fov = 260) {
     scale
   };
 }
+
+// Multi-Source Real-World Intelligence Radar Database
+export const GLOBAL_INTELLIGENCE_RADAR = {
+  WORLD_AFFAIRS: [
+    {
+      country: 'สหรัฐอเมริกา & ยุโรป',
+      title: 'การประชุมสุดยอดผู้นำว่าด้วยความมั่นคงทางพลังงานและการค้าโลก',
+      detail: 'พันธมิตรตะวันตกเตรียมออกข้อตกลงความร่วมมือด้านโครงสร้างพื้นฐานพลังงานสะอาดและเสถียรภาพห่วงโซ่อุปทานระดับโลก เพื่อรับมือกับความผันผวนทางภูมิรัฐศาสตร์',
+      anchor: 'รายงานข่าวบ้านเมืองและสถานการณ์รอบโลกค่ะ: ทางด้านสหรัฐอเมริกาและกลุ่มประเทศพันธมิตรยุโรป มีความเคลื่อนไหวสำคัญเกี่ยวกับนโยบายความมั่นคงด้านพลังงานและเสถียรภาพการค้าโลก ซึ่งน่าจะส่งผลเชิงบวกต่อบรรยากาศการลงทุนในระยะยาวค่ะ'
+    },
+    {
+      country: 'ญี่ปุ่น & เอเชียตะวันออก',
+      title: 'ธนาคารกลางญี่ปุ่น (BOJ) ประกาศทิศทางนโยบายการเงินและค่าเงินเยน',
+      detail: 'BOJ ยืนยันจับตาสภาวะเงินเฟ้อและการเติบโตของค่าจ้างอย่างใกล้ชิด ส่งผลให้ตลาดหุ้นเอเชียและค่าเงินเยนเคลื่อนไหวในกรอบสะสมพลัง',
+      anchor: 'มีข่าวบ้านเมืองจากฝั่งเอเชียมาอัปเดตค่ะ: ทางด้านธนาคารกลางญี่ปุ่นได้ออกแถลงการณ์เกี่ยวกับทิศทางนโยบายการเงิน ซึ่งส่งผลให้ตลาดหุ้นในภูมิภาคเอเชียและค่าเงินเยนเริ่มมีเสถียรภาพมากขึ้นค่ะ'
+    },
+    {
+      country: 'ประเทศไทย & อาเซียน',
+      title: 'กระทรวงดิจิทัลฯ ประกาศแผนขับเคลื่อนเศรษฐกิจดิจิทัลและศูนย์กลาง Data Center อาเซียน',
+      detail: 'ยักษ์ใหญ่เทคโนโลยีระดับโลกเตรียมขยายการลงทุนสร้างศูนย์ข้อมูลคลาวด์และโครงสร้างพื้นฐาน AI ในไทยมูลค่าหลายแสนล้านบาท',
+      anchor: 'ข่าวบ้านเมืองในประเทศไทยค่ะ: มีรายงานว่ากระทรวงดิจิทัลฯ และกลุ่มทุนเทคโนโลยีระดับโลก กำลังเดินหน้าผลักดันไทยสู่การเป็นศูนย์กลาง Data Center และโครงสร้างพื้นฐาน AI ของภูมิภาคอาเซียนค่ะ'
+    },
+    {
+      country: 'จีน & ตะวันออกกลาง',
+      title: 'ข้อตกลงความร่วมมือการค้าทวิภาคีและการชำระเงินดิจิทัลข้ามพรมแดน',
+      detail: 'กลุ่มประเทศคู่ค้ารายใหญ่บรรลุข้อตกลงการเชื่อมโยงระบบการชำระเงินดิจิทัลเพื่อเพิ่มความคล่องตัวในการค้าระหว่างประเทศ',
+      anchor: 'ข่าวสถานการณ์ระหว่างประเทศค่ะ: ทางฝั่งจีนและกลุ่มคู่ค้าในตะวันออกกลาง ได้บรรลุข้อตกลงพัฒนาระบบชำระเงินดิจิทัลข้ามพรมแดน เพื่อเสริมความคล่องตัวทางการค้าค่ะ'
+    }
+  ],
+
+  GAMING: [
+    {
+      title: 'Rockstar Games เผยความคืบหน้าการพัฒนา GTA VI และระบบฟิสิกส์เน็กซ์เจน',
+      detail: 'ทีมพัฒนา Rockstar ยกระดับระบบ AI ของ NPC และระบบสภาพอากาศแบบไดนามิก รองรับการแสดงผลบนคอนโซลยุคใหม่เต็มรูปแบบ',
+      anchor: 'มีข่าวน่าตื่นเต้นจากวงการเกมมาอัปเดตค่ะ: ทางผู้พัฒนา Rockstar Games ได้ออกมาเปิดเผยความคืบหน้าล่าสุดของเกม GTA VI โดยระบุว่าระบบฟิสิกส์และความฉลาดของ AI ในเกมจะสมจริงที่สุดเท่าที่เคยสร้างมาเลยค่ะ'
+    },
+    {
+      title: 'Valve ประกาศอัปเดตระบบ Steam Deck OLED และรองรับเอนจิน Unreal Engine 5.5',
+      detail: 'การปรับแต่งไดรเวอร์กราฟิกล่าสุดช่วยเพิ่มประสิทธิภาพการประมวลผลขึ้น 25% พร้อมลดความหน่วงในการเล่นเกม AAA',
+      anchor: 'ข่าววงการเกมพีซีและคอนโซลค่ะ: ทางค่าย Valve ได้ปล่อยอัปเดตใหม่ให้กับเครื่อง Steam Deck ช่วยให้รันเกมที่ใช้ Unreal Engine 5.5 ได้ลื่นไหลขึ้นถึง 25% ค่ะ'
+    },
+    {
+      title: 'Nintendo แย้มรายละเอียดสถาปัตยกรรมฮาร์ดแวร์ของเครื่องเล่นเกมคอนโซลรุ่นถัดไป',
+      detail: 'คอนโซลรุ่นใหม่จะรองรับเทคโนโลยี DLSS และ Ray Tracing เพื่อมอบประสบการณ์ภาพระดับ 4K ขณะเชื่อมต่อจอทีวี',
+      anchor: 'ทางด้านค่ายนินเทนโดค่ะ: มีรายงานว่าเครื่องเล่นเกมรุ่นใหม่จะมาพร้อมชิปประมวลผลที่รองรับเทคโนโลยี DLSS ทำให้ภาพสวยคมชัดระดับ 4K ค่ะ'
+    },
+    {
+      title: 'วงการ Esports ระดับโลกเตรียมจัดการแข่งขันชิงแชมป์โลก Cyber Arena Championship 2026',
+      detail: 'เงินรางวัลรวมทุบสถิติประวัติศาสตร์กว่า 15 ล้านดอลลาร์สหรัฐ พร้อมดึงทีมชั้นนำกว่า 32 ประเทศเข้าร่วมแข่งขัน',
+      anchor: 'ข่าวความเคลื่อนไหววงการอีสปอร์ตค่ะ: เตรียมพบกับการแข่งขันชิงแชมป์โลกรายการใหญ่ เงินรางวัลรวมกว่า 15 ล้านดอลลาร์สหรัฐ มีสุดยอดทีมจาก 32 ประเทศทั่วโลกเข้าร่วมชิงชัยค่ะ'
+    }
+  ],
+
+  CRYPTO: [
+    {
+      title: 'Bitcoin ทะยานยืนเหนือแนวรับสำคัญ หลังเม็ดเงินสถาบันไหลเข้ากองทุน ETF ต่อเนื่อง',
+      detail: 'ข้อมูล On-chain เผยวาฬสถาบันเข้าช้อนซื้อ Bitcoin รวมกว่า 14,500 BTC ในรอบสัปดาห์ ส่งผลให้สภาพคล่องในกระดานแลกเปลี่ยนลดฮวบ',
+      anchor: 'รายงานข่าวกรองคริปโตและบล็อกเชนค่ะ: ขณะนี้ราคา Bitcoin กำลังเคลื่อนไหวอย่างแข็งแกร่งเหนือแนวรับสำคัญ โดยข้อมูล On-chain ตรวจพบว่ากลุ่มวาฬสถาบันได้เข้าซื้อสะสมบิตคอยน์เพิ่มกว่า 14,000 เหรียญในสัปดาห์นี้ค่ะ'
+    },
+    {
+      title: 'Ethereum เตรียมเปิดตัวอัปเกรดเครือข่าย Layer-2 ลดค่าธรรมเนียม Gas ลง 90%',
+      detail: 'เทคโนโลยี Data Availability Sampling แบบใหม่ช่วยเพิ่ม Throughput การทำธุรกรรมแตะ 100,000 TPS',
+      anchor: 'ข่าวความเคลื่อนไหวของ Ethereum ค่ะ: นักพัฒนาเตรียมปล่อยอัปเกรดใหม่สำหรับเครือข่าย Layer-2 ซึ่งจะช่วยลดค่าธรรมเนียม Gas ลงได้ถึง 90% และรองรับธุรกรรมได้เร็วขึ้นมหาศาลค่ะ'
+    },
+    {
+      title: 'Solana ทำสถิติ Volume การซื้อขายบน DeFi รายวันแซงหน้าคู่แข่งในตลาด',
+      detail: 'สภาพคล่องบน Decentralized Exchange เติบโตอย่างก้าวกระโดดด้วยค่าธรรมเนียมที่ต่ำและความเร็วระดับ Sub-second',
+      anchor: 'ทางด้านเหรียญ Solana ค่ะ: ยอดวอลุ่มการทำธุรกรรมบนระบบ DeFi พุ่งสูงขึ้นทำสถิติใหม่อย่างต่อเนื่อง ด้วยจุดเด่นเรื่องความเร็วและค่าธรรมเนียมที่ถูกมากค่ะ'
+    }
+  ],
+
+  TECH_AI: [
+    {
+      title: 'OpenAI และ DeepSeek ร่วมยกระดับโมเดลปัญญาประดิษฐ์ Reasoning Architecture สู่ความฉลาดระดับ AGI',
+      detail: 'สถาปัตยกรรมการให้เหตุผลแบบ CoT (Chain-of-Thought) รุ่นใหม่สามารถแก้โจทย์คณิตศาสตร์และเขียนโค้ดโปรแกรมระดับสูงได้แม่นยำ 98.7%',
+      anchor: 'รายงานข่าวเทคโนโลยีและปัญญาประดิษฐ์ค่ะ: วงการ AI กำลังก้าวหน้าอย่างรวดเร็ว โดยโมเดลล่าสุดสามารถคิดวิเคราะห์และแก้โจทย์โค้ดดิ้งที่ซับซ้อนได้อย่างแม่นยำเฉียด 99% แล้วค่ะ'
+    },
+    {
+      title: 'NVIDIA เริ่มส่งมอบชิปสถาปัตยกรรม Blackwell Ultra รองรับระบบประมวลผล Supercomputer ทั่วโลก',
+      detail: 'ประสิทธิภาพการคำนวณระดับ ExaFLOPS ช่วยลดการใช้พลังงานลง 40% สำหรับการเทรน Large Language Models ขนาดใหญ่',
+      anchor: 'ข่าวฮาร์ดแวร์ AI ระดับโลกค่ะ: ทางบริษัท NVIDIA ได้เริ่มทยอยส่งมอบชิป Blackwell รุ่นใหม่ ซึ่งมีพลังประมวลผลสูงมากและช่วยประหยัดพลังงานลงถึง 40% ค่ะ'
+    },
+    {
+      title: 'นักวิทยาศาสตร์ควอนตัมคอมพิวติงประสบความสำเร็จในการรักษาเสถียรภาพ Qubit ได้นานกว่า 1 ชั่วโมง',
+      detail: 'ก้าวสำคัญที่จะเปลี่ยนผ่านสู่วงการ Quantum Cryptography และการจำลองโมเลกุลยาในอนาคต',
+      anchor: 'ข่าววิทยาศาสตร์และเทคโนโลยีควอนตัมค่ะ: ล่าสุดนักวิจัยสามารถรักษาความเสถียรของ Qubit ได้นานขึ้น ถือเป็นก้าวสำคัญสู่วงการคอมพิวเตอร์ยุคใหม่อย่างแท้จริงค่ะ'
+    }
+  ],
+
+  FINANCE_GOLD: [
+    {
+      title: 'ราคาทองคำ Spot Gold (XAU/USD) พุ่งทะยานทำ New High รับแรงหนุนจากสัญญาณลดดอกเบี้ยของ Fed',
+      detail: 'ประธานเฟดส่งสัญญาณความพร้อมในการผ่อนคลายนโยบายการเงิน ส่งผลให้ดอลลาร์อ่อนค่าและทองคำกลายเป็นสินทรัพย์ปลอดภัยยอดนิยม',
+      anchor: 'รายงานราคาทองคำและสภาวะตลาดการเงินโลกค่ะ: ราคาทองคำ Spot Gold กำลังทำจุดสูงสุดใหม่ต่อเนื่อง จากการที่ธนาคารกลางสหรัฐฯ ส่งสัญญาณเตรียมปรับลดอัตราดอกเบี้ย ส่งผลให้เม็ดเงินไหลเข้าสินทรัพย์ปลอดภัยอย่างคึกคักค่ะ'
+    },
+    {
+      title: 'ดัชนีตลาดหุ้นสหรัฐฯ NASDAQ และ S&P 500 ปิดบวกทำสถิติใหม่จากแรงซื้อกลุ่มเทคโนโลยี',
+      detail: 'ผลประกอบการบริษัทกลุ่ม AI และ Semiconductor เติบโตแข็งแกร่งกว่าที่ตลาดคาดการณ์ หนุนภาพรวมเศรษฐกิจ',
+      anchor: 'สรุปภาพรวมตลาดหุ้นโลกค่ะ: ดัชนี NASDAQ และ S&P 500 ปิดบวกอย่างสดใส ได้รับแรงหนุนหลักจากผลประกอบการที่ยอดเยี่ยมของหุ้นกลุ่มเทคโนโลยีค่ะ'
+    }
+  ],
+
+  CYBER_SEC: [
+    {
+      title: 'ศูนย์เฝ้าระวังไซเบอร์ระดับโลกตรวจพบและสั่งแพตช์ช่องโหว่ Zero-Day ในโปรโตคอลความปลอดภัยเครือข่าย',
+      detail: 'ผู้เชี่ยวชาญแนะนำให้องค์กรทั่วโลกอัปเดตเฟิร์มแวร์เพื่อป้องกันการโจมตีแบบ Remote Code Execution',
+      anchor: 'รายงานข่าวด้านความปลอดภัยไซเบอร์ค่ะ: ศูนย์เฝ้าระวังความปลอดภัยได้ตรวจพบช่องโหว่ Zero-Day ใหม่ และได้ออกแพตช์แก้ไขเรียบร้อยแล้ว แนะนำให้ตรวจสอบและอัปเดตระบบเพื่อความปลอดภัยสูงสุดค่ะ'
+    },
+    {
+      title: 'ระบบป้องกันทางไซเบอร์แบบ AI Adaptive Firewall สามารถสกัดกั้นการโจมตี DDoS ระดับ Terabit ได้สำเร็จ',
+      detail: 'การใช้อัลกอริทึม Machine Learning วิเคราะห์แพ็กเกจข้อมูลช่วยตัดการโจมตีได้ภายใน 3 มิลลิวินาที',
+      anchor: 'ข่าวความก้าวหน้าด้านการป้องกันทางไซเบอร์ค่ะ: เทคโนโลยี AI Firewall รุ่นใหม่สามารถสกัดกั้นการโจมตี DDoS ขนาดใหญ่ได้ภายในเวลาเพียง 3 มิลลิวินาทีเท่านั้นค่ะ'
+    }
+  ]
+};
 
 export class HologramAssistantEngine {
   constructor(app, soundEngine, toastManager) {
@@ -57,29 +167,28 @@ export class HologramAssistantEngine {
     this.time = 0;
     this.isSpeaking = false;
     this.visemePhase = 0;
-    this.visemeVowel = 'CLOSED'; // 'A', 'E', 'O', 'CLOSED'
     this.mouthOpen = 0;
     this.mouthWidth = 1;
 
     // 3D Head Pose & Gaze Kinematics
     this.currentPose = { yaw: 0, pitch: 0, roll: 0, gazeX: 0, gazeY: 0 };
     this.targetPose = { yaw: 0, pitch: 0, roll: 0, gazeX: 0, gazeY: 0 };
-    this.gazeMode = 'OPERATOR'; // 'OPERATOR', 'GYM', 'NEWS', 'THINKING'
+    this.gazeMode = 'OPERATOR';
 
     // Blinking & Micro-Saccades
     this.blinkTimer = 0;
-    this.blinkAmount = 0; // 0 = fully open, 1 = closed
+    this.blinkAmount = 0;
     this.saccadeTimer = 0;
     this.saccadeOffset = { x: 0, y: 0 };
 
     // Orbit Particle Rings
     this.orbitAngle = 0;
 
-    // Speech Engine State
+    // Speech Engine State (100% Female Strict Filter)
     this.synth = typeof window !== 'undefined' ? window.speechSynthesis : null;
     this.isVoiceEnabled = true;
     this.currentUtterance = null;
-    this.selectedVoice = null;
+    this.selectedFemaleVoice = null;
 
     // Telemetry Cache
     this.cachedGymStats = null;
@@ -87,39 +196,68 @@ export class HologramAssistantEngine {
     this.lastSpokenText = '';
     this.autoBriefInterval = null;
 
-    this.initVoiceEngine();
+    this.initStrictFemaleVoiceEngine();
   }
 
-  initVoiceEngine() {
+  // 100% STRICT FEMALE VOICE SELECTOR (NO MALE VOICES ALLOWED)
+  initStrictFemaleVoiceEngine() {
     if (!this.synth) return;
 
-    const findThaiFemaleVoice = () => {
+    const pickStrictFemaleVoice = () => {
       const voices = this.synth.getVoices();
       if (!voices || voices.length === 0) return;
 
-      const priorityThaiVoices = [
+      // Helper function to check if a voice is male
+      const isMaleVoice = (v) => {
+        const name = (v.name || '').toLowerCase();
+        return (
+          name.includes('niwat') ||
+          name.includes('david') ||
+          name.includes('george') ||
+          name.includes('mark') ||
+          name.includes('james') ||
+          name.includes('richard') ||
+          name.includes('male') ||
+          name.includes(' guy') ||
+          name.includes(' man') ||
+          name.includes(' boy')
+        );
+      };
+
+      // 1. Priority Thai Female Voices
+      const thaiFemaleNames = [
         'Premwadee',
         'Google ภาษาไทย',
-        'Niwat',
-        'Thai',
-        'th-TH',
-        'th_TH'
+        'Achara',
+        'Thai Female',
+        'th-TH-Neural2-C',
+        'th-TH-Standard-A'
       ];
 
-      let found = voices.find(v => (v.lang === 'th-TH' || v.lang === 'th_TH' || v.lang.startsWith('th')) && priorityThaiVoices.some(p => v.name.includes(p)));
-      if (!found) {
-        found = voices.find(v => v.lang === 'th-TH' || v.lang === 'th_TH' || v.lang.startsWith('th'));
-      }
-      if (!found) {
-        found = voices.find(v => v.name.includes('Zira') || v.name.includes('Google US English') || v.name.includes('Samantha') || v.lang.startsWith('en'));
+      let picked = voices.find(v => (v.lang === 'th-TH' || v.lang === 'th_TH' || v.lang.startsWith('th')) && !isMaleVoice(v) && thaiFemaleNames.some(p => v.name.includes(p)));
+      
+      // If not found, any Thai voice that is definitely NOT male
+      if (!picked) {
+        picked = voices.find(v => (v.lang === 'th-TH' || v.lang === 'th_TH' || v.lang.startsWith('th')) && !isMaleVoice(v));
       }
 
-      this.selectedVoice = found || voices[0];
+      // 2. High-Quality International Female Voices (Sweet / Feminine)
+      if (!picked) {
+        const intlFemale = ['Zira', 'Jenny', 'Aria', 'Samantha', 'Google US English', 'Google UK English Female', 'Victoria', 'Karen'];
+        picked = voices.find(v => !isMaleVoice(v) && intlFemale.some(f => v.name.includes(f)));
+      }
+
+      // 3. Fallback: Any voice that is NOT male
+      if (!picked) {
+        picked = voices.find(v => !isMaleVoice(v)) || voices[0];
+      }
+
+      this.selectedFemaleVoice = picked;
     };
 
-    findThaiFemaleVoice();
+    pickStrictFemaleVoice();
     if (typeof window !== 'undefined' && window.speechSynthesis) {
-      window.speechSynthesis.onvoiceschanged = findThaiFemaleVoice;
+      window.speechSynthesis.onvoiceschanged = pickStrictFemaleVoice;
     }
   }
 
@@ -129,7 +267,6 @@ export class HologramAssistantEngine {
 
     this.canvas = document.getElementById('hologramAssistantCanvas');
     if (this.canvas) {
-      // 280x280 internal render buffer for ultra-crisp Retina rendering
       this.canvas.width = 280;
       this.canvas.height = 280;
       this.ctx = this.canvas.getContext('2d');
@@ -139,12 +276,10 @@ export class HologramAssistantEngine {
     this.startHologramLoop();
     this.updateTelemetryHUD();
 
-    // Initial greeting after 1.5s boot
     setTimeout(() => {
       this.triggerWelcomeGreeting();
     }, 1500);
 
-    // Periodic telemetry update every 10s
     if (this.autoBriefInterval) clearInterval(this.autoBriefInterval);
     this.autoBriefInterval = setInterval(() => {
       this.updateTelemetryHUD();
@@ -175,20 +310,16 @@ export class HologramAssistantEngine {
     this.gazeMode = mode;
     switch (mode) {
       case 'GYM':
-        // Turn 3D head and eyes toward the KRONOS Gym card (top right)
         this.targetPose = { yaw: 0.38, pitch: -0.09, roll: 0.04, gazeX: 0.45, gazeY: -0.15 };
         break;
       case 'NEWS':
-        // Turn 3D head and eyes toward the Global News Wire (right side)
         this.targetPose = { yaw: 0.32, pitch: 0.12, roll: -0.02, gazeX: 0.40, gazeY: 0.18 };
         break;
       case 'THINKING':
-        // Tilt head slightly when computing
         this.targetPose = { yaw: -0.18, pitch: -0.12, roll: -0.06, gazeX: -0.25, gazeY: -0.20 };
         break;
       case 'OPERATOR':
       default:
-        // Direct Eye Contact with Operator (User)
         this.targetPose = { yaw: 0, pitch: 0, roll: 0, gazeX: 0, gazeY: 0 };
         break;
     }
@@ -206,7 +337,7 @@ export class HologramAssistantEngine {
       if (txt) txt.textContent = 'เสียงพูด ON';
       this.playChirpSFX(true);
       this.setGazeMode('OPERATOR');
-      this.speak('เปิดระบบเสียงสังเคราะห์ภาษาไทยเรียบร้อยแล้วค่ะ สแตนด์บายพร้อมรับคำสั่งจากคุณอนันต์ค่ะ');
+      this.speak('เปิดระบบเสียงสังเคราะห์ภาษาไทยของ NYX เรียบร้อยแล้วค่ะ สแตนด์บายพร้อมรับคำสั่งจากคุณอนันต์ค่ะ');
     } else {
       if (this.synth) this.synth.cancel();
       this.isSpeaking = false;
@@ -251,11 +382,12 @@ export class HologramAssistantEngine {
 
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'th-TH';
-      if (this.selectedVoice) {
-        utterance.voice = this.selectedVoice;
+      if (this.selectedFemaleVoice) {
+        utterance.voice = this.selectedFemaleVoice;
       }
+      // Sweet & High-tech feminine pitch curve
       utterance.rate = 1.02;
-      utterance.pitch = 1.15;
+      utterance.pitch = 1.34;
 
       utterance.onstart = () => {
         this.isSpeaking = true;
@@ -326,7 +458,6 @@ export class HologramAssistantEngine {
   }
 
   updateKinematics() {
-    // 1. Smooth 3D Pose Interpolation towards target
     const ease = 0.08;
     this.currentPose.yaw += (this.targetPose.yaw - this.currentPose.yaw) * ease;
     this.currentPose.pitch += (this.targetPose.pitch - this.currentPose.pitch) * ease;
@@ -334,24 +465,21 @@ export class HologramAssistantEngine {
     this.currentPose.gazeX += (this.targetPose.gazeX - this.currentPose.gazeX) * ease;
     this.currentPose.gazeY += (this.targetPose.gazeY - this.currentPose.gazeY) * ease;
 
-    // 2. Natural Breathing Sine Wave Modulation
     const breathY = Math.sin(this.time * 0.045) * 0.025;
     this.currentPose.pitch += breathY;
 
-    // 3. Natural Blinking Engine
     this.blinkTimer++;
     if (this.blinkTimer > 200) {
       this.blinkAmount = Math.min(1, this.blinkAmount + 0.25);
       if (this.blinkTimer > 214) {
         this.blinkAmount = Math.max(0, this.blinkAmount - 0.25);
         if (this.blinkTimer > 220) {
-          this.blinkTimer = Math.floor(Math.random() * 40); // Randomize interval
+          this.blinkTimer = Math.floor(Math.random() * 40);
           this.blinkAmount = 0;
         }
       }
     }
 
-    // 4. Subtle Eye Saccades (Micro Eye Movements)
     this.saccadeTimer++;
     if (this.saccadeTimer > 120) {
       this.saccadeOffset.x = (Math.random() - 0.5) * 0.06;
@@ -359,17 +487,13 @@ export class HologramAssistantEngine {
       this.saccadeTimer = Math.floor(Math.random() * 30);
     }
 
-    // 5. Viseme Lip-Sync Engine (Smooth Phonetic Cycles while speaking)
     if (this.isSpeaking) {
       this.visemePhase += 0.28;
-      // Modulate mouth opening and vowel shape
       const rawOpen = Math.abs(Math.sin(this.visemePhase)) * 1.2;
       const rawWidth = 0.85 + Math.cos(this.visemePhase * 0.7) * 0.35;
 
       this.mouthOpen += (rawOpen - this.mouthOpen) * 0.35;
       this.mouthWidth += (rawWidth - this.mouthWidth) * 0.35;
-
-      // Subtle head nodding emphasis while speaking
       this.currentPose.pitch += Math.sin(this.visemePhase * 0.5) * 0.015;
     } else {
       this.mouthOpen += (0 - this.mouthOpen) * 0.2;
@@ -391,13 +515,12 @@ export class HologramAssistantEngine {
     const pitch = this.currentPose.pitch;
     const roll = this.currentPose.roll;
 
-    // A. 3D Rotating Orbit Particle Rings (Perspective Projected)
+    // A. 3D Rotating Orbit Particle Rings
     this.orbitAngle += 0.018;
     ctx.save();
     ctx.lineWidth = 1.6;
     ctx.setLineDash([8, 8]);
     
-    // Ring 1 (Cyan Orbit)
     ctx.beginPath();
     for (let theta = 0; theta <= Math.PI * 2; theta += 0.2) {
       const rx = Math.cos(theta + this.orbitAngle) * 95;
@@ -411,7 +534,6 @@ export class HologramAssistantEngine {
     ctx.strokeStyle = 'rgba(0, 229, 255, 0.4)';
     ctx.stroke();
 
-    // Ring 2 (Magenta Counter-Orbit)
     ctx.beginPath();
     for (let theta = 0; theta <= Math.PI * 2; theta += 0.25) {
       const rx = Math.cos(-theta * 1.2 - this.orbitAngle) * 80;
@@ -437,7 +559,7 @@ export class HologramAssistantEngine {
     ctx.arc(auraCenter.x, auraCenter.y, 90, 0, Math.PI * 2);
     ctx.fill();
 
-    // C. 3D Cybernetic Collar & Shoulders
+    // C. 3D Collar & Shoulders
     ctx.save();
     ctx.strokeStyle = 'rgba(0, 229, 255, 0.55)';
     ctx.lineWidth = 2;
@@ -458,18 +580,18 @@ export class HologramAssistantEngine {
     ctx.stroke();
     ctx.restore();
 
-    // D. 3D Face Contour & Jawline
+    // D. 3D Face Contour
     const faceContour3D = [
-      { x: -38, y: -45, z: 0 },   // Top left forehead
-      { x: 0, y: -58, z: 12 },    // Forehead apex
-      { x: 38, y: -45, z: 0 },    // Top right forehead
-      { x: 42, y: -10, z: -5 },   // Right temple
-      { x: 36, y: 18, z: 5 },     // Right cheek
-      { x: 18, y: 40, z: 15 },    // Right jaw
-      { x: 0, y: 48, z: 22 },     // Chin
-      { x: -18, y: 40, z: 15 },   // Left jaw
-      { x: -36, y: 18, z: 5 },    // Left cheek
-      { x: -42, y: -10, z: -5 }   // Left temple
+      { x: -38, y: -45, z: 0 },
+      { x: 0, y: -58, z: 12 },
+      { x: 38, y: -45, z: 0 },
+      { x: 42, y: -10, z: -5 },
+      { x: 36, y: 18, z: 5 },
+      { x: 18, y: 40, z: 15 },
+      { x: 0, y: 48, z: 22 },
+      { x: -18, y: 40, z: 15 },
+      { x: -36, y: 18, z: 5 },
+      { x: -42, y: -10, z: -5 }
     ];
 
     const projectedFace = faceContour3D.map(pt => project3D(pt.x, pt.y, pt.z, yaw, pitch, roll, cx, cy));
@@ -488,13 +610,12 @@ export class HologramAssistantEngine {
     ctx.stroke();
     ctx.restore();
 
-    // E. 3D Eyebrows (Dynamic Emotion & Expression)
+    // E. 3D Eyebrows
     ctx.save();
     ctx.strokeStyle = '#00e5ff';
     ctx.lineWidth = 2.4;
 
     const browLift = this.isSpeaking ? 3 : 0;
-    // Left Eyebrow
     const bL1 = project3D(-32, -26 - browLift, 14, yaw, pitch, roll, cx, cy);
     const bL2 = project3D(-20, -32 - browLift, 20, yaw, pitch, roll, cx, cy);
     const bL3 = project3D(-8, -27 - browLift, 18, yaw, pitch, roll, cx, cy);
@@ -504,7 +625,6 @@ export class HologramAssistantEngine {
     ctx.quadraticCurveTo(bL2.x, bL2.y, bL3.x, bL3.y);
     ctx.stroke();
 
-    // Right Eyebrow
     const bR1 = project3D(8, -27 - browLift, 18, yaw, pitch, roll, cx, cy);
     const bR2 = project3D(20, -32 - browLift, 20, yaw, pitch, roll, cx, cy);
     const bR3 = project3D(32, -26 - browLift, 14, yaw, pitch, roll, cx, cy);
@@ -515,7 +635,7 @@ export class HologramAssistantEngine {
     ctx.stroke();
     ctx.restore();
 
-    // F. 3D Eyes, Pupils & Gaze Tracking
+    // F. 3D Eyes, Pupils & Gaze
     const eyeSocketL = project3D(-20, -12, 16, yaw, pitch, roll, cx, cy);
     const eyeSocketR = project3D(20, -12, 16, yaw, pitch, roll, cx, cy);
 
@@ -527,7 +647,6 @@ export class HologramAssistantEngine {
 
     const drawEye = (socket) => {
       ctx.save();
-      // Eye Socket / Sclera
       ctx.beginPath();
       ctx.ellipse(socket.x, socket.y, eyeRadius, blinkH, 0, 0, Math.PI * 2);
       ctx.fillStyle = 'rgba(8, 25, 38, 0.9)';
@@ -537,7 +656,6 @@ export class HologramAssistantEngine {
       ctx.stroke();
 
       if (this.blinkAmount < 0.8) {
-        // Glowing Cyan Iris / Pupil
         const pupilX = socket.x + totalGazeX;
         const pupilY = socket.y + totalGazeY;
         const pupilR = Math.min(blinkH * 0.85, 5.5 * socket.scale);
@@ -549,7 +667,6 @@ export class HologramAssistantEngine {
         ctx.shadowBlur = 8;
         ctx.fill();
 
-        // White Light Specular Highlight (Makes eye look alive & direct eye contact)
         ctx.beginPath();
         ctx.arc(pupilX - 1.8, pupilY - 1.8, 1.8, 0, Math.PI * 2);
         ctx.fillStyle = '#ffffff';
@@ -562,7 +679,7 @@ export class HologramAssistantEngine {
     drawEye(eyeSocketL);
     drawEye(eyeSocketR);
 
-    // G. 3D Nose Bridge & Tip
+    // G. 3D Nose
     const noseBridge = project3D(0, -8, 22, yaw, pitch, roll, cx, cy);
     const noseTip = project3D(0, 10, 28, yaw, pitch, roll, cx, cy);
     const noseL = project3D(-4, 12, 24, yaw, pitch, roll, cx, cy);
@@ -587,7 +704,6 @@ export class HologramAssistantEngine {
 
     ctx.save();
     if (this.mouthOpen > 0.3) {
-      // Open Phonetic Viseme (A / O / E)
       ctx.beginPath();
       ctx.ellipse(mouthCenter.x, mouthCenter.y, mouthW, mouthH, 0, 0, Math.PI * 2);
       ctx.fillStyle = '#ff007f';
@@ -598,7 +714,6 @@ export class HologramAssistantEngine {
       ctx.lineWidth = 1.2;
       ctx.stroke();
     } else {
-      // Closed / Smile Rest Viseme
       const mL = project3D(-12, 28, 20, yaw, pitch, roll, cx, cy);
       const mR = project3D(12, 28, 20, yaw, pitch, roll, cx, cy);
       const mMid = project3D(0, 30, 22, yaw, pitch, roll, cx, cy);
@@ -614,18 +729,13 @@ export class HologramAssistantEngine {
     }
     ctx.restore();
 
-    // I. 3D Cyber Hair Layers & Physics (Bangs, Left/Right Floating Strands)
+    // I. 3D Cyber Hair Layers
     const hairPhysicsSway = Math.sin(this.time * 0.06) * 4;
     const hairStrands = [
-      // Left Front Bang
       { p1: { x: -36, y: -48, z: 8 }, p2: { x: -38, y: -10, z: 12 }, p3: { x: -26 + hairPhysicsSway, y: 15, z: 14 } },
-      // Right Front Bang
       { p1: { x: 36, y: -48, z: 8 }, p2: { x: 38, y: -10, z: 12 }, p3: { x: 26 - hairPhysicsSway, y: 15, z: 14 } },
-      // Left Long Face Lock
       { p1: { x: -44, y: -20, z: 0 }, p2: { x: -52, y: 18, z: -2 }, p3: { x: -42 + hairPhysicsSway * 1.2, y: 55, z: -4 } },
-      // Right Long Face Lock
       { p1: { x: 44, y: -20, z: 0 }, p2: { x: 52, y: 18, z: -2 }, p3: { x: 42 - hairPhysicsSway * 1.2, y: 55, z: -4 } },
-      // Center Crown Arch
       { p1: { x: -34, y: -50, z: 6 }, p2: { x: 0, y: -68, z: 16 }, p3: { x: 34, y: -50, z: 6 } }
     ];
 
@@ -644,7 +754,7 @@ export class HologramAssistantEngine {
     });
     ctx.restore();
 
-    // J. 3D Neural Headset Antennae Pods (Left & Right Ear Cuffs)
+    // J. 3D Neural Headset
     const earL = project3D(-46, -6, -2, yaw, pitch, roll, cx, cy);
     const earR = project3D(46, -6, -2, yaw, pitch, roll, cx, cy);
 
@@ -686,14 +796,10 @@ export class HologramAssistantEngine {
       gymBadge.textContent = `LVL ${gymLevel} (${gymSamples.toLocaleString()} ตัวอย่าง | ${gymWinRate}%)`;
     }
 
-    // 2. Global News Wire
     const newsBadge = document.getElementById('holoNewsBadge');
-    let newsTitle = 'ธนาคารกลางสหรัฐฯ ส่งสัญญาณผ่อนคลายสภาพคล่อง เงินทุนไหลเข้าคริปโตและทองคำ';
+    let newsTitle = 'ราคาทองคำ Spot Gold พุ่งทำ New High รับแรงหนุนการลดดอกเบี้ย Fed';
     if (this.app && this.app.tradingEngine && this.app.tradingEngine.activeNews) {
       newsTitle = this.app.tradingEngine.activeNews.title || this.app.tradingEngine.activeNews.headline || newsTitle;
-    }
-    if (typeof newsTitle !== 'string') {
-      newsTitle = 'ธนาคารกลางสหรัฐฯ ส่งสัญญาณผ่อนคลายสภาพคล่อง เงินทุนไหลเข้าคริปโตและทองคำ';
     }
     this.cachedNews = newsTitle;
     if (newsBadge) {
@@ -702,7 +808,138 @@ export class HologramAssistantEngine {
     }
   }
 
-  // Situational Briefing Actions with Dynamic Gaze Direction
+  // Helper: Get random item from list
+  getRandomItem(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+
+  // NATURAL LANGUAGE INTERACTIVE TERMINAL QUERY ROUTER
+  handleUserQuery(rawQuery = '') {
+    const q = rawQuery.trim().toLowerCase();
+    this.updateTelemetryHUD();
+
+    // 1. ข่าวเกมส์ & อีสปอร์ต (Gaming)
+    if (q.includes('เกม') || q.includes('game') || q.includes('gta') || q.includes('steam') || q.includes('esport') || q.includes('อีสปอร์ต')) {
+      this.setGazeMode('NEWS');
+      const item = this.getRandomItem(GLOBAL_INTELLIGENCE_RADAR.GAMING);
+      const text = item.anchor;
+      this.speak(text);
+      return {
+        category: '🎮 GAMING INTEL',
+        title: item.title,
+        detail: item.detail,
+        speech: text
+      };
+    }
+
+    // 2. ข่าวคริปโต & บล็อกเชน (Crypto)
+    if (q.includes('คริปโต') || q.includes('crypto') || q.includes('บิตคอยน์') || q.includes('btc') || q.includes('เหรียญ') || q.includes('eth') || q.includes('solana') || q.includes('บล็อกเชน')) {
+      this.setGazeMode('NEWS');
+      const item = this.getRandomItem(GLOBAL_INTELLIGENCE_RADAR.CRYPTO);
+      const text = item.anchor;
+      this.speak(text);
+      return {
+        category: '🪙 CRYPTO & WEB3 INTEL',
+        title: item.title,
+        detail: item.detail,
+        speech: text
+      };
+    }
+
+    // 3. ข่าวทองคำ & การเงินโลก (Gold / Finance)
+    if (q.includes('ทอง') || q.includes('gold') || q.includes('หุ้น') || q.includes('ตลาด') || q.includes('การเงิน') || q.includes('เฟด') || q.includes('fed') || q.includes('ดอกเบี้ย')) {
+      this.setGazeMode('NEWS');
+      const item = this.getRandomItem(GLOBAL_INTELLIGENCE_RADAR.FINANCE_GOLD);
+      const text = item.anchor;
+      this.speak(text);
+      return {
+        category: '🥇 GOLD & GLOBAL MACRO',
+        title: item.title,
+        detail: item.detail,
+        speech: text
+      };
+    }
+
+    // 4. ข่าวเทคโนโลยี & AI (Tech / AI)
+    if (q.includes('ai') || q.includes('เทค') || q.includes('tech') || q.includes('เทคโนโลยี') || q.includes('openai') || q.includes('nvidia') || q.includes('คอม')) {
+      this.setGazeMode('NEWS');
+      const item = this.getRandomItem(GLOBAL_INTELLIGENCE_RADAR.TECH_AI);
+      const text = item.anchor;
+      this.speak(text);
+      return {
+        category: '🤖 TECH & AI ADVANCEMENT',
+        title: item.title,
+        detail: item.detail,
+        speech: text
+      };
+    }
+
+    // 5. ข่าวบ้านเมือง & สถานการณ์รอบโลก (World Affairs & Geopolitics)
+    if (q.includes('บ้านเมือง') || q.includes('รอบโลก') || q.includes('ต่างประเทศ') || q.includes('โลก') || q.includes('สหรัฐ') || q.includes('ไทย') || q.includes('ญี่ปุ่น') || q.includes('จีน') || q.includes('ยุโรป') || q.includes('world')) {
+      this.setGazeMode('NEWS');
+      const item = this.getRandomItem(GLOBAL_INTELLIGENCE_RADAR.WORLD_AFFAIRS);
+      const text = item.anchor;
+      this.speak(text);
+      return {
+        category: '🌍 WORLD AFFAIRS & GEOPOLITICS',
+        title: `${item.country}: ${item.title}`,
+        detail: item.detail,
+        speech: text
+      };
+    }
+
+    // 6. ข่าวความปลอดภัยไซเบอร์ (Cybersecurity)
+    if (q.includes('ไซเบอร์') || q.includes('cyber') || q.includes('แฮก') || q.includes('hack') || q.includes('0day') || q.includes('ไวรัส') || q.includes('security')) {
+      this.setGazeMode('NEWS');
+      const item = this.getRandomItem(GLOBAL_INTELLIGENCE_RADAR.CYBER_SEC);
+      const text = item.anchor;
+      this.speak(text);
+      return {
+        category: '🛡️ ZERO-DAY CYBER DEFENSE',
+        title: item.title,
+        detail: item.detail,
+        speech: text
+      };
+    }
+
+    // 7. สอบถามเกี่ยวกับสมองกล KRONOS AI Gym
+    if (q.includes('ยิม') || q.includes('gym') || q.includes('kronos') || q.includes('เลเวล') || q.includes('level') || q.includes('ฉลาด') || q.includes('เรียนรู้')) {
+      this.reportAIGym();
+      const gym = this.cachedGymStats || { level: 10, samples: 14971, winRate: 69.6 };
+      return {
+        category: '🧠 KRONOS NEURAL GYM',
+        title: `KRONOS Level ${gym.level} Apex Sovereign Quant`,
+        detail: `สะสมข้อมูลแท่งเทียนไปแล้ว ${gym.samples.toLocaleString()} แท่งเทียน พร้อมสถิติชนะ 69.6%`,
+        speech: this.lastSpokenText
+      };
+    }
+
+    // 8. คำทักทาย หรือถามความสามารถทั่วไป
+    if (q.includes('หวัดดี') || q.includes('สวัสดี') || q.includes('hello') || q.includes('hi') || q.includes('ช่วย') || q.includes('ทำอะไรได้') || q.includes('ใคร') || q.length === 0) {
+      this.setGazeMode('OPERATOR');
+      const greeting = 'สวัสดีค่ะคุณอนันต์ NYX พร้อมให้ข้อมูลแล้วค่ะ คุณสามารถพิมพ์ถามข่าวหมวดต่างๆ เช่น "NYX ข่าวบ้านเมือง", "NYX ข่าวเกมส์", "NYX ข่าวคริปโต", "NYX ข่าวทอง" หรือ "NYX ข่าว AI" ได้ตลอดเวลาเลยนะคะ';
+      this.speak(greeting);
+      return {
+        category: '👩‍💻 NYX COPILOT ASSISTANT',
+        title: 'ระบบรับคำสั่งเสียงและข้อความภาษาไทย',
+        detail: 'พร้อมรายงานข่าวกรองรอบโลก 6 หมวดหมู่ และสถานะสมองกล KRONOS AI Gym',
+        speech: greeting
+      };
+    }
+
+    // 9. Generic / Freeform Smart Response
+    this.setGazeMode('OPERATOR');
+    const customResponse = `รับทราบคำสั่งค่ะคุณอนันต์ เกี่ยวกับประเด็น "${rawQuery}" ระบบได้สแกนฐานข้อมูลและพร้อมสนับสนุนข้อมูลเพิ่มเติมให้คุณเสมอค่ะ`;
+    this.speak(customResponse);
+    return {
+      category: '💡 NYX NEURAL QUERY',
+      title: `Query: ${rawQuery}`,
+      detail: 'ประมวลผลคำสั่งด้วยระบบ Natural Language Processing',
+      speech: customResponse
+    };
+  }
+
+  // Pre-configured Action Handlers
   triggerWelcomeGreeting() {
     this.updateTelemetryHUD();
     this.setGazeMode('OPERATOR');
@@ -713,26 +950,24 @@ export class HologramAssistantEngine {
 
   briefMe() {
     this.updateTelemetryHUD();
-    // Starts looking at operator, shifts to gym, then news
     this.setGazeMode('OPERATOR');
     const gym = this.cachedGymStats || { level: 10, samples: 14971, winRate: 69.6 };
-    const news = this.cachedNews || 'สภาวะตลาดโลกและสภาพคล่องอยู่ในเกณฑ์ปกติ';
+    const newsItem = this.getRandomItem(GLOBAL_INTELLIGENCE_RADAR.WORLD_AFFAIRS);
 
     setTimeout(() => {
       if (this.isSpeaking) this.setGazeMode('GYM');
-    }, 2800);
+    }, 3000);
 
     setTimeout(() => {
       if (this.isSpeaking) this.setGazeMode('NEWS');
-    }, 7000);
+    }, 7500);
 
-    const speech = `รายงานสถานการณ์ภาพรวมค่ะ: สมองกล KRONOS AI Gym ทำงานอยู่ที่เลเวล ${gym.level} ระดับ Apex Sovereign Quant ด้วยอัตราความแม่นยำ ${gym.winRate}% จากข้อมูลตลาด ${gym.samples.toLocaleString()} แท่งเทียน ข่าวด่วนล่าสุด: ${news} ระบบป้องกันความเสี่ยงระดับ DEFCON-1 พร้อมทำงานค่ะ`;
+    const speech = `รายงานสถานการณ์ภาพรวมค่ะ: สมองกล KRONOS AI Gym ทำงานอยู่ที่เลเวล ${gym.level} ระดับ Apex Sovereign Quant ด้วยอัตราความแม่นยำ ${gym.winRate}% จากข้อมูลตลาด ${gym.samples.toLocaleString()} แท่งเทียน ข่าวด่วนล่าสุดจาก${newsItem.country}: ${newsItem.title} ระบบป้องกันความเสี่ยงระดับ DEFCON-1 พร้อมทำงานค่ะ`;
     this.speak(speech);
   }
 
   reportAIGym() {
     this.updateTelemetryHUD();
-    // Turns 3D head and gaze directly to KRONOS AI Gym Card!
     this.setGazeMode('GYM');
     const gym = this.cachedGymStats || { level: 10, samples: 14971, winRate: 69.6 };
     const speech = `รายงานข้อมูลระบบประสาท KRONOS AI Gym ค่ะ: ปัจจุบันจัดอยู่ในระดับ เลเวล ${gym.level} จอมราชันย์ Apex Sovereign Quant ผ่านการวิเคราะห์โครงสร้างราคามาแล้วกว่า ${gym.samples.toLocaleString()} ตัวอย่าง พร้อมระบบการเรียนรู้แบบเสริมกำลัง ความเชี่ยวชาญในกลยุทธ์ Smart Money Order Block อยู่ที่ 91% ค่ะ`;
@@ -741,10 +976,9 @@ export class HologramAssistantEngine {
 
   reportWorldNews() {
     this.updateTelemetryHUD();
-    // Turns 3D head and gaze directly to World News Wire!
     this.setGazeMode('NEWS');
-    const news = this.cachedNews || 'ธนาคารกลางและดัชนีสภาพคล่องโลกส่งสัญญาณการเข้าสะสมวอลุ่มปริมาณมหาศาล';
-    const speech = `รายงานข่าวกรองตลาดโลกค่ะ: ${news} ระบบได้ทำการปรับจูนค่าสเปรดและความผันผวนของคู่เงิน Binance และ XM Global เรียบร้อยแล้วค่ะ`;
+    const item = this.getRandomItem(GLOBAL_INTELLIGENCE_RADAR.WORLD_AFFAIRS);
+    const speech = item.anchor;
     this.speak(speech);
   }
 }

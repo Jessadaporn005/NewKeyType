@@ -854,6 +854,26 @@ async function runTests() {
   assistant.toggleVoice();
   assert(assistant.isVoiceEnabled === true, 'Voice synthesizer restored to ACTIVE');
 
+  // Test Multi-Source Natural Language Interactive CLI Queries
+  const qWorld = assistant.handleUserQuery('ข่าวบ้านเมือง');
+  assert(qWorld.category.includes('WORLD'), `Natural Query: 'ข่าวบ้านเมือง' -> Category: ${qWorld.category}`);
+  assert(qWorld.speech.length > 20, `Speech content: "${qWorld.speech.slice(0, 45)}..."`);
+
+  const qGame = assistant.handleUserQuery('ข่าวเกมส์');
+  assert(qGame.category.includes('GAMING'), `Natural Query: 'ข่าวเกมส์' -> Category: ${qGame.category}`);
+
+  const qCrypto = assistant.handleUserQuery('ข่าวคริปโต');
+  assert(qCrypto.category.includes('CRYPTO'), `Natural Query: 'ข่าวคริปโต' -> Category: ${qCrypto.category}`);
+
+  const qGold = assistant.handleUserQuery('ข่าวทอง');
+  assert(qGold.category.includes('GOLD'), `Natural Query: 'ข่าวทอง' -> Category: ${qGold.category}`);
+
+  const qTech = assistant.handleUserQuery('ข่าว AI');
+  assert(qTech.category.includes('TECH'), `Natural Query: 'ข่าว AI' -> Category: ${qTech.category}`);
+
+  const qCyber = assistant.handleUserQuery('ข่าวไซเบอร์');
+  assert(qCyber.category.includes('CYBER'), `Natural Query: 'ข่าวไซเบอร์' -> Category: ${qCyber.category}`);
+
   console.log('\n====================================================');
   console.log(`🏁 TEST RESULTS: ${passed}/${total} TESTS PASSED (100%)`);
   console.log('====================================================');
