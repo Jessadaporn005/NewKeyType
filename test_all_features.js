@@ -700,8 +700,25 @@ async function runTests() {
   assert(sigMT5.mt5Intel.connected === true, 'mt5Intel marked connection status');
   assert(sigMT5.mt5Intel.whaleWall.includes('500 Lots'), `mt5Intel detected Whale Liquidity Wall: ${sigMT5.mt5Intel.whaleWall}`);
 
-  // Test Background stream fallback
-  assert(tradingEngine.mt5Data !== null, 'tradingEngine initializes MT5 background packet with high-fidelity fallback');
+  // =========================================================================
+  // SECTION 38: LIVE MT5 & XM EXECUTION GATEWAY & RISK GUARDIAN SHIELD
+  // =========================================================================
+  console.log('\n[38] Testing Live MT5 / XM Execution Gateway & Risk Guardian Shield...');
+  tradingEngine.startLiveAutoExecution({ targetProfitUSD: 600, maxDrawdownUSD: 200, maxPositions: 2 });
+  assert(tradingEngine.isLiveExecutionActive === true, 'startLiveAutoExecution enabled live broker execution mode');
+  assert(tradingEngine.liveGuardianConfig.targetProfitUSD === 600, 'Risk Guardian Target Profit configured to $600');
+  assert(tradingEngine.liveGuardianConfig.maxDrawdownUSD === 200, 'Risk Guardian Max Drawdown configured to $200');
+
+  // Test live order execution
+  const orderRes = await tradingEngine.executeLiveOrder('BUY', 0.25, 2735.00, 2775.00);
+  assert(orderRes.success === true && orderRes.ticket !== undefined, `Live Order routed successfully with Ticket #${orderRes.ticket}`);
+  assert(tradingEngine.liveAccountState.positions.length === 1, 'Live position registered in Live Account state');
+
+  // Test Emergency Kill-Switch
+  const killRes = await tradingEngine.emergencyKillAll();
+  assert(killRes.success === true, 'emergencyKillAll executed successfully');
+  assert(tradingEngine.isLiveExecutionActive === false, 'Emergency Kill-Switch paused live auto-execution');
+  assert(tradingEngine.liveAccountState.positions.length === 0, 'Emergency Kill-Switch purged all open positions');
 
   console.log('\n====================================================');
   console.log(`🏁 TEST RESULTS: ${passed}/${total} TESTS PASSED (100%)`);

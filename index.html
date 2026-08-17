@@ -703,6 +703,9 @@
               <span class="mt5-dot pulse-green"></span>
               <span class="mt5-txt" id="mt5SilentStatusTxt">MT5: SYNCED</span>
             </div>
+
+            <!-- LAUNCH LIVE XM & MT5 COCKPIT BUTTON -->
+            <button class="btn-launch-live-cockpit" id="btnLaunchLiveCockpit">🚀 LIVE XM / MT5 COCKPIT</button>
           </div>
         </div>
 
@@ -1065,6 +1068,129 @@
                 <!-- Active Positions -->
                 <div class="active-positions-container" id="activePositionsContainer">
                   <div class="no-positions-hint">No open paper positions. Click BUY/SELL to simulate execution.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================================================= -->
+      <!-- LIVE MT5 & XM EXECUTION COCKPIT MODAL (DUAL PLATFORM & RISK GUARDIAN)     -->
+      <!-- ========================================================================= -->
+      <div class="live-cockpit-modal-backdrop hidden" id="liveCockpitModal">
+        <div class="live-cockpit-window">
+          <!-- Cockpit Header -->
+          <div class="cockpit-top-bar">
+            <div class="cockpit-title-group">
+              <span class="cockpit-badge">XM & MT5 LIVE GATEWAY</span>
+              <strong class="cockpit-title">AI QUANTUM EXECUTION COCKPIT</strong>
+              <span class="live-pulse-dot"></span>
+            </div>
+            <div class="cockpit-platform-tabs" id="cockpitPlatformTabs">
+              <button class="cockpit-tab-btn active" data-view="mt5"><span class="tab-ico">🖥️</span> MT5 WEB TERMINAL</button>
+              <button class="cockpit-tab-btn" data-view="xm"><span class="tab-ico">🌐</span> XM WEBTRADER</button>
+              <button class="cockpit-tab-btn" data-view="quant"><span class="tab-ico">👑</span> QUANT MATRIX CHART</button>
+            </div>
+            <button class="cockpit-close-btn" id="btnCloseCockpit">✕</button>
+          </div>
+
+          <!-- Cockpit Workspace (2 Columns) -->
+          <div class="cockpit-workspace">
+            <!-- Left Column: Embedded Platform Viewport -->
+            <div class="cockpit-viewport-column">
+              <!-- View 1: MT5 Web Terminal -->
+              <div class="embedded-view-container active-view" id="viewMT5Terminal">
+                <iframe id="iframeMT5Terminal" src="https://trade.mql5.com/trade?servers=XMGlobal-Demo%2CXMGlobal-Real&trade_server=XMGlobal-Demo" class="embedded-broker-iframe" title="MetaTrader 5 Web Terminal"></iframe>
+              </div>
+
+              <!-- View 2: XM WebTrader -->
+              <div class="embedded-view-container hidden-view" id="viewXMWebtrader">
+                <iframe id="iframeXMWebtrader" src="https://webtrader.xm.com/" class="embedded-broker-iframe" title="XM WebTrader"></iframe>
+              </div>
+
+              <!-- View 3: Quant Matrix High Precision Chart -->
+              <div class="embedded-view-container hidden-view" id="viewQuantMatrix">
+                <div class="quant-matrix-preview-box">
+                  <div class="matrix-hud-info">
+                    <span>HIGH-PRECISION QUANT EXECUTION STREAM // ASSET: <strong>XAU/USD (Gold)</strong></span>
+                    <span class="matrix-fps">60.0 FPS // LOW-LATENCY</span>
+                  </div>
+                  <div class="matrix-signal-overlay" id="cockpitSignalOverlay">
+                    <div class="overlay-row">
+                      <span class="lbl">DESK DECISION:</span>
+                      <strong class="val glow-cmd" id="cockpitDeskAction">STRONG BUY (UNANIMOUS 3/3)</strong>
+                    </div>
+                    <div class="overlay-row">
+                      <span class="lbl">TARGET TP1:</span>
+                      <strong class="val glow-cyan" id="cockpitTargetTP">$2,775.50</strong>
+                    </div>
+                    <div class="overlay-row">
+                      <span class="lbl">PROTECTION SL:</span>
+                      <strong class="val glow-danger" id="cockpitTargetSL">$2,735.00</strong>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Column: AI Risk Guardian & Live Control Center -->
+            <div class="cockpit-guardian-column">
+              <div class="guardian-card">
+                <div class="guardian-header">
+                  <span class="guardian-ico">🛡️</span>
+                  <div>
+                    <div class="guardian-title">AI RISK GUARDIAN SHIELD</div>
+                    <div class="guardian-subtitle" id="cockpitBrainRank">LEVEL 5 // MASTER QUANT SMC</div>
+                  </div>
+                  <span class="guardian-tag" id="cockpitLiveStatusTag">STANDBY</span>
+                </div>
+
+                <!-- Risk Configuration Controls -->
+                <div class="guardian-controls-group">
+                  <div class="guardian-field">
+                    <label class="g-lbl">🎯 DAILY PROFIT TARGET ($)</label>
+                    <input type="number" class="g-input" id="cfgTargetProfit" value="500" min="10" step="50">
+                    <span class="g-hint">เมื่อกำไรแตะเป้าหมาย AI จะล็อกกำไรและหยุดเทรดทันที</span>
+                  </div>
+
+                  <div class="guardian-field">
+                    <label class="g-lbl">🛑 DAILY MAX DRAWDOWN ($)</label>
+                    <input type="number" class="g-input g-input-danger" id="cfgMaxDrawdown" value="150" min="10" step="10">
+                    <span class="g-hint">หากขาดทุนแตะเพดาน ระบบจะตัดสวิตช์หยุดบอททันที</span>
+                  </div>
+
+                  <div class="guardian-field">
+                    <label class="g-lbl">⚙️ MAX SIMULTANEOUS POSITIONS</label>
+                    <select class="g-select" id="cfgMaxPositions">
+                      <option value="1">1 ไม้ (Ultra Conservative)</option>
+                      <option value="2" selected>2 ไม้ (Balanced Quant)</option>
+                      <option value="3">3 ไม้ (Aggressive Scale-in)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Live Account Summary -->
+                <div class="guardian-account-stats">
+                  <div class="g-acc-row">
+                    <span>XM ACCOUNT:</span>
+                    <strong id="cockpitAccLogin">#88492015 (DEMO)</strong>
+                  </div>
+                  <div class="g-acc-row">
+                    <span>EQUITY / BALANCE:</span>
+                    <strong class="glow-gold" id="cockpitAccBalance">$50,000.00</strong>
+                  </div>
+                  <div class="g-acc-row">
+                    <span>DAILY PnL:</span>
+                    <strong class="glow-cmd" id="cockpitDailyPnL">+$0.00</strong>
+                  </div>
+                </div>
+
+                <!-- Live Action Trigger Buttons -->
+                <div class="guardian-action-buttons">
+                  <button class="btn-cockpit-start" id="btnCockpitStart">🟢 START AI AUTO-EXECUTION</button>
+                  <button class="btn-cockpit-pause hidden" id="btnCockpitPause">⏸️ PAUSE ENGINE</button>
+                  <button class="btn-cockpit-kill" id="btnCockpitEmergencyKill">🚨 EMERGENCY KILL-SWITCH</button>
                 </div>
               </div>
             </div>

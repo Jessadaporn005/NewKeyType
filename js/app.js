@@ -709,6 +709,17 @@ class WindowsTerminalApp {
             }
           };
 
+          this.tradingEngine.onLiveExecutionUpdate = (data) => {
+            if (!data) return;
+            const balanceEl = document.getElementById('cockpitAccBalance');
+            const pnlEl = document.getElementById('cockpitDailyPnL');
+            if (balanceEl && data.state) balanceEl.textContent = `$${data.state.balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+            if (pnlEl && data.state) {
+              const isProfit = (data.state.dailyProfit || 0) >= 0;
+              pnlEl.textContent = `${isProfit ? '+' : ''}$${(data.state.dailyProfit || 0).toFixed(2)}`;
+            }
+          };
+
           this.tradingEngine.init();
           this.bindTradingUIEvents();
           if (this.tradingEngine.activeNews) {
@@ -1141,6 +1152,105 @@ class WindowsTerminalApp {
     if (this.dom.chkAIAutoTrader) {
       this.dom.chkAIAutoTrader.addEventListener('change', (e) => {
         if (this.tradingEngine) this.tradingEngine.toggleAutoTrading(e.target.checked);
+      });
+    }
+
+    // Live Cockpit Modal Launcher
+    const btnLaunchCockpit = document.getElementById('btnLaunchLiveCockpit');
+    const cockpitModal = document.getElementById('liveCockpitModal');
+    const btnCloseCockpit = document.getElementById('btnCloseCockpit');
+
+    if (btnLaunchCockpit && cockpitModal) {
+      btnLaunchCockpit.addEventListener('click', () => {
+        cockpitModal.classList.remove('hidden');
+        if (this.tradingEngine && this.tradingEngine.getAIProfileDetails) {
+          const prof = this.tradingEngine.getAIProfileDetails();
+          const rankEl = document.getElementById('cockpitBrainRank');
+          if (rankEl) rankEl.textContent = prof.rankTitle;
+        }
+      });
+    }
+
+    if (btnCloseCockpit && cockpitModal) {
+      btnCloseCockpit.addEventListener('click', () => {
+        cockpitModal.classList.add('hidden');
+      });
+    }
+
+    // Cockpit Dual-Platform View Switcher (MT5 / XM / Quant)
+    const cockpitTabs = document.getElementById('cockpitPlatformTabs');
+    if (cockpitTabs) {
+      cockpitTabs.querySelectorAll('.cockpit-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          cockpitTabs.querySelectorAll('.cockpit-tab-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          const view = btn.dataset.view;
+
+          const viewMT5 = document.getElementById('viewMT5Terminal');
+          const viewXM = document.getElementById('viewXMWebtrader');
+          const viewQuant = document.getElementById('viewQuantMatrix');
+
+          if (viewMT5) viewMT5.classList.toggle('hidden-view', view !== 'mt5');
+          if (viewXM) viewXM.classList.toggle('hidden-view', view !== 'xm');
+          if (viewQuant) viewQuant.classList.toggle('hidden-view', view !== 'quant');
+        });
+      });
+    }
+
+    // Cockpit Live Action Controls
+    const btnCockpitStart = document.getElementById('btnCockpitStart');
+    const btnCockpitPause = document.getElementById('btnCockpitPause');
+    const btnCockpitKill = document.getElementById('btnCockpitEmergencyKill');
+
+    if (btnCockpitStart) {
+      btnCockpitStart.addEventListener('click', () => {
+        const tp = document.getElementById('cfgTargetProfit')?.value || 500;
+        const dd = document.getElementById('cfgMaxDrawdown')?.value || 150;
+        const maxPos = document.getElementById('cfgMaxPositions')?.value || 2;
+
+        if (this.tradingEngine) {
+          this.tradingEngine.startLiveAutoExecution({ targetProfitUSD: tp, maxDrawdownUSD: dd, maxPositions: maxPos });
+        }
+        btnCockpitStart.classList.add('hidden');
+        if (btnCockpitPause) btnCockpitPause.classList.remove('hidden');
+        const tag = document.getElementById('cockpitLiveStatusTag');
+        if (tag) {
+          tag.textContent = 'LIVE RUNNING';
+          tag.style.color = '#00ff88';
+          tag.style.borderColor = '#00ff88';
+        }
+        if (this.toasts) this.toasts.show('SUCCESS', '🟢 AI AUTO-EXECUTION DEPLOYED TO LIVE BROKER', 3000);
+      });
+    }
+
+    if (btnCockpitPause) {
+      btnCockpitPause.addEventListener('click', () => {
+        if (this.tradingEngine) this.tradingEngine.pauseLiveAutoExecution();
+        btnCockpitPause.classList.add('hidden');
+        if (btnCockpitStart) btnCockpitStart.classList.remove('hidden');
+        const tag = document.getElementById('cockpitLiveStatusTag');
+        if (tag) {
+          tag.textContent = 'PAUSED';
+          tag.style.color = '#ffd700';
+          tag.style.borderColor = '#ffd700';
+        }
+        if (this.toasts) this.toasts.show('WARNING', '⏸️ AI LIVE EXECUTION PAUSED', 3000);
+      });
+    }
+
+    if (btnCockpitKill) {
+      btnCockpitKill.addEventListener('click', () => {
+        if (this.tradingEngine) this.tradingEngine.emergencyKillAll();
+        if (btnCockpitPause) btnCockpitPause.classList.add('hidden');
+        if (btnCockpitStart) btnCockpitStart.classList.remove('hidden');
+        const tag = document.getElementById('cockpitLiveStatusTag');
+        if (tag) {
+          tag.textContent = 'KILL-SWITCH ACTIVATED';
+          tag.style.color = '#ff4466';
+          tag.style.borderColor = '#ff4466';
+        }
+        if (this.audio && this.audio.playError) this.audio.playError();
+        if (this.toasts) this.toasts.show('DANGER', '🚨 EMERGENCY KILL-SWITCH: ALL POSITIONS CLOSED', 5000);
       });
     }
   }
