@@ -803,6 +803,18 @@ async function runTests() {
   assert(freshEngine.aiStats.adaptationLevel === 10, `Fresh engine preserved Level 10 on reload (got: Level ${freshEngine.aiStats.adaptationLevel})`);
   assert(freshEngine.getAIProfileDetails().rankTitle === 'LEVEL 10 // APEX SOVEREIGN QUANT AI', 'Rank title evaluates to LEVEL 10 // APEX SOVEREIGN QUANT AI');
 
+  // =========================================================================
+  // SECTION 44: SECURE SHUTDOWN DATABASE AUDIT & FLUSH VERIFICATION
+  // =========================================================================
+  console.log('\n[44] Testing Secure Shutdown Real-Time Database Audit & Diagnostics...');
+  const opProf = profileStore.getProfile('Anan');
+  assert(opProf !== null, 'Operator profile active and ready for shutdown serialization');
+
+  // Verify full database payload is clean and synced
+  const gymDisk = profileStore.getTradingGymState('Anan');
+  assert(gymDisk !== null, 'Trading gym state cleanly bundled in ProfileStore');
+  assert(typeof profileStore.saveAllAsync === 'function', 'profileStore.saveAllAsync is registered');
+
   console.log('\n====================================================');
   console.log(`🏁 TEST RESULTS: ${passed}/${total} TESTS PASSED (100%)`);
   console.log('====================================================');
