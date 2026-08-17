@@ -19,7 +19,15 @@ console.log('====================================================');
 console.log('🧪 RUNNING CYBERDECK MASTER VERIFICATION TESTS');
 console.log('====================================================');
 
-// Mock DOM & Sound
+// Mock DOM, Storage & Sound
+const storageMap = new Map();
+global.localStorage = {
+  getItem: (k) => storageMap.get(k) || null,
+  setItem: (k, v) => storageMap.set(k, String(v)),
+  removeItem: (k) => storageMap.delete(k),
+  clear: () => storageMap.clear()
+};
+
 global.window = {
   location: { search: '' },
   addEventListener: () => {},
@@ -772,6 +780,28 @@ async function runTests() {
   assert(profDetails.goldenRules.length >= 5, 'getAIProfileDetails bundles active Golden Rules');
   assert(profDetails.setupMastery.length >= 5, 'getAIProfileDetails bundles Setup Mastery Matrix');
   assert(profDetails.riskAppetite === 'alpha_hunter', 'getAIProfileDetails reflects active Risk Appetite');
+
+  // =========================================================================
+  // SECTION 43: REAL-TIME PERSISTENCE & LEVEL 10 PRESERVATION ON RESTART
+  // =========================================================================
+  console.log('\n[43] Testing Real-Time Persistence & Level 10 Preservation across Restarts...');
+  tradingEngine.aiStats.samplesStudied = 14971;
+  tradingEngine.aiStats.totalTrades = 349;
+  tradingEngine.aiStats.wins = 243;
+  tradingEngine.aiStats.losses = 106;
+  tradingEngine.aiStats.winRate = 69.6;
+  tradingEngine.aiStats.netPnlUSD = 49834.25;
+  tradingEngine.saveGymState();
+
+  // Verify storage contains serialized Level 10 state
+  const rawSaved = global.localStorage.getItem('cyber_ai_trading_gym_state');
+  assert(rawSaved && rawSaved.includes('14971'), 'Gym state saved synchronously to localStorage with 14,971 samples');
+
+  // Instantiate brand new fresh AITradingEngine (simulating page refresh / browser restart)
+  const freshEngine = new AITradingEngine({ sound: mockSound, toasts: null });
+  assert(freshEngine.aiStats.samplesStudied === 14971, `Fresh engine restored 14,971 samples (got: ${freshEngine.aiStats.samplesStudied})`);
+  assert(freshEngine.aiStats.adaptationLevel === 10, `Fresh engine preserved Level 10 on reload (got: Level ${freshEngine.aiStats.adaptationLevel})`);
+  assert(freshEngine.getAIProfileDetails().rankTitle === 'LEVEL 10 // APEX SOVEREIGN QUANT AI', 'Rank title evaluates to LEVEL 10 // APEX SOVEREIGN QUANT AI');
 
   console.log('\n====================================================');
   console.log(`🏁 TEST RESULTS: ${passed}/${total} TESTS PASSED (100%)`);

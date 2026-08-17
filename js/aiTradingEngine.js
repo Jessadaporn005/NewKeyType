@@ -1271,10 +1271,17 @@ export class AITradingEngine {
   saveGymState() {
     try {
       if (typeof localStorage !== 'undefined') {
+        const samples = this.aiStats.samplesStudied || 0;
+        this.aiStats.adaptationLevel = Math.min(10, Math.floor(samples / 700) + 1);
+
         const state = {
           stats: this.aiStats,
-          journal: this.aiJournal ? this.aiJournal.slice(0, 30) : [],
-          weights: this.strategyWeights
+          journal: this.aiJournal ? this.aiJournal.slice(0, 50) : [],
+          weights: this.strategyWeights,
+          paperBalanceUSD: this.paperBalanceUSD,
+          riskAppetite: this.riskAppetite,
+          riskPercent: this.riskPercent,
+          savedAt: new Date().toISOString()
         };
         localStorage.setItem('cyber_ai_trading_gym_state', JSON.stringify(state));
       }
@@ -1287,13 +1294,26 @@ export class AITradingEngine {
         const raw = localStorage.getItem('cyber_ai_trading_gym_state');
         if (raw) {
           const parsed = JSON.parse(raw);
-          if (parsed.stats) {
+          if (parsed && parsed.stats) {
             this.aiStats = { ...this.aiStats, ...parsed.stats };
-            // Ensure 1-indexed level is correctly calculated from samples
-            this.aiStats.adaptationLevel = Math.min(10, Math.floor((this.aiStats.samplesStudied || 0) / 700) + 1);
+            const samples = this.aiStats.samplesStudied || 0;
+            this.aiStats.adaptationLevel = Math.min(10, Math.floor(samples / 700) + 1);
           }
-          if (Array.isArray(parsed.journal)) this.aiJournal = parsed.journal;
-          if (parsed.weights) this.strategyWeights = { ...DEFAULT_STRATEGY_WEIGHTS, ...parsed.weights };
+          if (Array.isArray(parsed.journal) && parsed.journal.length > 0) {
+            this.aiJournal = parsed.journal;
+          }
+          if (parsed.weights && typeof parsed.weights === 'object') {
+            this.strategyWeights = { ...DEFAULT_STRATEGY_WEIGHTS, ...parsed.weights };
+          }
+          if (typeof parsed.paperBalanceUSD === 'number') {
+            this.paperBalanceUSD = parsed.paperBalanceUSD;
+          }
+          if (parsed.riskAppetite) {
+            this.riskAppetite = parsed.riskAppetite;
+          }
+          if (typeof parsed.riskPercent === 'number') {
+            this.riskPercent = parsed.riskPercent;
+          }
           return true;
         }
       }
@@ -1303,6 +1323,7 @@ export class AITradingEngine {
 
   setRiskPercent(risk) {
     this.riskPercent = Number(risk) || 2;
+    this.saveGymState();
     if (this.onMoneyManagementUpdate) {
       this.onMoneyManagementUpdate(this.getMoneyManagementDetails());
     }
@@ -1473,6 +1494,7 @@ export class AITradingEngine {
   setRiskAppetite(mode = 'balanced') {
     if (['conservative', 'balanced', 'alpha_hunter'].includes(mode)) {
       this.riskAppetite = mode;
+      this.saveGymState();
       this.analyzeMarket();
       if (this.onAIProfileUpdate) this.onAIProfileUpdate(this.getAIProfileDetails());
     }
@@ -1735,9 +1757,7 @@ export class AITradingEngine {
         this.onAIProfileUpdate(this.getAIProfileDetails());
       }
 
-      if (this.aiStats.samplesStudied % 10 === 0) {
-        this.saveGymState();
-      }
+      this.saveGymState();
     }
 
     // 3. Recompute Signals and Redraw smoothly
@@ -1972,46 +1992,8 @@ export class AITradingEngine {
     item.winRate = Number(((item.wins / total) * 100).toFixed(1));
     item.weightMultiplier = Number(Math.max(0.4, Math.min(1.6, item.winRate / 60)).toFixed(2));
     if (lesson) item.lastLesson = lesson;
-  }
 
-  analyzeMarket() {
-    this.patterns = detectChartPatterns(this.candles);
-    this.signal = generateAISignal(this.candles, this.activeAsset, this.patterns, this.activeNews, this.strategyWeights);
-    if (this.onSignalUpdate) {
-      this.onSignalUpdate(this.signal);
-    }
-  }
-
-  saveGymState() {
-    try {
-      if (typeof localStorage !== 'undefined') {
-        localStorage.setItem('cyber_ai_trading_gym_state', JSON.stringify({
-          stats: this.aiStats,
-          journal: this.aiJournal,
-          weights: this.strategyWeights
-        }));
-      }
-    } catch (e) {}
-  }
-
-  loadGymState() {
-    try {
-      if (typeof localStorage !== 'undefined') {
-        const raw = localStorage.getItem('cyber_ai_trading_gym_state');
-        if (raw) {
-          const data = JSON.parse(raw);
-          if (data && data.stats && Array.isArray(data.journal)) {
-            this.aiStats = data.stats;
-            this.aiJournal = data.journal;
-            if (data.weights && typeof data.weights === 'object') {
-              this.strategyWeights = { ...DEFAULT_STRATEGY_WEIGHTS, ...data.weights };
-            }
-            return true;
-          }
-        }
-      }
-    } catch (e) {}
-    return false;
+    this.saveGymState();
   }
 
   resetAIMemory() {
@@ -2489,6 +2471,7 @@ export class AITradingEngine {
 
     this.paperBalanceUSD -= amountUSD;
     this.positions.unshift(pos);
+    this.saveGymState();
 
     if (this.sound && this.sound.playSuccessFanfare) this.sound.playSuccessFanfare();
     if (this.toasts) {
@@ -2509,6 +2492,7 @@ export class AITradingEngine {
     pos.closeTime = new Date().toLocaleTimeString();
     this.tradeHistory.unshift(pos);
     this.positions.splice(idx, 1);
+    this.saveGymState();
 
     if (this.sound && this.sound.playKey) this.sound.playKey(false);
     if (this.toasts) {
