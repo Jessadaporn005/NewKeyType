@@ -4456,6 +4456,31 @@ body.mode-trading .sub-chart-container {
   animation: pulseNews 0.8s infinite alternate;
 }
 
+.mt5-silent-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(0, 255, 102, 0.25);
+  border-radius: 3px;
+  padding: 2px 5px;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 800;
+  color: #00ff88;
+}
+
+.mt5-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #00ff88;
+}
+
+.pulse-green {
+  animation: pulseNews 1s infinite alternate;
+}
+
 .trading-workspace-grid {
   display: grid;
   grid-template-columns: 1fr 340px;

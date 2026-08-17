@@ -702,6 +702,13 @@ class WindowsTerminalApp {
             this.updateReplayUI(replayState);
           };
 
+          this.tradingEngine.onMT5DataUpdate = (mt5) => {
+            const badgeTxt = document.getElementById('mt5SilentStatusTxt');
+            if (badgeTxt && mt5) {
+              badgeTxt.textContent = mt5.mt5_connected ? 'MT5: LIVE (XM)' : 'MT5: SYNCED';
+            }
+          };
+
           this.tradingEngine.init();
           this.bindTradingUIEvents();
           if (this.tradingEngine.activeNews) {

@@ -674,6 +674,35 @@ async function runTests() {
   tradingEngine.exitReplay();
   assert(tradingEngine.isReplayMode === false, 'exitReplay restored live streaming state');
 
+  // =========================================================================
+  // SECTION 37: HEADLESS MT5 SILENT BACKGROUND DATA PIPELINE & INGESTION
+  // =========================================================================
+  console.log('\n[37] Testing Headless MT5 Silent Background Data Pipeline...');
+  const mockMT5Packet = {
+    status: 'ONLINE',
+    mt5_connected: true,
+    dom_depth: {
+      whale_walls: [{ price: 2745.00, volume_lots: 500 }]
+    },
+    tick_metrics: {
+      tick_velocity: 18.5,
+      volume_absorption: 'WHALE_ACCUMULATION'
+    },
+    mtf_alignment: {
+      h4_trend: 'BULLISH',
+      d1_trend: 'BULLISH',
+      macro_confluence_score: 95
+    }
+  };
+
+  const sigMT5 = generateAISignal(mockCandles, TRADING_ASSETS[0], [], null, null, null, mockMT5Packet);
+  assert(sigMT5.mt5Intel !== null, 'generateAISignal ingested MT5 silent data stream');
+  assert(sigMT5.mt5Intel.connected === true, 'mt5Intel marked connection status');
+  assert(sigMT5.mt5Intel.whaleWall.includes('500 Lots'), `mt5Intel detected Whale Liquidity Wall: ${sigMT5.mt5Intel.whaleWall}`);
+
+  // Test Background stream fallback
+  assert(tradingEngine.mt5Data !== null, 'tradingEngine initializes MT5 background packet with high-fidelity fallback');
+
   console.log('\n====================================================');
   console.log(`🏁 TEST RESULTS: ${passed}/${total} TESTS PASSED (100%)`);
   console.log('====================================================');
