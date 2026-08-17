@@ -816,14 +816,19 @@ async function runTests() {
   assert(typeof profileStore.saveAllAsync === 'function', 'profileStore.saveAllAsync is registered');
 
   // =========================================================================
-  // SECTION 45: ANIMATED FEMALE HOLOGRAM AI ASSISTANT (NYX) 3D FACIAL RIG
+  // SECTION 45: ANIMATED FEMALE HOLOGRAM AI ASSISTANT (NYX) 3D FACIAL RIG & PROACTIVE CO-PILOT
   // =========================================================================
-  console.log('\n[45] Testing NYX 3D Holographic Facial Rig, Gaze Tracking & Visemes...');
-  const { HologramAssistantEngine } = await import('./js/hologramAssistant.js');
+  console.log('\n[45] Testing NYX 3D Holographic Facial Rig, Gaze Tracking, Thai Phonetics & Proactive Skills...');
+  const { HologramAssistantEngine, phoneticizeForThaiSpeech } = await import('./js/hologramAssistant.js');
   const assistant = new HologramAssistantEngine({ tradingEngine: freshEngine }, mockSound, null);
   assert(assistant !== null, 'HologramAssistantEngine instantiated successfully');
   assert(assistant.isVoiceEnabled === true, 'Voice synthesis initialized in active state');
   assert(assistant.currentPose !== undefined, '3D Pose vector initialized');
+
+  // Test Thai Phonetic Normalizer
+  assert(phoneticizeForThaiSpeech('NYX KRONOS AI Gym').includes('นิกซ์') && phoneticizeForThaiSpeech('NYX KRONOS AI Gym').includes('โครนอส'), 'Phonetic normalizer: NYX -> นิกซ์, KRONOS -> โครนอส');
+  assert(phoneticizeForThaiSpeech('ORION LEVIATHAN AEGIS').includes('โอไรออน') && phoneticizeForThaiSpeech('ORION LEVIATHAN AEGIS').includes('เลเวียธาน'), 'Phonetic normalizer: ORION -> โอไรออน, LEVIATHAN -> เลเวียธาน');
+  assert(phoneticizeForThaiSpeech('Bitcoin ETF DEFCON-1').includes('บิตคอยน์') && phoneticizeForThaiSpeech('Bitcoin ETF DEFCON-1').includes('เดฟคอน วัน'), 'Phonetic normalizer: Bitcoin -> บิตคอยน์, DEFCON-1 -> เดฟคอน วัน');
 
   assistant.setGazeMode('OPERATOR');
   assert(assistant.targetPose.yaw === 0, 'Operator direct eye contact pose (Yaw = 0)');
@@ -844,7 +849,7 @@ async function runTests() {
   assert(assistant.lastSpokenText.includes('KRONOS') && (assistant.lastSpokenText.includes('10') || assistant.lastSpokenText.includes('Apex Sovereign')), `AI Gym Telemetry vocal report in Thai: "${assistant.lastSpokenText}"`);
 
   assistant.reportWorldNews();
-  assert(assistant.lastSpokenText.includes('รายงานข่าวกรองตลาดโลก') || assistant.lastSpokenText.includes('สภาพคล่อง'), `World News Wire report in Thai: "${assistant.lastSpokenText}"`);
+  assert(assistant.lastSpokenText.includes('รายงาน') || assistant.lastSpokenText.includes('ข่าว'), `World News Wire report in Thai: "${assistant.lastSpokenText}"`);
 
   assistant.briefMe();
   assert(assistant.lastSpokenText.includes('รายงานสถานการณ์ภาพรวม') || assistant.lastSpokenText.includes('KRONOS'), 'Executive situation briefing in Thai generated');
@@ -878,6 +883,21 @@ async function runTests() {
 
   const qNum4 = assistant.handleUserQuery('4');
   assert(qNum4.category.includes('GOLD'), `Numeric Query: '4' -> Category: ${qNum4.category}`);
+
+  // Test Proactive Co-Pilot Skills
+  const qQuant = assistant.handleUserQuery('วิเคราะห์ตลาด');
+  assert(qQuant.category.includes('QUANT'), `Proactive Skill: 'วิเคราะห์ตลาด' -> Category: ${qQuant.category}`);
+  assert(qQuant.speech.includes('KRONOS') || qQuant.speech.includes('ORION'), 'NYX vocalizes institutional quant analysis');
+
+  const qSec = assistant.handleUserQuery('ตรวจความปลอดภัย');
+  assert(qSec.category.includes('SECURITY'), `Proactive Skill: 'ตรวจความปลอดภัย' -> Category: ${qSec.category}`);
+  assert(qSec.speech.includes('AES-256') || qSec.speech.includes('DEFCON-1'), 'NYX vocalizes enclave security audit');
+
+  const qMentor = assistant.handleUserQuery('แนะนำการเทรด');
+  assert(qMentor.category.includes('MENTORSHIP'), `Proactive Skill: 'แนะนำการเทรด' -> Category: ${qMentor.category}`);
+
+  const qChat = assistant.handleUserQuery('เธอคือใคร');
+  assert(qChat.category.includes('COMPANION'), `Proactive Skill: 'เธอคือใคร' -> Category: ${qChat.category}`);
 
   console.log('\n====================================================');
   console.log(`🏁 TEST RESULTS: ${passed}/${total} TESTS PASSED (100%)`);

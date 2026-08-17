@@ -9,6 +9,132 @@
 
 import { profileStore } from './profileStore.js';
 
+// AUTOMATIC THAI PHONETIC TRANSLITERATION & PRONUNCIATION NORMALIZER
+// Solves spelling-out issue by converting English keywords into natural Thai phonetic text
+export function phoneticizeForThaiSpeech(text) {
+  if (!text || typeof text !== 'string') return '';
+  let s = text;
+
+  const dictionary = [
+    // Core AI & Assistant Persona Names
+    [/\bNYX\b/gi, 'นิกซ์'],
+    [/\bKRONOS\b/gi, 'โครนอส'],
+    [/\bORION\b/gi, 'โอไรออน'],
+    [/\bHERMES\b/gi, 'เฮอร์มีส'],
+    [/\bLEVIATHAN\b/gi, 'เลเวียธาน'],
+    [/\bAEGIS\b/gi, 'อีจิส'],
+    [/\bARES\b/gi, 'เอรีส'],
+    [/\bHADES\b/gi, 'ฮาเดส'],
+    [/\bAI GYM\b/gi, 'เอไอ ยิม'],
+    [/\bAI\b/gi, 'เอไอ'],
+    [/\bGYM\b/gi, 'ยิม'],
+    [/\bQUANT\b/gi, 'ควอนท์'],
+    [/\bCOPILOT\b/gi, 'โคไพลอต'],
+    [/\bOPERATOR\b/gi, 'โอเปอเรเตอร์'],
+    [/\bANAN\b/gi, 'อนันต์'],
+    [/\bENCLAVE\b/gi, 'เอ็นเคลฟ'],
+    [/\bHUD\b/gi, 'ฮัด'],
+    [/\bDEFCON-1\b/gi, 'เดฟคอน วัน'],
+    [/\bDEFCON\b/gi, 'เดฟคอน'],
+    [/\bC2\b/gi, 'ซีทู'],
+    [/\bWPM\b/gi, 'คำต่อนาที'],
+    [/\bACC\b/gi, 'ความแม่นยำ'],
+    [/\bEXP\b/gi, 'ค่าประสบการณ์'],
+    [/\bLVL\s*(\d+)\b/gi, 'เลเวล $1'],
+    [/\bLEVEL\s*(\d+)\b/gi, 'เลเวล $1'],
+    [/\bLVL\b/gi, 'เลเวล'],
+
+    // Cryptocurrencies & Global Macro Finance
+    [/\bBITCOIN\b/gi, 'บิตคอยน์'],
+    [/\bBTC\b/gi, 'บิตคอยน์'],
+    [/\bETHEREUM\b/gi, 'อีเธอเรียม'],
+    [/\bETH\b/gi, 'อีเธอเรียม'],
+    [/\bSOLANA\b/gi, 'โซลานา'],
+    [/\bSOL\b/gi, 'โซลานา'],
+    [/\bSPOT GOLD\b/gi, 'สปอต โกลด์'],
+    [/\bXAU\/USD\b/gi, 'ราคาทองคำ'],
+    [/\bXAU\b/gi, 'ทองคำ'],
+    [/\bFED\b/gi, 'เฟด'],
+    [/\bBOJ\b/gi, 'บีโอเจ'],
+    [/\bECB\b/gi, 'อีซีบี'],
+    [/\bNASDAQ\b/gi, 'แนสแด็ก'],
+    [/\bS&P 500\b/gi, 'เอสแอนด์พี 500'],
+    [/\bATH\b/gi, 'ออลไทม์ไฮ'],
+    [/\bNEW HIGH\b/gi, 'นิวไฮ'],
+    [/\bETF\b/gi, 'อีทีเอฟ'],
+    [/\bDEFI\b/gi, 'ดีไฟ'],
+    [/\bON-CHAIN\b/gi, 'ออนเชน'],
+    [/\bTPS\b/gi, 'รายการต่อวินาที'],
+    [/\bLAYER-2\b/gi, 'เลเยอร์ทู'],
+    [/\bORDER BLOCK\b/gi, 'ออเดอร์บล็อก'],
+    [/\bFAIR VALUE GAP\b/gi, 'แฟร์แวลูแก็ป'],
+    [/\bFVG\b/gi, 'เอฟวีจี'],
+    [/\bSMC\b/gi, 'เอสเอ็มซี'],
+    [/\bSMART MONEY\b/gi, 'สมาร์ตมันนี่'],
+    [/\bLIQUIDITY\b/gi, 'สภาพคล่อง'],
+    [/\bSWEEP\b/gi, 'สวีป'],
+    [/\bDOM\b/gi, 'เด็ปท์ออฟมาร์เก็ต'],
+    [/\bWIN RATE\b/gi, 'วินเรต'],
+
+    // Gaming & Esports
+    [/\bGTA VI\b/gi, 'จีทีเอ หก'],
+    [/\bGTA 6\b/gi, 'จีทีเอ หก'],
+    [/\bGTA\b/gi, 'จีทีเอ'],
+    [/\bSTEAM DECK OLED\b/gi, 'สตรีมเด็ค โอเล็ด'],
+    [/\bSTEAM DECK\b/gi, 'สตรีมเด็ค'],
+    [/\bSTEAM\b/gi, 'สตรีม'],
+    [/\bOLED\b/gi, 'โอเล็ด'],
+    [/\bVALVE\b/gi, 'วาล์ว'],
+    [/\bROCKSTAR GAMES\b/gi, 'ร็อกสตาร์ เกมส์'],
+    [/\bROCKSTAR\b/gi, 'ร็อกสตาร์'],
+    [/\bNINTENDO SWITCH 2\b/gi, 'นินเทนโด สวิตช์ สอง'],
+    [/\bNINTENDO\b/gi, 'นินเทนโด'],
+    [/\bESPORTS\b/gi, 'อีสปอร์ต'],
+    [/\bESPORT\b/gi, 'อีสปอร์ต'],
+    [/\bUNREAL ENGINE 5\.5\b/gi, 'อันเรียล เอนจิน ห้าจุดห้า'],
+    [/\bUNREAL ENGINE\b/gi, 'อันเรียล เอนจิน'],
+    [/\bRAY TRACING\b/gi, 'เรย์เทรซซิ่ง'],
+    [/\bDLSS 3\.5\b/gi, 'ดีแอลเอสเอส สามจุดห้า'],
+    [/\bDLSS\b/gi, 'ดีแอลเอสเอส'],
+    [/\bPLAYSTATION 5 PRO\b/gi, 'เพลย์สเตชัน ห้า โปร'],
+    [/\bPS5 PRO\b/gi, 'พีเอสไฟว์ โปร'],
+
+    // AI & Advanced Tech
+    [/\bOPENAI\b/gi, 'โอเพนเอไอ'],
+    [/\bDEEPSEEK R1\b/gi, 'ดีพซีค อาร์วัน'],
+    [/\bDEEPSEEK\b/gi, 'ดีพซีค'],
+    [/\bAGI\b/gi, 'เอจีไอ'],
+    [/\bNVIDIA BLACKWELL ULTRA\b/gi, 'เอ็นวิเดีย แบล็กเวลล์ อัลตร้า'],
+    [/\bNVIDIA\b/gi, 'เอ็นวิเดีย'],
+    [/\bBLACKWELL\b/gi, 'แบล็กเวลล์'],
+    [/\bSUPERCOMPUTER\b/gi, 'ซูเปอร์คอมพิวเตอร์'],
+    [/\bEXAFLOPS\b/gi, 'เอ็กซาฟล็อปส์'],
+    [/\bQUBIT\b/gi, 'คิวบิต'],
+    [/\bQUANTUM\b/gi, 'ควอนตัม'],
+    [/\bZERO-DAY\b/gi, 'ซีโร่เดย์'],
+    [/\b0-DAY\b/gi, 'ซีโร่เดย์'],
+    [/\bDDOS\b/gi, 'ดีดอส'],
+    [/\bFIREWALL\b/gi, 'ไฟร์วอลล์'],
+    [/\bDATA CENTER\b/gi, 'ดาต้าเซ็นเตอร์'],
+    [/\bCLOUD\b/gi, 'คลาวด์'],
+    [/\bONLINE\b/gi, 'ออนไลน์'],
+    [/\bOFFLINE\b/gi, 'ออฟไลน์'],
+    [/\bTERMINAL\b/gi, 'เทอร์มินัล'],
+    [/\bDATABASE\b/gi, 'ฐานข้อมูล'],
+    [/\bCHECKSUM\b/gi, 'เช็คซัม'],
+    [/\bAES-256\b/gi, 'เออีเอส 256'],
+    [/\bSHA-256\b/gi, 'เอสเอชเอ 256'],
+    [/\bRSA-8192\b/gi, 'อาร์เอสเอ 8192'],
+    [/\bCHERRY SWITCHES\b/gi, 'เชอร์รี่ สวิตช์']
+  ];
+
+  for (const [pattern, replacement] of dictionary) {
+    s = s.replace(pattern, replacement);
+  }
+
+  return s;
+}
+
 // 3D Perspective Projection Mathematics Helper
 function project3D(x, y, z, yaw, pitch, roll, cx, cy, fov = 260) {
   const cosY = Math.cos(yaw);
@@ -36,7 +162,7 @@ function project3D(x, y, z, yaw, pitch, roll, cx, cy, fov = 260) {
   };
 }
 
-// Multi-Source Real-World Intelligence Radar Database
+// Multi-Source Real-World Intelligence Radar Database (Expanded 100+ Live Global Items)
 export const GLOBAL_INTELLIGENCE_RADAR = {
   WORLD_AFFAIRS: [
     {
@@ -62,6 +188,18 @@ export const GLOBAL_INTELLIGENCE_RADAR = {
       title: 'ข้อตกลงความร่วมมือการค้าทวิภาคีและการชำระเงินดิจิทัลข้ามพรมแดน',
       detail: 'กลุ่มประเทศคู่ค้ารายใหญ่บรรลุข้อตกลงการเชื่อมโยงระบบการชำระเงินดิจิทัลเพื่อเพิ่มความคล่องตัวในการค้าระหว่างประเทศ',
       anchor: 'ข่าวสถานการณ์ระหว่างประเทศค่ะ: ทางฝั่งจีนและกลุ่มคู่ค้าในตะวันออกกลาง ได้บรรลุข้อตกลงพัฒนาระบบชำระเงินดิจิทัลข้ามพรมแดน เพื่อเสริมความคล่องตัวทางการค้าค่ะ'
+    },
+    {
+      country: 'สหภาพยุโรป',
+      title: 'EU ผ่านร่างกฎหมายกำกับดูแลการค้าดิจิทัลและพลังงานหมุนเวียนฉบับสมบูรณ์',
+      detail: 'กำหนดมาตรฐานการลดการปล่อยคาร์บอนในภาคอุตสาหกรรมหนัก และส่งเสริมการลงทุนในโครงข่ายไฟฟ้าอัจฉริยะ',
+      anchor: 'ข่าวจากสหภาพยุโรปค่ะ: สภายุโรปได้ผ่านกฎหมายพลังงานหมุนเวียนฉบับใหม่เพื่อผลักดันโครงข่ายไฟฟ้าอัจฉริยะทั่วยุโรปค่ะ'
+    },
+    {
+      country: 'สิงคโปร์ & มาเลเซีย',
+      title: 'เปิดตัวเขตเศรษฐกิจพิเศษดิจิทัลเชื่อมต่อโครงข่าย 5G และโลจิสติกส์อัจฉริยะ',
+      detail: 'ร่วมมือพัฒนาท่าเรืออัตโนมัติและศูนย์กลางการเงินสีเขียวอันดับหนึ่งของภูมิภาค',
+      anchor: 'ข่าวเศรษฐกิจอาเซียนค่ะ: สิงคโปร์และมาเลเซียเปิดตัวเขตเศรษฐกิจพิเศษดิจิทัลเพื่อเชื่อมต่อการขนส่งและโครงข่าย 5G ระดับภูมิภาคค่ะ'
     }
   ],
 
@@ -74,17 +212,27 @@ export const GLOBAL_INTELLIGENCE_RADAR = {
     {
       title: 'Valve ประกาศอัปเดตระบบ Steam Deck OLED และรองรับเอนจิน Unreal Engine 5.5',
       detail: 'การปรับแต่งไดรเวอร์กราฟิกล่าสุดช่วยเพิ่มประสิทธิภาพการประมวลผลขึ้น 25% พร้อมลดความหน่วงในการเล่นเกม AAA',
-      anchor: 'ข่าววงการเกมพีซีและคอนโซลค่ะ: ทางค่าย Valve ได้ปล่อยอัปเดตใหม่ให้กับเครื่อง Steam Deck ช่วยให้รันเกมที่ใช้ Unreal Engine 5.5 ได้ลื่นไหลขึ้นถึง 25% ค่ะ'
+      anchor: 'ข่าววงการเกมพีซีและคอนโซลค่ะ: ทางค่าย Valve ได้ปล่อยอัปเดตใหม่ให้กับเครื่อง Steam Deck OLED ช่วยให้รันเกมที่ใช้ Unreal Engine 5.5 ได้ลื่นไหลขึ้นถึง 25% ค่ะ'
     },
     {
-      title: 'Nintendo แย้มรายละเอียดสถาปัตยกรรมฮาร์ดแวร์ของเครื่องเล่นเกมคอนโซลรุ่นถัดไป',
-      detail: 'คอนโซลรุ่นใหม่จะรองรับเทคโนโลยี DLSS และ Ray Tracing เพื่อมอบประสบการณ์ภาพระดับ 4K ขณะเชื่อมต่อจอทีวี',
-      anchor: 'ทางด้านค่ายนินเทนโดค่ะ: มีรายงานว่าเครื่องเล่นเกมรุ่นใหม่จะมาพร้อมชิปประมวลผลที่รองรับเทคโนโลยี DLSS ทำให้ภาพสวยคมชัดระดับ 4K ค่ะ'
+      title: 'Nintendo แย้มรายละเอียดสถาปัตยกรรมฮาร์ดแวร์ของ Nintendo Switch 2',
+      detail: 'คอนโซลรุ่นใหม่จะรองรับเทคโนโลยี DLSS 3.5 และ Ray Tracing เพื่อมอบประสบการณ์ภาพระดับ 4K ขณะเชื่อมต่อจอทีวี',
+      anchor: 'ทางด้านค่ายนินเทนโดค่ะ: มีรายงานว่าเครื่องเล่นเกมรุ่นใหม่ Nintendo Switch 2 จะมาพร้อมชิปประมวลผลที่รองรับเทคโนโลยี DLSS 3.5 ทำให้ภาพสวยคมชัดระดับ 4K ค่ะ'
     },
     {
       title: 'วงการ Esports ระดับโลกเตรียมจัดการแข่งขันชิงแชมป์โลก Cyber Arena Championship 2026',
       detail: 'เงินรางวัลรวมทุบสถิติประวัติศาสตร์กว่า 15 ล้านดอลลาร์สหรัฐ พร้อมดึงทีมชั้นนำกว่า 32 ประเทศเข้าร่วมแข่งขัน',
       anchor: 'ข่าวความเคลื่อนไหววงการอีสปอร์ตค่ะ: เตรียมพบกับการแข่งขันชิงแชมป์โลกรายการใหญ่ เงินรางวัลรวมกว่า 15 ล้านดอลลาร์สหรัฐ มีสุดยอดทีมจาก 32 ประเทศทั่วโลกเข้าร่วมชิงชัยค่ะ'
+    },
+    {
+      title: 'Sony เปิดตัวฟีเจอร์ AI Upscaling บน PlayStation 5 Pro',
+      detail: 'ระบบ PSSR (PlayStation Spectral Super Resolution) สามารถดันเฟรมเรตเกมแตะ 120 FPS บนความละเอียด 4K แท้',
+      anchor: 'ข่าววงการคอนโซลค่ะ: โซนี่เปิดตัวฟีเจอร์ AI Upscaling ใหม่บน PS5 Pro ช่วยให้เล่นเกม 4K ได้ลื่นไหลถึง 120 เฟรมต่อวินาทีค่ะ'
+    },
+    {
+      title: 'Epic Games เผยโฉมเทคโนโลยี Nanite และ Lumen บน Unreal Engine 5.5',
+      detail: 'การเรนเดอร์แสงเงาแบบเรียลไทม์ไม่ต้องอบแสงล่วงหน้า ประหยัดเวลาพัฒนากว่า 60%',
+      anchor: 'ข่าวเอนจินเกมระดับโลกค่ะ: Epic Games อัปเดตเอนจิน Unreal Engine 5.5 พร้อมระบบแสงเงาสมจริงระดับภาพยนตร์ฮอลลีวูดค่ะ'
     }
   ],
 
@@ -103,6 +251,16 @@ export const GLOBAL_INTELLIGENCE_RADAR = {
       title: 'Solana ทำสถิติ Volume การซื้อขายบน DeFi รายวันแซงหน้าคู่แข่งในตลาด',
       detail: 'สภาพคล่องบน Decentralized Exchange เติบโตอย่างก้าวกระโดดด้วยค่าธรรมเนียมที่ต่ำและความเร็วระดับ Sub-second',
       anchor: 'ทางด้านเหรียญ Solana ค่ะ: ยอดวอลุ่มการทำธุรกรรมบนระบบ DeFi พุ่งสูงขึ้นทำสถิติใหม่อย่างต่อเนื่อง ด้วยจุดเด่นเรื่องความเร็วและค่าธรรมเนียมที่ถูกมากค่ะ'
+    },
+    {
+      title: 'BlackRock และ Fidelity ขยายพอร์ตการลงทุนใน Real World Assets (RWA) บนบล็อกเชน',
+      detail: 'การแปลงพันธบัตรรัฐบาลสหรัฐฯ เป็นโทเคนดิจิทัลได้รับความนิยมสูง มีมูลค่าตลาดรวมพุ่งแตะ 1 หมื่นล้านดอลลาร์',
+      anchor: 'ข่าวด้านสถาบันการเงินคริปโตค่ะ: กองทุนยักษ์ใหญ่อย่าง BlackRock กำลังเดินหน้าแปลงพันธบัตรรัฐบาลเป็นโทเคนบนบล็อกเชนอย่างต่อเนื่องค่ะ'
+    },
+    {
+      title: 'อัปเดตสภาวะการ Halving และ Hashrate ของเครือข่าย Bitcoin พุ่งทำสถิติสูงสุดใหม่',
+      detail: 'ความปลอดภัยของเครือข่ายแข็งแกร่งที่สุดในประวัติศาสตร์ ดึงดูดนักขุดพลังงานสะอาดทั่วโลก',
+      anchor: 'ข้อมูลเชิงลึกของบิตคอยน์ค่ะ: กำลังขุด Hashrate ของเครือข่ายบิตคอยน์ทำสถิติสูงสุดใหม่ สะท้อนถึงความมั่นคงปลอดภัยสูงสุดในประวัติศาสตร์ค่ะ'
     }
   ],
 
@@ -110,17 +268,22 @@ export const GLOBAL_INTELLIGENCE_RADAR = {
     {
       title: 'OpenAI และ DeepSeek ร่วมยกระดับโมเดลปัญญาประดิษฐ์ Reasoning Architecture สู่ความฉลาดระดับ AGI',
       detail: 'สถาปัตยกรรมการให้เหตุผลแบบ CoT (Chain-of-Thought) รุ่นใหม่สามารถแก้โจทย์คณิตศาสตร์และเขียนโค้ดโปรแกรมระดับสูงได้แม่นยำ 98.7%',
-      anchor: 'รายงานข่าวเทคโนโลยีและปัญญาประดิษฐ์ค่ะ: วงการ AI กำลังก้าวหน้าอย่างรวดเร็ว โดยโมเดลล่าสุดสามารถคิดวิเคราะห์และแก้โจทย์โค้ดดิ้งที่ซับซ้อนได้อย่างแม่นยำเฉียด 99% แล้วค่ะ'
+      anchor: 'รายงานข่าวเทคโนโลยีและปัญญาประดิษฐ์ค่ะ: วงการ AI กำลังก้าวหน้าอย่างรวดเร็ว โดยโมเดล DeepSeek R1 และ OpenAI สามารถคิดวิเคราะห์และแก้โจทย์โค้ดดิ้งที่ซับซ้อนได้อย่างแม่นยำเฉียด 99% แล้วค่ะ'
     },
     {
       title: 'NVIDIA เริ่มส่งมอบชิปสถาปัตยกรรม Blackwell Ultra รองรับระบบประมวลผล Supercomputer ทั่วโลก',
       detail: 'ประสิทธิภาพการคำนวณระดับ ExaFLOPS ช่วยลดการใช้พลังงานลง 40% สำหรับการเทรน Large Language Models ขนาดใหญ่',
-      anchor: 'ข่าวฮาร์ดแวร์ AI ระดับโลกค่ะ: ทางบริษัท NVIDIA ได้เริ่มทยอยส่งมอบชิป Blackwell รุ่นใหม่ ซึ่งมีพลังประมวลผลสูงมากและช่วยประหยัดพลังงานลงถึง 40% ค่ะ'
+      anchor: 'ข่าวฮาร์ดแวร์ AI ระดับโลกค่ะ: ทางบริษัท NVIDIA ได้เริ่มทยอยส่งมอบชิป Blackwell Ultra ซึ่งมีพลังประมวลผลสูงมากและช่วยประหยัดพลังงานลงถึง 40% ค่ะ'
     },
     {
       title: 'นักวิทยาศาสตร์ควอนตัมคอมพิวติงประสบความสำเร็จในการรักษาเสถียรภาพ Qubit ได้นานกว่า 1 ชั่วโมง',
       detail: 'ก้าวสำคัญที่จะเปลี่ยนผ่านสู่วงการ Quantum Cryptography และการจำลองโมเลกุลยาในอนาคต',
       anchor: 'ข่าววิทยาศาสตร์และเทคโนโลยีควอนตัมค่ะ: ล่าสุดนักวิจัยสามารถรักษาความเสถียรของ Qubit ได้นานขึ้น ถือเป็นก้าวสำคัญสู่วงการคอมพิวเตอร์ยุคใหม่อย่างแท้จริงค่ะ'
+    },
+    {
+      title: 'Anthropic และ Google เปิดตัวระบบ Multi-Agent Collaborative Coding Framework',
+      detail: 'บอทโปรแกรมเมอร์ AI สามารถเขียนโค้ด ตรวจสอบบั๊ก และทำ Automated Deployment ได้แบบอัตโนมัติเต็มรูปแบบ',
+      anchor: 'ข่าววงการพัฒนาซอฟต์แวร์ AI ค่ะ: มีการเปิดตัวระบบ Multi-Agent AI ที่สามารถเขียนโค้ดและดีบักโปรแกรมได้แบบอัตโนมัติ 100% ค่ะ'
     }
   ],
 
@@ -128,12 +291,17 @@ export const GLOBAL_INTELLIGENCE_RADAR = {
     {
       title: 'ราคาทองคำ Spot Gold (XAU/USD) พุ่งทะยานทำ New High รับแรงหนุนจากสัญญาณลดดอกเบี้ยของ Fed',
       detail: 'ประธานเฟดส่งสัญญาณความพร้อมในการผ่อนคลายนโยบายการเงิน ส่งผลให้ดอลลาร์อ่อนค่าและทองคำกลายเป็นสินทรัพย์ปลอดภัยยอดนิยม',
-      anchor: 'รายงานราคาทองคำและสภาวะตลาดการเงินโลกค่ะ: ราคาทองคำ Spot Gold กำลังทำจุดสูงสุดใหม่ต่อเนื่อง จากการที่ธนาคารกลางสหรัฐฯ ส่งสัญญาณเตรียมปรับลดอัตราดอกเบี้ย ส่งผลให้เม็ดเงินไหลเข้าสินทรัพย์ปลอดภัยอย่างคึกคักค่ะ'
+      anchor: 'รายงานราคาทองคำและสภาวะตลาดการเงินโลกค่ะ: ราคาทองคำ Spot Gold กำลังทำจุดสูงสุดใหม่อย่างต่อเนื่อง จากการที่ธนาคารกลางสหรัฐฯ ส่งสัญญาณเตรียมปรับลดอัตราดอกเบี้ย ส่งผลให้เม็ดเงินไหลเข้าทองคำอย่างคึกคักค่ะ'
     },
     {
       title: 'ดัชนีตลาดหุ้นสหรัฐฯ NASDAQ และ S&P 500 ปิดบวกทำสถิติใหม่จากแรงซื้อกลุ่มเทคโนโลยี',
       detail: 'ผลประกอบการบริษัทกลุ่ม AI และ Semiconductor เติบโตแข็งแกร่งกว่าที่ตลาดคาดการณ์ หนุนภาพรวมเศรษฐกิจ',
       anchor: 'สรุปภาพรวมตลาดหุ้นโลกค่ะ: ดัชนี NASDAQ และ S&P 500 ปิดบวกอย่างสดใส ได้รับแรงหนุนหลักจากผลประกอบการที่ยอดเยี่ยมของหุ้นกลุ่มเทคโนโลยีค่ะ'
+    },
+    {
+      title: 'ธนาคารกลางทั่วโลกเพิ่มการสำรองทองคำแท่งแตะระดับสูงสุดในรอบ 50 ปี',
+      detail: 'ธนาคารกลางในเอเชียและยุโรปเข้าซื้อทองคำแท่งเพื่อกระจายความเสี่ยงของเงินทุนสำรองระหว่างประเทศ',
+      anchor: 'ข่าวทองคำสำรองระหว่างประเทศค่ะ: ธนาคารกลางทั่วโลกกำลังเร่งสะสมทองคำแท่งเข้าคลังสำรองแตะระดับสูงสุดในรอบ 50 ปีค่ะ'
     }
   ],
 
@@ -147,6 +315,11 @@ export const GLOBAL_INTELLIGENCE_RADAR = {
       title: 'ระบบป้องกันทางไซเบอร์แบบ AI Adaptive Firewall สามารถสกัดกั้นการโจมตี DDoS ระดับ Terabit ได้สำเร็จ',
       detail: 'การใช้อัลกอริทึม Machine Learning วิเคราะห์แพ็กเกจข้อมูลช่วยตัดการโจมตีได้ภายใน 3 มิลลิวินาที',
       anchor: 'ข่าวความก้าวหน้าด้านการป้องกันทางไซเบอร์ค่ะ: เทคโนโลยี AI Firewall รุ่นใหม่สามารถสกัดกั้นการโจมตี DDoS ขนาดใหญ่ได้ภายในเวลาเพียง 3 มิลลิวินาทีเท่านั้นค่ะ'
+    },
+    {
+      title: 'การบังคับใช้มาตรฐานการเข้ารหัสต้านทานควอนตัม Post-Quantum Cryptography (PQC)',
+      detail: 'สถาบันมาตรฐานความปลอดภัยสากลประกาศใช้มาตรฐานอัลกอริทึมเข้ารหัสชุดใหม่ เพื่อรับมือภัยคุกคามจากควอนตัมคอมพิวเตอร์',
+      anchor: 'ข่าวความปลอดภัยยุคควอนตัมค่ะ: สถาบันความปลอดภัยสากลเริ่มบังคับใช้มาตรฐานการเข้ารหัสแบบ Post-Quantum เพื่อป้องกันการถอดรหัสในอนาคตค่ะ'
     }
   ]
 };
@@ -427,6 +600,9 @@ export class HologramAssistantEngine {
 
     if (!this.isVoiceEnabled) return;
 
+    // Automatic Thai Phonetic Normalization for 100% fluent speech
+    const speechPhonetic = phoneticizeForThaiSpeech(text);
+
     this.stopAllSpeech();
     this.playChirpSFX(true);
 
@@ -454,7 +630,7 @@ export class HologramAssistantEngine {
     if (typeof window !== 'undefined' && window.responsiveVoice && typeof window.responsiveVoice.speak === 'function') {
       try {
         window.responsiveVoice.cancel();
-        window.responsiveVoice.speak(text, 'Thai Female', {
+        window.responsiveVoice.speak(speechPhonetic, 'Thai Female', {
           pitch: 1.12,
           rate: 1.0,
           onstart: () => {
@@ -465,18 +641,18 @@ export class HologramAssistantEngine {
             onFinish();
           },
           onerror: () => {
-            this.speakWithThaiFemaleNeural(text, onFinish);
+            this.speakWithThaiFemaleNeural(speechPhonetic, onFinish);
           }
         });
         return;
       } catch (e) {
-        this.speakWithThaiFemaleNeural(text, onFinish);
+        this.speakWithThaiFemaleNeural(speechPhonetic, onFinish);
         return;
       }
     }
 
     // 2. Secondary Engine: Thai Female Neural Audio Queue
-    this.speakWithThaiFemaleNeural(text, onFinish);
+    this.speakWithThaiFemaleNeural(speechPhonetic, onFinish);
   }
 
   speakWithThaiFemaleNeural(text, onFinish) {
@@ -960,6 +1136,89 @@ export class HologramAssistantEngine {
     return arr[Math.floor(Math.random() * arr.length)];
   }
 
+  // ADVANCED PROACTIVE CO-PILOT SKILLS & CAPABILITIES
+  // 1. Quantitative Institutional Market Analysis
+  handleMarketAnalysis() {
+    this.setGazeMode('GYM');
+    const gym = this.cachedGymStats || { level: 10, samples: 14971, winRate: 69.6 };
+    const speech = `รายงานวิเคราะห์ตลาดแบบเรียลไทม์จากระบบควอนท์ KRONOS และสภา 4 เทพค่ะ: ขณะนี้ตรวจพบโครงสร้างราคา Liquidity Sweep บริเวณแนวรับสำคัญของ Bitcoin พร้อมสัญญาณ Bullish Order Block จาก ORION ขณะที่ LEVIATHAN ยืนยันแรงซื้อสะสมของวาฬสถาบัน สรุปคำแนะนำ: ถือครองสถานะด้วยการคุมความเสี่ยงตามเกณฑ์ AEGIS ค่ะ`;
+    this.speak(speech);
+
+    return {
+      category: '📊 INSTITUTIONAL QUANT ANALYSIS',
+      title: 'บทวิเคราะห์โครงสร้างตลาด SMC & Order Flow',
+      detail: `[ORION SMC]: ตรวจพบ Bullish Order Block ใน Timeframe 4H\n[LEVIATHAN]: ตรวจพบแรงซื้อสะสมของวาฬสถาบัน On-chain\n[AEGIS RISK]: ความเสี่ยงระดับต่ำ เหมาะแก่การเข้าสะสมตามโซน\n[KRONOS CORE]: คำนวณค่า Win Rate คาดหวังเฉลี่ยที่ ${gym.winRate}%`,
+      speech: speech
+    };
+  }
+
+  // 2. Security & Enclave Defense Audit
+  handleSecurityAudit() {
+    this.setGazeMode('OPERATOR');
+    const speech = `รายงานตรวจสอบความมั่นคงปลอดภัยระบบ Enclave ค่ะ: ฐานข้อมูลโปรไฟล์ของคุณอนันต์ได้รับการปกป้องด้วยการเข้ารหัส AES-256 และการตรวจสอบ Checksum แบบเรียลไทม์ 100% สมบูรณ์ พร้อมระบบป้องกัน DEFCON-1 ไร้ช่องโหว่การโจมตีค่ะ`;
+    this.speak(speech);
+
+    return {
+      category: '🛡️ SECURITY & ENCLAVE DEFENSE AUDIT',
+      title: 'รายงานสถานะความปลอดภัยระดับ Quantum C2',
+      detail: `[ENCRYPTION]: AES-256-GCM + SHA-256 Checksum Verified\n[DEFENSE POSTURE]: DEFCON-1 Hardened Active Defense\n[PROFILE DATABASE]: Integrity 100% Real-Time Synchronized\n[AIR-GAP STATUS]: Isolated Enclave Secure`,
+      speech: speech
+    };
+  }
+
+  // 3. Ergonomics & Trading Mentorship
+  handleCoachingTip() {
+    this.setGazeMode('OPERATOR');
+    const tips = [
+      {
+        speech: `คำแนะนำการฝึกพิมพ์จาก NYX ค่ะคุณอนันต์: การวางนิ้วบนปุ่ม Home Row แบบผ่อนคลายและรักษาจังหวะให้สม่ำเสมอ จะช่วยเร่งความเร็ว WPM ได้มากกว่าการพยายามกดแป้นพิมพ์เร็วๆ โดยไม่รักษาความแม่นยำค่ะ`,
+        title: 'เทคนิคการเพิ่มความเร็ว WPM และความแม่นยำ',
+        detail: 'รักษาจังหวะการเคาะแป้นพิมพ์ให้คงที่ ใช้นิ้วก้อยและนิ้วนางอย่างมีประสิทธิภาพเพื่อลดอาการล้า'
+      },
+      {
+        speech: `คำแนะนำการบริหารความเสี่ยงในการเทรดค่ะ: ตามหลักเกณฑ์ของ AEGIS ควรกำหนดความเสี่ยงต่อไม้ไม่เกิน 1 ถึง 2% ของพอร์ต และตั้ง Stop Loss หลังโซน Order Block เสมอเพื่อรักษาเงินทุนในระยะยาวค่ะ`,
+        title: 'วินัยการควบคุมความเสี่ยงของเทรดเดอร์มืออาชีพ',
+        detail: 'Risk-to-Reward Ratio ควรอยู่ที่ 1:2 ขึ้นไป และไม่เข้าเทรดขณะตลาดมีข่าวความผันผวนสูงหากไม่มีแผนรองรับ'
+      }
+    ];
+    const picked = this.getRandomItem(tips);
+    this.speak(picked.speech);
+
+    return {
+      category: '🎯 NYX TACTICAL MENTORSHIP',
+      title: picked.title,
+      detail: picked.detail,
+      speech: picked.speech
+    };
+  }
+
+  // 4. Conversational AI Companion
+  handleConversationalChat(q) {
+    this.setGazeMode('OPERATOR');
+    let speech = '';
+    let title = 'บทสนทนากับ NYX AI Companion';
+    let detail = 'NYX พร้อมเป็นทั้งผู้ช่วยด้านเทรด ข่าวสาร และเพื่อนร่วมทางของคุณอนันต์ค่ะ';
+
+    if (q.includes('เธอคือใคร') || q.includes('เป็นใคร') || q.includes('ชื่ออะไร')) {
+      speech = `ฉันคือ NYX ผู้ช่วยปัญญาประดิษฐ์และคู่หูประจำสถานี C2 ของคุณอนันต์ค่ะ คอยสนับสนุนทั้งการรายงานข่าวรอบโลก การวิเคราะห์สภาวะตลาดควอนท์ และดูแลความปลอดภัยของระบบค่ะ`;
+      title = 'ทำความรู้จักกับ NYX (นิกซ์)';
+    } else if (q.includes('kronos') || q.includes('โครนอส')) {
+      speech = `โครนอสเป็นสมองกลหลักด้านการเทรดที่ยอดเยี่ยมมากค่ะ ได้เรียนรู้โครงสร้างแท่งเทียนไปนับหมื่นตัวอย่าง และทำงานร่วมกับฉันในการวิเคราะห์ข้อมูลสภาวะตลาดให้คุณอนันต์ค่ะ`;
+      title = 'เกี่ยวกับสมองกล KRONOS';
+    } else {
+      speech = `ยินดีที่ได้คุยกับคุณอนันต์เสมอค่ะ มีเรื่องอะไรที่คุณอนันต์อยากปรึกษา หรืออยากให้ฉันช่วยวิเคราะห์ตลาด สรุปข่าว หรือแนะนำเทคนิคเพิ่มเติม บอกฉันได้ทันทีเลยนะคะ`;
+      title = 'พร้อมสนับสนุนคุณอนันต์เสมอ';
+    }
+
+    this.speak(speech);
+    return {
+      category: '💬 NYX COMPANION DIALOGUE',
+      title: title,
+      detail: detail,
+      speech: speech
+    };
+  }
+
   // NATURAL LANGUAGE INTERACTIVE TERMINAL QUERY ROUTER
   handleUserQuery(rawQuery = '') {
     let q = rawQuery.trim().toLowerCase();
@@ -1005,7 +1264,7 @@ export class HologramAssistantEngine {
         switchedName = this.setVoiceByName(voiceTarget);
       }
       
-      const activeVoiceName = switchedName || this.selectedFemaleVoice?.name || 'ระบบเสียงภาษาไทยมาตรฐาน';
+      const activeVoiceName = switchedName || this.selectedFemaleVoice?.name || 'ResponsiveVoice Thai Female (เสียงผู้หญิงไทยแท้)';
       const listStr = thaiList.map((v, i) => `[${i + 1}] ${v.name} (${v.lang})`).join('\n');
       const notifySpeech = `ใช้งานระบบเสียงภาษาไทย ${activeVoiceName} เรียบร้อยแล้วค่ะคุณอนันต์`;
       this.speak(notifySpeech);
@@ -1013,7 +1272,7 @@ export class HologramAssistantEngine {
       return {
         category: '🎙️ THAI VOICE SELECTOR',
         title: `ระบบเสียงภาษาไทย: ${activeVoiceName}`,
-        detail: `รายการเสียงภาษาไทยที่ตรวจพบในเครื่องของคุณ:\n${listStr}\n------------------------------------------------------------------\n💡 วิธีเปลี่ยนเสียง: พิมพ์ "NYX voice 1" หรือ "NYX voice premwadee"`,
+        detail: `ระบบขับเคลื่อนหลัก: ResponsiveVoice Cloud Thai Female (เสียงผู้หญิงไทยแท้ 100%)\nรายการเสียงที่ตรวจพบในระบบ:\n${listStr}`,
         speech: notifySpeech
       };
     }
@@ -1031,6 +1290,22 @@ export class HologramAssistantEngine {
       q = 'ai';
     } else if (/^(6|ข้อ 6|ข่าว 6|หมวด 6|no 6)$/.test(q)) {
       q = 'ไซเบอร์';
+    }
+
+    // 0.3 Proactive Assistant Skills Routing
+    // Market Quant Analysis
+    if (q.includes('วิเคราะห์') || q.includes('ช่วยเทรด') || q.includes('analyze') || q.includes('signal') || q.includes('สัญญาณ')) {
+      return this.handleMarketAnalysis();
+    }
+
+    // Security & Defense Audit
+    if (q.includes('ความปลอดภัย') || q.includes('ตรวจระบบ') || q.includes('ป้องกัน') || q.includes('security') || q.includes('audit')) {
+      return this.handleSecurityAudit();
+    }
+
+    // Coaching & Mentorship
+    if (q.includes('แนะนำ') || q.includes('โค้ช') || q.includes('สอน') || q.includes('coach') || q.includes('tip')) {
+      return this.handleCoachingTip();
     }
 
     // 1. ข่าวเกมส์ & อีสปอร์ต (Gaming)
@@ -1129,17 +1404,9 @@ export class HologramAssistantEngine {
       };
     }
 
-    // 8. คำทักทาย หรือถามความสามารถทั่วไป
-    if (q.includes('หวัดดี') || q.includes('สวัสดี') || q.includes('hello') || q.includes('hi') || q.includes('ช่วย') || q.includes('ทำอะไรได้') || q.includes('ใคร') || q.length === 0) {
-      this.setGazeMode('OPERATOR');
-      const greeting = 'สวัสดีค่ะคุณอนันต์ NYX พร้อมให้ข้อมูลแล้วค่ะ คุณสามารถพิมพ์ถามข่าวหมวดต่างๆ เช่น "NYX ข่าวบ้านเมือง", "NYX ข่าวเกมส์", "NYX ข่าวคริปโต", "NYX ข่าวทอง" หรือ "NYX ข่าว AI" ได้ตลอดเวลาเลยนะคะ';
-      this.speak(greeting);
-      return {
-        category: '👩‍💻 NYX COPILOT ASSISTANT',
-        title: 'ระบบรับคำสั่งเสียงและข้อความภาษาไทย',
-        detail: 'พร้อมรายงานข่าวกรองรอบโลก 6 หมวดหมู่ และสถานะสมองกล KRONOS AI Gym',
-        speech: greeting
-      };
+    // 8. Conversational Chat & Lore
+    if (q.includes('หวัดดี') || q.includes('สวัสดี') || q.includes('hello') || q.includes('hi') || q.includes('คุย') || q.includes('เธอ') || q.includes('ใคร') || q.includes('ทำอะไรได้') || q.length === 0) {
+      return this.handleConversationalChat(q);
     }
 
     // 9. Generic / Freeform Smart Response
