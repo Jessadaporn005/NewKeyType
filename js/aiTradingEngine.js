@@ -16,19 +16,62 @@ export const MARKET_TYPES = {
 // Asset Definitions (Binance Crypto & XM Global Forex / Commodities)
 export const TRADING_ASSETS = [
   // BINANCE CRYPTO & EQUITIES
-  { id: 'BTC/USDT', name: 'Bitcoin Network', market: 'binance', basePrice: 96420.50, unit: '₿', minTick: 0.5, digits: 2, leverageMax: 50, binanceSymbol: 'BTCUSDT' },
-  { id: 'ETH/USDT', name: 'Ethereum Network', market: 'binance', basePrice: 3580.00, unit: 'Ξ', minTick: 0.1, digits: 2, leverageMax: 50, binanceSymbol: 'ETHUSDT' },
-  { id: 'SOL/USDT', name: 'Solana High-Speed L1', market: 'binance', basePrice: 198.40, unit: '◎', minTick: 0.01, digits: 2, leverageMax: 20, binanceSymbol: 'SOLUSDT' },
-  { id: 'NVDA/USD', name: 'NVIDIA AI Semiconductor', market: 'binance', basePrice: 142.80, unit: '$', minTick: 0.01, digits: 2, leverageMax: 10 },
-  { id: 'CYBER/USDT', name: 'Darknet Hashrate Index', market: 'binance', basePrice: 42.50, unit: '⚡', minTick: 0.01, digits: 2, leverageMax: 25 },
-  { id: 'QUANTUM/USDT', name: 'Qubit Yield Protocol', market: 'binance', basePrice: 850.00, unit: 'Ψ', minTick: 0.1, digits: 2, leverageMax: 20 },
+  { id: 'BTC/USDT', name: 'Bitcoin Network', market: 'binance', basePrice: 96420.50, unit: '₿', minTick: 0.5, digits: 2, leverageMax: 50, baseSpread: 2.50, spreadUnit: '$', binanceSymbol: 'BTCUSDT' },
+  { id: 'ETH/USDT', name: 'Ethereum Network', market: 'binance', basePrice: 3580.00, unit: 'Ξ', minTick: 0.1, digits: 2, leverageMax: 50, baseSpread: 0.35, spreadUnit: '$', binanceSymbol: 'ETHUSDT' },
+  { id: 'SOL/USDT', name: 'Solana High-Speed L1', market: 'binance', basePrice: 198.40, unit: '◎', minTick: 0.01, digits: 2, leverageMax: 20, baseSpread: 0.08, spreadUnit: '$', binanceSymbol: 'SOLUSDT' },
+  { id: 'NVDA/USD', name: 'NVIDIA AI Semiconductor', market: 'binance', basePrice: 142.80, unit: '$', minTick: 0.01, digits: 2, leverageMax: 10, baseSpread: 0.05, spreadUnit: '$' },
+  { id: 'CYBER/USDT', name: 'Darknet Hashrate Index', market: 'binance', basePrice: 42.50, unit: '⚡', minTick: 0.01, digits: 2, leverageMax: 25, baseSpread: 0.02, spreadUnit: '$' },
+  { id: 'QUANTUM/USDT', name: 'Qubit Yield Protocol', market: 'binance', basePrice: 850.00, unit: 'Ψ', minTick: 0.1, digits: 2, leverageMax: 20, baseSpread: 0.30, spreadUnit: '$' },
 
   // XM GLOBAL FOREX & COMMODITIES (GOLD, EUR, GBP, USOIL)
-  { id: 'XAU/USD', name: 'Gold Spot (XM Global)', market: 'xm', basePrice: 2748.50, unit: 'oz', minTick: 0.05, digits: 2, leverageMax: 500, lotSize: 100, pipValue: 10, binanceSymbol: 'PAXGUSDT' },
-  { id: 'EUR/USD', name: 'Euro / US Dollar', market: 'xm', basePrice: 1.0845, unit: '€', minTick: 0.0001, digits: 4, leverageMax: 500, lotSize: 100000, pipValue: 10 },
-  { id: 'GBP/USD', name: 'British Pound / USD', market: 'xm', basePrice: 1.2980, unit: '£', minTick: 0.0001, digits: 4, leverageMax: 500, lotSize: 100000, pipValue: 10 },
-  { id: 'USOIL', name: 'WTI Crude Oil Spot', market: 'xm', basePrice: 71.40, unit: 'bbl', minTick: 0.01, digits: 2, leverageMax: 100, lotSize: 100, pipValue: 10 }
+  { id: 'XAU/USD', name: 'Gold Spot (XM Global)', market: 'xm', basePrice: 2748.50, unit: 'oz', minTick: 0.05, digits: 2, leverageMax: 500, lotSize: 100, pipValue: 10, baseSpread: 0.22, spreadUnit: 'pts', binanceSymbol: 'PAXGUSDT' },
+  { id: 'EUR/USD', name: 'Euro / US Dollar', market: 'xm', basePrice: 1.0845, unit: '€', minTick: 0.0001, digits: 4, leverageMax: 500, lotSize: 100000, pipValue: 10, baseSpread: 0.00012, spreadUnit: 'pips' },
+  { id: 'GBP/USD', name: 'British Pound / USD', market: 'xm', basePrice: 1.2980, unit: '£', minTick: 0.0001, digits: 4, leverageMax: 500, lotSize: 100000, pipValue: 10, baseSpread: 0.00015, spreadUnit: 'pips' },
+  { id: 'USOIL', name: 'WTI Crude Oil Spot', market: 'xm', basePrice: 71.40, unit: 'bbl', minTick: 0.01, digits: 2, leverageMax: 100, lotSize: 100, pipValue: 10, baseSpread: 0.035, spreadUnit: 'pts' }
 ];
+
+export function calculateDynamicSpread(asset = TRADING_ASSETS[0], currentPrice = 100, candle = null, activeNews = null) {
+  const baseSpread = asset.baseSpread || (currentPrice * 0.00015);
+  let multiplier = 1.0 + (Math.random() * 0.18 - 0.09); // normal micro-noise (0.91x to 1.09x)
+
+  // 1. High Volatility Spurt (Candle range compared to normal)
+  if (candle && candle.high && candle.low) {
+    const range = candle.high - candle.low;
+    const normRange = currentPrice * 0.002;
+    if (range > normRange * 1.5) {
+      multiplier += Math.min(1.4, (range / normRange) * 0.35);
+    }
+  }
+
+  // 2. High-Impact Breaking News Widening (e.g. CPI, Non-Farm Payrolls, FOMC)
+  if (activeNews && typeof activeNews.sentimentScore === 'number' && Math.abs(activeNews.sentimentScore) >= 15) {
+    multiplier += 0.75;
+  }
+
+  const isWidened = multiplier >= 1.45;
+  const spreadValue = Number((baseSpread * multiplier).toFixed(asset.digits));
+  const bidPrice = Number((currentPrice - spreadValue / 2).toFixed(asset.digits));
+  const askPrice = Number((currentPrice + spreadValue / 2).toFixed(asset.digits));
+
+  let spreadFormatted = '';
+  if (asset.spreadUnit === 'pips') {
+    spreadFormatted = (spreadValue / 0.0001).toFixed(1) + ' Pips';
+  } else if (asset.spreadUnit === 'pts') {
+    spreadFormatted = Math.round(spreadValue / 0.01) + ' pts ($' + spreadValue.toFixed(2) + ')';
+  } else {
+    spreadFormatted = '$' + spreadValue.toFixed(asset.digits);
+  }
+
+  return {
+    spreadValue,
+    spreadFormatted,
+    bidPrice,
+    askPrice,
+    isWidened,
+    multiplier: Number(multiplier.toFixed(2)),
+    status: isWidened ? 'WIDENED (HIGH VOLATILITY ⚠️)' : 'STANDARD TIGHT (🟢)'
+  };
+}
 
 export const TIMEFRAMES = [
   { id: '1m', label: '1m', seconds: 60, candleCount: 80, binanceInterval: '1m' },
@@ -1021,7 +1064,11 @@ export class AITradingEngine {
     last.close = newClose;
     last.high = Math.max(last.high, newClose);
     last.low = Math.min(last.low, newClose);
-    last.volume += Math.round(5 + Math.random() * 25);
+    // Calculate real-time dynamic spread
+    this.currentSpreadInfo = calculateDynamicSpread(this.activeAsset, newClose, last, this.activeNews);
+    if (this.onSpreadUpdate) {
+      this.onSpreadUpdate(this.currentSpreadInfo);
+    }
 
     // 1. Update Manual Paper Trading Positions
     this.updatePositionPnL();
@@ -1739,24 +1786,29 @@ export class AITradingEngine {
   openPosition(side = 'LONG', amountUSD = 1000) {
     if (this.candles.length === 0) return;
     const currentPrice = this.candles[this.candles.length - 1].close;
+    const spreadInfo = this.currentSpreadInfo || calculateDynamicSpread(this.activeAsset, currentPrice, this.candles[this.candles.length - 1], this.activeNews);
 
     if (amountUSD > this.paperBalanceUSD) {
       if (this.toasts) this.toasts.show('ERROR', 'INSUFFICIENT PAPER CAPITAL BALANCE', 2000);
       return;
     }
 
+    const isLong = side.toUpperCase() === 'LONG';
+    const executionPrice = isLong ? spreadInfo.askPrice : spreadInfo.bidPrice;
+
     const pos = {
       id: 'POS_' + Date.now().toString(36),
       assetId: this.activeAsset.id,
       side: side.toUpperCase(), // 'LONG' | 'SHORT'
-      entryPrice: currentPrice,
-      currentPrice: currentPrice,
+      entryPrice: executionPrice,
+      currentPrice: executionPrice,
       amountUSD: amountUSD,
       leverage: this.leverage,
-      size: (amountUSD * this.leverage) / currentPrice,
-      pnlUSD: 0,
-      pnlPercent: 0,
+      size: (amountUSD * this.leverage) / executionPrice,
+      pnlUSD: -((amountUSD * (spreadInfo.spreadValue / executionPrice) * this.leverage) / 2),
+      pnlPercent: -((spreadInfo.spreadValue / executionPrice) * 100 * this.leverage / 2),
       openTime: new Date().toLocaleTimeString(),
+      spreadAtOpen: spreadInfo.spreadFormatted,
       sl: this.signal ? this.signal.sl : null,
       tp: this.signal ? this.signal.tp1 : null
     };
@@ -1766,7 +1818,7 @@ export class AITradingEngine {
 
     if (this.sound && this.sound.playSuccessFanfare) this.sound.playSuccessFanfare();
     if (this.toasts) {
-      this.toasts.show('INFO', `⚡ EXECUTED ${side} ${this.activeAsset.id} @ $${currentPrice} (${this.leverage}x)`, 2500);
+      this.toasts.show('INFO', `⚡ EXECUTED ${side} ${this.activeAsset.id} @ $${executionPrice} [Spread: ${spreadInfo.spreadFormatted}]`, 2800);
     }
 
     if (this.onPositionUpdate) this.onPositionUpdate(this.positions);
@@ -1794,13 +1846,17 @@ export class AITradingEngine {
 
   updatePositionPnL() {
     if (this.candles.length === 0 || this.positions.length === 0) return;
-    const curPrice = this.candles[this.candles.length - 1].close;
+    const lastCandle = this.candles[this.candles.length - 1];
+    const spreadInfo = this.currentSpreadInfo || calculateDynamicSpread(this.activeAsset, lastCandle.close, lastCandle, this.activeNews);
 
     this.positions.forEach(pos => {
-      pos.currentPrice = curPrice;
-      const priceDiff = pos.side === 'LONG' ? curPrice - pos.entryPrice : pos.entryPrice - curPrice;
-      pos.pnlPercent = (priceDiff / pos.entryPrice) * 100 * pos.leverage;
-      pos.pnlUSD = (pos.amountUSD * pos.pnlPercent) / 100;
+      // Long positions close at Bid; Short positions close at Ask
+      const exitPrice = pos.side === 'LONG' ? spreadInfo.bidPrice : spreadInfo.askPrice;
+      pos.currentPrice = exitPrice;
+
+      const priceDiff = pos.side === 'LONG' ? exitPrice - pos.entryPrice : pos.entryPrice - exitPrice;
+      pos.pnlPercent = Number(((priceDiff / pos.entryPrice) * 100 * pos.leverage).toFixed(2));
+      pos.pnlUSD = Number(((pos.amountUSD * pos.pnlPercent) / 100).toFixed(2));
     });
 
     if (this.onPositionUpdate) this.onPositionUpdate(this.positions);

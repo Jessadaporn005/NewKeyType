@@ -681,6 +681,23 @@
             <label class="toggle-chip"><input type="checkbox" id="chkBollinger" checked> <span>Bollinger</span></label>
             <label class="toggle-chip"><input type="checkbox" id="chkPatterns" checked> <span>AI Scanner</span></label>
           </div>
+
+          <!-- REAL-TIME BROKER SPREAD & BID/ASK MONITOR -->
+          <div class="trading-spread-monitor" id="tradingSpreadMonitor">
+            <div class="spread-quote-box bid-box">
+              <span class="quote-lbl">BID (SELL)</span>
+              <strong class="quote-val" id="spreadBidVal">$2,748.39</strong>
+            </div>
+            <div class="spread-indicator-pill" id="spreadStatusPill">
+              <span class="spread-icon">⚡</span>
+              <span class="spread-text" id="spreadFormattedVal">SPREAD: 22 pts ($0.22)</span>
+              <span class="spread-badge tight" id="spreadStatusBadge">TIGHT (🟢)</span>
+            </div>
+            <div class="spread-quote-box ask-box">
+              <span class="quote-lbl">ASK (BUY)</span>
+              <strong class="quote-val" id="spreadAskVal">$2,748.61</strong>
+            </div>
+          </div>
         </div>
 
         <!-- MAIN TRADING WORKSPACE (2 COLUMNS) -->

@@ -4380,6 +4380,82 @@ body.mode-trading .sub-chart-container {
   cursor: pointer;
 }
 
+.trading-spread-monitor {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-family: var(--font-mono);
+}
+
+.spread-quote-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.1;
+}
+
+.spread-quote-box .quote-lbl {
+  font-size: 8px;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.spread-quote-box.bid-box .quote-val {
+  color: #ff4466;
+  font-size: 11.5px;
+  font-weight: 800;
+}
+
+.spread-quote-box.ask-box .quote-val {
+  color: #00ff88;
+  font-size: 11.5px;
+  font-weight: 800;
+}
+
+.spread-indicator-pill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  padding: 2px 6px;
+  font-size: 9.5px;
+}
+
+.spread-icon {
+  color: #ffd700;
+}
+
+.spread-text {
+  color: #cbd5e1;
+  font-weight: 700;
+}
+
+.spread-badge {
+  font-size: 8px;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 2px;
+}
+
+.spread-badge.tight {
+  background: rgba(0, 255, 102, 0.15);
+  color: #00ff88;
+  border: 1px solid rgba(0, 255, 102, 0.3);
+}
+
+.spread-badge.widened {
+  background: rgba(255, 170, 0, 0.2);
+  color: #ffaa00;
+  border: 1px solid rgba(255, 170, 0, 0.5);
+  animation: pulseNews 0.8s infinite alternate;
+}
+
 .trading-workspace-grid {
   display: grid;
   grid-template-columns: 1fr 340px;

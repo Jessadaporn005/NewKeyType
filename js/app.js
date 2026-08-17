@@ -690,6 +690,10 @@ class WindowsTerminalApp {
             this.updateKnowledgeStreamUI(logs, latestLog);
           };
 
+          this.tradingEngine.onSpreadUpdate = (spreadInfo) => {
+            this.updateTradingSpreadUI(spreadInfo);
+          };
+
           this.tradingEngine.init();
           this.bindTradingUIEvents();
           if (this.tradingEngine.activeNews) {
@@ -707,8 +711,30 @@ class WindowsTerminalApp {
           if (this.tradingEngine.knowledgeLogs) {
             this.updateKnowledgeStreamUI(this.tradingEngine.knowledgeLogs);
           }
+          if (this.tradingEngine.currentSpreadInfo) {
+            this.updateTradingSpreadUI(this.tradingEngine.currentSpreadInfo);
+          }
         }
         break;
+    }
+  }
+
+  updateTradingSpreadUI(spreadInfo) {
+    if (!spreadInfo) return;
+    const digits = this.tradingEngine?.activeAsset?.digits || 2;
+    const bidVal = document.getElementById('spreadBidVal');
+    if (bidVal) bidVal.textContent = `$${spreadInfo.bidPrice.toFixed(digits)}`;
+
+    const askVal = document.getElementById('spreadAskVal');
+    if (askVal) askVal.textContent = `$${spreadInfo.askPrice.toFixed(digits)}`;
+
+    const spreadText = document.getElementById('spreadFormattedVal');
+    if (spreadText) spreadText.textContent = `SPREAD: ${spreadInfo.spreadFormatted}`;
+
+    const spreadBadge = document.getElementById('spreadStatusBadge');
+    if (spreadBadge) {
+      spreadBadge.className = 'spread-badge ' + (spreadInfo.isWidened ? 'widened' : 'tight');
+      spreadBadge.textContent = spreadInfo.status;
     }
   }
 

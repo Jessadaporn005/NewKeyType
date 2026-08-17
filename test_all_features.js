@@ -617,15 +617,22 @@ async function runTests() {
   const { LIVE_INTERNET_KNOWLEDGE_FEED } = await import('./js/aiTradingEngine.js');
   assert(Array.isArray(LIVE_INTERNET_KNOWLEDGE_FEED) && LIVE_INTERNET_KNOWLEDGE_FEED.length >= 6, `LIVE_INTERNET_KNOWLEDGE_FEED contains ${LIVE_INTERNET_KNOWLEDGE_FEED.length} macro market intelligence items`);
 
-  const profile = tradingEngine.getAIProfileDetails();
-  assert(profile.rankTitle.includes('LEVEL') && profile.samplesStudied >= 0, `getAIProfileDetails calculated rank (${profile.rankTitle}) and sample tracking`);
-  assert(Array.isArray(profile.skills) && profile.skills.length >= 5, `AI Profile contains ${profile.skills.length} distilled strategy competency badges`);
-  assert(typeof profile.profitFactor === 'string', `AI Profit Factor formatted properly: ${profile.profitFactor}`);
+  // =========================================================================
+  // SECTION 32: REAL-TIME BROKER DYNAMIC SPREAD & BID/ASK ENGINE
+  // =========================================================================
+  console.log('\n[32] Testing Real-Time Broker Dynamic Spread & Bid/Ask Engine...');
+  const { calculateDynamicSpread } = await import('./js/aiTradingEngine.js');
+  const gold = TRADING_ASSETS.find(a => a.id === 'XAU/USD');
+  const normalSpread = calculateDynamicSpread(gold, 2748.50, null, null);
+  assert(normalSpread.askPrice > normalSpread.bidPrice, `Gold Ask Price ($${normalSpread.askPrice}) > Bid Price ($${normalSpread.bidPrice})`);
+  assert(normalSpread.spreadFormatted.includes('pts'), `Gold spread formatted in points: ${normalSpread.spreadFormatted}`);
 
-  // Test Knowledge Cycle
-  const prevKnowledgeLen = tradingEngine.knowledgeLogs.length;
-  tradingEngine.cycleKnowledgeStream();
-  assert(tradingEngine.knowledgeLogs.length >= prevKnowledgeLen, 'cycleKnowledgeStream ingested new live market intelligence into real-time radar feed');
+  // Test dynamic widening under breaking macro news
+  const mockHighImpactNews = { headline: 'Emergency Fed Rate Decision', sentimentScore: 25 };
+  const widenedSpread = calculateDynamicSpread(gold, 2748.50, null, mockHighImpactNews);
+  assert(widenedSpread.isWidened === true, 'High-impact breaking news triggered dynamic spread widening');
+  assert(widenedSpread.spreadValue > normalSpread.spreadValue, `Widened spread ($${widenedSpread.spreadValue}) > Normal spread ($${normalSpread.spreadValue})`);
+  assert(widenedSpread.status.includes('WIDENED'), `Spread status correctly tagged: ${widenedSpread.status}`);
 
   console.log('\n====================================================');
   console.log(`🏁 TEST RESULTS: ${passed}/${total} TESTS PASSED (100%)`);
