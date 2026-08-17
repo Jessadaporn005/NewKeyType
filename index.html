@@ -646,13 +646,26 @@
       <div class="terminal-view hidden" id="viewTrading">
         <!-- TOP TRADING TOOLBAR -->
         <div class="trading-header-bar">
+          <!-- MARKET SOURCE SWITCHER (BINANCE vs XM GLOBAL) -->
+          <div class="trading-market-switcher" id="tradingMarketSwitcher">
+            <button class="market-src-btn active" id="btnMarketBinance" data-market="binance">🟡 BINANCE (CRYPTO)</button>
+            <button class="market-src-btn" id="btnMarketXM" data-market="xm">🔴 XM GLOBAL (FOREX & GOLD)</button>
+          </div>
+
           <div class="trading-pair-tabs" id="tradingPairTabs">
-            <button class="trading-pair-pill active" data-pair="BTC/USDT">₿ BTC/USDT</button>
-            <button class="trading-pair-pill" data-pair="ETH/USDT">Ξ ETH/USDT</button>
-            <button class="trading-pair-pill" data-pair="SOL/USDT">◎ SOL/USDT</button>
-            <button class="trading-pair-pill" data-pair="NVDA/USD">$ NVDA:AI</button>
-            <button class="trading-pair-pill" data-pair="CYBER/USDT">⚡ CYBER/USDT</button>
-            <button class="trading-pair-pill" data-pair="QUANTUM/USDT">Ψ QUANTUM/USDT</button>
+            <!-- Binance Tabs (Shown in Binance mode) -->
+            <button class="trading-pair-pill active" data-pair="BTC/USDT" data-market="binance">₿ BTC/USDT</button>
+            <button class="trading-pair-pill" data-pair="ETH/USDT" data-market="binance">Ξ ETH/USDT</button>
+            <button class="trading-pair-pill" data-pair="SOL/USDT" data-market="binance">◎ SOL/USDT</button>
+            <button class="trading-pair-pill" data-pair="NVDA/USD" data-market="binance">$ NVDA:AI</button>
+            <button class="trading-pair-pill" data-pair="CYBER/USDT" data-market="binance">⚡ CYBER/USDT</button>
+            <button class="trading-pair-pill" data-pair="QUANTUM/USDT" data-market="binance">Ψ QUANTUM/USDT</button>
+
+            <!-- XM Global Tabs (Shown in XM mode) -->
+            <button class="trading-pair-pill hidden-pair" data-pair="XAU/USD" data-market="xm">🥇 XAU/USD (Gold)</button>
+            <button class="trading-pair-pill hidden-pair" data-pair="EUR/USD" data-market="xm">💶 EUR/USD</button>
+            <button class="trading-pair-pill hidden-pair" data-pair="GBP/USD" data-market="xm">💷 GBP/USD</button>
+            <button class="trading-pair-pill hidden-pair" data-pair="USOIL" data-market="xm">🛢️ USOIL (Crude)</button>
           </div>
 
           <div class="trading-timeframe-selector" id="tradingTimeframeSelector">

@@ -4245,6 +4245,47 @@ body.mode-trading .sub-chart-container {
   flex-wrap: wrap;
 }
 
+.trading-market-switcher {
+  display: flex;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 2px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.market-src-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: #8b9cb0;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  padding: 4px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.market-src-btn:hover {
+  color: #fff;
+}
+
+.market-src-btn.active[data-market="binance"] {
+  background: rgba(243, 186, 47, 0.18);
+  border-color: #f3ba2f;
+  color: #f3ba2f;
+  box-shadow: 0 0 10px rgba(243, 186, 47, 0.35);
+}
+
+.market-src-btn.active[data-market="xm"] {
+  background: rgba(255, 34, 68, 0.2);
+  border-color: #ff2244;
+  color: #ff4466;
+  box-shadow: 0 0 10px rgba(255, 34, 68, 0.35);
+}
+
 .trading-pair-tabs {
   display: flex;
   gap: 6px;
@@ -4264,6 +4305,10 @@ body.mode-trading .sub-chart-container {
   transition: all 0.18s ease;
 }
 
+.trading-pair-pill.hidden-pair {
+  display: none !important;
+}
+
 .trading-pair-pill:hover {
   color: #ffffff;
   border-color: rgba(0, 229, 255, 0.4);
@@ -4274,6 +4319,13 @@ body.mode-trading .sub-chart-container {
   background: rgba(0, 229, 255, 0.12);
   border-color: #00e5ff;
   box-shadow: 0 0 10px rgba(0, 229, 255, 0.3);
+}
+
+.trading-pair-pill.active[data-pair="XAU/USD"] {
+  color: #ffd700 !important;
+  background: rgba(255, 215, 0, 0.15);
+  border-color: #ffd700;
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.4);
 }
 
 .trading-timeframe-selector {

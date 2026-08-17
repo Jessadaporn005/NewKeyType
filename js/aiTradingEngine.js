@@ -7,14 +7,27 @@
  * interactive HTML5 Canvas Candlestick Chart with crosshair, and Paper Trading simulator.
  */
 
-// Asset Definitions
+// Market Source Definitions
+export const MARKET_TYPES = {
+  BINANCE: 'binance',
+  XM: 'xm'
+};
+
+// Asset Definitions (Binance Crypto & XM Global Forex / Commodities)
 export const TRADING_ASSETS = [
-  { id: 'BTC/USDT', name: 'Bitcoin Network', basePrice: 96420.50, unit: '₿', minTick: 0.5, digits: 2, leverageMax: 50, binanceSymbol: 'BTCUSDT' },
-  { id: 'ETH/USDT', name: 'Ethereum Network', basePrice: 3580.00, unit: 'Ξ', minTick: 0.1, digits: 2, leverageMax: 50, binanceSymbol: 'ETHUSDT' },
-  { id: 'SOL/USDT', name: 'Solana High-Speed L1', basePrice: 198.40, unit: '◎', minTick: 0.01, digits: 2, leverageMax: 20, binanceSymbol: 'SOLUSDT' },
-  { id: 'NVDA/USD', name: 'NVIDIA AI Semiconductor', basePrice: 142.80, unit: '$', minTick: 0.01, digits: 2, leverageMax: 10 },
-  { id: 'CYBER/USDT', name: 'Darknet Hashrate Index', basePrice: 42.50, unit: '⚡', minTick: 0.01, digits: 2, leverageMax: 25 },
-  { id: 'QUANTUM/USDT', name: 'Qubit Yield Protocol', basePrice: 850.00, unit: 'Ψ', minTick: 0.1, digits: 2, leverageMax: 20 }
+  // BINANCE CRYPTO & EQUITIES
+  { id: 'BTC/USDT', name: 'Bitcoin Network', market: 'binance', basePrice: 96420.50, unit: '₿', minTick: 0.5, digits: 2, leverageMax: 50, binanceSymbol: 'BTCUSDT' },
+  { id: 'ETH/USDT', name: 'Ethereum Network', market: 'binance', basePrice: 3580.00, unit: 'Ξ', minTick: 0.1, digits: 2, leverageMax: 50, binanceSymbol: 'ETHUSDT' },
+  { id: 'SOL/USDT', name: 'Solana High-Speed L1', market: 'binance', basePrice: 198.40, unit: '◎', minTick: 0.01, digits: 2, leverageMax: 20, binanceSymbol: 'SOLUSDT' },
+  { id: 'NVDA/USD', name: 'NVIDIA AI Semiconductor', market: 'binance', basePrice: 142.80, unit: '$', minTick: 0.01, digits: 2, leverageMax: 10 },
+  { id: 'CYBER/USDT', name: 'Darknet Hashrate Index', market: 'binance', basePrice: 42.50, unit: '⚡', minTick: 0.01, digits: 2, leverageMax: 25 },
+  { id: 'QUANTUM/USDT', name: 'Qubit Yield Protocol', market: 'binance', basePrice: 850.00, unit: 'Ψ', minTick: 0.1, digits: 2, leverageMax: 20 },
+
+  // XM GLOBAL FOREX & COMMODITIES (GOLD, EUR, GBP, USOIL)
+  { id: 'XAU/USD', name: 'Gold Spot (XM Global)', market: 'xm', basePrice: 2748.50, unit: 'oz', minTick: 0.05, digits: 2, leverageMax: 500, lotSize: 100, pipValue: 10, binanceSymbol: 'PAXGUSDT' },
+  { id: 'EUR/USD', name: 'Euro / US Dollar', market: 'xm', basePrice: 1.0845, unit: '€', minTick: 0.0001, digits: 4, leverageMax: 500, lotSize: 100000, pipValue: 10 },
+  { id: 'GBP/USD', name: 'British Pound / USD', market: 'xm', basePrice: 1.2980, unit: '£', minTick: 0.0001, digits: 4, leverageMax: 500, lotSize: 100000, pipValue: 10 },
+  { id: 'USOIL', name: 'WTI Crude Oil Spot', market: 'xm', basePrice: 71.40, unit: 'bbl', minTick: 0.01, digits: 2, leverageMax: 100, lotSize: 100, pipValue: 10 }
 ];
 
 export const TIMEFRAMES = [
@@ -37,6 +50,16 @@ export const LIVE_MARKET_NEWS_FEED = [
     impact: 'ธนาคารกลางสหรัฐฯ ส่งสัญญาณผ่อนคลายนโยบายการเงิน หนุนเม็ดเงินไหลเข้าสินทรัพย์เสี่ยงอย่างมีนัยสำคัญ'
   },
   {
+    id: 'news_gold_01',
+    symbol: 'XAU/USD',
+    source: 'XM Global Gold Desk',
+    time: '3m ago',
+    headline: 'Central Bank Gold Reserves Surge to Multi-Decade Highs Amid Global Macro Hedging',
+    sentiment: 'BULLISH',
+    sentimentScore: 24,
+    impact: 'ธนาคารกลางทั่วโลกเดินหน้าเข้าซื้อทองคำแท่งสำรอง ดันราคา XAU/USD ทะลุแนวต้านสำคัญ'
+  },
+  {
     id: 'news_02',
     symbol: 'BTC/USDT',
     source: 'CoinDesk Macro',
@@ -45,6 +68,16 @@ export const LIVE_MARKET_NEWS_FEED = [
     sentiment: 'BULLISH',
     sentimentScore: 18,
     impact: 'สถาบันการเงินขนาดใหญ่เพิ่มสัดส่วนการถือครอง Bitcoin Spot ETF ดันปริมาณความต้องการซื้อต่อเนื่อง'
+  },
+  {
+    id: 'news_eur_01',
+    symbol: 'EUR/USD',
+    source: 'ECB Monetary Bulletin',
+    time: '6m ago',
+    headline: 'Eurozone Inflation Cools to 2.1%; Resilient Manufacturing Orders Boost Euro Demand',
+    sentiment: 'BULLISH',
+    sentimentScore: 16,
+    impact: 'เงินเฟ้อยุโรปชะลอตัว ดอกเบี้ยมีเสถียรภาพ หนุนค่าเงินยูโรแข็งค่าเทียบดอลลาร์'
   },
   {
     id: 'news_03',
@@ -90,7 +123,7 @@ export const LIVE_MARKET_NEWS_FEED = [
 
 export function analyzeNewsSentiment(headline = '', summary = '') {
   const text = (headline + ' ' + summary).toLowerCase();
-  const bullishKeywords = ['etf', 'inflow', 'surge', 'record', 'ath', 'rate cut', 'adoption', 'partnership', 'breakout', 'bullish', 'approval', 'gain', 'expansion', 'mass production'];
+  const bullishKeywords = ['etf', 'inflow', 'surge', 'record', 'ath', 'rate cut', 'adoption', 'partnership', 'breakout', 'bullish', 'approval', 'gain', 'expansion', 'mass production', 'gold reserves', 'resilient'];
   const bearishKeywords = ['ban', 'hack', 'sec', 'lawsuit', 'crackdown', 'inflation', 'dump', 'bearish', 'selloff', 'probe', 'outage', 'risk', 'warning', 'drop'];
 
   let score = 0;
@@ -106,7 +139,8 @@ export async function fetchRealExchangeCandles(symbol = 'BTC/USDT', interval = '
   const binanceMap = {
     'BTC/USDT': 'BTCUSDT',
     'ETH/USDT': 'ETHUSDT',
-    'SOL/USDT': 'SOLUSDT'
+    'SOL/USDT': 'SOLUSDT',
+    'XAU/USD': 'PAXGUSDT'
   };
 
   const binanceSymbol = binanceMap[symbol];
@@ -653,10 +687,18 @@ export class AITradingEngine {
     this.resizeObserver = null;
   }
 
+  async setMarket(marketType) {
+    if (marketType !== MARKET_TYPES.BINANCE && marketType !== MARKET_TYPES.XM) return;
+    this.activeMarket = marketType;
+    const firstAssetOfMarket = TRADING_ASSETS.find(a => a.market === marketType) || TRADING_ASSETS[0];
+    await this.setAsset(firstAssetOfMarket.id);
+  }
+
   async setAsset(assetId) {
-    const asset = TRADING_ASSETS.find(a => a.id === assetId);
+    const asset = TRADING_ASSETS.find(a => a.id === assetId || a.id.toLowerCase() === assetId.toLowerCase() || (a.id.includes('XAU') && (assetId.toLowerCase().includes('gold') || assetId.toLowerCase().includes('xau'))));
     if (!asset) return;
     this.activeAsset = asset;
+    this.activeMarket = asset.market || MARKET_TYPES.BINANCE;
     await this.loadCandles();
     this.requestRender();
   }

@@ -551,7 +551,7 @@ async function runTests() {
   // =========================================================================
   // SECTION 28: STRICT AUTHENTICATION & DIRECT IN-TERMINAL PROFILE CREDENTIALS
   // =========================================================================
-  console.log('\n[28/28] Testing Strict Authentication & Direct In-Terminal Credential Updates...');
+  console.log('\n[28] Testing Strict Authentication & Direct In-Terminal Credential Updates...');
   assert(profileStore.verifyCredentials('Anan', 'Infinity') === true, 'Strict Auth: Default credentials (Anan / Infinity) verified');
   assert(profileStore.verifyCredentials('Anan', 'WrongPassword') === false, 'Strict Auth: Rejected invalid password');
   assert(profileStore.verifyCredentials('RandomUser', 'Infinity') === false, 'Strict Auth: Rejected non-existent username');
@@ -571,6 +571,28 @@ async function runTests() {
   profileStore.updateUsername('NeoOperator', 'Anan');
   profileStore.updatePassword('Anan', 'Infinity');
   assert(profileStore.verifyCredentials('Anan', 'Infinity') === true, 'Restored baseline credentials for continuous operational parity');
+
+  // =========================================================================
+  // SECTION 29: XM GLOBAL (FOREX & GOLD XAU/USD) MULTI-ASSET TRADING ENGINE
+  // =========================================================================
+  console.log('\n[29] Testing XM Global (Forex & Gold XAU/USD) Multi-Asset Engine...');
+  const { MARKET_TYPES } = await import('./js/aiTradingEngine.js');
+  assert(MARKET_TYPES.BINANCE === 'binance' && MARKET_TYPES.XM === 'xm', 'MARKET_TYPES supports both Binance and XM Global');
+
+  const xmAssets = TRADING_ASSETS.filter(a => a.market === 'xm');
+  assert(xmAssets.length >= 4, `XM Global catalog contains ${xmAssets.length} assets (XAU/USD Gold, EUR/USD, GBP/USD, USOIL)`);
+
+  const goldAsset = TRADING_ASSETS.find(a => a.id === 'XAU/USD');
+  assert(goldAsset && goldAsset.lotSize === 100 && goldAsset.pipValue === 10, 'XAU/USD Gold configured with standard XM 100oz Lot and $10 Pip value');
+
+  await tradingEngine.setMarket('xm');
+  assert(tradingEngine.activeMarket === 'xm' && tradingEngine.activeAsset.id === 'XAU/USD', 'Switched trading market to XM Global and activated Gold (XAU/USD)');
+
+  await tradingEngine.setAsset('EUR/USD');
+  assert(tradingEngine.activeAsset.id === 'EUR/USD' && tradingEngine.activeAsset.digits === 4, 'Switched to EUR/USD with 4-decimal precision');
+
+  await tradingEngine.setMarket('binance');
+  assert(tradingEngine.activeMarket === 'binance' && tradingEngine.activeAsset.id === 'BTC/USDT', 'Switched back to Binance Crypto market seamlessly');
 
   console.log('\n====================================================');
   console.log(`🏁 TEST RESULTS: ${passed}/${total} TESTS PASSED (100%)`);

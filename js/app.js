@@ -799,6 +799,18 @@ class WindowsTerminalApp {
   }
 
   bindTradingUIEvents() {
+    // Market Source Switcher (Binance vs XM Global)
+    const marketSwitcher = document.getElementById('tradingMarketSwitcher');
+    if (marketSwitcher) {
+      marketSwitcher.querySelectorAll('.market-src-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const market = btn.dataset.market;
+          this.switchTradingMarket(market);
+          if (this.audio && this.audio.playKey) this.audio.playKey(false);
+        });
+      });
+    }
+
     // Pair Tabs
     if (this.dom.tradingPairTabs) {
       this.dom.tradingPairTabs.querySelectorAll('.trading-pair-pill').forEach(btn => {
@@ -807,6 +819,7 @@ class WindowsTerminalApp {
           btn.classList.add('active');
           const pair = btn.dataset.pair;
           if (this.tradingEngine) this.tradingEngine.setAsset(pair);
+          if (this.tabManager) this.tabManager.syncActiveTabFromMode('trading', pair);
           if (this.audio && this.audio.playKey) this.audio.playKey(false);
         });
       });
@@ -898,6 +911,35 @@ class WindowsTerminalApp {
     }
   }
 
+  switchTradingMarket(market = 'binance') {
+    const marketSwitcher = document.getElementById('tradingMarketSwitcher');
+    if (marketSwitcher) {
+      marketSwitcher.querySelectorAll('.market-src-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.market === market);
+      });
+    }
+
+    if (this.dom.tradingPairTabs) {
+      this.dom.tradingPairTabs.querySelectorAll('.trading-pair-pill').forEach(pill => {
+        const pillMarket = pill.dataset.market || 'binance';
+        const isMatch = pillMarket === market;
+        pill.classList.toggle('hidden-pair', !isMatch);
+      });
+
+      const firstVisible = this.dom.tradingPairTabs.querySelector(`.trading-pair-pill[data-market="${market}"]`);
+      if (firstVisible) {
+        this.dom.tradingPairTabs.querySelectorAll('.trading-pair-pill').forEach(b => b.classList.remove('active'));
+        firstVisible.classList.add('active');
+        const pair = firstVisible.dataset.pair;
+        if (this.tradingEngine) {
+          this.tradingEngine.setMarket(market);
+          this.tradingEngine.setAsset(pair);
+        }
+        if (this.tabManager) this.tabManager.syncActiveTabFromMode('trading', pair);
+      }
+    }
+  }
+
   updateAIStatsUI(stats) {
     if (!stats) return;
     if (this.dom.aiWinRateDisplay) this.dom.aiWinRateDisplay.textContent = `${stats.winRate}%`;
@@ -943,26 +985,34 @@ class WindowsTerminalApp {
   }
 
   launchTradingMode(assetArg) {
-    const logs = generateEntranceLogs('trading', assetArg ? assetArg.toUpperCase() : 'BTC/USDT');
+    let targetAsset = assetArg ? assetArg.toUpperCase() : 'BTC/USDT';
+    let targetMarket = 'binance';
+
+    if (assetArg) {
+      const lower = assetArg.toLowerCase();
+      if (['xm', 'forex', 'gold', 'xau', 'eur', 'gbp', 'oil', 'usoil'].includes(lower)) {
+        targetMarket = 'xm';
+        if (lower === 'gold' || lower === 'xau' || lower === 'xm' || lower === 'forex') targetAsset = 'XAU/USD';
+        else if (lower === 'eur') targetAsset = 'EUR/USD';
+        else if (lower === 'gbp') targetAsset = 'GBP/USD';
+        else if (lower === 'oil' || lower === 'usoil') targetAsset = 'USOIL';
+      }
+    }
+
+    const logs = generateEntranceLogs('trading', targetAsset);
     this.state = STATES.MODE_TRADING;
 
     this.ensureViewEngineInitialized('trading');
 
-    if (assetArg && this.tradingEngine) {
-      const match = TRADING_ASSETS.find(a => a.id.toLowerCase().includes(assetArg.toLowerCase()));
-      if (match) {
-        this.tradingEngine.setAsset(match.id);
-        if (this.dom.tradingPairTabs) {
-          this.dom.tradingPairTabs.querySelectorAll('.trading-pair-pill').forEach(b => {
-            b.classList.toggle('active', b.dataset.pair === match.id);
-          });
-        }
-      }
+    if (this.tradingEngine) {
+      this.tradingEngine.setMarket(targetMarket);
+      this.tradingEngine.setAsset(targetAsset);
     }
+    this.switchTradingMarket(targetMarket);
 
     this.playCyberTransition(
-      'AI QUANTUM TRADING TERMINAL',
-      'BOOTING NEURAL QUANTITATIVE MATRIX & SMC SCANNER...',
+      targetMarket === 'xm' ? 'XM GLOBAL FOREX & GOLD TERMINAL' : 'AI QUANTUM TRADING TERMINAL',
+      targetMarket === 'xm' ? 'CONNECTING XM LIQUIDITY MATRIX & SMC GOLD RADAR...' : 'BOOTING NEURAL QUANTITATIVE MATRIX & SMC SCANNER...',
       logs,
       'trading'
     );
@@ -2366,12 +2416,19 @@ OPEN DESCRIPTORS: 7 Active | LEAKS: 0
         this.launchWifiMode();
         return;
 
-      // AI Neural Quantitative Trading Terminal
+      // AI Neural Quantitative Trading Terminal (Binance Crypto & XM Global Forex/Gold)
       case 'trade':
       case 'trading':
       case 'crypto':
       case 'stocks':
-        this.launchTradingMode(args[0]);
+      case 'xm':
+      case 'forex':
+      case 'gold':
+      case 'xau':
+      case 'eur':
+      case 'oil':
+        const tradeArg = ['xm', 'forex', 'gold', 'xau', 'eur', 'oil'].includes(cmd) ? cmd : args[0];
+        this.launchTradingMode(tradeArg);
         return;
 
       case 'buy':
