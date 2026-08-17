@@ -66,6 +66,27 @@ const DEFAULT_PROFILE = {
     prompt: 'default',
     customAliases: {}
   },
+  aiTradingGymState: {
+    stats: {
+      totalTrades: 18,
+      wins: 14,
+      losses: 4,
+      winRate: 77.8,
+      netPnlUSD: 8420.50,
+      samplesStudied: 3420,
+      adaptationLevel: 5
+    },
+    journal: [],
+    weights: null,
+    paperBalanceUSD: 100000.00,
+    riskAppetite: 'balanced',
+    riskPercent: 2
+  },
+  vscodeFiles: {},
+  browserData: {
+    bookmarks: [],
+    history: []
+  },
   wpmSessions: [],
   lastLogin: new Date().toISOString()
 };
@@ -78,6 +99,14 @@ class ProfileStore {
     if (typeof window !== 'undefined' && window.addEventListener) {
       window.addEventListener('beforeunload', () => this.saveAllAsync());
       window.addEventListener('pagehide', () => this.saveAllAsync());
+    }
+    if (typeof document !== 'undefined' && document.addEventListener) {
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') this.saveAllAsync();
+      });
+    }
+    if (typeof setInterval !== 'undefined') {
+      setInterval(() => this.saveAllAsync(), 2000);
     }
     this.initStore();
   }
@@ -95,6 +124,7 @@ class ProfileStore {
         settings: { ...DEFAULT_PROFILE.settings, ...(this.profiles['anan'].settings || {}) },
         rogueliteStats: { ...DEFAULT_PROFILE.rogueliteStats, ...(this.profiles['anan'].rogueliteStats || {}) },
         rogueliteUpgrades: { ...DEFAULT_PROFILE.rogueliteUpgrades, ...(this.profiles['anan'].rogueliteUpgrades || {}) },
+        aiTradingGymState: { ...DEFAULT_PROFILE.aiTradingGymState, ...(this.profiles['anan'].aiTradingGymState || {}) },
         achievements: this.profiles['anan'].achievements || [],
         wpmSessions: this.profiles['anan'].wpmSessions || []
       };
@@ -106,7 +136,7 @@ class ProfileStore {
     try {
       if (this.isElectron && window.cyberSystemAPI.dbRead) {
         const res = await window.cyberSystemAPI.dbRead();
-        if (res.success) return res.data || {};
+        if (res && res.success && res.data && Object.keys(res.data).length > 0) return res.data;
       }
       if (typeof localStorage !== 'undefined') {
         const data = localStorage.getItem(STORAGE_KEY);
@@ -122,7 +152,6 @@ class ProfileStore {
     try {
       if (this.isElectron && window.cyberSystemAPI.dbWrite) {
         await window.cyberSystemAPI.dbWrite(this.profiles);
-        return;
       }
       if (typeof localStorage !== 'undefined') {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(this.profiles));
@@ -130,6 +159,43 @@ class ProfileStore {
     } catch (e) {
       // ignore
     }
+  }
+
+  getTradingGymState(username = 'Anan') {
+    const prof = this.getProfile(username);
+    if (!prof.aiTradingGymState) {
+      prof.aiTradingGymState = JSON.parse(JSON.stringify(DEFAULT_PROFILE.aiTradingGymState));
+      this.saveAllAsync();
+    }
+    return prof.aiTradingGymState;
+  }
+
+  saveTradingGymState(username = 'Anan', state) {
+    const prof = this.getProfile(username);
+    prof.aiTradingGymState = { ...(prof.aiTradingGymState || {}), ...state };
+    this.saveAllAsync();
+  }
+
+  getVSCodeFiles(username = 'Anan') {
+    const prof = this.getProfile(username);
+    return prof.vscodeFiles || {};
+  }
+
+  saveVSCodeFiles(username = 'Anan', files) {
+    const prof = this.getProfile(username);
+    prof.vscodeFiles = { ...(prof.vscodeFiles || {}), ...files };
+    this.saveAllAsync();
+  }
+
+  getBrowserData(username = 'Anan') {
+    const prof = this.getProfile(username);
+    return prof.browserData || { bookmarks: [], history: [] };
+  }
+
+  saveBrowserData(username = 'Anan', data) {
+    const prof = this.getProfile(username);
+    prof.browserData = { ...(prof.browserData || {}), ...data };
+    this.saveAllAsync();
   }
 
   getProfile(username = 'Anan') {

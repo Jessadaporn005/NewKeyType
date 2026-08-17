@@ -7,6 +7,8 @@
  * interactive HTML5 Canvas Candlestick Chart with crosshair, and Paper Trading simulator.
  */
 
+import { profileStore } from './profileStore.js';
+
 // Market Source Definitions
 export const MARKET_TYPES = {
   BINANCE: 'binance',
@@ -1270,52 +1272,79 @@ export class AITradingEngine {
 
   saveGymState() {
     try {
-      if (typeof localStorage !== 'undefined') {
-        const samples = this.aiStats.samplesStudied || 0;
-        this.aiStats.adaptationLevel = Math.min(10, Math.floor(samples / 700) + 1);
+      const samples = this.aiStats.samplesStudied || 0;
+      this.aiStats.adaptationLevel = Math.min(10, Math.floor(samples / 700) + 1);
 
-        const state = {
-          stats: this.aiStats,
-          journal: this.aiJournal ? this.aiJournal.slice(0, 50) : [],
-          weights: this.strategyWeights,
-          paperBalanceUSD: this.paperBalanceUSD,
-          riskAppetite: this.riskAppetite,
-          riskPercent: this.riskPercent,
-          savedAt: new Date().toISOString()
-        };
+      const state = {
+        stats: this.aiStats,
+        journal: this.aiJournal ? this.aiJournal.slice(0, 50) : [],
+        weights: this.strategyWeights,
+        paperBalanceUSD: this.paperBalanceUSD,
+        riskAppetite: this.riskAppetite,
+        riskPercent: this.riskPercent,
+        savedAt: new Date().toISOString()
+      };
+
+      // 1. Synchronous Web Storage Layer
+      if (typeof localStorage !== 'undefined') {
         localStorage.setItem('cyber_ai_trading_gym_state', JSON.stringify(state));
+      }
+
+      // 2. Real System Hard-Disk Storage (cyber_db.json via Electron IPC)
+      if (profileStore && typeof profileStore.saveTradingGymState === 'function') {
+        profileStore.saveTradingGymState('Anan', state);
       }
     } catch (e) {}
   }
 
   loadGymState() {
     try {
+      let state = null;
+
+      // 1. Try loading from ProfileStore / Real Disk first
+      if (profileStore && typeof profileStore.getTradingGymState === 'function') {
+        const diskState = profileStore.getTradingGymState('Anan');
+        if (diskState && diskState.stats && (diskState.stats.samplesStudied > 0 || (diskState.journal && diskState.journal.length > 0))) {
+          state = diskState;
+        }
+      }
+
+      // 2. Cross-reference with LocalStorage and pick the most advanced state
       if (typeof localStorage !== 'undefined') {
         const raw = localStorage.getItem('cyber_ai_trading_gym_state');
         if (raw) {
-          const parsed = JSON.parse(raw);
-          if (parsed && parsed.stats) {
-            this.aiStats = { ...this.aiStats, ...parsed.stats };
-            const samples = this.aiStats.samplesStudied || 0;
-            this.aiStats.adaptationLevel = Math.min(10, Math.floor(samples / 700) + 1);
+          const localState = JSON.parse(raw);
+          if (localState && localState.stats) {
+            if (!state || (localState.stats.samplesStudied || 0) >= (state.stats?.samplesStudied || 0)) {
+              state = localState;
+            }
           }
-          if (Array.isArray(parsed.journal) && parsed.journal.length > 0) {
-            this.aiJournal = parsed.journal;
-          }
-          if (parsed.weights && typeof parsed.weights === 'object') {
-            this.strategyWeights = { ...DEFAULT_STRATEGY_WEIGHTS, ...parsed.weights };
-          }
-          if (typeof parsed.paperBalanceUSD === 'number') {
-            this.paperBalanceUSD = parsed.paperBalanceUSD;
-          }
-          if (parsed.riskAppetite) {
-            this.riskAppetite = parsed.riskAppetite;
-          }
-          if (typeof parsed.riskPercent === 'number') {
-            this.riskPercent = parsed.riskPercent;
-          }
-          return true;
         }
+      }
+
+      if (state && state.stats) {
+        this.aiStats = { ...this.aiStats, ...state.stats };
+        const samples = this.aiStats.samplesStudied || 0;
+        this.aiStats.adaptationLevel = Math.min(10, Math.floor(samples / 700) + 1);
+
+        if (Array.isArray(state.journal) && state.journal.length > 0) {
+          this.aiJournal = state.journal;
+        } else {
+          this.seedInitialAIJournal();
+        }
+        if (state.weights && typeof state.weights === 'object') {
+          this.strategyWeights = { ...DEFAULT_STRATEGY_WEIGHTS, ...state.weights };
+        }
+        if (typeof state.paperBalanceUSD === 'number') {
+          this.paperBalanceUSD = state.paperBalanceUSD;
+        }
+        if (state.riskAppetite) {
+          this.riskAppetite = state.riskAppetite;
+        }
+        if (typeof state.riskPercent === 'number') {
+          this.riskPercent = state.riskPercent;
+        }
+        return true;
       }
     } catch (e) {}
     return false;
