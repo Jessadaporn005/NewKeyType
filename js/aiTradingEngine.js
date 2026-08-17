@@ -1488,6 +1488,7 @@ export class AITradingEngine {
 
         if (this.onAIStatsUpdate) this.onAIStatsUpdate(this.aiStats);
         if (this.onAIJournalUpdate) this.onAIJournalUpdate(this.aiJournal);
+        if (this.onAIProfileUpdate) this.onAIProfileUpdate(this.getAIProfileDetails());
       }
     }
   }
