@@ -753,6 +753,28 @@ class WindowsTerminalApp {
     if (this.dom.aiRationaleBox) {
       this.dom.aiRationaleBox.textContent = `"${signal.rationale}"`;
     }
+
+    const expBadge = document.getElementById('aiExpBadge');
+    const expContent = document.getElementById('aiExpContent');
+    if (signal.appliedMemoryInsight) {
+      if (expBadge) {
+        expBadge.textContent = signal.appliedMemoryInsight.badgeText;
+        expBadge.style.color = signal.appliedMemoryInsight.isHighConviction ? '#00ff88' : signal.appliedMemoryInsight.isLowConviction ? '#ff4466' : '#e9d5ff';
+        expBadge.style.borderColor = signal.appliedMemoryInsight.isHighConviction ? '#00ff88' : signal.appliedMemoryInsight.isLowConviction ? '#ff4466' : 'rgba(192, 132, 252, 0.4)';
+      }
+      if (expContent) {
+        expContent.textContent = signal.appliedMemoryInsight.text;
+      }
+    } else {
+      if (expBadge) {
+        expBadge.textContent = 'MONITORING';
+        expBadge.style.color = '#8b9cb0';
+        expBadge.style.borderColor = 'rgba(255,255,255,0.1)';
+      }
+      if (expContent) {
+        expContent.textContent = 'กำลังสแกนเปรียบเทียบพฤติกรรมแท่งเทียนปัจจุบันกับฐานความรู้สถิติในอดีต (Knowledge Matrix)...';
+      }
+    }
   }
 
   updateTradingPositionsUI(positions = []) {

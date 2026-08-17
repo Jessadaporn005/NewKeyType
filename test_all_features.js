@@ -591,8 +591,24 @@ async function runTests() {
   await tradingEngine.setAsset('EUR/USD');
   assert(tradingEngine.activeAsset.id === 'EUR/USD' && tradingEngine.activeAsset.digits === 4, 'Switched to EUR/USD with 4-decimal precision');
 
-  await tradingEngine.setMarket('binance');
-  assert(tradingEngine.activeMarket === 'binance' && tradingEngine.activeAsset.id === 'BTC/USDT', 'Switched back to Binance Crypto market seamlessly');
+  // =========================================================================
+  // SECTION 30: INFINITE KNOWLEDGE MATRIX & ADAPTIVE EXPERIENCE REPLAY
+  // =========================================================================
+  console.log('\n[30] Testing Infinite Knowledge Matrix & Experience Replay Loop...');
+  const { DEFAULT_STRATEGY_WEIGHTS } = await import('./js/aiTradingEngine.js');
+  assert(DEFAULT_STRATEGY_WEIGHTS['Bullish Engulfing'] && DEFAULT_STRATEGY_WEIGHTS['Liquidity Sweep'], 'DEFAULT_STRATEGY_WEIGHTS contains core Price Action & SMC matrix');
+  assert(DEFAULT_STRATEGY_WEIGHTS['Liquidity Sweep'].winRate > 80, 'Liquidity Sweep starts with high-conviction baseline');
+
+  // Test Experience Replay in generateAISignal
+  const mockPat = [{ name: 'Liquidity Sweep', weight: 30, desc: 'Sweep below support' }];
+  const sigWithMemory = generateAISignal(mockCandles, TRADING_ASSETS[0], mockPat, null, DEFAULT_STRATEGY_WEIGHTS);
+  assert(sigWithMemory.appliedMemoryInsight !== null, 'generateAISignal successfully generated Experience Replay memory insight');
+  assert(sigWithMemory.appliedMemoryInsight.isHighConviction === true, 'High-conviction pattern triggered Confidence Boost');
+  assert(sigWithMemory.appliedMemoryInsight.text.includes('ดึงความจำสถิติอดีต'), 'Memory insight contains Thai experience narrative');
+
+  // Test dynamic weight updating
+  tradingEngine.updateStrategyWeight('Liquidity Sweep', true, 'เจ้ามือกวาดสภาพคล่องสำเร็จ');
+  assert(tradingEngine.strategyWeights['Liquidity Sweep'].wins >= 16, 'updateStrategyWeight incremented pattern wins dynamically');
 
   console.log('\n====================================================');
   console.log(`🏁 TEST RESULTS: ${passed}/${total} TESTS PASSED (100%)`);

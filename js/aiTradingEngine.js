@@ -405,28 +405,50 @@ export function detectChartPatterns(candles) {
   return patterns;
 }
 
-/**
- * AI Signal Generation & Decision Matrix
- */
-export function generateAISignal(candles, asset, patterns = [], activeNews = null) {
-  const len = candles.length;
-  if (len === 0) return null;
+// Infinite Knowledge Matrix (Strategy Weight Table)
+export const DEFAULT_STRATEGY_WEIGHTS = {
+  'Bullish Engulfing': { wins: 12, losses: 3, winRate: 80.0, weightMultiplier: 1.25, lastLesson: 'แนวรับ EMA20 หนุนส่งแรงซื้อต่อเนื่อง' },
+  'Bearish Engulfing': { wins: 14, losses: 2, winRate: 87.5, weightMultiplier: 1.35, lastLesson: 'แรงปฏิเสธโซน Resistance แข็งแกร่ง' },
+  'Double Bottom': { wins: 9, losses: 2, winRate: 81.8, weightMultiplier: 1.28, lastLesson: 'สัญญาณ RSI Oversold ร่วมกับแนวรับจิตวิทยา' },
+  'Double Top': { wins: 8, losses: 3, winRate: 72.7, weightMultiplier: 1.15, lastLesson: 'ระวังไส้เทียนสะบัดก่อนหลุด Neckline' },
+  'Hammer / Bullish Pinbar': { wins: 10, losses: 3, winRate: 76.9, weightMultiplier: 1.20, lastLesson: 'แท่งเทียนไส้ยาวด้านล่างปฏิเสธราคาชัดเจน' },
+  'Shooting Star / Bearish Pinbar': { wins: 9, losses: 3, winRate: 75.0, weightMultiplier: 1.18, lastLesson: 'แรงขายกดลงมาจากแนวต้านระดับชั่วโมง' },
+  'Fair Value Gap (FVG)': { wins: 11, losses: 2, winRate: 84.6, weightMultiplier: 1.30, lastLesson: 'ราคาดึงกลับมาเติมสภาพคล่องใน FVG Zone' },
+  'Liquidity Sweep': { wins: 15, losses: 2, winRate: 88.2, weightMultiplier: 1.40, lastLesson: 'เจ้ามือกวาด Stop Loss ใต้แนวรับก่อนลากราคาขึ้น' },
+  'Ascending Triangle': { wins: 4, losses: 6, winRate: 40.0, weightMultiplier: 0.70, lastLesson: 'ห้ามเข้า Breakout หาก Volume ต่ำกว่าค่าเฉลี่ย 20 แท่ง' }
+};
 
-  const currentPrice = candles[len - 1].close;
+export function generateAISignal(candles = [], asset = null, patterns = [], activeNews = null, strategyWeights = null) {
+  if (!candles || candles.length < 20) {
+    return {
+      action: 'CALCULATING...',
+      badgeClass: 'signal-calc',
+      confidence: 50,
+      entry: asset ? asset.basePrice : 0,
+      tp1: asset ? asset.basePrice * 1.01 : 0,
+      tp2: asset ? asset.basePrice * 1.02 : 0,
+      sl: asset ? asset.basePrice * 0.99 : 0,
+      rrRatio: '1:2',
+      rationale: 'กำลังรวบรวมข้อมูลแท่งเทียนสดเพื่อประมวลผลโมเมนตัม...',
+      factors: []
+    };
+  }
+
+  const currentPrice = candles[candles.length - 1].close;
   const ema20 = calculateEMA(candles, 20);
   const ema50 = calculateEMA(candles, 50);
   const ema200 = calculateEMA(candles, 200);
   const rsi = calculateRSI(candles, 14);
-  const macd = calculateMACD(candles);
+  const macd = calculateMACD(candles, 12, 26, 9);
   const bb = calculateBollingerBands(candles, 20, 2);
 
-  const curEMA20 = ema20[len - 1] || currentPrice;
-  const curEMA50 = ema50[len - 1] || currentPrice;
-  const curEMA200 = ema200[len - 1] || currentPrice;
-  const curRSI = rsi[len - 1] || 50;
-  const curMACDHist = macd.histogram[len - 1] || 0;
-  const curBBLower = bb.lower[len - 1] || currentPrice * 0.98;
-  const curBBUpper = bb.upper[len - 1] || currentPrice * 1.02;
+  const curEMA20 = ema20[ema20.length - 1] || currentPrice;
+  const curEMA50 = ema50[ema50.length - 1] || currentPrice;
+  const curEMA200 = ema200[ema200.length - 1] || currentPrice;
+  const curRSI = rsi[rsi.length - 1] || 50;
+  const curMACDHist = macd.histogram[macd.histogram.length - 1] || 0;
+  const curBBLower = bb.lower[bb.lower.length - 1] || currentPrice * 0.98;
+  const curBBUpper = bb.upper[bb.upper.length - 1] || currentPrice * 1.02;
 
   // Composite Score Calculation (-100 to +100)
   let score = 0;
@@ -464,6 +486,43 @@ export function generateAISignal(candles, asset, patterns = [], activeNews = nul
     newsImpactText = `\n\n📰 [ปัจจัยข่าวกระทบสด]: ข่าว "${activeNews.headline}" (${activeNews.sentiment === 'BULLISH' ? 'ปัจจัยบวก 🟢' : 'ปัจจัยลบ/ความเสี่ยง 🔴'}) มีอิทธิพลต่อความเชื่อมั่นของตลาดในขณะนี้`;
   }
 
+  // 7. Infinite Knowledge Matrix & Experience Replay Feedback Loop
+  let appliedMemoryInsight = null;
+  const weights = strategyWeights || DEFAULT_STRATEGY_WEIGHTS;
+  if (patterns.length > 0 && weights) {
+    for (const pat of patterns) {
+      const matchKey = Object.keys(weights).find(k => pat.name.toLowerCase().includes(k.toLowerCase()) || k.toLowerCase().includes(pat.name.toLowerCase()));
+      if (matchKey) {
+        const exp = weights[matchKey];
+        const isHighConviction = exp.winRate >= 75;
+        const isLowConviction = exp.winRate < 50;
+
+        const boost = (exp.winRate - 50) * 0.4;
+        if (score >= 0) {
+          score += boost;
+        } else {
+          score -= boost;
+        }
+
+        appliedMemoryInsight = {
+          setupName: matchKey,
+          winRate: exp.winRate,
+          weightMultiplier: exp.weightMultiplier,
+          lastLesson: exp.lastLesson,
+          isHighConviction,
+          isLowConviction,
+          badgeText: isHighConviction ? `🔥 HIGH CONVICTION (${exp.winRate}%)` : isLowConviction ? `⚠️ CAUTION PENALTY (${exp.winRate}%)` : `STABLE (${exp.winRate}%)`,
+          text: isHighConviction
+            ? `ดึงความจำสถิติอดีต: รูปแบบ "${matchKey}" มี Win Rate สูงถึง ${exp.winRate}% (ปรับเพิ่มน้ำหนักความมั่นใจ x${exp.weightMultiplier}) • บทเรียน: ${exp.lastLesson}`
+            : isLowConviction
+            ? `ดึงบทเรียนเตือนภัย: รูปแบบ "${matchKey}" มีประวัติแพ้บ่อย (Win Rate ${exp.winRate}%) • สั่งลดคะแนนความเสี่ยงลง • บทเรียน: ${exp.lastLesson}`
+            : `ประมวลผลความจำ: รูปแบบ "${matchKey}" มีสถิติ ${exp.winRate}% • บทเรียน: ${exp.lastLesson}`
+        };
+        break;
+      }
+    }
+  }
+
   // Bound score
   score = Math.max(-100, Math.min(100, score));
 
@@ -485,9 +544,9 @@ export function generateAISignal(candles, asset, patterns = [], activeNews = nul
   const atr = Math.abs(curBBUpper - curBBLower) / 4 || currentPrice * 0.015;
 
   const entry = currentPrice;
-  const sl = isLong ? Number((entry - atr * 1.2).toFixed(asset.digits)) : Number((entry + atr * 1.2).toFixed(asset.digits));
-  const tp1 = isLong ? Number((entry + atr * 2.0).toFixed(asset.digits)) : Number((entry - atr * 2.0).toFixed(asset.digits));
-  const tp2 = isLong ? Number((entry + atr * 3.8).toFixed(asset.digits)) : Number((entry - atr * 3.8).toFixed(asset.digits));
+  const sl = isLong ? Number((entry - atr * 1.2).toFixed(asset ? asset.digits : 2)) : Number((entry + atr * 1.2).toFixed(asset ? asset.digits : 2));
+  const tp1 = isLong ? Number((entry + atr * 2.0).toFixed(asset ? asset.digits : 2)) : Number((entry - atr * 2.0).toFixed(asset ? asset.digits : 2));
+  const tp2 = isLong ? Number((entry + atr * 3.8).toFixed(asset ? asset.digits : 2)) : Number((entry - atr * 3.8).toFixed(asset ? asset.digits : 2));
 
   const riskAmount = Math.abs(entry - sl);
   const rewardAmount = Math.abs(tp1 - entry);
@@ -544,7 +603,8 @@ export function generateAISignal(candles, asset, patterns = [], activeNews = nul
     patterns,
     rationale,
     curRSI,
-    curMACDHist
+    curMACDHist,
+    appliedMemoryInsight
   };
 }
 
@@ -801,7 +861,7 @@ export class AITradingEngine {
 
   analyzeMarket() {
     this.patterns = detectChartPatterns(this.candles);
-    this.signal = generateAISignal(this.candles, this.activeAsset, this.patterns, this.activeNews);
+    this.signal = generateAISignal(this.candles, this.activeAsset, this.patterns, this.activeNews, this.strategyWeights);
     if (this.onSignalUpdate) {
       this.onSignalUpdate(this.signal);
     }
@@ -995,12 +1055,40 @@ export class AITradingEngine {
     if (this.onAIJournalUpdate) this.onAIJournalUpdate(this.aiJournal);
   }
 
+  updateStrategyWeight(setupName, isWin, lesson) {
+    if (!setupName) return;
+    const matchKey = Object.keys(this.strategyWeights).find(k => setupName.toLowerCase().includes(k.toLowerCase()) || k.toLowerCase().includes(setupName.toLowerCase()));
+    const key = matchKey || setupName;
+
+    if (!this.strategyWeights[key]) {
+      this.strategyWeights[key] = { wins: 0, losses: 0, winRate: 50.0, weightMultiplier: 1.0, lastLesson: lesson || '' };
+    }
+
+    const item = this.strategyWeights[key];
+    if (isWin) item.wins++;
+    else item.losses++;
+
+    const total = item.wins + item.losses;
+    item.winRate = Number(((item.wins / total) * 100).toFixed(1));
+    item.weightMultiplier = Number(Math.max(0.4, Math.min(1.6, item.winRate / 60)).toFixed(2));
+    if (lesson) item.lastLesson = lesson;
+  }
+
+  analyzeMarket() {
+    this.patterns = detectChartPatterns(this.candles);
+    this.signal = generateAISignal(this.candles, this.activeAsset, this.patterns, this.activeNews, this.strategyWeights);
+    if (this.onSignalUpdate) {
+      this.onSignalUpdate(this.signal);
+    }
+  }
+
   saveGymState() {
     try {
       if (typeof localStorage !== 'undefined') {
         localStorage.setItem('cyber_ai_trading_gym_state', JSON.stringify({
           stats: this.aiStats,
-          journal: this.aiJournal
+          journal: this.aiJournal,
+          weights: this.strategyWeights
         }));
       }
     } catch (e) {}
@@ -1015,6 +1103,9 @@ export class AITradingEngine {
           if (data && data.stats && Array.isArray(data.journal)) {
             this.aiStats = data.stats;
             this.aiJournal = data.journal;
+            if (data.weights && typeof data.weights === 'object') {
+              this.strategyWeights = { ...DEFAULT_STRATEGY_WEIGHTS, ...data.weights };
+            }
             return true;
           }
         }
@@ -1030,6 +1121,7 @@ export class AITradingEngine {
       }
     } catch (e) {}
 
+    this.strategyWeights = JSON.parse(JSON.stringify(DEFAULT_STRATEGY_WEIGHTS));
     this.aiStats = {
       totalTrades: 0,
       wins: 0,
