@@ -1356,6 +1356,25 @@ export class AITradingEngine {
     if (this.isAutoTrading) {
       this.evaluateAIPositions();
       this.checkAutoTradeExecution();
+
+      // Real-Time Live Continuous Cognition Progression
+      const prevLevel = this.aiStats.adaptationLevel;
+      this.aiStats.samplesStudied += 1;
+      const newLevel = Math.min(10, Math.max(1, Math.floor(this.aiStats.samplesStudied / 700)));
+      this.aiStats.adaptationLevel = newLevel;
+
+      // Level-Up Event Trigger
+      if (newLevel > prevLevel) {
+        if (this.sound && this.sound.playSuccessFanfare) this.sound.playSuccessFanfare();
+        if (this.toasts) {
+          this.toasts.show('SUCCESS', `🎉 AI EVOLVED TO LEVEL ${newLevel}! RANK UNLOCKED: ${this.getAIProfileDetails().rankTitle}`, 5000);
+        }
+        if (this.onAIStatsUpdate) this.onAIStatsUpdate(this.aiStats);
+      }
+
+      if (this.onAIProfileUpdate) {
+        this.onAIProfileUpdate(this.getAIProfileDetails());
+      }
     }
 
     // 3. Recompute Signals and Redraw smoothly

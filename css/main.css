@@ -5923,6 +5923,143 @@ body.mode-trading .sub-chart-container {
   color: #94a3b8;
 }
 
+/* REAL-TIME AI NEURAL PROFILE & MASTERY MATRIX */
+.ai-gym-profile-card {
+  background: rgba(10, 15, 25, 0.7);
+  border: 1px solid rgba(192, 132, 252, 0.25);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  backdrop-filter: blur(10px);
+}
+
+.ai-profile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.profile-title-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.profile-icon {
+  font-size: 14px;
+}
+
+.profile-title {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 800;
+  color: #c084fc;
+  letter-spacing: 0.5px;
+}
+
+.profile-rank {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 900;
+  color: #ffd700;
+  letter-spacing: 0.5px;
+  text-shadow: 0 0 6px rgba(255, 215, 0, 0.4);
+}
+
+.profile-status-badge {
+  font-family: var(--font-mono);
+  font-size: 7.5px;
+  font-weight: 800;
+  background: rgba(192, 132, 252, 0.15);
+  border: 1px solid rgba(192, 132, 252, 0.4);
+  color: #e9d5ff;
+  padding: 2px 5px;
+  border-radius: 3px;
+}
+
+.ai-xp-container {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ai-xp-labels {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 700;
+}
+
+.ai-xp-labels .xp-lbl {
+  color: #8b9cb0;
+}
+
+.ai-xp-labels .xp-val {
+  color: #00ff88;
+  font-weight: 800;
+}
+
+.ai-xp-bar-track {
+  width: 100%;
+  height: 6px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.ai-xp-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #c084fc, #00ff88, #ffd700);
+  border-radius: 4px;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 8px rgba(0, 255, 136, 0.5);
+}
+
+.ai-profile-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  padding: 5px 6px;
+  text-align: center;
+}
+
+.prof-stat .lbl {
+  font-size: 7px;
+  font-weight: 700;
+  color: #64748b;
+  display: block;
+}
+
+.prof-stat .val {
+  font-size: 10.5px;
+  font-weight: 800;
+  font-family: var(--font-mono);
+}
+
+.skill-mastery-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(0, 255, 102, 0.08);
+  border: 1px solid rgba(0, 255, 102, 0.3);
+  color: #00ff88;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  font-weight: 700;
+  margin-right: 4px;
+  margin-bottom: 4px;
+}
+
 
 
 
