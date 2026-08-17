@@ -397,10 +397,10 @@ export class HologramAssistantEngine {
     }
   }
 
-  // Split text into complete full sentences (ไม่ตัดคำกลางประโยค)
+  // Split text into natural full sentences (ไม่ตัดคำกลางประโยค)
   splitTextIntoSentences(text) {
     if (!text) return [];
-    // Split by clean Thai / punctuation sentence boundaries
+    // Split by clean Thai / punctuation sentence boundaries under 80 chars
     const rawChunks = text
       .split(/(?<=[.?!:\n])|(?<=ค่ะ)|(?<=นะคะ)|(?<=ครับ)/g)
       .map(s => s.trim())
@@ -410,7 +410,7 @@ export class HologramAssistantEngine {
     let current = '';
 
     for (const chunk of rawChunks) {
-      if (current.length + chunk.length < 85) {
+      if (current.length + chunk.length < 75) {
         current += (current ? ' ' : '') + chunk;
       } else {
         if (current) sentences.push(current);
@@ -421,11 +421,11 @@ export class HologramAssistantEngine {
     return sentences.length > 0 ? sentences : [text];
   }
 
-  // 100% Fluent Thai Female Speech Synthesis (Full Content Delivery Without Cutoff)
+  // 100% Genuine Thai Female Speech Engine (Google Neural Female Audio Streamer)
   speak(text, onEndCallback = null) {
     this.setSpeechBalloon(text);
 
-    if (!this.isVoiceEnabled || !this.synth) return;
+    if (!this.isVoiceEnabled) return;
 
     this.stopAllSpeech();
     this.playChirpSFX(true);
@@ -440,20 +440,8 @@ export class HologramAssistantEngine {
     }
     this.updateAudioWaveBars(true);
 
-    // Anti-Cutoff Keepalive Ping (prevents Chromium 15-second GC cutoff)
-    if (this.keepAliveTimer) clearInterval(this.keepAliveTimer);
-    this.keepAliveTimer = setInterval(() => {
-      if (this.synth && this.synth.speaking) {
-        this.synth.pause();
-        this.synth.resume();
-      } else {
-        clearInterval(this.keepAliveTimer);
-      }
-    }, 4500);
-
-    const speakSentence = () => {
+    const playNext = () => {
       if (currentIndex >= sentences.length) {
-        if (this.keepAliveTimer) clearInterval(this.keepAliveTimer);
         this.isSpeaking = false;
         this.mouthOpen = 0;
         this.setGazeMode('OPERATOR');
@@ -470,42 +458,65 @@ export class HologramAssistantEngine {
       const sentenceText = sentences[currentIndex];
       currentIndex++;
 
-      try {
-        const utterance = new SpeechSynthesisUtterance(sentenceText);
-        utterance.lang = 'th-TH'; // Always 100% Thai Language
+      if (typeof Audio !== 'undefined') {
+        const encoded = encodeURIComponent(sentenceText);
+        const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=th&client=tw-ob&q=${encoded}`;
+        const audio = new Audio();
+        this.currentAudioElement = audio;
 
-        if (this.selectedFemaleVoice) {
-          utterance.voice = this.selectedFemaleVoice;
-          const vName = (this.selectedFemaleVoice.name || '').toLowerCase();
-          const isMale = vName.includes('niwat') || vName.includes('pattara') || vName.includes('phirun') || vName.includes('david');
-          // Pitch shift male voices to sweet cyber girl pitch (1.52x)
-          utterance.pitch = isMale ? 1.52 : 1.30;
-          utterance.rate = isMale ? 1.05 : 1.0;
-        } else {
-          utterance.pitch = 1.40;
-          utterance.rate = 1.0;
-        }
-
-        // Keep persistent reference to avoid garbage collection
-        if (typeof window !== 'undefined') {
-          window._nyxActiveUtterance = utterance;
-        }
-
-        utterance.onend = () => {
-          speakSentence();
+        audio.onended = () => {
+          playNext();
         };
 
-        utterance.onerror = () => {
-          speakSentence();
+        audio.onerror = () => {
+          this.speakLocalFallback(sentenceText, () => {
+            playNext();
+          });
         };
 
-        this.synth.speak(utterance);
-      } catch (e) {
-        speakSentence();
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(() => {
+            this.speakLocalFallback(sentenceText, () => {
+              playNext();
+            });
+          });
+        }
+      } else {
+        this.speakLocalFallback(sentenceText, () => {
+          playNext();
+        });
       }
     };
 
-    speakSentence();
+    playNext();
+  }
+
+  // Offline Web Speech API Fallback with 1.6x Female Pitch Shift
+  speakLocalFallback(text, onEnd) {
+    if (!this.synth) {
+      if (onEnd) onEnd();
+      return;
+    }
+    try {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'th-TH';
+      if (this.selectedFemaleVoice) {
+        utterance.voice = this.selectedFemaleVoice;
+      }
+      utterance.pitch = 1.55; // Pitch shifted to female
+      utterance.rate = 1.05;
+
+      utterance.onend = () => {
+        if (onEnd) onEnd();
+      };
+      utterance.onerror = () => {
+        if (onEnd) onEnd();
+      };
+      this.synth.speak(utterance);
+    } catch (e) {
+      if (onEnd) onEnd();
+    }
   }
 
   setSpeechBalloon(text) {
