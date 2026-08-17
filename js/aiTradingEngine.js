@@ -528,7 +528,7 @@ export const DEFAULT_STRATEGY_WEIGHTS = {
   'Ascending Triangle': { wins: 4, losses: 6, winRate: 40.0, weightMultiplier: 0.70, lastLesson: 'ห้ามเข้า Breakout หาก Volume ต่ำกว่าค่าเฉลี่ย 20 แท่ง' }
 };
 
-export function generateAISignal(candles = [], asset = null, patterns = [], activeNews = null, strategyWeights = null) {
+export function generateAISignal(candles = [], asset = null, patterns = [], activeNews = null, strategyWeights = null, spreadInfo = null) {
   if (!candles || candles.length < 20) {
     return {
       action: 'CALCULATING...',
@@ -633,21 +633,64 @@ export function generateAISignal(candles = [], asset = null, patterns = [], acti
     }
   }
 
-  // Bound score
-  score = Math.max(-100, Math.min(100, score));
+  // 8. Multi-Agent Quant Desk Consensus Engine (3 Specialized Agents)
+  // Agent 1: SMC Technical Analyst
+  const smcVote = score >= 35 ? 'BUY 🟢' : score <= -35 ? 'SELL 🔴' : 'HOLD 🟡';
+  const smcHighlight = patterns.length > 0 ? patterns[0].name : (curEMA20 > curEMA50 ? 'EMA Ribbon Uptrend' : 'EMA Downtrend');
+  const smcConfidence = Math.min(99, Math.round(50 + Math.abs(score) / 2));
 
-  // Determine Action & Confidence
+  // Agent 2: Macro Sentiment Intel
+  const newsScore = activeNews?.sentimentScore || 0;
+  const macroVote = newsScore > 5 ? 'BULLISH 🟢' : newsScore < -5 ? 'BEARISH 🔴' : 'NEUTRAL 🟡';
+  const macroHeadline = activeNews?.headline || 'Stable Global Macro Orderflow';
+
+  // Agent 3: Chief Risk Officer (CRO)
+  const isSpreadWidened = spreadInfo ? spreadInfo.isWidened : false;
+  const isVetoed = isSpreadWidened && (Math.abs(score) < 60);
+  const croVote = isVetoed ? 'VETO BLOCKED ❌' : 'CLEARED / APPROVED ✅';
+  const croReason = isVetoed ? '⚠️ ระงับการเข้าไม้: สเปรดถ่างสูงและโมเมนตัมไม่หนาแน่นพอ' : '✅ ผ่านเกณฑ์ Risk/Reward และสเปรดปกติ';
+
+  // Determine Action & Consensus
   let action = 'NEUTRAL / HOLD';
   let badgeClass = 'signal-hold';
   let confidence = Math.abs(score);
+  let consensusType = 'MAJORITY 2/3';
 
-  if (score >= 45) {
-    action = score >= 75 ? 'STRONG BUY' : 'BUY';
-    badgeClass = score >= 75 ? 'signal-strong-buy' : 'signal-buy';
+  if (isVetoed) {
+    action = 'RISK VETOED / HOLD';
+    badgeClass = 'signal-veto';
+    consensusType = 'CRO VETO OVERRIDE ❌';
+  } else if (score >= 45) {
+    const isUnanimous = macroVote.includes('BULLISH');
+    consensusType = isUnanimous ? 'UNANIMOUS 3/3 🌟' : 'MAJORITY 2/3';
+    action = (score >= 75 && isUnanimous) ? 'STRONG BUY' : 'BUY';
+    badgeClass = action.includes('STRONG') ? 'signal-strong-buy' : 'signal-buy';
   } else if (score <= -45) {
-    action = score <= -75 ? 'STRONG SELL' : 'SELL';
-    badgeClass = score <= -75 ? 'signal-strong-sell' : 'signal-sell';
+    const isUnanimous = macroVote.includes('BEARISH');
+    consensusType = isUnanimous ? 'UNANIMOUS 3/3 🌟' : 'MAJORITY 2/3';
+    action = (score <= -75 && isUnanimous) ? 'STRONG SELL' : 'SELL';
+    badgeClass = action.includes('STRONG') ? 'signal-strong-sell' : 'signal-sell';
   }
+
+  // Multi-Agent Desk Summary
+  const quantDesk = {
+    consensusType,
+    isVetoed,
+    agents: [
+      { id: 'smc', name: '👨‍💻 SMC Tech Quant', role: 'Price Action & SMC', vote: smcVote, detail: smcHighlight, confidence: `${smcConfidence}%` },
+      { id: 'macro', name: '📰 Macro Intel', role: 'Global Sentiment & News', vote: macroVote, detail: macroHeadline.slice(0, 38) + '...', confidence: `${Math.abs(newsScore)} pts` },
+      { id: 'cro', name: '🛡️ Chief Risk Officer', role: 'Spread & Capital Defense', vote: croVote, detail: croReason, isSafe: !isVetoed }
+    ]
+  };
+
+  // Chain-of-Thought (CoT) Visual Reasoning Tree Nodes
+  const cotNodes = [
+    { step: 1, title: '1. TREND & STRUCTURE', desc: `EMA20/50 Alignment (${curEMA20 > curEMA50 ? 'BULLISH' : 'BEARISH'}) & RSI (${curRSI})`, status: curEMA20 > curEMA50 ? 'EXPANSION 🟢' : 'DISTRIBUTION 🔴', isPass: true },
+    { step: 2, title: '2. SMC PATTERN IMBALANCE', desc: patterns.length > 0 ? patterns[0].name : 'Price Action Consolidation', status: patterns.length > 0 ? 'CONFIRMED 🟢' : 'NEUTRAL', isPass: patterns.length > 0 },
+    { step: 3, title: '3. MACRO & SENTIMENT', desc: macroHeadline.slice(0, 42) + '...', status: macroVote, isPass: !macroVote.includes('BEARISH') || action.includes('SELL') },
+    { step: 4, title: '4. SPREAD & RISK CLEARANCE', desc: croReason, status: isVetoed ? 'VETOED ❌' : 'CLEARED ✅', isPass: !isVetoed },
+    { step: 5, title: '5. DESK CONSENSUS & EXECUTION', desc: `Consensus Decision: ${action} (${consensusType})`, status: action, isPass: !isVetoed }
+  ];
 
   // Calculate Entry, TP, SL, Risk/Reward
   const isLong = score >= 0;
@@ -687,12 +730,14 @@ export function generateAISignal(candles = [], asset = null, patterns = [], acti
 
   // Thai AI Rationale Breakdown
   let rationale = '';
-  if (action.includes('BUY')) {
-    rationale = `อัลกอริทึมตรวจพบโมเมนตัมขาขึ้นที่มีนัยสำคัญบนคู่เทรด ${asset.id} โดยราคาเคลื่อนไหวอยู่เหนือแนวรับ EMA20 และค่า RSI (${curRSI}) บ่งชี้ว่าอยู่ในโซนที่มีความได้เปรียบสูง (High Probability Setup) เหมาะสำหรับเปิดสถานะ LONG หรือพิจารณาซื้อสะสมเพื่อหวังผลกำไรที่เป้าหมาย TP1 ($${tp1}) และ TP2 ($${tp2}) พร้อมตั้งจุดตัดขาดทุน Stop Loss ($${sl})` + newsImpactText;
+  if (isVetoed) {
+    rationale = `⚠️ [CRO RISK VETO]: หัวหน้าฝ่ายบริหารความเสี่ยง (CRO) สั่งระงับการเข้าเปิดสถานะชั่วคราว เนื่องจากค่า Spread ของโบรกเกอร์เกิดการถ่างออกผิดปกติ (High Volatility Spurt) แนะนำรอให้สเปรดบีบตัวกลับสู่ระดับปกติก่อนเข้าออเดอร์`;
+  } else if (action.includes('BUY')) {
+    rationale = `สภา Quant Desk มีมติเอกฉันท์พบโมเมนตัมขาขึ้นที่แข็งแกร่งบนคู่เทรด ${asset ? asset.id : ''} โดยช่างเทคนิค SMC ยืนยันแนวรับ EMA20 และ RSI อยู่ในโซนได้เปรียบสูง ฝ่ายความเสี่ยงอนุมัติเป้าหมาย TP1 ($${tp1}) และ TP2 ($${tp2}) พร้อมจุดตัดขาดทุน ($${sl})` + newsImpactText;
   } else if (action.includes('SELL')) {
-    rationale = `ระบบตรวจพบแรงกดดันฝั่งขายที่หนาแน่นบริเวณแนวต้าน และสัญญาณ Overbought/Rejection บนคู่เทรด ${asset.id} แนะนำเปิดสถานะ SHORT หรือทยอย Take Profit ขายทำกำไรเพื่อลดความเสี่ยง โดยมีเป้าหมายทำกำไรขาลงที่ $${tp1} และตัดขาดทุนหากราคาทะลุผ่าน $${sl}` + newsImpactText;
+    rationale = `สภา Quant Desk ตรวจพบแรงเทขายหนาแน่นบริเวณแนวต้านและสัญญาณ Overbought แนะนำเปิดสถานะ SHORT หรือขายทำกำไร โดยมีเป้าหมายทำกำไรขาลงที่ $${tp1} และตัดขาดทุนที่ $${sl}` + newsImpactText;
   } else {
-    rationale = `สภาวะตลาดยังอยู่ในช่วงพักฐาน (Consolidation / Sideway) สัญญาณอินดิเคเตอร์ยังไม่มีความสอดคล้องชัดเจน แนะนำรอจังหวะ Breakout หรือรอการยืนยันแท่งเทียนที่แนวรับ/แนวต้านก่อนตัดสินใจ` + newsImpactText;
+    rationale = `สภาวะตลาดยังอยู่ในช่วงพักฐาน (Consolidation) สัญญาณอินดิเคเตอร์ยังไม่มีมติเอกฉันท์ แนะนำรอจังหวะ Breakout หรือรอการยืนยันแท่งเทียนที่แนวรับ/แนวต้านก่อนตัดสินใจ` + newsImpactText;
   }
 
   return {
@@ -714,7 +759,9 @@ export function generateAISignal(candles = [], asset = null, patterns = [], acti
     rationale,
     curRSI,
     curMACDHist,
-    appliedMemoryInsight
+    appliedMemoryInsight,
+    quantDesk,
+    cotNodes
   };
 }
 
@@ -788,6 +835,17 @@ export class AITradingEngine {
     this.knowledgeIndex = 0;
     this.knowledgeStreamInterval = null;
 
+    // Advanced Money Management & Dynamic Lot Calculator
+    this.riskPercent = 2; // Default 2% Risk Rule
+    this.accountCapital = 100000;
+
+    // Time-Machine Strategy Replay & Backtest Engine
+    this.isReplayMode = false;
+    this.replayIndex = 0;
+    this.replaySpeed = 1;
+    this.replayInterval = null;
+    this.fullHistoricalCandles = [];
+
     // Callbacks
     this.onSignalUpdate = options.onSignalUpdate || null;
     this.onPositionsUpdate = options.onPositionsUpdate || null;
@@ -795,10 +853,120 @@ export class AITradingEngine {
     this.onAIJournalUpdate = options.onAIJournalUpdate || null;
     this.onAIProfileUpdate = options.onAIProfileUpdate || null;
     this.onKnowledgeStreamUpdate = options.onKnowledgeStreamUpdate || null;
+    this.onMoneyManagementUpdate = options.onMoneyManagementUpdate || null;
+    this.onReplayUpdate = options.onReplayUpdate || null;
 
     // Load persisted training memory from storage or seed baseline
     if (!this.loadGymState()) {
       this.seedInitialAIJournal();
+    }
+  }
+
+  setRiskPercent(risk) {
+    this.riskPercent = Number(risk) || 2;
+    if (this.onMoneyManagementUpdate) {
+      this.onMoneyManagementUpdate(this.getMoneyManagementDetails());
+    }
+  }
+
+  setAccountCapital(cap) {
+    this.paperBalanceUSD = Number(cap) || 100000;
+    this.accountCapital = this.paperBalanceUSD;
+    if (this.onMoneyManagementUpdate) {
+      this.onMoneyManagementUpdate(this.getMoneyManagementDetails());
+    }
+  }
+
+  getMoneyManagementDetails() {
+    const curPrice = this.candles.length > 0 ? this.candles[this.candles.length - 1].close : this.activeAsset.basePrice;
+    const sl = this.signal ? this.signal.sl : curPrice * 0.99;
+    const slDistance = Math.max(curPrice * 0.002, Math.abs(curPrice - sl));
+    const riskUSD = (this.paperBalanceUSD * (this.riskPercent / 100));
+
+    // Standard Lot math
+    const pipSize = this.activeAsset.market === 'xm' ? (this.activeAsset.id === 'XAU/USD' ? 0.10 : 0.0001) : (curPrice * 0.001);
+    const pipValue = this.activeAsset.pipValue || 10;
+    const slPips = Math.max(5, slDistance / pipSize);
+    let calculatedLots = (riskUSD / (slPips * pipValue));
+    calculatedLots = Number(Math.max(0.01, Math.min(20.00, calculatedLots)).toFixed(2));
+
+    // Margin Health
+    const usedMargin = this.positions.reduce((sum, p) => sum + (p.amountUSD / p.leverage), 0);
+    const totalUnrealizedPnL = this.positions.reduce((sum, p) => sum + p.pnlUSD, 0);
+    const equity = Math.max(0, this.paperBalanceUSD + totalUnrealizedPnL);
+    const freeMargin = Math.max(0, equity - usedMargin);
+    const marginLevel = usedMargin > 0 ? Number(((equity / usedMargin) * 100).toFixed(1)) : 999.9;
+
+    let marginStatus = 'EXCELLENT (HEALTHY 🟢)';
+    if (marginLevel < 120) marginStatus = 'MARGIN CALL RISK 🔴';
+    else if (marginLevel < 250) marginStatus = 'MODERATE 🟡';
+
+    return {
+      capital: this.paperBalanceUSD,
+      riskPercent: this.riskPercent,
+      riskUSD: Number(riskUSD.toFixed(2)),
+      calculatedLots,
+      equity: Number(equity.toFixed(2)),
+      usedMargin: Number(usedMargin.toFixed(2)),
+      freeMargin: Number(freeMargin.toFixed(2)),
+      marginLevel,
+      marginStatus,
+      leverage: this.leverage
+    };
+  }
+
+  // Time-Machine Strategy Replay Methods
+  startReplay() {
+    if (this.candles.length < 20) return;
+    this.isReplayMode = true;
+    if (!this.fullHistoricalCandles || this.fullHistoricalCandles.length === 0) {
+      this.fullHistoricalCandles = [...this.candles];
+    }
+    this.replayIndex = Math.floor(this.fullHistoricalCandles.length / 2);
+    this.candles = this.fullHistoricalCandles.slice(0, this.replayIndex);
+    this.analyzeMarket();
+    this.requestRender();
+    if (this.onReplayUpdate) {
+      this.onReplayUpdate({ isReplay: true, index: this.replayIndex, total: this.fullHistoricalCandles.length });
+    }
+  }
+
+  stepReplay(step = 1) {
+    if (!this.isReplayMode || !this.fullHistoricalCandles || this.fullHistoricalCandles.length === 0) return;
+    const newIdx = Math.min(this.fullHistoricalCandles.length, Math.max(15, this.replayIndex + step));
+    this.replayIndex = newIdx;
+    this.candles = this.fullHistoricalCandles.slice(0, this.replayIndex);
+    this.analyzeMarket();
+    this.updatePositionPnL();
+    this.requestRender();
+    if (this.onReplayUpdate) {
+      this.onReplayUpdate({ isReplay: true, index: this.replayIndex, total: this.fullHistoricalCandles.length });
+    }
+  }
+
+  seekReplay(index) {
+    if (!this.isReplayMode || !this.fullHistoricalCandles || this.fullHistoricalCandles.length === 0) return;
+    this.replayIndex = Math.min(this.fullHistoricalCandles.length, Math.max(15, Number(index)));
+    this.candles = this.fullHistoricalCandles.slice(0, this.replayIndex);
+    this.analyzeMarket();
+    this.updatePositionPnL();
+    this.requestRender();
+    if (this.onReplayUpdate) {
+      this.onReplayUpdate({ isReplay: true, index: this.replayIndex, total: this.fullHistoricalCandles.length });
+    }
+  }
+
+  exitReplay() {
+    this.isReplayMode = false;
+    if (this.replayInterval) clearInterval(this.replayInterval);
+    this.replayInterval = null;
+    if (this.fullHistoricalCandles && this.fullHistoricalCandles.length > 0) {
+      this.candles = [...this.fullHistoricalCandles];
+    }
+    this.analyzeMarket();
+    this.requestRender();
+    if (this.onReplayUpdate) {
+      this.onReplayUpdate({ isReplay: false, index: this.candles.length, total: this.candles.length });
     }
   }
 
@@ -1086,7 +1254,7 @@ export class AITradingEngine {
 
   analyzeMarket() {
     this.patterns = detectChartPatterns(this.candles);
-    this.signal = generateAISignal(this.candles, this.activeAsset, this.patterns, this.activeNews, this.strategyWeights);
+    this.signal = generateAISignal(this.candles, this.activeAsset, this.patterns, this.activeNews, this.strategyWeights, this.currentSpreadInfo);
     if (this.onSignalUpdate) {
       this.onSignalUpdate(this.signal);
     }

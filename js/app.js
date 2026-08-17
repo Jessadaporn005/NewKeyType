@@ -694,6 +694,14 @@ class WindowsTerminalApp {
             this.updateTradingSpreadUI(spreadInfo);
           };
 
+          this.tradingEngine.onMoneyManagementUpdate = (mmDetails) => {
+            this.updateMoneyManagementUI(mmDetails);
+          };
+
+          this.tradingEngine.onReplayUpdate = (replayState) => {
+            this.updateReplayUI(replayState);
+          };
+
           this.tradingEngine.init();
           this.bindTradingUIEvents();
           if (this.tradingEngine.activeNews) {
@@ -713,6 +721,9 @@ class WindowsTerminalApp {
           }
           if (this.tradingEngine.currentSpreadInfo) {
             this.updateTradingSpreadUI(this.tradingEngine.currentSpreadInfo);
+          }
+          if (this.tradingEngine.getMoneyManagementDetails) {
+            this.updateMoneyManagementUI(this.tradingEngine.getMoneyManagementDetails());
           }
         }
         break;
@@ -814,6 +825,90 @@ class WindowsTerminalApp {
       if (expContent) {
         expContent.textContent = 'กำลังสแกนเปรียบเทียบพฤติกรรมแท่งเทียนปัจจุบันกับฐานความรู้สถิติในอดีต (Knowledge Matrix)...';
       }
+    }
+
+    // Render Multi-Agent Quant Desk Consensus
+    const deskBadge = document.getElementById('aiDeskConsensusBadge');
+    const agentsGrid = document.getElementById('aiQuantAgentsGrid');
+    if (signal.quantDesk && agentsGrid) {
+      if (deskBadge) {
+        deskBadge.textContent = signal.quantDesk.consensusType;
+        deskBadge.className = 'desk-consensus-badge ' + (signal.quantDesk.isVetoed ? 'glow-danger' : '');
+      }
+      agentsGrid.innerHTML = '';
+      signal.quantDesk.agents.forEach(ag => {
+        const row = document.createElement('div');
+        row.className = 'agent-row-box';
+        row.innerHTML = `
+          <div class="agent-name-role">
+            <span class="agent-name">${ag.name}</span>
+            <span class="agent-role">${ag.detail}</span>
+          </div>
+          <span class="agent-vote-tag">${ag.vote}</span>
+        `;
+        agentsGrid.appendChild(row);
+      });
+    }
+
+    // Render Chain-of-Thought (CoT) Visual Tree
+    const cotFlow = document.getElementById('aiCotStepsFlow');
+    if (signal.cotNodes && cotFlow) {
+      cotFlow.innerHTML = '';
+      signal.cotNodes.forEach(node => {
+        const item = document.createElement('div');
+        item.className = 'cot-node-item';
+        item.innerHTML = `
+          <span class="cot-node-title">${node.title}</span>
+          <span class="cot-node-status" style="color: ${node.isPass ? '#00ff88' : '#ff4466'};">${node.status}</span>
+        `;
+        cotFlow.appendChild(item);
+      });
+    }
+  }
+
+  updateMoneyManagementUI(mm) {
+    if (!mm) return;
+    const lots = document.getElementById('mmCalculatedLots');
+    if (lots) lots.textContent = `${mm.calculatedLots} Lots`;
+
+    const riskUSD = document.getElementById('mmRiskUSD');
+    if (riskUSD) riskUSD.textContent = `$${mm.riskUSD.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+    const marginLvl = document.getElementById('mmMarginLevel');
+    if (marginLvl) marginLvl.textContent = `${mm.marginLevel}%`;
+
+    const marginStatus = document.getElementById('mmMarginStatus');
+    if (marginStatus) marginStatus.textContent = mm.marginStatus;
+
+    const usedM = document.getElementById('mmUsedMargin');
+    if (usedM) usedM.textContent = `$${mm.usedMargin.toLocaleString()}`;
+
+    const freeM = document.getElementById('mmFreeMargin');
+    if (freeM) freeM.textContent = `$${mm.freeMargin.toLocaleString()}`;
+
+    const eq = document.getElementById('mmEquity');
+    if (eq) eq.textContent = `$${mm.equity.toLocaleString()}`;
+  }
+
+  updateReplayUI(replayState) {
+    if (!replayState) return;
+    const progressText = document.getElementById('replayProgressText');
+    const rangeSlider = document.getElementById('replayRangeSlider');
+    const exitBtn = document.getElementById('btnExitReplay');
+    const toggleBtn = document.getElementById('btnToggleReplay');
+
+    if (progressText) {
+      progressText.textContent = replayState.isReplay ? `REPLAY (${replayState.index}/${replayState.total})` : `LIVE (${replayState.total}/${replayState.total})`;
+    }
+    if (rangeSlider) {
+      rangeSlider.max = replayState.total;
+      rangeSlider.value = replayState.index;
+    }
+    if (exitBtn) {
+      exitBtn.classList.toggle('hidden', !replayState.isReplay);
+    }
+    if (toggleBtn) {
+      toggleBtn.classList.toggle('btn-replay-toggle', !replayState.isReplay);
     }
   }
 
@@ -926,15 +1021,85 @@ class WindowsTerminalApp {
       });
     }
 
-    // Order Buttons
+    // Order Buttons with Money Management Position Sizing
     if (this.dom.btnOrderLong) {
       this.dom.btnOrderLong.addEventListener('click', () => {
-        if (this.tradingEngine) this.tradingEngine.openPosition('LONG', 2000);
+        if (this.tradingEngine) {
+          const mm = this.tradingEngine.getMoneyManagementDetails();
+          this.tradingEngine.openPosition('LONG', mm.riskUSD || 2000);
+        }
       });
     }
     if (this.dom.btnOrderShort) {
       this.dom.btnOrderShort.addEventListener('click', () => {
-        if (this.tradingEngine) this.tradingEngine.openPosition('SHORT', 2000);
+        if (this.tradingEngine) {
+          const mm = this.tradingEngine.getMoneyManagementDetails();
+          this.tradingEngine.openPosition('SHORT', mm.riskUSD || 2000);
+        }
+      });
+    }
+
+    // Money Management Capital Presets
+    const capPills = document.getElementById('capitalPillsGroup');
+    if (capPills) {
+      capPills.querySelectorAll('.cap-pill').forEach(pill => {
+        pill.addEventListener('click', () => {
+          capPills.querySelectorAll('.cap-pill').forEach(p => p.classList.remove('active'));
+          pill.classList.add('active');
+          const cap = Number(pill.dataset.cap);
+          if (this.tradingEngine) this.tradingEngine.setAccountCapital(cap);
+        });
+      });
+    }
+
+    // Money Management Risk % Presets
+    const riskPills = document.getElementById('riskPillsGroup');
+    if (riskPills) {
+      riskPills.querySelectorAll('.risk-pill').forEach(pill => {
+        pill.addEventListener('click', () => {
+          riskPills.querySelectorAll('.risk-pill').forEach(p => p.classList.remove('active'));
+          pill.classList.add('active');
+          const risk = Number(pill.dataset.risk);
+          if (this.tradingEngine) this.tradingEngine.setRiskPercent(risk);
+        });
+      });
+    }
+
+    // Time-Machine Strategy Replay Toolbar Controls
+    const btnToggleReplay = document.getElementById('btnToggleReplay');
+    if (btnToggleReplay) {
+      btnToggleReplay.addEventListener('click', () => {
+        if (!this.tradingEngine) return;
+        if (!this.tradingEngine.isReplayMode) this.tradingEngine.startReplay();
+        else this.tradingEngine.exitReplay();
+      });
+    }
+
+    const btnStepBack = document.getElementById('btnReplayStepBack');
+    if (btnStepBack) {
+      btnStepBack.addEventListener('click', () => {
+        if (this.tradingEngine) this.tradingEngine.stepReplay(-1);
+      });
+    }
+
+    const btnStepForward = document.getElementById('btnReplayStepForward');
+    if (btnStepForward) {
+      btnStepForward.addEventListener('click', () => {
+        if (this.tradingEngine) this.tradingEngine.stepReplay(1);
+      });
+    }
+
+    const replaySlider = document.getElementById('replayRangeSlider');
+    if (replaySlider) {
+      replaySlider.addEventListener('input', (e) => {
+        if (this.tradingEngine) this.tradingEngine.seekReplay(e.target.value);
+      });
+    }
+
+    const btnExitReplay = document.getElementById('btnExitReplay');
+    if (btnExitReplay) {
+      btnExitReplay.addEventListener('click', () => {
+        if (this.tradingEngine) this.tradingEngine.exitReplay();
       });
     }
 

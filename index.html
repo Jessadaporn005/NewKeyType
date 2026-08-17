@@ -717,6 +717,22 @@
               <canvas id="tradingSubCanvas" width="850" height="90"></canvas>
             </div>
 
+            <!-- TIME-MACHINE STRATEGY REPLAY & BACKTEST CONTROLLER -->
+            <div class="trading-replay-toolbar" id="tradingReplayToolbar">
+              <div class="replay-left-group">
+                <button class="replay-btn btn-replay-toggle" id="btnToggleReplay">⏪ TIME-MACHINE REPLAY</button>
+                <button class="replay-btn" id="btnReplayStepBack" title="Step Back 1 Candle">⏮️</button>
+                <button class="replay-btn btn-play-pause" id="btnReplayPlayPause" title="Play/Pause">▶️</button>
+                <button class="replay-btn" id="btnReplayStepForward" title="Step Forward 1 Candle">⏭️</button>
+                <span class="replay-speed-tag" id="replaySpeedTag">1x SPEED</span>
+              </div>
+              <div class="replay-slider-box">
+                <span class="replay-bar-lbl" id="replayProgressText">LIVE (80/80)</span>
+                <input type="range" class="replay-slider" id="replayRangeSlider" min="15" max="80" value="80">
+              </div>
+              <button class="replay-btn btn-exit-replay hidden" id="btnExitReplay">❌ EXIT</button>
+            </div>
+
             <!-- REAL-TIME BREAKING NEWS & MACRO SENTIMENT TICKER -->
             <div class="trading-news-ticker-bar" id="tradingNewsTickerBar">
               <div class="news-ticker-badge"><span class="live-news-pulse">●</span> LIVE INTEL</div>
@@ -807,6 +823,29 @@
                 <!-- Thai AI Reasoning Box -->
                 <div class="ai-rationale-box" id="aiRationaleBox">
                   "อัลกอริทึมตรวจพบโมเมนตัมขาขึ้นที่มีนัยสำคัญบนคู่เทรดนี้..."
+                </div>
+
+                <!-- Multi-Agent Quant Desk Consensus Card -->
+                <div class="quant-desk-card" id="aiQuantDeskCard">
+                  <div class="quant-desk-header">
+                    <span class="desk-icon">👥</span>
+                    <span class="desk-title">MULTI-AGENT QUANT DESK CONSENSUS</span>
+                    <span class="desk-consensus-badge" id="aiDeskConsensusBadge">UNANIMOUS 3/3 🌟</span>
+                  </div>
+                  <div class="quant-agents-grid" id="aiQuantAgentsGrid">
+                    <!-- Dynamic rendering by app.js -->
+                  </div>
+                </div>
+
+                <!-- Chain-of-Thought (CoT) Visual Reasoning Tree -->
+                <div class="cot-reasoning-tree-card" id="aiCotTreeCard">
+                  <div class="cot-header">
+                    <span class="cot-icon">🌲</span>
+                    <span class="cot-title">CHAIN-OF-THOUGHT (CoT) REASONING NODES</span>
+                  </div>
+                  <div class="cot-steps-flow" id="aiCotStepsFlow">
+                    <!-- Dynamic rendering by app.js -->
+                  </div>
                 </div>
 
                 <!-- Experience Replay & Past Lessons Applied Box -->
@@ -955,6 +994,61 @@
                 <div class="paper-header">
                   <span>MANUAL PAPER EXECUTION DECK</span>
                   <span class="paper-bal">CAPITAL: <strong id="paperCapitalDisplay">$100,000.00</strong></span>
+                </div>
+
+                <!-- INSTITUTIONAL MONEY MANAGEMENT SUITE -->
+                <div class="paper-money-management-card">
+                  <div class="mm-header">
+                    <span class="mm-icon">🧮</span>
+                    <span class="mm-title">MONEY MANAGEMENT // คุมความเสี่ยง & คำนวณ LOT</span>
+                  </div>
+
+                  <!-- Capital Selector -->
+                  <div class="mm-capital-presets">
+                    <span class="mm-sub-lbl">INITIAL CAPITAL:</span>
+                    <div class="capital-pills" id="capitalPillsGroup">
+                      <button class="cap-pill" data-cap="1000">$1,000</button>
+                      <button class="cap-pill" data-cap="10000">$10,000</button>
+                      <button class="cap-pill" data-cap="50000">$50,000</button>
+                      <button class="cap-pill active" data-cap="100000">$100,000</button>
+                    </div>
+                  </div>
+
+                  <!-- Risk % Per Trade -->
+                  <div class="mm-risk-selector">
+                    <span class="mm-sub-lbl">RISK PER TRADE:</span>
+                    <div class="risk-pills" id="riskPillsGroup">
+                      <button class="risk-pill" data-risk="1">1% ($1,000)</button>
+                      <button class="risk-pill active" data-risk="2">2% ($2,000)</button>
+                      <button class="risk-pill" data-risk="3">3% ($3,000)</button>
+                      <button class="risk-pill" data-risk="5">5% ($5,000)</button>
+                    </div>
+                  </div>
+
+                  <!-- Auto Dynamic Lot Size Output -->
+                  <div class="mm-lot-output-box">
+                    <div class="lot-stat">
+                      <span class="lbl">DYNAMIC LOT SIZE:</span>
+                      <strong class="val glow-cmd" id="mmCalculatedLots">0.45 Lots</strong>
+                    </div>
+                    <div class="lot-stat">
+                      <span class="lbl">RISK AMOUNT (USD):</span>
+                      <strong class="val glow-danger" id="mmRiskUSD">$2,000.00</strong>
+                    </div>
+                  </div>
+
+                  <!-- Margin Health Status Bar -->
+                  <div class="mm-margin-health-box">
+                    <div class="margin-health-top">
+                      <span>MARGIN LEVEL: <strong id="mmMarginLevel">999.9%</strong></span>
+                      <span class="margin-status-tag" id="mmMarginStatus">EXCELLENT (🟢)</span>
+                    </div>
+                    <div class="margin-metrics-row">
+                      <span>Used Margin: <strong id="mmUsedMargin">$0.00</strong></span>
+                      <span>Free: <strong id="mmFreeMargin">$100,000.00</strong></span>
+                      <span>Equity: <strong id="mmEquity">$100,000.00</strong></span>
+                    </div>
+                  </div>
                 </div>
 
                 <div class="order-action-buttons">

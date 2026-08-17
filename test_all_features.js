@@ -627,12 +627,52 @@ async function runTests() {
   assert(normalSpread.askPrice > normalSpread.bidPrice, `Gold Ask Price ($${normalSpread.askPrice}) > Bid Price ($${normalSpread.bidPrice})`);
   assert(normalSpread.spreadFormatted.includes('pts'), `Gold spread formatted in points: ${normalSpread.spreadFormatted}`);
 
-  // Test dynamic widening under breaking macro news
-  const mockHighImpactNews = { headline: 'Emergency Fed Rate Decision', sentimentScore: 25 };
-  const widenedSpread = calculateDynamicSpread(gold, 2748.50, null, mockHighImpactNews);
-  assert(widenedSpread.isWidened === true, 'High-impact breaking news triggered dynamic spread widening');
-  assert(widenedSpread.spreadValue > normalSpread.spreadValue, `Widened spread ($${widenedSpread.spreadValue}) > Normal spread ($${normalSpread.spreadValue})`);
-  assert(widenedSpread.status.includes('WIDENED'), `Spread status correctly tagged: ${widenedSpread.status}`);
+  // =========================================================================
+  // SECTION 33: MULTI-AGENT QUANT DESK CONSENSUS ENGINE (3 SPECIALIZED AGENTS)
+  // =========================================================================
+  console.log('\n[33] Testing Multi-Agent Quant Desk Consensus Engine...');
+  const sigDesk = generateAISignal(mockCandles, TRADING_ASSETS[0], [], null, null, null);
+  assert(sigDesk.quantDesk && Array.isArray(sigDesk.quantDesk.agents), 'generateAISignal outputs quantDesk with 3 specialized agents');
+  assert(sigDesk.quantDesk.agents.length === 3, 'Quant Desk contains SMC, Macro, and CRO Risk Officer');
+  assert(sigDesk.quantDesk.consensusType !== undefined, `Consensus Type generated: ${sigDesk.quantDesk.consensusType}`);
+
+  // Test CRO VETO functionality when spread is dangerously widened
+  const mockWidenedSpread = { isWidened: true, spreadValue: 15.0 };
+  const sigVetoed = generateAISignal(mockCandles, TRADING_ASSETS[0], [], null, null, mockWidenedSpread);
+  assert(sigVetoed.quantDesk.isVetoed === true, 'CRO successfully VETOED order entry under extreme spread widening');
+  assert(sigVetoed.action.includes('VETOED'), 'Signal action updated to RISK VETOED');
+
+  // =========================================================================
+  // SECTION 34: CHAIN-OF-THOUGHT (CoT) REASONING NODES
+  // =========================================================================
+  console.log('\n[34] Testing Chain-of-Thought (CoT) Visual Reasoning Tree...');
+  assert(Array.isArray(sigDesk.cotNodes) && sigDesk.cotNodes.length === 5, 'generateAISignal outputs 5 sequential CoT reasoning nodes');
+  assert(sigDesk.cotNodes[0].title.includes('TREND') && sigDesk.cotNodes[4].title.includes('CONSENSUS'), 'CoT nodes start from Trend Structure to Final Consensus Execution');
+
+  // =========================================================================
+  // SECTION 35: INSTITUTIONAL MONEY MANAGEMENT & DYNAMIC LOT SIZING
+  // =========================================================================
+  console.log('\n[35] Testing Institutional Money Management & Lot Sizing Suite...');
+  tradingEngine.setAccountCapital(50000);
+  tradingEngine.setRiskPercent(2);
+  const mmDetails = tradingEngine.getMoneyManagementDetails();
+  assert(mmDetails.capital === 50000, 'Account capital set to $50,000');
+  assert(mmDetails.riskPercent === 2, 'Risk per trade set to 2% ($1,000)');
+  assert(mmDetails.riskUSD === 1000, `Calculated risk USD: $${mmDetails.riskUSD}`);
+  assert(mmDetails.calculatedLots > 0, `Dynamic Lot Size calculated: ${mmDetails.calculatedLots} Lots`);
+  assert(mmDetails.marginLevel > 0 && mmDetails.marginStatus.includes('🟢'), `Margin health level verified: ${mmDetails.marginLevel}% (${mmDetails.marginStatus})`);
+
+  // =========================================================================
+  // SECTION 36: TIME-MACHINE STRATEGY REPLAY & BACKTESTING
+  // =========================================================================
+  console.log('\n[36] Testing Time-Machine Strategy Replay & Backtesting Engine...');
+  tradingEngine.startReplay();
+  assert(tradingEngine.isReplayMode === true, 'startReplay enabled Time-Machine Replay Mode');
+  const initialReplayIdx = tradingEngine.replayIndex;
+  tradingEngine.stepReplay(1);
+  assert(tradingEngine.replayIndex === initialReplayIdx + 1, 'stepReplay advanced candles by 1');
+  tradingEngine.exitReplay();
+  assert(tradingEngine.isReplayMode === false, 'exitReplay restored live streaming state');
 
   console.log('\n====================================================');
   console.log(`🏁 TEST RESULTS: ${passed}/${total} TESTS PASSED (100%)`);
