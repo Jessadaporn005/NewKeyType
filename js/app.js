@@ -682,6 +682,14 @@ class WindowsTerminalApp {
             this.updateAIJournalUI(journal);
           };
 
+          this.tradingEngine.onAIProfileUpdate = (profile) => {
+            this.updateAIProfileUI(profile);
+          };
+
+          this.tradingEngine.onKnowledgeStreamUpdate = (logs, latestLog) => {
+            this.updateKnowledgeStreamUI(logs, latestLog);
+          };
+
           this.tradingEngine.init();
           this.bindTradingUIEvents();
           if (this.tradingEngine.activeNews) {
@@ -692,6 +700,12 @@ class WindowsTerminalApp {
           }
           if (this.tradingEngine.aiJournal) {
             this.updateAIJournalUI(this.tradingEngine.aiJournal);
+          }
+          if (this.tradingEngine.getAIProfileDetails) {
+            this.updateAIProfileUI(this.tradingEngine.getAIProfileDetails());
+          }
+          if (this.tradingEngine.knowledgeLogs) {
+            this.updateKnowledgeStreamUI(this.tradingEngine.knowledgeLogs);
           }
         }
         break;
@@ -1003,6 +1017,62 @@ class WindowsTerminalApp {
       `;
 
       this.dom.aiJournalFeed.appendChild(item);
+    });
+  }
+
+  updateAIProfileUI(profile) {
+    if (!profile) return;
+    const rankTitle = document.getElementById('aiProfileRankTitle');
+    if (rankTitle) rankTitle.textContent = profile.rankTitle;
+
+    const xpText = document.getElementById('aiProfileXpText');
+    if (xpText) xpText.textContent = `${profile.xpCurrent} / ${profile.xpNext} SAMPLES (${profile.xpPercent}%)`;
+
+    const xpBar = document.getElementById('aiProfileXpBar');
+    if (xpBar) xpBar.style.width = `${profile.xpPercent}%`;
+
+    const samples = document.getElementById('aiProfileSamples');
+    if (samples) samples.textContent = `${profile.samplesStudied.toLocaleString()}+`;
+
+    const pf = document.getElementById('aiProfileProfitFactor');
+    if (pf) pf.textContent = `${profile.profitFactor}x`;
+
+    const cog = document.getElementById('aiProfileCognition');
+    if (cog) cog.textContent = profile.strategyCognition;
+
+    const syn = document.getElementById('aiProfileSynapse');
+    if (syn) syn.textContent = profile.memorySynapse;
+
+    const skillsGrid = document.getElementById('aiSkillMasteryGrid');
+    if (skillsGrid && Array.isArray(profile.skills)) {
+      skillsGrid.innerHTML = '';
+      profile.skills.forEach(sk => {
+        const chip = document.createElement('div');
+        chip.className = `skill-mastery-chip ${sk.statusClass}`;
+        chip.innerHTML = `<span>${sk.name}</span><strong>${sk.winRate}% (x${sk.weight})</strong>`;
+        skillsGrid.appendChild(chip);
+      });
+    }
+  }
+
+  updateKnowledgeStreamUI(logs = []) {
+    const feed = document.getElementById('aiKnowledgeStreamFeed');
+    if (!feed || !Array.isArray(logs)) return;
+    feed.innerHTML = '';
+
+    logs.slice(0, 10).forEach(log => {
+      const item = document.createElement('div');
+      item.className = 'knowledge-feed-item';
+      item.innerHTML = `
+        <div class="feed-item-top">
+          <span class="feed-cat-badge">${log.badge}</span>
+          <span class="feed-source">${log.source}</span>
+          <span class="feed-time">${log.timestamp}</span>
+        </div>
+        <div class="feed-text">${log.text}</div>
+        <div class="feed-impact">⚡ IMPACT: ${log.impactFactor}</div>
+      `;
+      feed.appendChild(item);
     });
   }
 

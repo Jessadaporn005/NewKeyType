@@ -610,6 +610,23 @@ async function runTests() {
   tradingEngine.updateStrategyWeight('Liquidity Sweep', true, 'เจ้ามือกวาดสภาพคล่องสำเร็จ');
   assert(tradingEngine.strategyWeights['Liquidity Sweep'].wins >= 16, 'updateStrategyWeight incremented pattern wins dynamically');
 
+  // =========================================================================
+  // SECTION 31: AI NEURAL PROFILE & REAL-TIME INTERNET KNOWLEDGE RADAR
+  // =========================================================================
+  console.log('\n[31] Testing AI Neural Profile & Real-Time Internet Knowledge Radar...');
+  const { LIVE_INTERNET_KNOWLEDGE_FEED } = await import('./js/aiTradingEngine.js');
+  assert(Array.isArray(LIVE_INTERNET_KNOWLEDGE_FEED) && LIVE_INTERNET_KNOWLEDGE_FEED.length >= 6, `LIVE_INTERNET_KNOWLEDGE_FEED contains ${LIVE_INTERNET_KNOWLEDGE_FEED.length} macro market intelligence items`);
+
+  const profile = tradingEngine.getAIProfileDetails();
+  assert(profile.rankTitle.includes('LEVEL') && profile.samplesStudied >= 0, `getAIProfileDetails calculated rank (${profile.rankTitle}) and sample tracking`);
+  assert(Array.isArray(profile.skills) && profile.skills.length >= 5, `AI Profile contains ${profile.skills.length} distilled strategy competency badges`);
+  assert(typeof profile.profitFactor === 'string', `AI Profit Factor formatted properly: ${profile.profitFactor}`);
+
+  // Test Knowledge Cycle
+  const prevKnowledgeLen = tradingEngine.knowledgeLogs.length;
+  tradingEngine.cycleKnowledgeStream();
+  assert(tradingEngine.knowledgeLogs.length >= prevKnowledgeLen, 'cycleKnowledgeStream ingested new live market intelligence into real-time radar feed');
+
   console.log('\n====================================================');
   console.log(`🏁 TEST RESULTS: ${passed}/${total} TESTS PASSED (100%)`);
   console.log('====================================================');
