@@ -225,6 +225,16 @@ async function runTests() {
   tabMgr.closeTab(tab2.id);
   assert(tabMgr.tabs.length === 1 && tabMgr.tabs[0].id === tab1.id, 'TabManager closed secondary session tab cleanly');
 
+  // Test dynamic browser-style tab sync
+  tabMgr.syncActiveTabFromMode('trading', 'ETH/USDT');
+  assert(tabMgr.tabs[0].type === 'trading' && tabMgr.tabs[0].title === 'Trade (ETH/USDT)' && tabMgr.tabs[0].icon === '📈', 'Dynamic Tab Sync: Active tab transformed to Trading mode');
+
+  tabMgr.syncActiveTabFromMode('vscode', 'python');
+  assert(tabMgr.tabs[0].type === 'vscode' && tabMgr.tabs[0].title === 'Code (python)' && tabMgr.tabs[0].icon === '⚡', 'Dynamic Tab Sync: Active tab transformed to VS Code mode');
+
+  tabMgr.syncActiveTabFromMode('cli');
+  assert(tabMgr.tabs[0].type === 'cli' && tabMgr.tabs[0].title.includes('CyberDeck') && tabMgr.tabs[0].icon === '>_', 'Dynamic Tab Sync: Active tab restored to CyberDeck terminal');
+
   // 12. Real-Time Cyber Intelligence & Markets Telemetry Matrix
   console.log('\n[12] Testing Cyber Intelligence & Markets Telemetry Matrix...');
   const { CyberIntelFeed, INITIAL_MARKETS, INTEL_STREAM_DATA } = await import('./js/cyberIntelFeed.js');

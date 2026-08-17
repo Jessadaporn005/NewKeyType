@@ -88,6 +88,8 @@ export class TabManager {
       mode: tabType.mode,
       historyHtml: '',
       inputBuffer: '',
+      asset: tabType.id === 'trading' ? 'BTC/USDT' : null,
+      url: tabType.id === 'browser' ? 'https://www.google.com' : null,
       createdAt: Date.now()
     };
 
@@ -105,33 +107,49 @@ export class TabManager {
     const targetTab = this.tabs.find(t => t.id === tabId);
     if (!targetTab) return;
 
-    // 1. Save current active tab's CLI state before switching
+    // 1. Save current active tab's specific state before leaving
     const currentTab = this.tabs.find(t => t.id === this.activeTabId);
-    if (currentTab && currentTab.type === 'cli' && this.app.dom && this.app.dom.cliHistory) {
-      currentTab.historyHtml = this.app.dom.cliHistory.innerHTML;
-      currentTab.inputBuffer = this.app.cliInputBuffer || '';
+    if (currentTab) {
+      if (currentTab.type === 'cli' && this.app.dom && this.app.dom.cliHistory) {
+        currentTab.historyHtml = this.app.dom.cliHistory.innerHTML;
+        currentTab.inputBuffer = this.app.cliInputBuffer || '';
+      } else if (currentTab.type === 'trading' && this.app.tradingEngine) {
+        currentTab.asset = this.app.tradingEngine.currentAsset || 'BTC/USDT';
+      } else if (currentTab.type === 'browser' && this.app.browserEngine) {
+        currentTab.url = this.app.browserEngine.currentUrl;
+      }
     }
 
     this.activeTabId = tabId;
     this.renderTabs();
 
-    // 2. Launch or switch to corresponding mode with correct view state routing ('cli', 'vscode', etc.)
+    // 2. Hide browser overlay if leaving browser mode
+    if (targetTab.type !== 'browser' && this.app.browserEngine && this.app.browserEngine.container) {
+      this.app.browserEngine.container.classList.add('hidden');
+    }
+
+    // 3. Switch view state and activate target tab's engine seamlessly
     if (targetTab.type === 'cli') {
       this.app.state = 'CLI_PROMPT';
       if (typeof this.app.switchViewState === 'function') {
         this.app.switchViewState('cli');
       }
-      // Hide full browser overlay if returning to CLI tab
-      if (this.app.browserEngine && this.app.browserEngine.container && this.app.browserEngine.state === 'FULL') {
-        this.app.browserEngine.container.classList.add('hidden');
-      }
-      if (this.app.dom && this.app.dom.cliHistory && targetTab.historyHtml !== undefined) {
-        this.app.dom.cliHistory.innerHTML = targetTab.historyHtml;
+      if (this.app.dom && this.app.dom.cliHistory) {
+        this.app.dom.cliHistory.innerHTML = targetTab.historyHtml !== undefined ? targetTab.historyHtml : '';
       }
       this.app.cliInputBuffer = targetTab.inputBuffer || '';
       this.app.cliCursorPos = (targetTab.inputBuffer || '').length;
       if (typeof this.app.renderCliPrompt === 'function') this.app.renderCliPrompt();
       if (typeof this.app.focusCliInput === 'function') this.app.focusCliInput();
+    } else if (targetTab.type === 'trading') {
+      this.app.state = 'MODE_TRADING';
+      if (typeof this.app.switchViewState === 'function') {
+        this.app.switchViewState('trading');
+      }
+      if (this.app.tradingEngine) {
+        if (targetTab.asset) this.app.tradingEngine.setAsset(targetTab.asset);
+        this.app.tradingEngine.resizeCanvas();
+      }
     } else if (targetTab.type === 'browser') {
       this.app.state = 'MODE_BROWSER';
       if (typeof this.app.switchViewState === 'function') {
@@ -151,26 +169,84 @@ export class TabManager {
         }
       }
     } else if (targetTab.type === 'wifi') {
-      if (typeof this.app.launchWifiMode === 'function') this.app.launchWifiMode();
+      this.app.state = 'MODE_WIFI';
+      if (typeof this.app.switchViewState === 'function') this.app.switchViewState('wifi');
+      if (this.app.wifiEngine && this.app.dom && this.app.dom.views && this.app.dom.views.wifi) {
+        this.app.wifiEngine.init(this.app.dom.views.wifi);
+      }
     } else if (targetTab.type === 'explorer') {
-      if (typeof this.app.launchExplorerMode === 'function') this.app.launchExplorerMode();
+      this.app.state = 'MODE_EXPLORER';
+      if (typeof this.app.switchViewState === 'function') this.app.switchViewState('explorer');
+      if (this.app.explorer && this.app.dom && this.app.dom.views && this.app.dom.views.explorer) {
+        this.app.explorer.init(this.app.dom.views.explorer);
+      }
     } else if (targetTab.type === 'taskmgr') {
-      if (typeof this.app.launchTaskManagerMode === 'function') this.app.launchTaskManagerMode();
+      this.app.state = 'MODE_TASKMGR';
+      if (typeof this.app.switchViewState === 'function') this.app.switchViewState('taskmgr');
+      if (this.app.taskManager && this.app.dom && this.app.dom.views && this.app.dom.views.taskmgr) {
+        this.app.taskManager.init(this.app.dom.views.taskmgr);
+      }
     } else if (targetTab.type === 'radio') {
-      if (typeof this.app.launchRadioMode === 'function') this.app.launchRadioMode();
+      this.app.state = 'MODE_RADIO';
+      if (typeof this.app.switchViewState === 'function') this.app.switchViewState('radio');
+      if (this.app.radioEngine && this.app.dom && this.app.dom.views && this.app.dom.views.radio) {
+        this.app.radioEngine.init(this.app.dom.views.radio);
+      }
     } else if (targetTab.type === 'vscode') {
-      if (typeof this.app.launchVscodeMode === 'function') this.app.launchVscodeMode();
+      this.app.state = 'MODE_VSCODE';
+      if (typeof this.app.switchViewState === 'function') this.app.switchViewState('vscode');
+      if (this.app.vscodeEngine && this.app.dom && this.app.dom.views && this.app.dom.views.vscode) {
+        this.app.vscodeEngine.init(this.app.dom.views.vscode);
+      }
     } else if (targetTab.type === 'roguelite') {
-      if (typeof this.app.launchRogueliteMode === 'function') this.app.launchRogueliteMode();
+      this.app.state = 'MODE_ROGUELITE';
+      if (typeof this.app.switchViewState === 'function') this.app.switchViewState('roguelite');
+      if (this.app.rogueliteEngine && this.app.dom && this.app.dom.views && this.app.dom.views.roguelite) {
+        this.app.rogueliteEngine.init(this.app.dom.views.roguelite);
+      }
     } else if (targetTab.type === 'academy') {
-      if (typeof this.app.launchAcademyMode === 'function') this.app.launchAcademyMode(1);
+      this.app.state = 'MODE_ACADEMY';
+      if (typeof this.app.switchViewState === 'function') this.app.switchViewState('academy');
     } else if (targetTab.type === 'speed') {
-      if (typeof this.app.launchSpeedMode === 'function') this.app.launchSpeedMode(30);
+      this.app.state = 'MODE_SPEED';
+      if (typeof this.app.switchViewState === 'function') this.app.switchViewState('speed');
     } else if (targetTab.type === 'hacker') {
-      if (typeof this.app.launchHackerMode === 'function') this.app.launchHackerMode(1);
+      this.app.state = 'MODE_HACKER';
+      if (typeof this.app.switchViewState === 'function') this.app.switchViewState('hacker');
     }
 
     if (this.sound && typeof this.sound.playKey === 'function') this.sound.playKey(false);
+  }
+
+  syncActiveTabFromMode(targetMode, details = null) {
+    const activeTab = this.tabs.find(t => t.id === this.activeTabId);
+    if (!activeTab) return;
+
+    const tabType = Object.values(TAB_TYPES).find(t => t.id === targetMode || t.mode === targetMode) || TAB_TYPES.CLI;
+    activeTab.type = tabType.id;
+    activeTab.mode = tabType.mode;
+    activeTab.icon = tabType.icon;
+
+    if (tabType.id === 'trading') {
+      const asset = details || (this.app.tradingEngine ? this.app.tradingEngine.currentAsset : 'BTC/USDT');
+      activeTab.title = `Trade (${asset})`;
+      activeTab.asset = asset;
+    } else if (tabType.id === 'browser') {
+      activeTab.title = details || 'In-App Browser';
+      activeTab.url = details || 'https://www.google.com';
+    } else if (tabType.id === 'vscode') {
+      activeTab.title = details ? `Code (${details})` : 'VS Code Studio';
+    } else if (tabType.id === 'speed') {
+      activeTab.title = details ? `Speed (${details}s)` : 'Speed Rush';
+    } else if (tabType.id === 'academy') {
+      activeTab.title = details ? `Academy (Lvl ${details})` : 'Touch Academy';
+    } else if (tabType.id === 'cli') {
+      activeTab.title = activeTab.title.includes('CyberDeck') ? activeTab.title : 'CyberDeck';
+    } else {
+      activeTab.title = tabType.name;
+    }
+
+    this.renderTabs();
   }
 
   updateActiveTabInfo(typeId, title = null, icon = null) {
@@ -276,6 +352,13 @@ export class TabManager {
           <span class="d-sub">PowerShell & Real CLI Prompt [Ctrl+T]</span>
         </div>
       </div>
+      <div class="dropdown-item" data-type="trading">
+        <span class="d-icon">📈</span>
+        <div class="d-info">
+          <span class="d-title">AI Quantum Trading Terminal</span>
+          <span class="d-sub">Binance Live Candlesticks & AI Gym Copilot</span>
+        </div>
+      </div>
       <div class="dropdown-item" data-type="wifi">
         <span class="d-icon">📡</span>
         <div class="d-info">
@@ -356,24 +439,26 @@ export class TabManager {
         const typeKey = item.dataset.type;
         this.closeDropdownMenu();
 
-        if (typeKey === 'wifi') {
-          if (this.app.launchWifiMode) this.app.launchWifiMode();
+        if (typeKey === 'trading') {
+          this.createTab(TAB_TYPES.TRADING, 'Trade (BTC/USDT)', true);
+        } else if (typeKey === 'wifi') {
+          this.createTab(TAB_TYPES.WIFI, 'Cyber Wi-Fi Radar', true);
         } else if (typeKey === 'explorer') {
-          if (this.app.launchExplorerMode) this.app.launchExplorerMode();
+          this.createTab(TAB_TYPES.EXPLORER, 'Cyber Explorer', true);
         } else if (typeKey === 'taskmgr') {
-          if (this.app.launchTaskManagerMode) this.app.launchTaskManagerMode();
+          this.createTab(TAB_TYPES.TASKMGR, 'Task Manager', true);
         } else if (typeKey === 'radio') {
-          if (this.app.launchRadioMode) this.app.launchRadioMode();
+          this.createTab(TAB_TYPES.RADIO, 'Cyber Radio', true);
         } else if (typeKey === 'browser') {
-          if (this.app.launchBrowserMode) this.app.launchBrowserMode('https://www.google.com');
+          this.createTab(TAB_TYPES.BROWSER, 'In-App Browser', true);
         } else if (typeKey === 'vscode') {
-          if (this.app.launchVscodeMode) this.app.launchVscodeMode();
+          this.createTab(TAB_TYPES.VSCODE, 'VS Code Studio', true);
         } else if (typeKey === 'roguelite') {
-          if (this.app.launchRogueliteMode) this.app.launchRogueliteMode();
+          this.createTab(TAB_TYPES.ROGUELITE, 'Cyberspace Matrix', true);
         } else if (typeKey === 'academy') {
-          if (this.app.launchAcademyMode) this.app.launchAcademyMode(1);
+          this.createTab(TAB_TYPES.ACADEMY, 'Touch Academy', true);
         } else if (typeKey === 'speed') {
-          if (this.app.launchSpeedMode) this.app.launchSpeedMode(30);
+          this.createTab(TAB_TYPES.SPEED, 'Speed Rush', true);
         } else {
           this.tabCounter++;
           this.createTab(TAB_TYPES.CLI, `CyberDeck (${this.tabCounter})`, true);

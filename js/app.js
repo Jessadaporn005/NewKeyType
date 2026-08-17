@@ -991,6 +991,11 @@ class WindowsTerminalApp {
       this.dom.views.cli.classList.remove('hidden');
     }
 
+    // Sync active tab title, icon & mode like Google Chrome tabs
+    if (this.tabManager) {
+      this.tabManager.syncActiveTabFromMode(targetMode);
+    }
+
     if (isTrading && this.tradingEngine) {
       [30, 100, 250, 450].forEach(delay => {
         setTimeout(() => {
