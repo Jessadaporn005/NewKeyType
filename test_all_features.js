@@ -871,7 +871,7 @@ async function runTests() {
 
   // Test Multi-Source Natural Language Interactive CLI Queries
   const qWorld = await assistant.handleUserQuery('ข่าวบ้านเมือง');
-  assert(qWorld.category.includes('WORLD'), `Natural Query: 'ข่าวบ้านเมือง' -> Category: ${qWorld.category}`);
+  assert(qWorld.category.includes('WORLD') || qWorld.category.includes('GOOGLE NEWS'), `Natural Query: 'ข่าวบ้านเมือง' -> Category: ${qWorld.category}`);
   assert(qWorld.speech.length > 20, `Speech content: "${qWorld.speech.slice(0, 45)}..."`);
 
   const qGame = await assistant.handleUserQuery('ข่าวเกมส์');
@@ -912,6 +912,16 @@ async function runTests() {
   const qTrade3 = await assistant.handleUserQuery('สอนคุมความเสี่ยง');
   assert(qTrade3.detail.includes('1%') || qTrade3.speech.includes('1%'), 'Hands-On Trading Masterclass Lesson 3 (1% Risk Rule)');
 
+  // Test Multi-Source Live Global News Aggregator (Google News, CoinGecko)
+  const liveCrypto = await assistant.fetchLiveGlobalNews('CRYPTO');
+  assert(liveCrypto.category.includes('CRYPTO') && (liveCrypto.title.includes('Bitcoin') || liveCrypto.speech.includes('Bitcoin')), 'Live Crypto Real-Time Market Radar (CoinGecko)');
+
+  const liveGold = await assistant.fetchLiveGlobalNews('GOLD');
+  assert(liveGold.category.includes('GOLD') && (liveGold.title.includes('Gold') || liveGold.speech.includes('ทองคำ')), 'Live Gold Real-Time Macro Radar (Spot Rates)');
+
+  const liveWorld = await assistant.fetchLiveGlobalNews('WORLD');
+  assert(liveWorld.category.includes('WORLD') || liveWorld.category.includes('GOOGLE NEWS'), 'Live Global News Feed (Google News RSS & Wire)');
+
   // Test Sentiment Detector
   assert(assistant.detectSentimentAndEmotion('555 แกล้งกันชัดๆ') === 'PLAYFUL', 'Sentiment detector: Playful/Teasing');
   assert(assistant.detectSentimentAndEmotion('งอนแล้วนะ ฮึ!') === 'POUTY', 'Sentiment detector: Pouty/Tsundere');
@@ -924,6 +934,9 @@ async function runTests() {
 
   const qLife = await assistant.handleUserQuery('ถ้าอยากเริ่มต้นทำธุรกิจควรทำยังไง');
   assert(qLife.category.includes('GENERATIVE AI') || qLife.category.includes('REAL-TIME'), 'Open-domain freeform chat query processed by Real-Time Brain');
+
+  const qCasual = await assistant.handleUserQuery('สวัสดี วันนี้เป็นไงบ้าง');
+  assert(qCasual.category.includes('GENERATIVE AI') || qCasual.category.includes('REAL-TIME'), 'Direct casual chat query processed by Real-Time Brain');
 
   console.log('\n====================================================');
   console.log(`🏁 TEST RESULTS: ${passed}/${total} TESTS PASSED (100%)`);

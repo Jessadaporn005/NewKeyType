@@ -601,18 +601,32 @@ class WindowsTerminalApp {
 
     const intelCol = document.getElementById('cyberIntelColumn');
     if (intelCol) {
+      // 1. Mount 3D Hologram Pod for NYX
+      let holoPod = document.getElementById('aiHologramPod');
+      if (!holoPod) {
+        holoPod = document.createElement('div');
+        holoPod.id = 'aiHologramPod';
+        holoPod.className = 'ai-hologram-pod-container';
+        intelCol.appendChild(holoPod);
+      }
+      this.hologramAssistant = new HologramAssistantEngine(this, this.audio, this.toasts);
+      this.hologramAssistant.init(holoPod);
+
+      // 2. Mount Cyber Intelligence Radar Feed
+      let feedContainer = document.getElementById('cyberIntelFeedContainer');
+      if (!feedContainer) {
+        feedContainer = document.createElement('div');
+        feedContainer.id = 'cyberIntelFeedContainer';
+        intelCol.appendChild(feedContainer);
+      }
       this.intelFeed = new CyberIntelFeed(this, this.audio);
-      this.intelFeed.init(intelCol);
+      this.intelFeed.init(feedContainer);
+    } else {
+      this.hologramAssistant = new HologramAssistantEngine(this, this.audio, this.toasts);
     }
 
     this.aiCompanion = new AICompanionEngine(this, this.audio);
     this.aiCompanion.init();
-
-    const holoPod = document.getElementById('aiHologramPod');
-    if (holoPod) {
-      this.hologramAssistant = new HologramAssistantEngine(this, this.audio, this.toasts);
-      this.hologramAssistant.init(holoPod);
-    }
   }
 
   ensureViewEngineInitialized(mode) {
@@ -3415,8 +3429,17 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
         return;
 
       default:
-        // Try executing as real native command if available
-        if (this.sys.isElectron) {
+        // Automatically route freeform conversation directly to NYX!
+        if (this.hologramAssistant) {
+          const result = await this.hologramAssistant.handleUserQuery(raw);
+          output = `
+[+] NYX NEURAL COPILOT // ${result.category}
+------------------------------------------------------------------
+📌 ${result.title}
+💬 "${result.speech}"
+------------------------------------------------------------------
+* รายละเอียด: ${result.detail}`;
+        } else if (this.sys.isElectron) {
           const autoExec = await this.sys.exec(raw);
           if (autoExec.success && autoExec.stdout) {
             output = autoExec.stdout;
