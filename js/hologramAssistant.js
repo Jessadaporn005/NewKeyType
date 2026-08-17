@@ -421,7 +421,7 @@ export class HologramAssistantEngine {
     return sentences.length > 0 ? sentences : [text];
   }
 
-  // 100% Genuine Thai Female Speech Engine (Google Neural Female Audio Streamer)
+  // 100% Genuine Cloud Thai Female Speech Synthesis (ResponsiveVoice Thai Female + Neural Streamer)
   speak(text, onEndCallback = null) {
     this.setSpeechBalloon(text);
 
@@ -430,9 +430,6 @@ export class HologramAssistantEngine {
     this.stopAllSpeech();
     this.playChirpSFX(true);
 
-    const sentences = this.splitTextIntoSentences(text);
-    let currentIndex = 0;
-
     this.isSpeaking = true;
     if (typeof document !== 'undefined' && document.getElementById) {
       const dot = document.getElementById('hologramStatusDot');
@@ -440,18 +437,55 @@ export class HologramAssistantEngine {
     }
     this.updateAudioWaveBars(true);
 
+    const onFinish = () => {
+      this.isSpeaking = false;
+      this.mouthOpen = 0;
+      this.setGazeMode('OPERATOR');
+      if (typeof document !== 'undefined' && document.getElementById) {
+        const dot = document.getElementById('hologramStatusDot');
+        if (dot && dot.classList) dot.classList.remove('speaking');
+      }
+      this.updateAudioWaveBars(false);
+      this.playChirpSFX(false);
+      if (onEndCallback) onEndCallback();
+    };
+
+    // 1. Primary Engine: ResponsiveVoice 'Thai Female' (Genuine Cloud Thai Female Voice)
+    if (typeof window !== 'undefined' && window.responsiveVoice && typeof window.responsiveVoice.speak === 'function') {
+      try {
+        window.responsiveVoice.cancel();
+        window.responsiveVoice.speak(text, 'Thai Female', {
+          pitch: 1.12,
+          rate: 1.0,
+          onstart: () => {
+            this.isSpeaking = true;
+            this.updateAudioWaveBars(true);
+          },
+          onend: () => {
+            onFinish();
+          },
+          onerror: () => {
+            this.speakWithThaiFemaleNeural(text, onFinish);
+          }
+        });
+        return;
+      } catch (e) {
+        this.speakWithThaiFemaleNeural(text, onFinish);
+        return;
+      }
+    }
+
+    // 2. Secondary Engine: Thai Female Neural Audio Queue
+    this.speakWithThaiFemaleNeural(text, onFinish);
+  }
+
+  speakWithThaiFemaleNeural(text, onFinish) {
+    const sentences = this.splitTextIntoSentences(text);
+    let currentIndex = 0;
+
     const playNext = () => {
       if (currentIndex >= sentences.length) {
-        this.isSpeaking = false;
-        this.mouthOpen = 0;
-        this.setGazeMode('OPERATOR');
-        if (typeof document !== 'undefined' && document.getElementById) {
-          const dot = document.getElementById('hologramStatusDot');
-          if (dot && dot.classList) dot.classList.remove('speaking');
-        }
-        this.updateAudioWaveBars(false);
-        this.playChirpSFX(false);
-        if (onEndCallback) onEndCallback();
+        onFinish();
         return;
       }
 
@@ -492,20 +526,31 @@ export class HologramAssistantEngine {
     playNext();
   }
 
-  // Offline Web Speech API Fallback with 1.6x Female Pitch Shift
+  // Local Web Speech API Fallback (STRICTLY HARD BANS NIWAT & ALL MALE VOICES)
   speakLocalFallback(text, onEnd) {
     if (!this.synth) {
       if (onEnd) onEnd();
       return;
     }
+
+    // If only male Thai voice (Niwat/Pattara) exists on Windows, DO NOT PLAY SAPI!
+    const voices = this.synth.getVoices() || [];
+    const isGenuineFemaleThai = voices.some(v => (v.lang.startsWith('th') || v.lang === 'th-TH') && (v.name.includes('Premwadee') || v.name.includes('Achara') || v.name.includes('ภาษาไทย')));
+
+    if (!isGenuineFemaleThai) {
+      // Hard ban: Never speak with Niwat!
+      if (onEnd) onEnd();
+      return;
+    }
+
     try {
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'th-TH';
       if (this.selectedFemaleVoice) {
         utterance.voice = this.selectedFemaleVoice;
       }
-      utterance.pitch = 1.55; // Pitch shifted to female
-      utterance.rate = 1.05;
+      utterance.pitch = 1.30;
+      utterance.rate = 1.02;
 
       utterance.onend = () => {
         if (onEnd) onEnd();
