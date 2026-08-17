@@ -192,6 +192,10 @@ export class HologramAssistantEngine {
     this.audioQueue = [];
     this.isAudioQueuePlaying = false;
 
+    // Continuous Speech Engine & Keep-Alive Clock
+    this.keepAliveTimer = null;
+    this.selectedFemaleVoice = null;
+
     // Telemetry Cache
     this.cachedGymStats = null;
     this.cachedNews = null;
@@ -201,7 +205,7 @@ export class HologramAssistantEngine {
     this.initStrictFemaleVoiceEngine();
   }
 
-  // 100% STRICT FEMALE VOICE SELECTOR (PRIORITIZE AVA / SIRI / PREMWADEE - NO MALE VOICES ALLOWED)
+  // 100% STRICT THAI FEMALE VOICE SELECTOR (PREMWADEE / GOOGLE ภาษาไทย / ACHARA)
   initStrictFemaleVoiceEngine() {
     if (!this.synth) return;
 
@@ -413,129 +417,111 @@ export class HologramAssistantEngine {
     }
   }
 
-  // Split text into natural vocal chunks (under 120 chars)
-  splitTextIntoChunks(text) {
-    if (!text || text.length <= 110) return [text];
-    const delimiters = [' ค่ะ ', ' นะคะ ', ':', '—', ' โดย', ' และ', ' ซึ่ง', ' ทั้งนี้', ',', '. ', '\n'];
-    let chunks = [];
-    let remaining = text;
+  // Split text into complete full sentences (ไม่ตัดคำกลางประโยค)
+  splitTextIntoSentences(text) {
+    if (!text) return [];
+    // Split by clean Thai / punctuation sentence boundaries
+    const rawChunks = text
+      .split(/(?<=[.?!:\n])|(?<=ค่ะ)|(?<=นะคะ)|(?<=ครับ)/g)
+      .map(s => s.trim())
+      .filter(s => s.length > 0);
 
-    while (remaining.length > 110) {
-      let splitIdx = -1;
-      for (const d of delimiters) {
-        const idx = remaining.indexOf(d, 40);
-        if (idx !== -1 && idx <= 110) {
-          splitIdx = idx + d.length;
-          break;
-        }
+    const sentences = [];
+    let current = '';
+
+    for (const chunk of rawChunks) {
+      if (current.length + chunk.length < 85) {
+        current += (current ? ' ' : '') + chunk;
+      } else {
+        if (current) sentences.push(current);
+        current = chunk;
       }
-      if (splitIdx === -1) {
-        splitIdx = remaining.lastIndexOf(' ', 110);
-        if (splitIdx <= 20) splitIdx = 110;
-      }
-      chunks.push(remaining.substring(0, splitIdx).trim());
-      remaining = remaining.substring(splitIdx).trim();
     }
-    if (remaining.length > 0) chunks.push(remaining);
-    return chunks.filter(c => c.length > 0);
+    if (current) sentences.push(current);
+    return sentences.length > 0 ? sentences : [text];
   }
 
-  // Primary Method: Guaranteed 100% Female Voice Synthesis
+  // 100% Fluent Thai Female Speech Synthesis (Full Content Delivery Without Cutoff)
   speak(text, onEndCallback = null) {
     this.setSpeechBalloon(text);
 
-    if (!this.isVoiceEnabled) return;
+    if (!this.isVoiceEnabled || !this.synth) return;
 
     this.stopAllSpeech();
     this.playChirpSFX(true);
 
-    const chunks = this.splitTextIntoChunks(text);
-    this.audioQueue = [...chunks];
-    this.isAudioQueuePlaying = true;
-    this.isSpeaking = true;
+    const sentences = this.splitTextIntoSentences(text);
+    let currentIndex = 0;
 
-    const dot = document.getElementById('hologramStatusDot');
-    if (dot) dot.classList.add('speaking');
+    this.isSpeaking = true;
+    if (typeof document !== 'undefined' && document.getElementById) {
+      const dot = document.getElementById('hologramStatusDot');
+      if (dot && dot.classList) dot.classList.add('speaking');
+    }
     this.updateAudioWaveBars(true);
 
-    const playNextChunk = () => {
-      if (!this.isAudioQueuePlaying || this.audioQueue.length === 0) {
+    // Anti-Cutoff Keepalive Ping (prevents Chromium 15-second GC cutoff)
+    if (this.keepAliveTimer) clearInterval(this.keepAliveTimer);
+    this.keepAliveTimer = setInterval(() => {
+      if (this.synth && this.synth.speaking) {
+        this.synth.pause();
+        this.synth.resume();
+      } else {
+        clearInterval(this.keepAliveTimer);
+      }
+    }, 4500);
+
+    const speakSentence = () => {
+      if (currentIndex >= sentences.length) {
+        if (this.keepAliveTimer) clearInterval(this.keepAliveTimer);
         this.isSpeaking = false;
         this.mouthOpen = 0;
         this.setGazeMode('OPERATOR');
-        if (dot) dot.classList.remove('speaking');
+        if (typeof document !== 'undefined' && document.getElementById) {
+          const dot = document.getElementById('hologramStatusDot');
+          if (dot && dot.classList) dot.classList.remove('speaking');
+        }
         this.updateAudioWaveBars(false);
         this.playChirpSFX(false);
         if (onEndCallback) onEndCallback();
         return;
       }
 
-      const nextChunk = this.audioQueue.shift();
-      const encoded = encodeURIComponent(nextChunk);
-      const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=th&client=tw-ob&q=${encoded}`;
+      const sentenceText = sentences[currentIndex];
+      currentIndex++;
 
-      if (typeof Audio !== 'undefined') {
-        const audio = new Audio();
-        this.currentAudioElement = audio;
+      try {
+        const utterance = new SpeechSynthesisUtterance(sentenceText);
+        utterance.lang = 'th-TH'; // 100% Thai Language
 
-        audio.onended = () => {
-          playNextChunk();
-        };
-
-        audio.onerror = () => {
-          this.speakFallbackSpeechSynthesis(nextChunk, () => {
-            playNextChunk();
-          });
-        };
-
-        const playPromise = audio.play();
-        if (playPromise !== undefined) {
-          playPromise.catch(() => {
-            this.speakFallbackSpeechSynthesis(nextChunk, () => {
-              playNextChunk();
-            });
-          });
+        if (this.selectedFemaleVoice) {
+          utterance.voice = this.selectedFemaleVoice;
         }
-      } else {
-        this.speakFallbackSpeechSynthesis(nextChunk, () => {
-          playNextChunk();
-        });
+
+        // Feminine sweet pitch & natural pace
+        utterance.rate = 1.0;
+        utterance.pitch = 1.35;
+
+        // Keep persistent reference to avoid garbage collection
+        if (typeof window !== 'undefined') {
+          window._nyxActiveUtterance = utterance;
+        }
+
+        utterance.onend = () => {
+          speakSentence();
+        };
+
+        utterance.onerror = () => {
+          speakSentence();
+        };
+
+        this.synth.speak(utterance);
+      } catch (e) {
+        speakSentence();
       }
     };
 
-    playNextChunk();
-  }
-
-  // Offline Web Speech API Fallback (Strictly Filters Out Any Male Voices)
-  speakFallbackSpeechSynthesis(text, onEnd) {
-    if (!this.synth) {
-      if (onEnd) onEnd();
-      return;
-    }
-
-    try {
-      const utterance = new SpeechSynthesisUtterance(text);
-      if (this.selectedFemaleVoice) {
-        utterance.voice = this.selectedFemaleVoice;
-        utterance.lang = this.selectedFemaleVoice.lang || 'en-US';
-      } else {
-        utterance.lang = 'en-US';
-      }
-      utterance.rate = 1.02;
-      utterance.pitch = 1.35; // Sweet high feminine pitch
-
-      utterance.onend = () => {
-        if (onEnd) onEnd();
-      };
-
-      utterance.onerror = () => {
-        if (onEnd) onEnd();
-      };
-
-      this.synth.speak(utterance);
-    } catch (e) {
-      if (onEnd) onEnd();
-    }
+    speakSentence();
   }
 
   setSpeechBalloon(text) {
