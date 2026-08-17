@@ -816,13 +816,26 @@ async function runTests() {
   assert(typeof profileStore.saveAllAsync === 'function', 'profileStore.saveAllAsync is registered');
 
   // =========================================================================
-  // SECTION 45: ANIMATED FEMALE HOLOGRAM AI ASSISTANT (NYX) IN THAI
+  // SECTION 45: ANIMATED FEMALE HOLOGRAM AI ASSISTANT (NYX) 3D FACIAL RIG
   // =========================================================================
-  console.log('\n[45] Testing Female Hologram AI Assistant (NYX // Thai Voice & Telemetry)...');
+  console.log('\n[45] Testing NYX 3D Holographic Facial Rig, Gaze Tracking & Visemes...');
   const { HologramAssistantEngine } = await import('./js/hologramAssistant.js');
   const assistant = new HologramAssistantEngine({ tradingEngine: freshEngine }, mockSound, null);
   assert(assistant !== null, 'HologramAssistantEngine instantiated successfully');
   assert(assistant.isVoiceEnabled === true, 'Voice synthesis initialized in active state');
+  assert(assistant.currentPose !== undefined, '3D Pose vector initialized');
+
+  assistant.setGazeMode('OPERATOR');
+  assert(assistant.targetPose.yaw === 0, 'Operator direct eye contact pose (Yaw = 0)');
+
+  assistant.setGazeMode('GYM');
+  assert(assistant.targetPose.yaw > 0.3, `KRONOS AI Gym gaze target turns 3D head right (Yaw = ${assistant.targetPose.yaw})`);
+
+  assistant.setGazeMode('NEWS');
+  assert(assistant.targetPose.pitch > 0.05, `World news gaze target shifts 3D pitch/yaw (Pitch = ${assistant.targetPose.pitch})`);
+
+  assistant.updateKinematics();
+  assert(assistant.currentPose.yaw !== undefined, '3D Kinematics interpolation calculated smoothly');
 
   assistant.speak('ยินดีต้อนรับกลับค่ะ คุณอนันต์');
   assert(assistant.lastSpokenText.includes('คุณอนันต์'), `Speech balloon updated: "${assistant.lastSpokenText}"`);
