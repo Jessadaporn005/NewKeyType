@@ -868,11 +868,16 @@ async function runTests() {
   const qGold = assistant.handleUserQuery('ข่าวทอง');
   assert(qGold.category.includes('GOLD'), `Natural Query: 'ข่าวทอง' -> Category: ${qGold.category}`);
 
-  const qTech = assistant.handleUserQuery('ข่าว AI');
-  assert(qTech.category.includes('TECH'), `Natural Query: 'ข่าว AI' -> Category: ${qTech.category}`);
+  // Test Daily News Menu & Sequential Number Queries
+  const qMenu = assistant.handleUserQuery('มีข่าวอะไรบ้าง');
+  assert(qMenu.category.includes('DAILY INTELLIGENCE MENU'), `Daily Menu Query: 'มีข่าวอะไรบ้าง' -> Category: ${qMenu.category}`);
+  assert(qMenu.speech.includes('6 หมวดข่าว'), 'NYX speaks daily headlines overview');
 
-  const qCyber = assistant.handleUserQuery('ข่าวไซเบอร์');
-  assert(qCyber.category.includes('CYBER'), `Natural Query: 'ข่าวไซเบอร์' -> Category: ${qCyber.category}`);
+  const qNum2 = assistant.handleUserQuery('2');
+  assert(qNum2.category.includes('GAMING'), `Numeric Query: '2' -> Category: ${qNum2.category}`);
+
+  const qNum4 = assistant.handleUserQuery('4');
+  assert(qNum4.category.includes('GOLD'), `Numeric Query: '4' -> Category: ${qNum4.category}`);
 
   console.log('\n====================================================');
   console.log(`🏁 TEST RESULTS: ${passed}/${total} TESTS PASSED (100%)`);

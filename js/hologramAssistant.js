@@ -815,8 +815,53 @@ export class HologramAssistantEngine {
 
   // NATURAL LANGUAGE INTERACTIVE TERMINAL QUERY ROUTER
   handleUserQuery(rawQuery = '') {
-    const q = rawQuery.trim().toLowerCase();
+    let q = rawQuery.trim().toLowerCase();
     this.updateTelemetryHUD();
+
+    // 0. เมนูสรุปข่าววันนี้ / "NYX มีข่าวอะไรบ้าง" / "NYX ข่าววันนี้"
+    if (
+      q.includes('มีข่าวอะไร') ||
+      q.includes('ข่าวอะไรบ้าง') ||
+      q.includes('ข่าววันนี้') ||
+      q.includes('เมนูข่าว') ||
+      q.includes('ข่าวเด่น') ||
+      q.includes('สรุปข่าว') ||
+      q.includes('headlines') ||
+      q.includes('news menu') ||
+      q.includes('what news')
+    ) {
+      this.setGazeMode('OPERATOR');
+      const spokenMenu = 'วันนี้มี 6 หมวดข่าวน่าสนใจมารายงานค่ะคุณอนันต์: ข้อ 1 ข่าวบ้านเมืองรอบโลก, ข้อ 2 ข่าวเกมส์, ข้อ 3 ข่าวคริปโต, ข้อ 4 ข่าวทองคำและการเงิน, ข้อ 5 ข่าว AI และเทคโนโลยี, และข้อ 6 ข่าวความปลอดภัยไซเบอร์ค่ะ คุณอนันต์อยากฟังหมวดไหน พิมพ์บอกหรือพิมพ์หมายเลข 1 ถึง 6 ได้เลยนะคะ';
+      this.speak(spokenMenu);
+      return {
+        category: '📰 DAILY INTELLIGENCE MENU // สารบัญข่าวด่วนประจำวัน',
+        title: '6 หมวดข่าวกรองรอบโลกประจำวันนี้',
+        detail: `[1] 🌍 ข่าวบ้านเมืองรอบโลก — นโยบายพลังงานสหรัฐฯ & ศูนย์ Data Center ในไทย
+[2] 🎮 ข่าวเกมส์ & อีสปอร์ต — อัปเดต GTA VI & Steam Deck OLED
+[3] 🪙 ข่าวคริปโต & บล็อกเชน — วาฬช้อนซื้อ Bitcoin & อัปเกรด Ethereum
+[4] 🥇 ข่าวทองคำ & ตลาดการเงิน — ราคาทอง Spot Gold ATH & การลดดอกเบี้ย Fed
+[5] 🤖 ข่าว AI & เทคโนโลยี — OpenAI & DeepSeek สู่ยุค AGI & ชิป Blackwell
+[6] 🛡️ ข่าวความปลอดภัยไซเบอร์ — สั่งแพตช์ด่วนช่องโหว่ Zero-Day
+------------------------------------------------------------------
+💡 วิธีเลือกฟัง: พิมพ์ "NYX 1" ถึง "NYX 6" หรือพิมพ์ "NYX ข่าวเกมส์", "NYX ข่าวทอง" ได้เลยค่ะ`,
+        speech: spokenMenu
+      };
+    }
+
+    // 0.1 Quick Selection by Number (1 to 6)
+    if (/^(1|ข้อ 1|ข่าว 1|หมวด 1|no 1)$/.test(q)) {
+      q = 'บ้านเมือง';
+    } else if (/^(2|ข้อ 2|ข่าว 2|หมวด 2|no 2)$/.test(q)) {
+      q = 'เกม';
+    } else if (/^(3|ข้อ 3|ข่าว 3|หมวด 3|no 3)$/.test(q)) {
+      q = 'คริปโต';
+    } else if (/^(4|ข้อ 4|ข่าว 4|หมวด 4|no 4)$/.test(q)) {
+      q = 'ทอง';
+    } else if (/^(5|ข้อ 5|ข่าว 5|หมวด 5|no 5)$/.test(q)) {
+      q = 'ai';
+    } else if (/^(6|ข้อ 6|ข่าว 6|หมวด 6|no 6)$/.test(q)) {
+      q = 'ไซเบอร์';
+    }
 
     // 1. ข่าวเกมส์ & อีสปอร์ต (Gaming)
     if (q.includes('เกม') || q.includes('game') || q.includes('gta') || q.includes('steam') || q.includes('esport') || q.includes('อีสปอร์ต')) {
