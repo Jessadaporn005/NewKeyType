@@ -680,9 +680,9 @@ export function evaluateAdversarialDebate(patterns = [], marketRegime = null, wh
   const isDebateUnanimous = isBullPrevails && bearCounterArguments.length <= 1;
 
   return {
-    bullAdvocate: { stance: 'BULLISH', arguments: bullArguments },
-    bearSkeptic: { stance: 'BEARISH_CRITIC', arguments: bearCounterArguments },
-    whaleSpecialist: { verdict: whaleVerdict, description: whaleDesc },
+    bullAdvocate: { name: 'ARES // Bull Vanguard', stance: 'BULLISH', arguments: bullArguments },
+    bearSkeptic: { name: 'HADES // Bear Skeptic', stance: 'BEARISH_CRITIC', arguments: bearCounterArguments },
+    whaleSpecialist: { name: 'LEVIATHAN // Whale Flow', verdict: whaleVerdict, description: whaleDesc },
     debateOutcome: isDebateUnanimous ? 'UNANIMOUS BULL CONVICTION' : isBullPrevails ? 'MODERATE BULL MAJORITY' : 'CONTESTED / HIGH SKEPTICISM',
     debateColor: isDebateUnanimous ? '#00ff88' : isBullPrevails ? '#00e5ff' : '#ffaa00'
   };
@@ -900,15 +900,15 @@ export function generateAISignal(candles = [], asset = null, patterns = [], acti
     }
   }
 
-  // Multi-Agent Desk Summary (Now with 4 Agents)
+  // Multi-Agent Desk Summary (4 Specialized Named Quant Agents)
   const quantDesk = {
     consensusType,
     isVetoed,
     agents: [
-      { id: 'smc', name: '👨‍💻 SMC Tech Quant', role: 'Price Action & SMC', vote: smcVote, detail: smcHighlight, confidence: `${smcConfidence}%` },
-      { id: 'macro', name: '📰 Macro Intel', role: 'Global Sentiment & News', vote: macroVote, detail: macroHeadline.slice(0, 38) + '...', confidence: `${Math.abs(newsScore)} pts` },
-      { id: 'cro', name: '🛡️ Chief Risk Officer', role: 'Spread & Capital Defense', vote: croVote, detail: croReason, isSafe: !isVetoed },
-      { id: 'whale', name: '🐳 Whale Orderflow', role: 'L2 DOM Depth & Iceberg', vote: debate.whaleSpecialist.verdict, detail: debate.whaleSpecialist.description, isSafe: true }
+      { id: 'smc', name: '🏹 ORION (SMC Tech Quant)', role: 'Price Action & SMC', vote: smcVote, detail: smcHighlight, confidence: `${smcConfidence}%` },
+      { id: 'macro', name: '⚡ HERMES (Macro Intel)', role: 'Global Sentiment & News', vote: macroVote, detail: macroHeadline.slice(0, 38) + '...', confidence: `${Math.abs(newsScore)} pts` },
+      { id: 'cro', name: '🛡️ AEGIS (Chief Risk Officer)', role: 'Spread & Capital Defense', vote: croVote, detail: croReason, isSafe: !isVetoed },
+      { id: 'whale', name: '🐋 LEVIATHAN (Whale Orderflow)', role: 'L2 DOM Depth & Iceberg', vote: debate.whaleSpecialist.verdict, detail: debate.whaleSpecialist.description, isSafe: true }
     ]
   };
 

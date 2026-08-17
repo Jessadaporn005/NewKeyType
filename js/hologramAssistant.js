@@ -457,7 +457,7 @@ export class HologramAssistantEngine {
   triggerWelcomeGreeting() {
     this.updateTelemetryHUD();
     const gym = this.cachedGymStats || { level: 10, samples: 14971, winRate: 69.6 };
-    const speech = `Welcome back, Operator Anan. LUMINA Neural Copilot active. AI Gym is synchronized at Level ${gym.level} with ${gym.samples.toLocaleString()} market samples. All enclave systems operational.`;
+    const speech = `Welcome back, Operator Anan. NYX Neural Copilot active. KRONOS AI Gym is synchronized at Level ${gym.level} with ${gym.samples.toLocaleString()} market samples. All enclave systems operational.`;
     this.speak(speech);
   }
 
@@ -465,14 +465,14 @@ export class HologramAssistantEngine {
     this.updateTelemetryHUD();
     const gym = this.cachedGymStats || { level: 10, samples: 14971, winRate: 69.6 };
     const news = this.cachedNews || 'Global market telemetry stable';
-    const speech = `Executive Situation Report: AI Gym is currently at Level ${gym.level} (Apex Sovereign Quant) with a ${gym.winRate}% win rate across ${gym.samples.toLocaleString()} training bars. Breaking Intel: ${news}. System DEFCON-1 defense is active.`;
+    const speech = `Executive Situation Report: KRONOS AI Gym is currently at Level ${gym.level} (Apex Sovereign Quant) with a ${gym.winRate}% win rate across ${gym.samples.toLocaleString()} training bars. Breaking Intel: ${news}. System DEFCON-1 defense is active.`;
     this.speak(speech);
   }
 
   reportAIGym() {
     this.updateTelemetryHUD();
     const gym = this.cachedGymStats || { level: 10, samples: 14971, winRate: 69.6 };
-    const speech = `AI Gym Neural Telemetry: Current rank is Level ${gym.level} Apex Sovereign Quant. The model has ingested ${gym.samples.toLocaleString()} historical price samples with dynamic reinforcement learning. Smart Money Order Block strategy mastery is rated at 91%.`;
+    const speech = `KRONOS AI Gym Neural Telemetry: Current rank is Level ${gym.level} Apex Sovereign Quant. The model has ingested ${gym.samples.toLocaleString()} historical price samples with dynamic reinforcement learning. Smart Money Order Block strategy mastery is rated at 91%.`;
     this.speak(speech);
   }
 

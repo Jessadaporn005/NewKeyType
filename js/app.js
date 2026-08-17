@@ -3047,23 +3047,24 @@ OPEN DESCRIPTORS: 7 Active | LEAKS: 0
         this.runHashCracker(args[0] || 'e99a18c428cb38d5f260853678922e03');
         return;
 
-      // LUMINA // Female Hologram AI Copilot Commands
+      // NYX // Female Hologram AI Copilot Commands
+      case 'nyx':
       case 'lumina':
       case 'ava':
       case 'assistant':
       case 'copilot':
         if (args[0] === 'gym') {
           if (this.hologramAssistant) this.hologramAssistant.reportAIGym();
-          output = `[+] LUMINA: Transmitting AI Gym Neural Telemetry Report...`;
+          output = `[+] NYX: Transmitting KRONOS AI Gym Neural Telemetry Report...`;
         } else if (args[0] === 'news' || args[0] === 'world') {
           if (this.hologramAssistant) this.hologramAssistant.reportWorldNews();
-          output = `[+] LUMINA: Broadcasting Global Intelligence Wire...`;
+          output = `[+] NYX: Broadcasting Global Intelligence Wire...`;
         } else if (args[0] === 'voice' || args[0] === 'mute' || args[0] === 'toggle') {
           if (this.hologramAssistant) this.hologramAssistant.toggleVoice();
-          output = `[+] LUMINA Voice Synthesizer: ${this.hologramAssistant?.isVoiceEnabled ? 'ONLINE [VOICE ON]' : 'MUTED'}`;
+          output = `[+] NYX Voice Synthesizer: ${this.hologramAssistant?.isVoiceEnabled ? 'ONLINE [VOICE ON]' : 'MUTED'}`;
         } else {
           if (this.hologramAssistant) this.hologramAssistant.briefMe();
-          output = `[+] LUMINA: Delivering Executive Situation Report...`;
+          output = `[+] NYX: Delivering Executive Situation Report...`;
         }
         break;
 
@@ -3072,10 +3073,10 @@ OPEN DESCRIPTORS: 7 Active | LEAKS: 0
         if (args.length > 0) {
           const phrase = args.join(' ');
           if (this.hologramAssistant) this.hologramAssistant.speak(phrase);
-          output = `[+] LUMINA Transmitting: "${phrase}"`;
+          output = `[+] NYX Transmitting: "${phrase}"`;
         } else {
           if (this.hologramAssistant) this.hologramAssistant.toggleVoice();
-          output = `[+] LUMINA Voice Synthesizer: ${this.hologramAssistant?.isVoiceEnabled ? 'ONLINE [VOICE ON]' : 'MUTED'}`;
+          output = `[+] NYX Voice Synthesizer: ${this.hologramAssistant?.isVoiceEnabled ? 'ONLINE [VOICE ON]' : 'MUTED'}`;
         }
         break;
 
