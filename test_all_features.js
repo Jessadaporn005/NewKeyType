@@ -927,16 +927,20 @@ async function runTests() {
   assert(assistant.detectSentimentAndEmotion('งอนแล้วนะ ฮึ!') === 'POUTY', 'Sentiment detector: Pouty/Tsundere');
   assert(assistant.detectSentimentAndEmotion('เหนื่อยมากเลยวันนี้ ขอกำลังใจหน่อย') === 'CARING', 'Sentiment detector: Caring/Empathy');
 
-  // Test Real-Time Generative LLM & Web Knowledge Brain
+  // Test Instant Reactive Companion & Tactical Dialogue Engine
   const qGenAI = await assistant.handleUserQuery('ควอนตัมคอมพิวเตอร์คืออะไร');
-  assert(qGenAI.category.includes('GENERATIVE AI') || qGenAI.category.includes('REAL-TIME'), `Real-Time Generative AI Query -> Category: ${qGenAI.category}`);
-  assert(qGenAI.speech.length > 10, `Generative Spoken response: "${qGenAI.speech.slice(0, 50)}..."`);
+  assert(qGenAI.category.includes('COMPANION') || qGenAI.category.includes('TACTICAL'), `Instant Dialogue Query -> Category: ${qGenAI.category}`);
+  assert(qGenAI.speech.length > 10, `Instant Spoken response: "${qGenAI.speech.slice(0, 50)}..."`);
 
   const qLife = await assistant.handleUserQuery('ถ้าอยากเริ่มต้นทำธุรกิจควรทำยังไง');
-  assert(qLife.category.includes('GENERATIVE AI') || qLife.category.includes('REAL-TIME'), 'Open-domain freeform chat query processed by Real-Time Brain');
+  assert(qLife.category.includes('COMPANION') || qLife.category.includes('TACTICAL'), 'Open-domain query processed by Instant Dialogue Engine');
 
   const qCasual = await assistant.handleUserQuery('สวัสดี วันนี้เป็นไงบ้าง');
-  assert(qCasual.category.includes('GENERATIVE AI') || qCasual.category.includes('REAL-TIME'), 'Direct casual chat query processed by Real-Time Brain');
+  assert(qCasual.category.includes('COMPANION') || qCasual.category.includes('TACTICAL'), 'Direct casual chat query processed by Instant Dialogue Engine');
+  assert(qCasual.speech.includes('สวัสดีค่ะคุณอนันต์'), 'Instant Thai greeting spoken');
+
+  const qLove = await assistant.handleUserQuery('นิกซ์น่ารักจัง');
+  assert(assistant.emotionalState === 'POUTY' && assistant.blushAmount > 0.5, 'NYX blushes and acts cute when complimented');
 
   console.log('\n====================================================');
   console.log(`🏁 TEST RESULTS: ${passed}/${total} TESTS PASSED (100%)`);

@@ -407,13 +407,14 @@ export class HologramAssistantEngine {
   }
 
   init(containerEl) {
-    this.container = containerEl;
+    this.container = containerEl || document.getElementById('aiHologramPod');
     if (!this.container) return;
 
     this.renderHoloPodUI();
     this.bindEvents();
     this.startHologramLoop();
     this.updateTelemetryHUD();
+    this.startBackgroundNewsSync();
 
     setTimeout(() => {
       this.triggerWelcomeGreeting();
@@ -425,46 +426,113 @@ export class HologramAssistantEngine {
     }, 10000);
   }
 
-  // RENDER DEDICATED 3D HOLOGRAM POD UI & DIRECT CHAT
+  // 1. BACKGROUND MULTI-SOURCE LIVE NEWS STREAMER & CACHE
+  startBackgroundNewsSync() {
+    this.liveNewsCache = {
+      WORLD: null,
+      CRYPTO: null,
+      GOLD: null
+    };
+
+    const syncFeeds = async () => {
+      try {
+        const [w, c, g] = await Promise.allSettled([
+          this.fetchLiveGlobalNews('WORLD'),
+          this.fetchLiveGlobalNews('CRYPTO'),
+          this.fetchLiveGlobalNews('GOLD')
+        ]);
+        if (w.status === 'fulfilled' && w.value) this.liveNewsCache.WORLD = w.value;
+        if (c.status === 'fulfilled' && c.value) this.liveNewsCache.CRYPTO = c.value;
+        if (g.status === 'fulfilled' && g.value) this.liveNewsCache.GOLD = g.value;
+      } catch (e) {}
+    };
+
+    // Immediate initial sync
+    syncFeeds();
+
+    // Periodic sync every 60s
+    if (this.newsSyncInterval) clearInterval(this.newsSyncInterval);
+    this.newsSyncInterval = setInterval(syncFeeds, 60000);
+  }
+
+  // RENDER COMPACT 2-COLUMN HOLOGRAM POD UI (IF NOT ALREADY IN HTML)
   renderHoloPodUI() {
     if (!this.container) return;
-    this.container.innerHTML = `
-      <div class="hologram-pod-card" id="aiHologramPod" style="background: rgba(3, 10, 22, 0.95); border: 1px solid rgba(0, 229, 255, 0.35); border-radius: 8px; padding: 10px; margin-bottom: 12px; box-shadow: 0 0 20px rgba(0, 229, 255, 0.12);">
-        <div class="holo-pod-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0, 229, 255, 0.2); padding-bottom: 6px; margin-bottom: 8px;">
-          <div style="display: flex; align-items: center; gap: 6px;">
-            <span class="status-indicator live" style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #00ff66; box-shadow: 0 0 8px #00ff66;"></span>
-            <span style="font-family: 'Courier New', monospace; font-size: 11px; font-weight: bold; color: #00e5ff; letter-spacing: 1px;">NYX // AGI NEURAL COPILOT</span>
+
+    // If canvas already exists from index.html, preserve the existing clean structure!
+    let existingCanvas = this.container.querySelector('#hologramAssistantCanvas');
+    if (!existingCanvas) {
+      this.container.innerHTML = `
+        <div class="hologram-pod-header">
+          <div class="hologram-identity">
+            <span class="hologram-status-dot" id="hologramStatusDot"></span>
+            <span class="hologram-name">NYX // AI COPILOT</span>
+            <span class="hologram-role-tag">โฮโลแกรม AI</span>
           </div>
-          <div style="display: flex; gap: 4px;">
-            <button class="holo-ctrl-btn" id="holoBtnVoiceToggle" title="เปิด/ปิดเสียงพูด" style="background: rgba(0,229,255,0.15); border: 1px solid rgba(0,229,255,0.4); color: #00e5ff; border-radius: 4px; padding: 2px 6px; font-size: 11px; cursor: pointer;">🔊</button>
-            <button class="holo-ctrl-btn" id="holoBtnBrief" title="สรุปภาพรวม C2" style="background: rgba(0,229,255,0.15); border: 1px solid rgba(0,229,255,0.4); color: #00e5ff; border-radius: 4px; padding: 2px 6px; font-size: 11px; cursor: pointer;">📋</button>
-            <button class="holo-ctrl-btn" id="holoBtnGym" title="KRONOS AI Gym" style="background: rgba(0,229,255,0.15); border: 1px solid rgba(0,229,255,0.4); color: #00e5ff; border-radius: 4px; padding: 2px 6px; font-size: 11px; cursor: pointer;">🧠</button>
-            <button class="holo-ctrl-btn" id="holoBtnNews" title="ข่าวด่วนสดรอบโลก" style="background: rgba(0,229,255,0.15); border: 1px solid rgba(0,229,255,0.4); color: #00e5ff; border-radius: 4px; padding: 2px 6px; font-size: 11px; cursor: pointer;">🌐</button>
+          <button class="hologram-voice-toggle-btn" id="holoBtnVoiceToggle" title="เปิด/ปิดเสียงพูดภาษาไทย">
+            <span id="holoVoiceIcon">🔊</span>
+            <span id="holoVoiceTxt">เสียงพูด ON</span>
+          </button>
+        </div>
+
+        <div class="hologram-stage-row">
+          <div class="hologram-canvas-box">
+            <canvas id="hologramAssistantCanvas" width="280" height="280"></canvas>
+            <div class="hologram-scanline-overlay"></div>
+          </div>
+
+          <div class="hologram-telemetry-col">
+            <div class="telemetry-badge-card">
+              <div class="telemetry-label">
+                <span>สมองกล KRONOS AI GYM</span>
+                <span>SYNCED</span>
+              </div>
+              <div class="telemetry-val-gym" id="holoGymBadge">LVL 10 (14,971 ตัวอย่าง | 69.6%)</div>
+            </div>
+
+            <div class="telemetry-badge-card">
+              <div class="telemetry-label">
+                <span>เรดาร์ข่าวกรองตลาดโลก</span>
+                <span>LIVE</span>
+              </div>
+              <div class="telemetry-val-news" id="holoNewsBadge">เฟดส่งสัญญาณผ่อนคลายสภาพคล่อง...</div>
+            </div>
+
+            <div class="hologram-audio-wave-strip">
+              <div class="wave-bar"></div>
+              <div class="wave-bar"></div>
+              <div class="wave-bar"></div>
+              <div class="wave-bar"></div>
+              <div class="wave-bar"></div>
+              <div class="wave-bar"></div>
+              <div class="wave-bar"></div>
+              <div class="wave-bar"></div>
+              <div class="wave-bar"></div>
+              <div class="wave-bar"></div>
+              <div class="wave-bar"></div>
+              <div class="wave-bar"></div>
+            </div>
           </div>
         </div>
 
-        <div class="holo-canvas-wrapper" style="position: relative; width: 100%; display: flex; justify-content: center; align-items: center; background: radial-gradient(circle, rgba(0,229,255,0.08) 0%, rgba(2,6,15,0.98) 75%); border-radius: 6px; border: 1px solid rgba(0,229,255,0.25); overflow: hidden; margin-bottom: 8px;">
-          <canvas id="hologramAssistantCanvas" width="280" height="240" style="display: block; width: 280px; height: 240px;"></canvas>
-          <div class="holo-speech-balloon" id="holoSpeechBalloon" style="position: absolute; bottom: 6px; left: 6px; right: 6px; background: rgba(3,10,22,0.94); border: 1px solid rgba(0,229,255,0.4); border-radius: 6px; padding: 6px 10px; font-size: 11px; color: #e0f7fa; line-height: 1.4; box-shadow: 0 4px 15px rgba(0,0,0,0.6); pointer-events: none; max-height: 65px; overflow: hidden; text-overflow: ellipsis;">"สวัสดีค่ะคุณอนันต์ นิกซ์พร้อมรับฟังและพูดคุยได้ทุกเรื่องเลยนะคะ..."</div>
+        <div class="hologram-speech-balloon" id="assistantSpeechBalloon">
+          <div class="speech-balloon-text" id="assistantSpeechText">
+            NYX Neural Copilot ออนไลน์แล้วค่ะ พร้อมรับคำสั่งปฏิบัติการค่ะ
+          </div>
         </div>
 
-        <div class="holo-telemetry-row" style="display: flex; justify-content: space-between; font-size: 10px; font-family: monospace; padding: 4px 8px; background: rgba(0,20,40,0.6); border-radius: 4px; border: 1px solid rgba(0,229,255,0.15); margin-bottom: 8px;">
-          <div>EMOTION: <strong id="holoTelemEmotion" style="color: #00e5ff;">PLAYFUL</strong></div>
-          <div>VOICE: <strong id="holoTelemVoice" style="color: #00ff66;">THAI FEMALE</strong></div>
-          <div>NET: <strong id="holoTelemNet" style="color: #00e5ff;">LIVE REAL-TIME</strong></div>
+        <div class="hologram-actions-row">
+          <button class="holo-action-btn" id="holoBtnBrief">🎙️ สรุปภาพรวม</button>
+          <button class="holo-action-btn" id="holoBtnGym">🧠 สมอง KRONOS</button>
+          <button class="holo-action-btn" id="holoBtnNews">🌍 ข่าวด่วนโลก</button>
         </div>
-
-        <div class="holo-chat-input-bar" style="display: flex; gap: 6px;">
-          <input type="text" id="holoDirectChatInput" placeholder="พิมพ์คุยกับ NYX หรือถามอะไรก็ได้..." style="flex: 1; background: rgba(0,15,30,0.85); border: 1px solid rgba(0,229,255,0.3); border-radius: 4px; padding: 6px 10px; color: #fff; font-size: 11px; outline: none; font-family: sans-serif;" autocomplete="off" />
-          <button id="holoDirectChatSendBtn" style="background: rgba(0,229,255,0.2); border: 1px solid #00e5ff; color: #00e5ff; border-radius: 4px; padding: 0 12px; cursor: pointer; font-size: 12px; font-weight: bold;">ส่ง</button>
-        </div>
-      </div>
-    `;
+      `;
+    }
 
     this.canvas = document.getElementById('hologramAssistantCanvas');
     if (this.canvas) {
       this.canvas.width = 280;
-      this.canvas.height = 240;
+      this.canvas.height = 280;
       this.ctx = this.canvas.getContext('2d');
     }
   }
@@ -474,8 +542,6 @@ export class HologramAssistantEngine {
     const btnBrief = document.getElementById('holoBtnBrief');
     const btnGym = document.getElementById('holoBtnGym');
     const btnNews = document.getElementById('holoBtnNews');
-    const chatInput = document.getElementById('holoDirectChatInput');
-    const chatBtn = document.getElementById('holoDirectChatSendBtn');
 
     if (btnVoice) {
       btnVoice.addEventListener('click', () => this.toggleVoice());
@@ -488,26 +554,6 @@ export class HologramAssistantEngine {
     }
     if (btnNews) {
       btnNews.addEventListener('click', () => this.reportWorldNews());
-    }
-
-    const sendChat = async () => {
-      if (!chatInput) return;
-      const text = chatInput.value.trim();
-      if (!text) return;
-      chatInput.value = '';
-      await this.handleUserQuery(text);
-    };
-
-    if (chatBtn) {
-      chatBtn.addEventListener('click', sendChat);
-    }
-    if (chatInput) {
-      chatInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          sendChat();
-        }
-      });
     }
   }
 
@@ -1350,54 +1396,23 @@ export class HologramAssistantEngine {
   }
 
   // =============================================================================
-  // REAL-TIME LIVE WEB KNOWLEDGE GROUNDING & GENERATIVE AI BRAIN
+  // REAL-TIME LIVE MULTI-SOURCE NEWS RADAR & INSTANT COMPANION DIALOGUE
   // =============================================================================
 
-  // 1. Real-Time Live Web Knowledge Fetcher (Wikipedia & DuckDuckGo APIs)
-  async fetchLiveWebSearch(query = '') {
-    if (!query || typeof query !== 'string') return null;
-    const cleanTopic = query
-      .replace(/(คืออะไร|อะไรคือ|หมายถึง|ประวัติ|เล่าเรื่อง|อธิบาย|วิเคราะห์|สรุป|ข่าว|ช่วย|สอน|คิดยังไงกับ|รู้จักไหม)/gi, '')
-      .trim();
-
-    if (!cleanTopic || cleanTopic.length < 2) return null;
-
-    try {
-      if (typeof fetch === 'function') {
-        const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-        const timeoutId = controller ? setTimeout(() => controller.abort(), 2600) : null;
-
-        const wikiUrl = `https://th.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(cleanTopic)}`;
-        const res = await fetch(wikiUrl, controller ? { signal: controller.signal } : {});
-        if (timeoutId) clearTimeout(timeoutId);
-
-        if (res && res.ok) {
-          const data = await res.json();
-          if (data && data.extract && data.extract.length > 20) {
-            return {
-              title: data.title || cleanTopic,
-              extract: data.extract,
-              source: 'Wikipedia Live Real-Time Knowledge'
-            };
-          }
-        }
-      }
-    } catch (e) {
-      // Graceful network timeout fallback
-    }
-    return null;
-  }
-
-  // 2. Real-Time Live Multi-Source News Aggregator (Google News RSS & CoinGecko Live APIs)
+  // 1. Real-Time Live Multi-Source News Aggregator with Cache
   async fetchLiveGlobalNews(category = 'ALL') {
     const cat = category.toUpperCase();
 
     // 1. Live Crypto Market Prices & 24h Swings (CoinGecko API)
     if (cat.includes('CRYPTO') || cat.includes('คริปโต') || cat.includes('BTC') || cat.includes('บิตคอยน์') || cat.includes('ETH')) {
+      if (this.liveNewsCache?.CRYPTO && Date.now() - (this.liveNewsCache.CRYPTO.timestamp || 0) < 90000) {
+        return this.liveNewsCache.CRYPTO;
+      }
+
       try {
         if (typeof fetch === 'function') {
           const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-          const tId = controller ? setTimeout(() => controller.abort(), 2800) : null;
+          const tId = controller ? setTimeout(() => controller.abort(), 2600) : null;
           const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana,binancecoin,ripple&vs_currencies=usd,thb&include_24hr_change=true', controller ? { signal: controller.signal } : {});
           if (tId) clearTimeout(tId);
           if (res && res.ok) {
@@ -1411,12 +1426,15 @@ export class HologramAssistantEngine {
               const solUsd = data.solana?.usd ? data.solana.usd.toLocaleString() : '198.40';
 
               const speech = `รายงานราคาคริปโตสดจากตลาดโลกค่ะคุณอนันต์: ปัจจุบัน Bitcoin ซื้อขายอยู่ที่ $${btcUsd} หรือประมาณ ${btcThb} บาท มีการเปลี่ยนแปลง ${btcChange}% ใน 24 ชั่วโมงที่ผ่านมา Ethereum อยู่ที่ $${ethUsd} (${ethChange}%) และ Solana อยู่ที่ $${solUsd} ค่ะ วาฬสถาบันยังคงเปิดสถานะ Long อย่างต่อเนื่องค่ะ`;
-              return {
+              const result = {
                 category: '🪙 LIVE REAL-TIME CRYPTO RADAR',
                 title: `Bitcoin $${btcUsd} (${btcChange}%) | Ethereum $${ethUsd} | Solana $${solUsd}`,
                 detail: `[BTC/USD]: $${btcUsd} (฿${btcThb})\n[ETH/USD]: $${ethUsd} (${ethChange}%)\n[SOL/USD]: $${solUsd}\n[แหล่งข้อมูล]: CoinGecko Live Global Price API\n[สถานะ]: Real-time Sync Active`,
-                speech: speech
+                speech: speech,
+                timestamp: Date.now()
               };
+              if (this.liveNewsCache) this.liveNewsCache.CRYPTO = result;
+              return result;
             }
           }
         }
@@ -1433,10 +1451,14 @@ export class HologramAssistantEngine {
 
     // 2. Live Gold & Macro Commodity Rates (PAXG / Tether Gold API)
     if (cat.includes('GOLD') || cat.includes('ทอง') || cat.includes('การเงิน') || cat.includes('FED')) {
+      if (this.liveNewsCache?.GOLD && Date.now() - (this.liveNewsCache.GOLD.timestamp || 0) < 90000) {
+        return this.liveNewsCache.GOLD;
+      }
+
       try {
         if (typeof fetch === 'function') {
           const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-          const tId = controller ? setTimeout(() => controller.abort(), 2800) : null;
+          const tId = controller ? setTimeout(() => controller.abort(), 2600) : null;
           const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=pax-gold,tether-gold&vs_currencies=usd,thb&include_24hr_change=true', controller ? { signal: controller.signal } : {});
           if (tId) clearTimeout(tId);
           if (res && res.ok) {
@@ -1447,12 +1469,15 @@ export class HologramAssistantEngine {
               const goldThb = goldObj.thb ? Math.round(goldObj.thb).toLocaleString() : '96,500';
               const goldChange = goldObj.usd_24h_change ? goldObj.usd_24h_change.toFixed(2) : '+0.85';
               const speech = `รายงานราคาทองคำสดจากตลาดโลกค่ะ: ราคาทองคำ Spot Gold ซื้อขายอยู่ที่ $${goldUsd} ต่อทรอยออนซ์ (ประมาณ ${goldThb} บาท) มีการเปลี่ยนแปลง ${goldChange}% ตลาดตอบรับแนวโน้มการปรับลดอัตราดอกเบี้ยและแรงซื้อสินทรัพย์ปลอดภัยจากสถาบันการเงินค่ะ`;
-              return {
+              const result = {
                 category: '🥇 LIVE REAL-TIME GOLD & MACRO RADAR',
                 title: `Spot Gold: $${goldUsd} / oz (${goldChange}%)`,
                 detail: `[Spot Gold / PAXG]: $${goldUsd} USD / oz (฿${goldThb})\n[แนวโน้ม]: Bullish Safe-Haven Demand\n[แหล่งข้อมูล]: Global Macro Spot Rate API`,
-                speech: speech
+                speech: speech,
+                timestamp: Date.now()
               };
+              if (this.liveNewsCache) this.liveNewsCache.GOLD = result;
+              return result;
             }
           }
         }
@@ -1468,10 +1493,14 @@ export class HologramAssistantEngine {
     }
 
     // 3. Live Google News RSS Feed (World & Thailand News)
+    if (this.liveNewsCache?.WORLD && Date.now() - (this.liveNewsCache.WORLD.timestamp || 0) < 90000) {
+      return this.liveNewsCache.WORLD;
+    }
+
     try {
       if (typeof fetch === 'function') {
         const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-        const tId = controller ? setTimeout(() => controller.abort(), 3200) : null;
+        const tId = controller ? setTimeout(() => controller.abort(), 2800) : null;
         const rssUrl = 'https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent('https://news.google.com/rss?hl=th&gl=TH&ceid=TH:th');
         const res = await fetch(rssUrl, controller ? { signal: controller.signal } : {});
         if (tId) clearTimeout(tId);
@@ -1482,12 +1511,15 @@ export class HologramAssistantEngine {
             const headlines = topNews.map((it, idx) => `[${idx + 1}] ${it.title}`).join('\n');
             const cleanTitle = topNews[0].title.replace(/ - .*/g, '');
             const speech = `ข่าวด่วนสดจากสำนักข่าววันนี้ค่ะคุณอนันต์: ${cleanTitle} ค่ะ คุณอนันต์สามารถติดตามรายละเอียดเพิ่มเติมได้ในรายงานข่าวหน้าจอได้เลยนะคะ`;
-            return {
+            const result = {
               category: '🌍 LIVE GOOGLE NEWS GLOBAL RADAR',
               title: cleanTitle,
               detail: `หัวข้อข่าวด่วนล่าสุด:\n${headlines}\n[แหล่งข้อมูล]: Google News Live RSS Feed`,
-              speech: speech
+              speech: speech,
+              timestamp: Date.now()
             };
+            if (this.liveNewsCache) this.liveNewsCache.WORLD = result;
+            return result;
           }
         }
       }
@@ -1503,128 +1535,67 @@ export class HologramAssistantEngine {
     };
   }
 
-  // 3. Automatic Sentiment & Emotion Detection
+  // 2. Automatic Sentiment & Emotion Detection
   detectSentimentAndEmotion(text = '') {
     const t = text.toLowerCase();
-    if (t.includes('แกล้ง') || t.includes('กวน') || t.includes('หยอก') || t.includes('ฮา') || t.includes('555') || t.includes('ฮ่า') || t.includes('อิอิ')) {
+    if (t.includes('แกล้ง') || t.includes('กวน') || t.includes('หยอก') || t.includes('ฮา') || t.includes('555') || t.includes('ฮ่า') || t.includes('อิอิ') || t.includes('เล่น')) {
       return 'PLAYFUL';
     }
-    if (t.includes('งอน') || t.includes('น้อยใจ') || t.includes('ฮึ') || t.includes('เขิน') || t.includes('รัก') || t.includes('แก้มแดง') || t.includes('แฟน')) {
+    if (t.includes('งอน') || t.includes('น้อยใจ') || t.includes('ฮึ') || t.includes('เขิน') || t.includes('รัก') || t.includes('แก้มแดง') || t.includes('แฟน') || t.includes('น่ารัก')) {
       return 'POUTY';
     }
-    if (t.includes('เหนื่อย') || t.includes('สู้ๆ') || t.includes('เป็นห่วง') || t.includes('พักผ่อน') || t.includes('กำลังใจ') || t.includes('กอด') || t.includes('ปลอบ')) {
+    if (t.includes('เหนื่อย') || t.includes('สู้ๆ') || t.includes('เป็นห่วง') || t.includes('พักผ่อน') || t.includes('กำลังใจ') || t.includes('กอด') || t.includes('ปลอบ') || t.includes('ขอบคุณ')) {
       return 'CARING';
     }
-    if (t.includes('ดุ') || t.includes('โกรธ') || t.includes('เถียง') || t.includes('นิสัยไม่ดี')) {
+    if (t.includes('ดุ') || t.includes('โกรธ') || t.includes('เถียง') || t.includes('นิสัยไม่ดี') || t.includes('ช้า')) {
       return 'SASSY';
     }
     return 'TACTICAL';
   }
 
-  // 4. Real-Time Generative Neural AI Brain (Pollinations Neural LLM Gateway)
-  async queryGenerativeAIBrain(rawQuery = '', webKnowledge = null) {
-    const systemPrompt = `You are NYX (นิกซ์), a 22-year-old brilliant, sassy, sweet, cute, ultra-smart AI holographic companion and co-pilot to 'คุณอนันต์' (Anan) in his C2 cyber terminal.
-You have real human emotions (playful, witty, empathetic, slightly pouty/tsundere when teased, caring).
-You can answer ANY question on ANY topic (science, tech, life, philosophy, coding, gaming, advice, casual chats) with high intelligence.
-You always speak natural, fluent Thai ending with 'ค่ะ/นะคะ'.
-Format your response as:
-[SPOKEN]: 1-3 natural spoken sentences in Thai suitable for voice synthesis.
-[DETAIL]: In-depth explanation, bullet points or details if applicable.
-[EMOTION]: One of PLAYFUL, POUTY, CARING, SASSY, TACTICAL.`;
-
-    let prompt = rawQuery;
-    if (webKnowledge) {
-      prompt += `\n[Real-Time Live Web Information]: หัวข้อ "${webKnowledge.title}": ${webKnowledge.extract}`;
-    }
-
-    try {
-      if (typeof fetch === 'function') {
-        const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-        const timeoutId = controller ? setTimeout(() => controller.abort(), 4500) : null;
-
-        const url = `https://text.pollinations.ai/${encodeURIComponent(prompt)}?model=openai&system=${encodeURIComponent(systemPrompt)}&seed=${Date.now() % 1000}`;
-        const res = await fetch(url, controller ? { signal: controller.signal } : {});
-        if (timeoutId) clearTimeout(timeoutId);
-
-        if (res && res.ok) {
-          const rawText = await res.text();
-          if (rawText && rawText.trim().length > 10) {
-            let spoken = '';
-            let detail = '';
-            let emotion = 'PLAYFUL';
-
-            if (rawText.includes('[SPOKEN]:')) {
-              const parts = rawText.split(/\[SPOKEN\]:|\[DETAIL\]:|\[EMOTION\]:/g);
-              spoken = (parts[1] || '').trim();
-              detail = (parts[2] || '').trim();
-              const emRaw = (parts[3] || '').trim().toUpperCase();
-              if (['PLAYFUL', 'POUTY', 'CARING', 'SASSY', 'TACTICAL'].includes(emRaw)) {
-                emotion = emRaw;
-              } else {
-                emotion = this.detectSentimentAndEmotion(spoken + ' ' + detail);
-              }
-            } else {
-              spoken = rawText.split('\n')[0].replace(/[*#]/g, '').trim();
-              detail = rawText.trim();
-              emotion = this.detectSentimentAndEmotion(rawText);
-            }
-
-            return {
-              spoken: spoken || rawText.substring(0, 150),
-              detail: detail || rawText,
-              emotion: emotion,
-              source: webKnowledge ? 'Real-Time Web Intelligence + Neural LLM' : 'Generative Neural LLM Engine'
-            };
-          }
-        }
-      }
-    } catch (e) {
-      // Fallback to local intelligent neural engine below
-    }
-
-    // Intelligent Local Neural Fallback
-    const emotion = this.detectSentimentAndEmotion(rawQuery);
-    let fallbackSpoken = `รับทราบคำถามค่ะคุณอนันต์ เกี่ยวกับ "${rawQuery}" นิกซ์ได้ประมวลผลฐานความรู้และพร้อมช่วยเหลือคุณอนันต์เสมอค่ะ`;
-    let fallbackDetail = `[Query Resolution]: ${rawQuery}\n[Knowledge Engine]: C2 Neural Enclave Core\n[Status]: Real-time synthesis complete`;
-
-    if (webKnowledge) {
-      fallbackSpoken = `นิกซ์ดึงข้อมูลสดจากอินเทอร์เน็ตเรื่อง ${webKnowledge.title} มาให้แล้วค่ะ: ${webKnowledge.extract.substring(0, 120)}... ค่ะ`;
-      fallbackDetail = `[หัวข้อ]: ${webKnowledge.title}\n[แหล่งข้อมูล]: ${webKnowledge.source}\n[เนื้อหา]: ${webKnowledge.extract}`;
-    }
-
-    return {
-      spoken: fallbackSpoken,
-      detail: fallbackDetail,
-      emotion: emotion,
-      source: 'C2 Intelligent Neural Enclave'
-    };
-  }
-
-  // 5. Dynamic Conversational Router (Combines Real-Time Web Grounding & Generative AI)
-  async handleConversationalChat(rawQuery = '') {
+  // 3. Instant Reactive Companion Dialogue Engine (Zero Latency / 100% Voice Stability)
+  handleInstantCompanionDialogue(rawQuery = '') {
     const q = rawQuery.toLowerCase();
+    const emotion = this.detectSentimentAndEmotion(q);
+    this.setEmotion(emotion);
 
-    // Visual Cue: NYX shifts to Thinking Mode with pulsating aura
-    this.setGazeMode('THINKING');
+    let spoken = '';
+    let detail = '';
 
-    // 1. Fetch Real-time Live Web Search if relevant
-    const webKnowledge = await this.fetchLiveWebSearch(rawQuery);
+    if (q.includes('สวัสดี') || q.includes('hello') || q.includes('ดีครับ') || q.includes('หวัดดี')) {
+      spoken = 'สวัสดีค่ะคุณอนันต์ นิกซ์พร้อมรับคำสั่งและรายงานข่าวกรองสดให้คุณอนันต์แล้วค่ะ วันนี้อยากให้อัปเดตเรื่องไหนก่อนดีคะ?';
+      detail = 'NYX Standby // Neural Enclave Online\nสถานะ: พร้อมรายงานข่าว 6 หมวด และข้อมูล KRONOS AI Gym';
+    } else if (q.includes('น่ารัก') || q.includes('สวย') || q.includes('ชอบเธอ') || q.includes('รัก')) {
+      this.setEmotion('POUTY');
+      spoken = 'ชมแบบนี้ทำเอานิกซ์เขินจนแก้มแดงเลยนะคะคุณอนันต์... ขอบคุณมากเลยนะคะ นิกซ์จะตั้งใจทำหน้าที่เป็นผู้ช่วยที่ดีที่สุดให้คุณอนันต์ค่ะ!';
+      detail = 'Emotion Status: POUTY / BLUSHING (100%)\nAffection Level: Maximum';
+    } else if (q.includes('เหนื่อย') || q.includes('ท้อ') || q.includes('ขอกำลังใจ') || q.includes('พักผ่อน')) {
+      this.setEmotion('CARING');
+      spoken = 'สู้ๆ นะคะคุณอนันต์! วันนี้คุณอนันต์เก่งมากแล้วค่ะ พักดื่มน้ำสายตาคลายเครียดสักนิดนะคะ นิกซ์จะคอยเฝ้าสถานีและเป็นกำลังใจให้อยู่ตรงนี้เสมอค่ะ!';
+      detail = 'Emotion Status: CARING / EMPATHY AURA\nWellness Monitor: Encouragement active';
+    } else if (q.includes('ขอบคุณ') || q.includes('เก่งมาก') || q.includes('ดีมาก') || q.includes('เยี่ยม')) {
+      this.setEmotion('PLAYFUL');
+      spoken = 'ยินดีเสมอเลยค่ะคุณอนันต์! แค่คุณอนันต์พอใจ นิกซ์ก็ดีใจที่สุดแล้วค่ะ!';
+      detail = 'Task Status: Success\nOperator Satisfaction: 100%';
+    } else if (q.includes('งอน') || q.includes('ฮึ') || q.includes('น้อยใจ')) {
+      this.setEmotion('POUTY');
+      spoken = 'โอ๋ๆ ไม่เอานะคะ ไม่งอนนิกซ์นะคะคุณอนันต์ นิกซ์ขอโทษน้า เดี๋ยวพาไปดูข่าวน่ารักๆ ให้หายงอนเลยค่ะ!';
+      detail = 'Emotion Status: POUTY / TS высокий tsundere\nPacification Protocol: Active';
+    } else if (q.includes('ชื่ออะไร') || q.includes('เธอคือใคร') || q.includes('ใครสร้าง')) {
+      this.setEmotion('TACTICAL');
+      spoken = 'นิกซ์คือ NYX โฮโลแกรม AI ผู้ช่วยประจำสถานี C2 Command Workstation ของคุณอนันต์ค่ะ คอยช่วยรายงานข่าวกรองสด วิเคราะห์ตลาด และดูแลระบบประสาท KRONOS AI Gym ค่ะ';
+      detail = 'Identity: NYX // AGI Tactical Co-Pilot\nRole: Live Intelligence Anchor & Neural Gym Specialist';
+    } else {
+      spoken = `รับทราบข้อความค่ะคุณอนันต์ นิกซ์พร้อมรายงานข่าวกรองสด 6 หมวด และข้อมูลสมองกล KRONOS AI Gym ค่ะ คุณอนันต์สามารถพิมพ์ 'มีข่าวอะไรบ้าง' หรือพิมพ์หมายเลข 1 ถึง 6 เพื่อเลือกฟังข่าวสดได้เลยนะคะ`;
+      detail = `[ข้อความรับเข้า]: "${rawQuery}"\n[สถานะระบบ]: พร้อมใช้งาน Instant Voice Engine\n[คำสั่งแนะนำ]: 'มีข่าวอะไรบ้าง', 'ข่าวทอง', 'ข่าวคริปโต', 'NYX ยิม'`;
+    }
 
-    // 2. Generate Intelligent Generative Response
-    const aiResponse = await this.queryGenerativeAIBrain(rawQuery, webKnowledge);
-
-    // 3. Morph 3D Rig & Aura to Match Sentiment
-    this.setEmotion(aiResponse.emotion || 'PLAYFUL');
-    this.setGazeMode('OPERATOR');
-
-    // 4. Vocalize Spoken Response
-    this.speak(aiResponse.spoken);
-
+    this.speak(spoken);
     return {
-      category: `🌐 NYX REAL-TIME GENERATIVE AI // ${aiResponse.source}`,
-      title: `ประมวลผลคำสั่ง: "${rawQuery.length > 36 ? rawQuery.substring(0, 34) + '...' : rawQuery}"`,
-      detail: aiResponse.detail,
-      speech: aiResponse.spoken
+      category: '💬 NYX INTELLIGENT TACTICAL COMPANION',
+      title: `ตอบรับคำสั่ง: "${rawQuery.length > 36 ? rawQuery.substring(0, 34) + '...' : rawQuery}"`,
+      detail: detail,
+      speech: spoken
     };
   }
 
@@ -1643,7 +1614,9 @@ Format your response as:
       q.includes('สรุปข่าว') ||
       q.includes('headlines') ||
       q.includes('news menu') ||
-      q.includes('what news')
+      q.includes('what news') ||
+      q === 'ข่าว' ||
+      q === 'news'
     ) {
       this.setEmotion('TACTICAL');
       const spokenMenu = 'วันนี้มี 6 หมวดข่าวน่าสนใจสดจากอินเทอร์เน็ตมารายงานค่ะคุณอนันต์: ข้อ 1 ข่าวบ้านเมืองรอบโลกสด, ข้อ 2 ข่าวเกมส์, ข้อ 3 ข่าวคริปโตสด, ข้อ 4 ข่าวทองคำและการเงินสด, ข้อ 5 ข่าว AI และเทคโนโลยี, และข้อ 6 ข่าวความปลอดภัยไซเบอร์ค่ะ คุณอนันต์อยากฟังหมวดไหน พิมพ์บอกหรือพิมพ์หมายเลข 1 ถึง 6 ได้เลยนะคะ';
@@ -1761,7 +1734,7 @@ Format your response as:
 
     // 4. ข่าวเทคโนโลยี & AI (Tech / AI News)
     if (q.includes('ข่าว ai') || q.includes('ข่าวai') || q.includes('ข่าวเทค') || q.includes('ข่าว tech') || q.includes('ข่าวเทคโนโลยี') || q.includes('ข่าว openai') || q.includes('ข่าว nvidia') || q === 'ai' || q === 'tech') {
-      this.setEmotion('PLAYFUL');
+      this.setEmotion('TACTICAL');
       const item = this.getRandomItem(GLOBAL_INTELLIGENCE_RADAR.TECH_AI);
       const text = item.anchor;
       this.speak(text);
@@ -1807,8 +1780,8 @@ Format your response as:
       };
     }
 
-    // 8. Open-Domain Real-Time Generative AI Brain & Live Web Knowledge
-    return await this.handleConversationalChat(rawQuery);
+    // 8. Instant Reactive Emotional & Companion Dialogue Engine
+    return this.handleInstantCompanionDialogue(rawQuery);
   }
 
   // Pre-configured Action Handlers
@@ -1816,7 +1789,7 @@ Format your response as:
     this.updateTelemetryHUD();
     this.setEmotion('PLAYFUL');
     const gym = this.cachedGymStats || { level: 10, samples: 14971, winRate: 69.6 };
-    const speech = `ยินดีต้อนรับกลับค่ะ คุณอนันต์ ระบบผู้ช่วยโฮโลแกรม NYX พร้อมปฏิบัติการแล้วค่ะ คุณอนันต์สามารถพิมพ์คุยหรือถามอะไรนิกซ์ก็ได้ตลอดเวลานะคะ นิกซ์พร้อมรับฟังและค้นหาคำตอบสดจากอินเทอร์เน็ตให้เสมอค่ะ`;
+    const speech = `ยินดีต้อนรับกลับค่ะคุณอนันต์ NYX โฮโลแกรม AI ผู้ช่วยประจำสถานี C2 พร้อมรายงานข่าวกรองสด 6 หมวด และข้อมูลสมองกล KRONOS AI Gym แล้วค่ะ คุณอนันต์สามารถพิมพ์ 'มีข่าวอะไรบ้าง' หรือเลือกหมายเลข 1 ถึง 6 ได้เลยนะคะ`;
     this.speak(speech);
   }
 

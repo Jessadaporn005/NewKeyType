@@ -601,28 +601,14 @@ class WindowsTerminalApp {
 
     const intelCol = document.getElementById('cyberIntelColumn');
     if (intelCol) {
-      // 1. Mount 3D Hologram Pod for NYX
-      let holoPod = document.getElementById('aiHologramPod');
-      if (!holoPod) {
-        holoPod = document.createElement('div');
-        holoPod.id = 'aiHologramPod';
-        holoPod.className = 'ai-hologram-pod-container';
-        intelCol.appendChild(holoPod);
-      }
-      this.hologramAssistant = new HologramAssistantEngine(this, this.audio, this.toasts);
-      this.hologramAssistant.init(holoPod);
-
-      // 2. Mount Cyber Intelligence Radar Feed
-      let feedContainer = document.getElementById('cyberIntelFeedContainer');
-      if (!feedContainer) {
-        feedContainer = document.createElement('div');
-        feedContainer.id = 'cyberIntelFeedContainer';
-        intelCol.appendChild(feedContainer);
-      }
       this.intelFeed = new CyberIntelFeed(this, this.audio);
-      this.intelFeed.init(feedContainer);
-    } else {
-      this.hologramAssistant = new HologramAssistantEngine(this, this.audio, this.toasts);
+      this.intelFeed.init(intelCol);
+    }
+
+    const holoPod = document.getElementById('aiHologramPod');
+    this.hologramAssistant = new HologramAssistantEngine(this, this.audio, this.toasts);
+    if (holoPod) {
+      this.hologramAssistant.init(holoPod);
     }
 
     this.aiCompanion = new AICompanionEngine(this, this.audio);
