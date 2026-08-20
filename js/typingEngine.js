@@ -308,6 +308,15 @@ export class TypingEngine {
     }
   }
 
+  stop() {
+    if (this.timerInterval) clearInterval(this.timerInterval);
+    this.timerInterval = null;
+    this.isActive = false;
+    this.isBatchTransitioning = false;
+    if (this.kb) this.kb.clearTargetKeys();
+    if (this.hands) this.hands.clearTargetGuide();
+  }
+
   getStats() {
     const elapsedSeconds = this.startTime ? ((this.endTime || Date.now()) - this.startTime) / 1000 : 0;
     const elapsedMinutes = elapsedSeconds / 60;

@@ -1,6 +1,6 @@
 /**
- * WATCH DOGS & NORSE LIVE CYBER THREAT WAR GLOBE
- * Renders real-time 2.5D cyber attack missile arcs shooting between global cities
+ * PROCEDURAL CYBER THREAT VISUALIZATION
+ * Renders fictional 2.5D attack arcs; it does not ingest network telemetry.
  */
 
 export class CyberThreatGlobeEngine {
@@ -25,6 +25,7 @@ export class CyberThreatGlobeEngine {
 
   start() {
     if (!this.canvas || !this.ctx) return;
+    this.stop();
     this.resize();
     this.spawnMissileLoop();
     this.render();
@@ -37,6 +38,7 @@ export class CyberThreatGlobeEngine {
   }
 
   spawnMissileLoop() {
+    if (this.spawnInterval) clearInterval(this.spawnInterval);
     this.spawnInterval = setInterval(() => {
       const src = this.cities[Math.floor(Math.random() * this.cities.length)];
       let dst = this.cities[Math.floor(Math.random() * this.cities.length)];
@@ -56,7 +58,7 @@ export class CyberThreatGlobeEngine {
       if (this.ticker) {
         const item = document.createElement('div');
         item.className = 'threat-ticker-item';
-        item.innerHTML = `<span style="color:${src.color}">[${src.name} ➔ ${dst.name}]</span> <strong>${atkType}</strong> - ${Math.floor(100 + Math.random()*900)} Gbps`;
+        item.innerHTML = `<span style="color:${src.color}">[SIM ${src.name} ➔ ${dst.name}]</span> <strong>${atkType}</strong> - FICTIONAL ${Math.floor(100 + Math.random()*900)} Gbps`;
         this.ticker.appendChild(item);
         if (this.ticker.children.length > 6) {
           this.ticker.removeChild(this.ticker.firstChild);
@@ -141,5 +143,8 @@ export class CyberThreatGlobeEngine {
   stop() {
     if (this.spawnInterval) clearInterval(this.spawnInterval);
     if (this.animId) cancelAnimationFrame(this.animId);
+    this.spawnInterval = null;
+    this.animId = null;
+    this.missiles = [];
   }
 }

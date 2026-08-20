@@ -171,6 +171,7 @@ export class BreachProtocolEngine {
   finish(success) {
     this.isActive = false;
     if (this.timerInterval) clearInterval(this.timerInterval);
+    this.timerInterval = null;
 
     const solvedCount = this.daemons.filter(d => d.solved).length;
     if (solvedCount > 0 || success) {
@@ -184,5 +185,12 @@ export class BreachProtocolEngine {
         daemons: this.daemons
       });
     }
+  }
+
+  cancel() {
+    this.isActive = false;
+    if (this.timerInterval) clearInterval(this.timerInterval);
+    this.timerInterval = null;
+    this.buffer = [];
   }
 }

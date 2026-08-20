@@ -315,8 +315,8 @@ export class TabManager {
       tabEl.dataset.tabId = tab.id;
 
       tabEl.innerHTML = `
-        <span class="tab-icon">${tab.icon}</span>
-        <span class="tab-title">${tab.title}</span>
+        <span class="tab-icon">${this.escapeHtml(tab.icon)}</span>
+        <span class="tab-title">${this.escapeHtml(tab.title)}</span>
         <button class="tab-close-btn" title="Close Tab [Ctrl+W]">✕</button>
       `;
 
@@ -331,6 +331,15 @@ export class TabManager {
     // Re-append add and dropdown buttons
     if (this.addBtnEl) this.tabStripEl.appendChild(this.addBtnEl);
     if (this.dropdownBtnEl) this.tabStripEl.appendChild(this.dropdownBtnEl);
+  }
+
+  escapeHtml(value) {
+    return String(value ?? '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;');
   }
 
   toggleDropdownMenu() {
@@ -349,35 +358,35 @@ export class TabManager {
         <span class="d-icon">>_</span>
         <div class="d-info">
           <span class="d-title">New CyberDeck Terminal</span>
-          <span class="d-sub">PowerShell & Real CLI Prompt [Ctrl+T]</span>
+          <span class="d-sub">Local App Console; Host Mutations Disabled by Default [Ctrl+T]</span>
         </div>
       </div>
       <div class="dropdown-item" data-type="trading">
         <span class="d-icon">📈</span>
         <div class="d-info">
-          <span class="d-title">AI Quantum Trading Terminal</span>
-          <span class="d-sub">Binance Live Candlesticks & AI Gym Copilot</span>
+          <span class="d-title">Paper Quant Rule Trading Terminal</span>
+          <span class="d-sub">Source-Labeled Candles, Heuristic Signals, No Live Execution</span>
         </div>
       </div>
       <div class="dropdown-item" data-type="wifi">
         <span class="d-icon">📡</span>
         <div class="d-info">
-          <span class="d-title">Cyber Wi-Fi Radar & Quantum Decryptor</span>
-          <span class="d-sub">Scan Local Airwaves & WPA Handshake Cracking</span>
+          <span class="d-title">Wi-Fi Radar & Typing Trainer</span>
+          <span class="d-sub">Source-Labeled Local Scan; No Password Cracking</span>
         </div>
       </div>
       <div class="dropdown-item" data-type="explorer">
         <span class="d-icon">📂</span>
         <div class="d-info">
           <span class="d-title">Cyber Desktop Mirror & File Explorer</span>
-          <span class="d-sub">Live Reflection of Desktop Shortcuts & Drives</span>
+          <span class="d-sub">Source-Labeled Local Storage or Simulated Fallback</span>
         </div>
       </div>
       <div class="dropdown-item" data-type="taskmgr">
         <span class="d-icon">📊</span>
         <div class="d-info">
-          <span class="d-title">Real Task Manager (htop)</span>
-          <span class="d-sub">Live Windows Processes & Task Killer</span>
+          <span class="d-title">Source-Labeled Task Monitor</span>
+          <span class="d-sub">Host Process Readout; Kill Action Disabled by Default</span>
         </div>
       </div>
       <div class="dropdown-item" data-type="radio">
@@ -398,7 +407,7 @@ export class TabManager {
         <span class="d-icon">⚡</span>
         <div class="d-info">
           <span class="d-title">VS Code Interactive Studio</span>
-          <span class="d-sub">Dual-Pane Code Editor & AI Cyber Tutor</span>
+          <span class="d-sub">Dual-Pane Code Editor & Rule-Based Code Tutor</span>
         </div>
       </div>
       <div class="dropdown-item" data-type="roguelite">

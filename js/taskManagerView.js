@@ -23,9 +23,10 @@ export class TaskManagerViewEngine {
     this.sortAsc = false;
     this.isPaused = false;
     this.pollInterval = null;
+    this.dataSource = 'VERIFYING';
 
-    this.cpuHistory = [12, 15, 18, 22, 19, 25, 20, 28, 24, 21];
-    this.memHistory = [38, 38, 39, 39, 40, 40, 39, 40, 41, 40];
+    this.cpuHistory = [];
+    this.memHistory = [];
   }
 
   init(containerEl) {
@@ -47,7 +48,7 @@ export class TaskManagerViewEngine {
           <div class="taskmgr-title-group">
             <span class="pulse-indicator"></span>
             <span class="taskmgr-title">CYBER//PROCESS MONITOR (htop)</span>
-            <span class="taskmgr-sub">LIVE WINDOWS TELEMETRY</span>
+            <span class="taskmgr-sub" id="taskmgrSourceBadge">SOURCE: VERIFYING</span>
           </div>
 
           <div class="taskmgr-header-actions">
@@ -67,7 +68,7 @@ export class TaskManagerViewEngine {
           <div class="telemetry-card">
             <div class="tel-card-top">
               <span class="tel-label">⚡ CPU UTILIZATION</span>
-              <strong class="tel-val" id="telCpuVal">24.5%</strong>
+              <strong class="tel-val" id="telCpuVal">VERIFYING</strong>
             </div>
             <div class="tel-graph-box" id="telCpuGraphBox">
               <!-- SVG Wave drawn dynamically -->
@@ -78,7 +79,7 @@ export class TaskManagerViewEngine {
           <div class="telemetry-card">
             <div class="tel-card-top">
               <span class="tel-label">💾 RAM USAGE</span>
-              <strong class="tel-val" id="telMemVal">38.4 GB (30%)</strong>
+              <strong class="tel-val" id="telMemVal">VERIFYING</strong>
             </div>
             <div class="tel-graph-box" id="telMemGraphBox">
               <!-- SVG Wave drawn dynamically -->
@@ -92,8 +93,8 @@ export class TaskManagerViewEngine {
               <strong class="tel-val" id="telTasksCount">0</strong>
             </div>
             <div class="tel-tasks-meta">
-              <span>THREADS: <strong id="telThreadsCount">1,842</strong></span>
-              <span>HANDLES: <strong id="telHandlesCount">74,210</strong></span>
+              <span>THREADS: <strong id="telThreadsCount">N/A</strong></span>
+              <span>HANDLES: <strong id="telHandlesCount">N/A</strong></span>
             </div>
           </div>
         </div>
@@ -104,7 +105,7 @@ export class TaskManagerViewEngine {
             <div class="t-col t-pid" data-sort="pid">PID</div>
             <div class="t-col t-name" data-sort="name">PROCESS NAME</div>
             <div class="t-col t-mem active-sort" data-sort="memMB">MEMORY (MB) ▼</div>
-            <div class="t-col t-cpu" data-sort="cpu">CPU %</div>
+            <div class="t-col t-cpu" data-sort="cpu">CPU TIME (s)</div>
             <div class="t-col t-status">STATUS</div>
             <div class="t-col t-action">ACTION</div>
           </div>
@@ -120,7 +121,7 @@ export class TaskManagerViewEngine {
           <span class="dock-sep">|</span>
           <span>POLL RATE: <strong>3000ms</strong></span>
           <span class="dock-sep">|</span>
-          <span class="dock-glow">SYSTEM ENCLAVE: WIN32 // KERNEL ONLINE</span>
+          <span class="dock-glow" id="taskmgrHostStatus">SYSTEM SOURCE: VERIFYING</span>
         </div>
       </div>
     `;
@@ -183,6 +184,7 @@ export class TaskManagerViewEngine {
       const res = await systemBridge.getProcesses();
       if (res && res.processes) {
         this.processes = res.processes;
+        this.dataSource = res.source || 'UNKNOWN';
       }
 
       // Update CPU / Mem metrics
@@ -191,16 +193,25 @@ export class TaskManagerViewEngine {
         const cpuVal = this.container.querySelector('#telCpuVal');
         const memVal = this.container.querySelector('#telMemVal');
         const tasksCount = this.container.querySelector('#telTasksCount');
+        const sourceBadge = this.container.querySelector('#taskmgrSourceBadge');
 
-        const cpuEst = (Math.random() * 15 + 10).toFixed(1);
-        if (cpuVal) cpuVal.textContent = `${cpuEst}%`;
-        if (memVal) memVal.textContent = `${sysInfo.usedMemGB || '38.4'} GB (${sysInfo.memPercent || 30}%)`;
+        const cpuPercent = Number(sysInfo.cpuPercent);
+        const hasCpuPercent = Number.isFinite(cpuPercent);
+        if (cpuVal) cpuVal.textContent = hasCpuPercent ? `${cpuPercent.toFixed(1)}%` : 'N/A';
+        if (memVal) memVal.textContent = `${sysInfo.usedMemGB ?? 'N/A'} GB (${sysInfo.memPercent ?? 'N/A'}%)`;
         if (tasksCount) tasksCount.textContent = this.processes.length;
+        if (sourceBadge) {
+          const verified = this.dataSource === 'HOST_VERIFIED' && sysInfo.source === 'HOST_VERIFIED';
+          sourceBadge.textContent = verified ? 'SOURCE: HOST VERIFIED' : 'SOURCE: SIMULATED FALLBACK';
+          sourceBadge.style.color = verified ? '#00ff66' : '#ffaa00';
+          const hostStatus = this.container.querySelector('#taskmgrHostStatus');
+          if (hostStatus) hostStatus.textContent = verified ? 'SYSTEM SOURCE: HOST VERIFIED' : 'SYSTEM SOURCE: SIMULATED FALLBACK';
+        }
 
-        this.cpuHistory.push(parseFloat(cpuEst));
+        if (hasCpuPercent) this.cpuHistory.push(cpuPercent);
         if (this.cpuHistory.length > 12) this.cpuHistory.shift();
 
-        this.memHistory.push(sysInfo.memPercent || 30);
+        if (Number.isFinite(Number(sysInfo.memPercent))) this.memHistory.push(Number(sysInfo.memPercent));
         if (this.memHistory.length > 12) this.memHistory.shift();
 
         this.renderTelemetryGraphs();
@@ -267,17 +278,18 @@ export class TaskManagerViewEngine {
     let html = '';
     displayList.forEach(p => {
       const cpuNum = parseFloat(p.cpu) || 0;
-      const cpuColor = cpuNum > 5 ? '#ffaa00' : cpuNum > 20 ? '#ff2255' : '#00ff66';
+      const cpuColor = cpuNum > 120 ? '#ff2255' : cpuNum > 30 ? '#ffaa00' : '#00ff66';
+      const safeName = this.escapeHtml(p.name);
 
       html += `
         <div class="task-row" data-pid="${p.pid}">
           <div class="t-col t-pid">${p.pid}</div>
-          <div class="t-col t-name"><strong>${p.name}</strong></div>
+          <div class="t-col t-name"><strong>${safeName}</strong></div>
           <div class="t-col t-mem">${p.memMB.toLocaleString()} MB</div>
-          <div class="t-col t-cpu" style="color: ${cpuColor}; font-weight: bold;">${p.cpu}%</div>
-          <div class="t-col t-status"><span class="status-badge live">${p.status}</span></div>
+          <div class="t-col t-cpu" style="color: ${cpuColor}; font-weight: bold;">${p.cpu}s</div>
+          <div class="t-col t-status"><span class="status-badge live">${this.escapeHtml(p.status)}</span></div>
           <div class="t-col t-action">
-            <button class="btn-kill-proc" data-pid="${p.pid}" data-name="${p.name}" title="Terminate Process">💀 KILL</button>
+            <button class="btn-kill-proc" data-pid="${p.pid}" title="Terminate Process">💀 KILL</button>
           </div>
         </div>
       `;
@@ -290,7 +302,8 @@ export class TaskManagerViewEngine {
       btn.addEventListener('click', async (e) => {
         e.stopPropagation();
         const pid = btn.dataset.pid;
-        const name = btn.dataset.name;
+        const process = this.processes.find(item => String(item.pid) === String(pid));
+        const name = process?.name || `PID ${pid}`;
 
         if (confirm(`Terminate process '${name}' (PID: ${pid})?`)) {
           const res = await systemBridge.killProcess(pid);
@@ -305,6 +318,15 @@ export class TaskManagerViewEngine {
     });
   }
 
+  escapeHtml(value) {
+    return String(value ?? '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;');
+  }
+
   startPolling() {
     if (this.pollInterval) clearInterval(this.pollInterval);
     this.pollInterval = setInterval(() => {
@@ -314,7 +336,12 @@ export class TaskManagerViewEngine {
     }, 3000);
   }
 
-  destroy() {
+  stopPolling() {
     if (this.pollInterval) clearInterval(this.pollInterval);
+    this.pollInterval = null;
+  }
+
+  destroy() {
+    this.stopPolling();
   }
 }

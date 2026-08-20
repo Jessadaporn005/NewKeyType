@@ -1,12 +1,28 @@
 {
   "name": "cyberdeck",
-  "version": "4.0.0",
+  "version": "4.2.0",
   "description": "CyberDeck Terminal Native Desktop Application with Hacky Roguelite Mode",
+  "type": "module",
   "main": "main.cjs",
   "scripts": {
     "start": "electron .",
     "dev": "electron .",
-    "serve": "python -m http.server 3000"
+    "serve": "python -m http.server 3000",
+    "test": "npm run test:flow && npm run test:stability && npm run test:persistence && npm run test:security && npm run test:features",
+    "test:checkpoint": "npm run test:trade && npm run test:persistence && npm run test:security",
+    "test:flow": "node test_app_flow.js",
+    "test:stability": "node test_runtime_stability.js",
+    "test:persistence": "node test_persistence.js",
+    "test:security": "node test_security.js",
+    "test:trade": "node test_trade_core.js",
+    "test:features": "node test_all_features.js",
+    "verify:release": "node scripts/verify_release_config.cjs",
+    "verify:artifact": "node scripts/verify_packaged_artifact.cjs",
+    "release:manifest": "node scripts/write_release_manifest.cjs",
+    "build:unpacked": "npm run verify:release && electron-builder --win --x64 --dir --publish never && npm run verify:artifact",
+    "build:installer": "npm run verify:release && electron-builder --win nsis --x64 --publish never && npm run verify:artifact && npm run release:manifest",
+    "build:portable": "npm run verify:release && electron-builder --win portable --x64 --publish never && npm run verify:artifact && npm run release:manifest",
+    "build:release": "npm run verify:release && electron-builder --win nsis portable --x64 --publish never && npm run verify:artifact && npm run release:manifest"
   },
   "keywords": [
     "touch-typing",
@@ -18,12 +34,54 @@
   "author": "Antigravity",
   "license": "MIT",
   "devDependencies": {
-    "electron": "^34.2.0"
+    "electron": "43.4.1",
+    "electron-builder": "26.15.7"
   },
-  "dependencies": {
-    "crypto": "^1.0.1",
-    "crypto-js": "^4.2.0",
-    "dns": "^0.2.2",
-    "net": "^1.0.2"
+  "build": {
+    "appId": "com.newkeytype.cyberdeck",
+    "productName": "CyberDeck",
+    "asar": true,
+    "compression": "normal",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "index.html",
+      "main.cjs",
+      "preload.cjs",
+      "manifest.json",
+      "sw.js",
+      "icon.ico",
+      "css/**/*",
+      "js/**/*",
+      "lib/**/*"
+    ],
+    "win": {
+      "icon": "icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "artifactName": "${productName}-${version}-${arch}-${os}.${ext}",
+      "forceCodeSigning": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "CyberDeck",
+      "deleteAppDataOnUninstall": false
+    },
+    "portable": {
+      "artifactName": "${productName}-${version}-${arch}-portable.${ext}"
+    }
   }
 }

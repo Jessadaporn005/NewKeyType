@@ -23,25 +23,24 @@
   <link rel="stylesheet" href="css/radio.css">
   <link rel="stylesheet" href="css/wifi.css">
   <link rel="stylesheet" href="css/hologramAssistant.css">
-  <script src="https://code.responsivevoice.org/responsivevoice.js"></script>
 </head>
 <body class="crt-scanlines">
-  <!-- STAGE 0: UEFI HARDWARE INITIALIZATION & KERNEL POST TERMINAL -->
+  <!-- STAGE 0: VISUAL BOOT SIMULATION (NOT HOST FIRMWARE TELEMETRY) -->
   <div id="bootScreenOverlay" class="boot-screen c2-enterprise-terminal">
     <!-- Top System Diagnostic Polybar -->
     <div class="c2-post-topbar">
       <div class="c2-bar-item">
         <span class="status-indicator live"></span>
         <span class="c2-label">SYSTEM STATE:</span>
-        <strong class="c2-val-green">FIRMWARE_POST_INITIALIZING</strong>
+        <strong class="c2-val-green">UI_BOOT_SIMULATION</strong>
       </div>
       <div class="c2-bar-item">
         <span class="c2-label">CPU ARCH:</span>
-        <strong class="c2-val-cyan">x86_64-quantum-linux-gnu</strong>
+        <strong class="c2-val-cyan">TRAINING_SCENARIO</strong>
       </div>
       <div class="c2-bar-item">
         <span class="c2-label">SECURITY MODULE:</span>
-        <strong class="c2-val-amber">TPM 2.0 / PCR-ENCRYPTED</strong>
+        <strong class="c2-val-amber">LOCAL PROFILE / PBKDF2</strong>
       </div>
     </div>
 
@@ -52,26 +51,26 @@
       </div>
 
       <div class="c2-post-header">
-        <h1 class="c2-os-title">QUANTUM-OS C2 WORKSTATION</h1>
-        <div class="c2-os-sub">ENTERPRISE COMMAND &amp; TELEMETRY RUNTIME // RELEASE 6.8.9-LTS</div>
+        <h1 class="c2-os-title">CYBERDECK UI BOOT SIMULATION</h1>
+        <div class="c2-os-sub">VISUAL TRAINING SEQUENCE // NOT HOST FIRMWARE TELEMETRY</div>
       </div>
       
       <!-- Hardware POST Telemetry Table -->
       <div class="c2-post-table">
-        <div class="c2-post-row"><span class="c2-k">[ CPU CLOCK ]</span> <span class="c2-v">AMD EPYC 9654 96-CORE @ 14.25 GHz <span class="c2-tag-ok">[OK]</span></span></div>
-        <div class="c2-post-row"><span class="c2-k">[ SYSTEM MEMORY ]</span> <span class="c2-v">67,108,864 KB DDR5-5600 ECC <span class="c2-tag-ok">[OK]</span></span></div>
-        <div class="c2-post-row"><span class="c2-k">[ PCIE ROOT BUS ]</span> <span class="c2-v">PCIe 5.0 x16 Controller @ 128 GB/s <span class="c2-tag-ok">[OK]</span></span></div>
-        <div class="c2-post-row"><span class="c2-k">[ HARDWARE CRYPTO ]</span> <span class="c2-v">AES-NI / SHA-512 Accelerator <span class="c2-tag-ok">[OK]</span></span></div>
+        <div class="c2-post-row"><span class="c2-k">[ DATA SOURCE ]</span> <span class="c2-v">PROCEDURAL UI SCENARIO <span class="c2-tag-ok">[SIM]</span></span></div>
+        <div class="c2-post-row"><span class="c2-k">[ HOST METRICS ]</span> <span class="c2-v">NOT QUERIED DURING BOOT <span class="c2-tag-ok">[N/A]</span></span></div>
+        <div class="c2-post-row"><span class="c2-k">[ NETWORK ]</span> <span class="c2-v">NO REMOTE SECURITY DOMAIN <span class="c2-tag-ok">[LOCAL]</span></span></div>
+        <div class="c2-post-row"><span class="c2-k">[ CREDENTIALS ]</span> <span class="c2-v">SALTED PBKDF2-SHA256 PROFILE HASH <span class="c2-tag-ok">[OK]</span></span></div>
       </div>
 
-      <div id="bootScreenReady" class="c2-post-ready-tag hidden">[ FIRMWARE POST COMPLETED // RELEASING CONTROL TO KERNEL ]</div>
+      <div id="bootScreenReady" class="c2-post-ready-tag hidden">[ UI BOOT SIMULATION COMPLETE // OPENING LOCAL PROFILE GATE ]</div>
     </div>
 
     <!-- Procedural Kernel Bootstrap Ring Buffer -->
     <div class="c2-post-log-deck">
       <div class="c2-log-header">
-        <span>[ KERNEL BOOTSTRAP RING BUFFER (dmesg) ]</span>
-        <span class="c2-baud-rate" id="bootBaudRate">POLLING: 1000 Hz // SYNC: ATOMIC</span>
+        <span>[ PROCEDURAL BOOT LOG — SIMULATION ]</span>
+        <span class="c2-baud-rate" id="bootBaudRate">VISUAL STREAM // NO HOST CLAIM</span>
       </div>
       <div id="bootScreenLogs" class="c2-post-logs"></div>
       
@@ -94,42 +93,42 @@
   <canvas id="particleCanvas"></canvas>
   
   <!-- =========================================================================
-       STAGE 1: HARDWARE SECURITY MODULE (HSM) ENCLAVE TOKEN GATE
+       STAGE 1: LOCAL PROFILE PASSPHRASE GATE
        ========================================================================= -->
   <div class="secret-gate-overlay hidden" id="secretGateOverlay">
     <div class="c2-hsm-card">
       <div class="c2-hsm-header">
-        <div class="c2-hsm-badge">SECURITY ENCLAVE TOKEN VERIFICATION</div>
-        <div class="c2-hsm-sub">LEVEL 5 ACCESS CONTROL // HARDWARE SECURITY MODULE</div>
+        <div class="c2-hsm-badge">LOCAL PROFILE PASSPHRASE VERIFICATION</div>
+        <div class="c2-hsm-sub">APPLICATION-LEVEL LOCK // NOT A HARDWARE SECURITY MODULE</div>
       </div>
 
       <div class="c2-hsm-body">
         <div class="c2-hsm-specs">
-          <div>ENCRYPTION: <strong>RSA-8192 / AES-256-GCM</strong></div>
-          <div>TAMPER-DETECT: <strong class="c2-val-green">ARMED [0 FAULTS]</strong></div>
-          <div>SESSION DOMAIN: <strong>SEC.ENTERPRISE.MIL</strong></div>
-          <div>AUDIT LOGGING: <strong class="c2-val-cyan">ENFORCED (SEC-0)</strong></div>
+          <div>CREDENTIAL KDF: <strong>PBKDF2-SHA256 + RANDOM SALT</strong></div>
+          <div>STORAGE: <strong class="c2-val-green">LOCAL VERSIONED DATABASE</strong></div>
+          <div>SESSION DOMAIN: <strong>LOCAL APPLICATION</strong></div>
+          <div>REMOTE AUTHORITY: <strong class="c2-val-cyan">NONE</strong></div>
         </div>
 
         <div class="c2-hsm-input-row">
-          <label class="c2-input-label" for="secretGateInput">MASTER SECURITY PASSPHRASE:</label>
+          <label class="c2-input-label" for="secretGateInput">LOCAL PROFILE PASSPHRASE:</label>
           <div class="c2-input-wrapper">
             <span class="c2-input-prefix">TOKEN#</span>
-            <input type="password" id="secretGateInput" class="c2-text-input" placeholder="ENTER HSM PASSPHRASE..." autocomplete="off" autofocus>
+            <input type="password" id="secretGateInput" class="c2-text-input" placeholder="ENTER LOCAL PASSPHRASE..." autocomplete="off" autofocus>
           </div>
         </div>
 
         <!-- Live Cryptographic Hash Stream Preview -->
         <div class="c2-hsm-hash-preview" id="hsmHashPreview">
-          <span class="c2-hash-lbl">SHA-512 HASH STREAM (LIVE DERIVATION):</span>
+          <span class="c2-hash-lbl">VISUAL INPUT FINGERPRINT (NOT THE STORED HASH):</span>
           <code class="c2-hash-val" id="hsmHashVal">cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e</code>
         </div>
 
         <button class="c2-btn-primary" id="btnSecretGateSubmit">
-          [ AUTHENTICATE SECURITY ENCLAVE ]
+          [ UNLOCK LOCAL PROFILE ]
         </button>
 
-        <div class="gate-error-msg hidden" id="gateErrorMsg">✖ ACCESS DENIED: INVALID TOKEN PASSPHRASE // INTRUSION LOGGED</div>
+        <div class="gate-error-msg hidden" id="gateErrorMsg">✖ ACCESS DENIED: INVALID LOCAL PASSPHRASE</div>
 
         <div class="gate-stream-box hidden" id="gateStreamBox">
           <div class="gate-stream-lines" id="gateStreamLines"></div>
@@ -139,29 +138,27 @@
   </div>
 
   <!-- =========================================================================
-       STAGE 2: ENTERPRISE ZERO-TRUST PAM AUTHENTICATION STATION
+       STAGE 2: LOCAL OPERATOR PROFILE LOGIN
        ========================================================================= -->
   <div class="hacker-login-overlay hidden" id="hackerLoginOverlay">
     <div class="c2-pam-card" id="loginTerminalCard">
       <div class="c2-pam-header">
-        <div class="c2-pam-title">ENTERPRISE PAM / KERBEROS WORKSTATION</div>
-        <div class="c2-pam-sub">ZERO-TRUST AUTHENTICATION STATION // ROOT DOMAIN</div>
+        <div class="c2-pam-title">LOCAL OPERATOR PROFILE LOGIN</div>
+        <div class="c2-pam-sub">PBKDF2 CREDENTIAL CHECK // APPLICATION SESSION</div>
       </div>
 
       <div class="c2-pam-body">
         <div class="c2-pam-fingerprint-box">
-          <span class="c2-fp-label">HOST FINGERPRINT (SHA-256):</span>
-          <code class="c2-fp-code">SHA256:7b91e4f208a9c3d4e5f6a1b2c3d4e5f67a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d</code>
+          <span class="c2-fp-label">AUTHENTICATION SCOPE:</span>
+          <code class="c2-fp-code">LOCAL PROFILE ONLY // NO KERBEROS OR REMOTE PAM</code>
         </div>
 
         <div class="c2-field-group">
-          <label class="c2-field-label" for="loginDomainField">SECURITY DOMAIN AUTHORITY:</label>
+          <label class="c2-field-label" for="loginDomainField">PROFILE STORAGE:</label>
           <div class="c2-input-wrapper">
             <span class="c2-input-prefix">DOM#</span>
             <select id="loginDomainField" class="c2-select-input">
-              <option value="sec.defense.mil">sec.defense.mil [AIR-GAPPED HIGH-CLEARANCE]</option>
-              <option value="root.quantum.enclave">root.quantum.enclave [CORE-RING-0]</option>
-              <option value="soc.global.mesh">soc.global.mesh [NATO C4ISR NODE]</option>
+              <option value="local.profile">local.profile [THIS DEVICE]</option>
             </select>
           </div>
         </div>
@@ -175,10 +172,10 @@
         </div>
 
         <div class="c2-field-group">
-          <label class="c2-field-label" for="loginPassField">KERBEROS / PAM PASSPHRASE:</label>
+          <label class="c2-field-label" for="loginPassField">LOCAL PROFILE PASSPHRASE:</label>
           <div class="c2-input-wrapper">
             <span class="c2-input-prefix">PASS#</span>
-            <input type="password" id="loginPassField" class="c2-text-input" placeholder="ENTER PAM PASSPHRASE..." autocomplete="off" spellcheck="false">
+            <input type="password" id="loginPassField" class="c2-text-input" placeholder="ENTER LOCAL PASSPHRASE..." autocomplete="off" spellcheck="false">
           </div>
         </div>
 
@@ -187,7 +184,7 @@
         </button>
 
         <div class="c2-pam-footer">
-          <span>* Air-gapped workstation security clearance enforced. Unauthorized access is audited.</span>
+          <span>* This lock protects the local app profile; it is not Windows account authentication.</span>
         </div>
       </div>
     </div>
@@ -201,7 +198,7 @@
       <div class="transition-command-header">
         <div class="deck-title-group">
           <span class="deck-signal-badge" id="transBadge">[ C2 COMMAND WORKSTATION TRANSITION ]</span>
-          <span class="deck-telemetry-tag">BUS: <strong class="glow-cyan">14.25 GHz</strong> | PARITY: <strong class="glow-cmd">100%</strong> | DEFENSE: <strong class="glow-cmd">DEFCON-1</strong></span>
+          <span class="deck-telemetry-tag">VISUAL TRANSITION: <strong class="glow-cyan">SIMULATED</strong> | PROFILE DATA: <strong class="glow-cmd">LOCAL</strong></span>
         </div>
         <div class="deck-percent-group">
           <span class="deck-percent-label">MEMORY SYNCHRONIZATION:</span>
@@ -220,8 +217,8 @@
               INITIALIZING C2 RUNTIME...
             </div>
             <div class="deck-cluster-telemetry">
-              <span>CPU: <strong class="glow-cyan">EPYC 9654 (96-CORE)</strong></span>
-              <span>MEM: <strong class="glow-cmd">64.8 GB / 128 GB ECC</strong></span>
+              <span>ANIMATION: <strong class="glow-cyan">PROCEDURAL</strong></span>
+              <span>HOST METRICS: <strong class="glow-cmd">NOT USED HERE</strong></span>
             </div>
           </div>
 
@@ -245,7 +242,7 @@
           <div class="dossier-card-wrapper">
             <div class="dossier-header-bar">
               <span class="dossier-title-tag">[ OPERATOR C2 DOSSIER ]</span>
-              <span class="dossier-status-live"><span class="status-indicator live"></span> LIVE</span>
+              <span class="dossier-status-live"><span class="status-indicator live"></span> LOCAL PROFILE</span>
             </div>
 
             <!-- Matrix Log-Code Silhouette Avatar Box -->
@@ -257,7 +254,7 @@
                 <span class="bracket tr"></span>
                 <span class="bracket bl"></span>
                 <span class="bracket br"></span>
-                <span class="holo-tag">BIOMETRIC: SYNCHRONIZED</span>
+                <span class="holo-tag">AVATAR: DECORATIVE</span>
               </div>
             </div>
 
@@ -318,20 +315,20 @@
     <!-- C2 GLOBAL SYSTEM POLYBAR (MISSION CONTROL HUD) -->
     <div class="c2-global-polybar" id="c2GlobalPolybar">
       <div class="poly-cluster-left">
-        <span class="poly-item live-pulse"><span class="status-indicator live"></span> C2 ONLINE</span>
+        <span class="poly-item live-pulse"><span class="status-indicator live"></span> LOCAL APP READY</span>
         <span class="poly-item" id="polyUtcClock">UTC: --:--:--.---</span>
-        <span class="poly-item">HOST: <strong>c2-node-96epyc</strong></span>
+        <span class="poly-item">HOST: <strong id="polyHostTag">VERIFYING</strong></span>
       </div>
       <div class="poly-cluster-center">
-        <span class="poly-item">LOAD: <strong class="c2-val-cyan">0.24, 0.18, 0.12</strong></span>
-        <span class="poly-item">CPU: <strong class="c2-val-green">24% (41°C)</strong></span>
-        <span class="poly-item">RAM: <strong class="c2-val-cyan">32.4 / 128 GB ECC</strong></span>
-        <span class="poly-item">NET: <strong class="c2-val-green">14.2 Gbps (0.12ms)</strong></span>
+        <span class="poly-item">SOURCE: <strong class="c2-val-cyan" id="polyDataSource">VERIFYING</strong></span>
+        <span class="poly-item">CPU: <strong class="c2-val-green" id="polyCpuMetric">VERIFYING</strong></span>
+        <span class="poly-item">RAM: <strong class="c2-val-cyan" id="polyRamMetric">VERIFYING</strong></span>
+        <span class="poly-item">NET: <strong class="c2-val-green">NOT MEASURED</strong></span>
       </div>
       <div class="poly-cluster-right">
-        <span class="poly-item">SECURITY: <strong class="c2-val-amber">DEFCON-1</strong></span>
-        <span class="poly-item">AIR-GAP: <strong class="c2-val-green">ENFORCED</strong></span>
-        <span class="poly-item">SESSION: <strong class="c2-val-cyan" id="polyUserTag">root@c2 (UID 0)</strong></span>
+        <span class="poly-item">SECURITY: <strong class="c2-val-amber">APP SANDBOX</strong></span>
+        <span class="poly-item">NETWORK: <strong class="c2-val-green">API-CAPABLE (NOT AIR-GAPPED)</strong></span>
+        <span class="poly-item">SESSION: <strong class="c2-val-cyan" id="polyUserTag">local profile</strong></span>
       </div>
     </div>
 
@@ -343,7 +340,7 @@
         <span class="c-led led-amber" title="TX/RX: ACTIVE"></span>
         <span class="c-led led-red" title="FIREWALL: ARMED"></span>
       </div>
-      <div class="chassis-brand-tag">C4ISR C2 COMMAND WORKSTATION // RUNTIME: 6.8.9-LTS</div>
+      <div class="chassis-brand-tag">CYBERDECK LOCAL TRAINING UI // DECORATIVE CHASSIS</div>
       <div class="chassis-heat-grille">
         <span></span><span></span><span></span><span></span><span></span><span></span>
       </div>
@@ -369,26 +366,26 @@
     <!-- HARDCORE MILITARY / SOC / AVIONICS TELEMETRY HUD -->
     <div class="cyber-hud-dashboard hidden" id="cyberHudDashboard">
       <div class="hud-panel cpu-panel">
-        <div class="hud-lbl">CPU [EPYC 96-CORE // 14.25 GHz]</div>
-        <div class="hud-bar-bg"><div class="hud-bar-fg" id="hudCpuBar" style="width: 25%;"></div></div>
-        <div class="hud-val" id="hudCpuVal">25% (TjMax: 41°C)</div>
+        <div class="hud-lbl">CPU [HOST WHEN VERIFIED]</div>
+        <div class="hud-bar-bg"><div class="hud-bar-fg" id="hudCpuBar" style="width: 0%;"></div></div>
+        <div class="hud-val" id="hudCpuVal">VERIFYING</div>
       </div>
       <div class="hud-panel ram-panel">
-        <div class="hud-lbl">MEM [64.8 / 128 GB // ECC-DDR5]</div>
-        <div class="hud-bar-bg"><div class="hud-bar-fg" id="hudRamBar" style="width: 40%;"></div></div>
-        <div class="hud-val" id="hudRamVal">40% (0 Page Faults)</div>
+        <div class="hud-lbl">MEMORY [HOST WHEN VERIFIED]</div>
+        <div class="hud-bar-bg"><div class="hud-bar-fg" id="hudRamBar" style="width: 0%;"></div></div>
+        <div class="hud-val" id="hudRamVal">VERIFYING</div>
       </div>
       <div class="hud-panel net-panel">
-        <div class="hud-lbl">NET [100GbE INGRESS // BGP]</div>
-        <div class="hud-val"><span id="hudNetDown">14.2</span> Gbps (0.12ms)</div>
+        <div class="hud-lbl">NETWORK DOWNLOAD [NOT INSTRUMENTED]</div>
+        <div class="hud-val"><span id="hudNetDown">N/A</span></div>
       </div>
       <div class="hud-panel net-panel">
-        <div class="hud-lbl">NET [EGRESS // TOR MESH]</div>
-        <div class="hud-val"><span id="hudNetUp">8.5</span> Gbps (0% Drop)</div>
+        <div class="hud-lbl">NETWORK UPLOAD [NOT INSTRUMENTED]</div>
+        <div class="hud-val"><span id="hudNetUp">N/A</span></div>
       </div>
       <div class="hud-panel credits-panel">
-        <div class="hud-lbl">SECURITY [DEFCON-1 ARMED]</div>
-        <div class="hud-val"><span id="hudCredits">0</span> CC [ROOT]</div>
+        <div class="hud-lbl">SIMULATED GAME ECONOMY</div>
+        <div class="hud-val"><span id="hudCredits">0</span> CC [VIRTUAL]</div>
       </div>
       <!-- 3D Holographic AI Cyber Companion (EVA) -->
       <div class="hud-panel ai-companion-panel" id="aiCompanionWidget">
@@ -400,8 +397,8 @@
           <div class="ai-halo-ring"></div>
         </div>
         <div class="ai-companion-info">
-          <span class="ai-name-tag">EVA // AI TACTICAL SOC</span>
-          <div class="ai-speech-bubble" id="aiCompanionSpeech">"SYSTEMS ARMED. SOC DEFCON-1 ENFORCED."</div>
+          <span class="ai-name-tag">EVA // RULE-BASED TACTICAL COMPANION</span>
+          <div class="ai-speech-bubble" id="aiCompanionSpeech">"RULE-BASED STATUS COMPANION READY."</div>
         </div>
       </div>
       <div class="hud-panel trace-panel hidden" id="hudTracePanel">
@@ -422,7 +419,7 @@
             <div class="term-line">QUANTUM AIR-GAPPED WORKSTATION [KERNEL v6.8.9-SOC // X86-64]</div>
             <div class="term-line">ALL SYSTEM CHANNELS MONITORED // ENCRYPTION: AES-256-GCM / RSA-8192</div>
             <br>
-            <div class="term-line hint-text">Execute <strong class="glow-cmd">help</strong> for SOC commands, <strong class="glow-cmd">dmesg</strong> for kernel ring buffer, or <strong class="glow-cmd">siem</strong> for live threat matrix.</div>
+            <div class="term-line hint-text">Execute <strong class="glow-cmd">help</strong> for source labels. <strong class="glow-cmd">dmesg</strong>/<strong class="glow-cmd">siem</strong> are fictional training displays, not host telemetry.</div>
             <br>
             
             <!-- Command History Output -->
@@ -438,13 +435,13 @@
           <div class="cyber-intel-column" id="cyberIntelColumn"></div>
         </div>
 
-        <!-- Live Cyber Telemetry Strip at bottom of CMD -->
+        <!-- Truth-labeled app capability strip at bottom of CMD -->
         <div class="cli-system-status-dock">
-          <span class="status-item"><span class="status-indicator live"></span> DEFENSE: <strong>DEFCON-1</strong></span>
-          <span class="status-item">KERNEL: <strong>QUANTUM-v6.8.9</strong></span>
-          <span class="status-item">HARDWARE: <strong>AMD EPYC 96-CORE</strong></span>
-          <span class="status-item">CIPHER: <strong>AES-256-GCM [HARDWARE]</strong></span>
-          <span class="status-item">OPERATOR: <strong class="glow-cmd" id="cliSessionUser">asus (UID: 0 // ROOT)</strong></span>
+          <span class="status-item"><span class="status-indicator live"></span> APP DEFENSE: <strong>SANDBOX POLICY</strong></span>
+          <span class="status-item">THEME: <strong>QUANTUM FICTION</strong></span>
+          <span class="status-item">HOST HARDWARE: <strong>SEE SYSINFO</strong></span>
+          <span class="status-item">FILE CIPHER: <strong>AES-256-GCM [SOFTWARE]</strong></span>
+          <span class="status-item">OPERATOR: <strong class="glow-cmd" id="cliSessionUser">asus (LOCAL APP PROFILE)</strong></span>
         </div>
       </div>
 
@@ -481,7 +478,7 @@
       <!-- ELECTRONIC WARFARE & INFILTRATION DECK -->
       <div class="terminal-view hidden" id="viewHacker">
         <div class="mode-header-bar hacker-header-bar">
-          <span class="mode-tag" id="hackerModeTitle">[ SUBSYSTEM: ELECTRONIC WARFARE &amp; SIGINT INFILTRATION ]</span>
+          <span class="mode-tag" id="hackerModeTitle">[ HACKER TYPING GAME // FICTIONAL SIMULATION ]</span>
           <div class="hacker-trace-panel" id="hackerTracePanel">
             <span class="trace-label">SECURITY TRACE:</span>
             <div class="trace-bar-bg"><div class="trace-bar-fg" id="hackerTraceBar" style="width: 0%;"></div></div>
@@ -494,11 +491,11 @@
         
         <div class="hacker-terminal-canvas" id="hackerTerminalCanvas" tabindex="0">
           <div class="terminal-history" id="hackerTerminalOutput">
-            <div class="term-line">[*] QUANTUM INFILTRATION TUNNEL ESTABLISHED // SAT-LINK LOCKED (14.25 GHz)...</div>
+            <div class="term-line">[SIM] FICTIONAL TYPING MISSION INITIALIZED // NO TARGET OR NETWORK CONNECTION</div>
           </div>
           
           <div class="hacker-exec-banner hidden" id="hackerExecBanner">
-            <div class="exec-title">[⚡ INJECTING 0-DAY KERNEL EXPLOIT // OVERWRITING BUFFER MEMORY...]</div>
+            <div class="exec-title">[SIM ⚡ TYPING EFFECT // NO CODE IS INJECTED OR EXECUTED]</div>
             <div class="exec-dump" id="hackerExecDump">0x7FFF0042: 90 90 90 31 C0 50 68 2F 2F 73 68 89 E3 50 53 89</div>
           </div>
 
@@ -513,12 +510,12 @@
         <div class="hacker-breach-modal hidden" id="hackerBreachModal">
           <div class="breach-box">
             <div class="breach-glitch" data-text="ACCESS GRANTED">[ ACCESS GRANTED ]</div>
-            <div class="breach-sub">ROOT PRIVILEGES ACQUIRED // MISSION OBJECTIVE ACCOMPLISHED</div>
+            <div class="breach-sub">FICTIONAL MISSION COMPLETE // NO HOST PRIVILEGES CHANGED</div>
             <div class="breach-grid">
-              <div>HOST: SATURN_ORBITAL_NET</div>
-              <div>FIREWALL: FULLY PENETRATED (100%)</div>
-              <div>PRIVILEGE: UID 0 [ROOT ACCESS]</div>
-              <div>STATUS: SYSTEM COMPROMISED</div>
+              <div>SCENARIO: SATURN_ORBITAL_NET</div>
+              <div>FIREWALL: FICTIONAL TRAINING TARGET</div>
+              <div>PRIVILEGE: GAME SCORE ONLY</div>
+              <div>STATUS: SIMULATION COMPLETED</div>
             </div>
             <div class="breach-footer">Press any key or Enter to advance to next mission...</div>
           </div>
@@ -644,7 +641,7 @@
         <!-- Dynamically rendered by CyberWifiEngine -->
       </div>
 
-      <!-- AI NEURAL QUANTITATIVE TRADING TERMINAL & PATTERN RECOMMENDATION -->
+      <!-- RULE-BASED QUANTITATIVE TRADING LAB & PATTERN RECOMMENDATION -->
       <div class="terminal-view hidden" id="viewTrading">
         <!-- TOP TRADING TOOLBAR -->
         <div class="trading-header-bar">
@@ -653,6 +650,7 @@
             <button class="market-src-btn active" id="btnMarketBinance" data-market="binance">🟡 BINANCE (CRYPTO)</button>
             <button class="market-src-btn" id="btnMarketXM" data-market="xm">🔴 XM GLOBAL (FOREX & GOLD)</button>
           </div>
+          <span class="market-src-btn" id="tradingDataSourceBadge">DATA: VERIFYING</span>
 
           <div class="trading-pair-tabs" id="tradingPairTabs">
             <!-- Binance Tabs (Shown in Binance mode) -->
@@ -681,15 +679,15 @@
           <div class="trading-indicator-toggles">
             <label class="toggle-chip"><input type="checkbox" id="chkEma" checked> <span>EMA Ribbon</span></label>
             <label class="toggle-chip"><input type="checkbox" id="chkBollinger" checked> <span>Bollinger</span></label>
-            <label class="toggle-chip"><input type="checkbox" id="chkPatterns" checked> <span>AI Scanner</span></label>
+            <label class="toggle-chip"><input type="checkbox" id="chkPatterns" checked> <span>Rule Scanner</span></label>
           </div>
 
-          <!-- MARKET REGIME & MONTE CARLO PROBABILITY HUD -->
+          <!-- MARKET REGIME & UNCALIBRATED RULE SCORE HUD -->
           <div class="trading-regime-hud" id="tradingRegimeHud">
             <span class="regime-badge-chip regime-bull" id="tradingRegimeBadge">🟢 BULLISH MOMENTUM</span>
-            <div class="monte-carlo-pill" id="monteCarloPill" title="Monte Carlo Target Probability">
-              <span class="mc-icon">🎲</span>
-              <span>TP1 PROB: <strong id="monteCarloProbVal">78.4%</strong></span>
+            <div class="monte-carlo-pill" id="targetRuleScorePill" title="Deterministic rule score; not a calibrated probability">
+              <span class="mc-icon">📐</span>
+              <span>TP1 RULE SCORE: <strong id="targetRuleScoreVal">--</strong></span>
             </div>
           </div>
 
@@ -720,13 +718,13 @@
             </div>
 
             <!-- SILENT MT5 INGESTION INDICATOR -->
-            <div class="mt5-silent-badge" id="mt5SilentBadge" title="Headless MT5 Order Book & Tick Velocity Data Stream">
+            <div class="mt5-silent-badge" id="mt5SilentBadge" title="Authenticated MT5 Demo shadow feed; no decision or execution influence">
               <span class="mt5-dot pulse-green"></span>
-              <span class="mt5-txt" id="mt5SilentStatusTxt">MT5: SYNCED</span>
+              <span class="mt5-txt" id="mt5SilentStatusTxt">MT5: DISCONNECTED</span>
             </div>
 
             <!-- LAUNCH LIVE XM & MT5 COCKPIT BUTTON -->
-            <button class="btn-launch-live-cockpit" id="btnLaunchLiveCockpit">🚀 LIVE XM / MT5 COCKPIT</button>
+            <button class="btn-launch-live-cockpit" id="btnLaunchLiveCockpit">🧪 PAPER / MT5 STATUS</button>
           </div>
         </div>
 
@@ -747,25 +745,27 @@
               <canvas id="tradingSubCanvas" width="850" height="90"></canvas>
             </div>
 
-            <!-- TIME-MACHINE STRATEGY REPLAY & BACKTEST CONTROLLER -->
+            <!-- CHART REPLAY (visual only) and audited backtest controls -->
             <div class="trading-replay-toolbar" id="tradingReplayToolbar">
               <div class="replay-left-group">
-                <button class="replay-btn btn-replay-toggle" id="btnToggleReplay">⏪ TIME-MACHINE REPLAY</button>
+                <button class="replay-btn btn-replay-toggle" id="btnToggleReplay" title="Visual chart replay only; does not calculate performance">⏪ CHART REPLAY</button>
                 <button class="replay-btn" id="btnReplayStepBack" title="Step Back 1 Candle">⏮️</button>
                 <button class="replay-btn btn-play-pause" id="btnReplayPlayPause" title="Play/Pause">▶️</button>
                 <button class="replay-btn" id="btnReplayStepForward" title="Step Forward 1 Candle">⏭️</button>
                 <span class="replay-speed-tag" id="replaySpeedTag">1x SPEED</span>
+                <button class="replay-btn btn-audited-backtest" id="btnRunRuleBacktest" title="Bar-close signal, next-bar entry, fees, slippage, and drawdown gate">📊 RUN AUDITED BACKTEST</button>
               </div>
               <div class="replay-slider-box">
-                <span class="replay-bar-lbl" id="replayProgressText">LIVE (80/80)</span>
+                <span class="replay-bar-lbl" id="replayProgressText">DATA WINDOW (80/80)</span>
                 <input type="range" class="replay-slider" id="replayRangeSlider" min="15" max="80" value="80">
               </div>
               <button class="replay-btn btn-exit-replay hidden" id="btnExitReplay">❌ EXIT</button>
             </div>
+            <div class="backtest-audit-summary" id="backtestAuditSummary">BACKTEST NOT RUN • Replay is visual only • No historical news/MT5 inputs</div>
 
             <!-- REAL-TIME BREAKING NEWS & MACRO SENTIMENT TICKER -->
             <div class="trading-news-ticker-bar" id="tradingNewsTickerBar">
-              <div class="news-ticker-badge"><span class="live-news-pulse">●</span> LIVE INTEL</div>
+              <div class="news-ticker-badge"><span class="live-news-pulse">●</span> SIMULATED SCENARIO</div>
               <div class="news-ticker-content" id="tradingNewsContent">
                 <span class="news-source" id="tradingNewsSource">[ Bloomberg ]</span>
                 <span class="news-headline" id="tradingNewsHeadline">US Fed Signals Liquidity Easing; Global Inflows Surge +$1.8B</span>
@@ -778,8 +778,8 @@
           <div class="trading-signal-column">
             <!-- SIDEBAR TAB SWITCHER -->
             <div class="trading-sidebar-tabs" id="tradingSidebarTabs">
-              <button class="trading-side-tab active" data-tab="copilot">🤖 AI COPILOT</button>
-              <button class="trading-side-tab" data-tab="gym">🧠 AI GYM <span class="tab-winrate-tag" id="tabWinrateTag">(77.8%)</span></button>
+              <button class="trading-side-tab active" data-tab="copilot">📐 RULE-BASED COPILOT</button>
+              <button class="trading-side-tab" data-tab="gym">🧪 SIMULATION GYM <span class="tab-winrate-tag" id="tabWinrateTag">(77.8%)</span></button>
               <button class="trading-side-tab" data-tab="paper">💼 PAPER DECK</button>
             </div>
 
@@ -790,7 +790,7 @@
                   <div class="copilot-identity">
                     <span class="copilot-avatar-icon">🤖</span>
                     <div>
-                      <div class="signal-title">NEXUS-QUANT // AI TRADING COPILOT</div>
+                      <div class="signal-title">NEXUS-QUANT // RULE-BASED DECISION SUPPORT</div>
                       <div class="copilot-sub">DECISION SUPPORT SYSTEM & CHART SENSEI</div>
                     </div>
                   </div>
@@ -805,8 +805,8 @@
 
                 <div class="signal-metrics-row">
                   <div class="sig-stat">
-                    <span class="lbl">NEURAL CONFIDENCE</span>
-                    <span class="val glow-cyan" id="aiConfidenceVal">94.2%</span>
+                    <span class="lbl">RULE CONFLUENCE SCORE</span>
+                    <span class="val glow-cyan" id="aiConfidenceVal">-- / 100</span>
                   </div>
                   <div class="sig-stat">
                     <span class="lbl">RISK / REWARD RATIO</span>
@@ -840,7 +840,7 @@
 
                 <!-- Strategy Playbook Box -->
                 <div class="copilot-strategy-box">
-                  <span class="strat-lbl">🎯 กลยุทธ์ที่ AI แนะนำ:</span>
+                  <span class="strat-lbl">🎯 กลยุทธ์ที่กฎวิเคราะห์แนะนำ:</span>
                   <span class="strat-val" id="aiStrategyPlaybook">Trend Following & Buy on Dip</span>
                 </div>
 
@@ -855,34 +855,34 @@
                   "อัลกอริทึมตรวจพบโมเมนตัมขาขึ้นที่มีนัยสำคัญบนคู่เทรดนี้..."
                 </div>
 
-                <!-- Multi-Agent Quant Desk Consensus Card -->
+                <!-- Deterministic rule modules summary -->
                 <div class="quant-desk-card" id="aiQuantDeskCard">
                   <div class="quant-desk-header">
                     <span class="desk-icon">👥</span>
-                    <span class="desk-title">MULTI-AGENT QUANT DESK CONSENSUS</span>
-                    <span class="desk-consensus-badge" id="aiDeskConsensusBadge">UNANIMOUS 3/3 🌟</span>
+                    <span class="desk-title">DETERMINISTIC ANALYSIS MODULES</span>
+                    <span class="desk-consensus-badge" id="aiDeskConsensusBadge">RULE CHECK PENDING</span>
                   </div>
                   <div class="quant-agents-grid" id="aiQuantAgentsGrid">
                     <!-- Dynamic rendering by app.js -->
                   </div>
                 </div>
 
-                <!-- Adversarial Bull vs Bear Deliberation Card -->
+                <!-- Deterministic bullish-vs-risk countercheck -->
                 <div class="adversarial-debate-card" id="aiAdversarialDebateCard">
                   <div class="debate-header">
                     <span class="debate-icon">⚔️</span>
-                    <span class="debate-title">ADVERSARIAL DEBATE // สภาโต้เถียงหาจุดอ่อน</span>
-                    <span class="debate-outcome-badge" id="aiDebateOutcomeBadge">UNANIMOUS BULL</span>
+                    <span class="debate-title">RULE COUNTERCHECK // ปัจจัยบวกเทียบความเสี่ยง</span>
+                    <span class="debate-outcome-badge" id="aiDebateOutcomeBadge">CHECKING RULES</span>
                   </div>
                   <div class="debate-teams-grid">
                     <div class="debate-team bull-team">
-                      <div class="team-title">🐂 BULL ADVOCATE (ข้อดี)</div>
+                      <div class="team-title">🐂 BULLISH FACTORS (กฎฝั่งบวก)</div>
                       <div class="team-arguments" id="aiBullArgsList">
                         <span>• RSI โซนสะสมราคา มี Room ให้ราคาดีดตัวขึ้น</span>
                       </div>
                     </div>
                     <div class="debate-team bear-team">
-                      <div class="team-title">🐻 BEAR SKEPTIC (จับผิดข้อเสีย)</div>
+                      <div class="team-title">🐻 RISK FACTORS (กฎตรวจความเสี่ยง)</div>
                       <div class="team-arguments" id="aiBearArgsList">
                         <span>• ไม่พบสัญญาณขัดแย้งที่รุนแรง</span>
                       </div>
@@ -894,22 +894,22 @@
                 <div class="cot-reasoning-tree-card" id="aiCotTreeCard">
                   <div class="cot-header">
                     <span class="cot-icon">🌲</span>
-                    <span class="cot-title">CHAIN-OF-THOUGHT (CoT) REASONING NODES</span>
+                    <span class="cot-title">DECISION FACTORS // AUDIT NODES</span>
                   </div>
                   <div class="cot-steps-flow" id="aiCotStepsFlow">
                     <!-- Dynamic rendering by app.js -->
                   </div>
                 </div>
 
-                <!-- Experience Replay & Past Lessons Applied Box -->
+                <!-- Strategy-memory provenance and decision-authority status -->
                 <div class="copilot-experience-box" id="aiExperienceBox">
                   <div class="exp-header">
                     <span class="exp-icon">🧠</span>
-                    <span class="exp-title">EXPERIENCE REPLAY // ดึงบทเรียนอดีตมาใช้</span>
-                    <span class="exp-badge" id="aiExpBadge">ACTIVE</span>
+                    <span class="exp-title">STRATEGY MEMORY GATE // ตรวจแหล่งที่มาของความจำ</span>
+                    <span class="exp-badge" id="aiExpBadge">ZERO INFLUENCE</span>
                   </div>
                   <div class="exp-content" id="aiExpContent">
-                    ดึงความจำสถิติอดีต: รูปแบบ "Bullish Engulfing" มี Win Rate 80.0% • บทเรียน: แนวรับ EMA20 หนุนส่งแรงซื้อต่อเนื่อง
+                    ความจำจาก Simulation Gym ไม่ผ่านเกณฑ์ข้อมูลนอกชุดฝึก จึงไม่มีน้ำหนักต่อ Rule Score
                   </div>
                 </div>
               </div>
@@ -922,43 +922,55 @@
                   <div class="gym-title-group">
                     <span class="gym-icon">🧠</span>
                     <div>
-                      <div class="gym-title">AI AGENT TRAINING GYM</div>
-                      <div class="gym-sub">CONTINUOUS LEARNING & POST-MORTEM JOURNAL</div>
+                      <div class="gym-title">RULE-BASED PAPER SIMULATION GYM</div>
+                      <div class="gym-sub">SYNTHETIC OUTCOMES & HEURISTIC WEIGHT JOURNAL</div>
                     </div>
                   </div>
                   <div class="gym-actions">
-                    <button class="gym-btn btn-fast-train" id="btnAIFastTrain" title="Simulate 25 rapid training scenarios">⚡ FAST-TRAIN (25)</button>
-                    <button class="gym-btn btn-reset-mem" id="btnAIResetMem" title="Reset AI Memory">🔄 RESET</button>
+                    <button class="gym-btn btn-fast-train" id="btnAIFastTrain" title="Random training cannot update real Trade knowledge" disabled>⚠ SYNTHETIC TRAINING — DISABLED</button>
+                    <button class="gym-btn btn-reset-mem" id="btnAIResetMem" title="Reset heuristic simulation weights and paper journal">🔄 RESET</button>
                   </div>
                 </div>
 
                 <!-- AI Real-Time Performance Stats Grid -->
                 <div class="ai-stats-grid">
                   <div class="ai-stat-box">
-                    <span class="lbl">WIN RATE</span>
-                    <strong class="val glow-cmd" id="aiWinRateDisplay">77.8%</strong>
+                    <span class="lbl">PAPER WIN RATE</span>
+                    <strong class="val glow-cmd" id="aiWinRateDisplay">0%</strong>
                   </div>
                   <div class="ai-stat-box">
                     <span class="lbl">RECORD (W / L)</span>
-                    <strong class="val" id="aiRecordDisplay">14 W - 4 L</strong>
+                    <strong class="val" id="aiRecordDisplay">0 W - 0 L</strong>
                   </div>
                   <div class="ai-stat-box">
                     <span class="lbl">NET PROFIT</span>
-                    <strong class="val glow-cyan" id="aiNetPnlDisplay">+$8,420.50</strong>
+                    <strong class="val glow-cyan" id="aiNetPnlDisplay">$0.00</strong>
                   </div>
                   <div class="ai-stat-box">
                     <span class="lbl">ADAPTATION</span>
-                    <strong class="val" id="aiAdaptationLevel">LEVEL 5</strong>
+                    <strong class="val" id="aiAdaptationLevel">LEVEL 1</strong>
                   </div>
                 </div>
 
                 <!-- AI Auto-Trading Status Strip -->
                 <div class="ai-auto-toggle-strip">
                   <label class="toggle-chip">
-                    <input type="checkbox" id="chkAIAutoTrader" checked>
-                    <span style="font-weight: 700; color: #00ff88;">🟢 AUTONOMOUS TRADER & JOURNALING</span>
+                    <input type="checkbox" id="chkAIAutoTrader" disabled>
+                    <span style="font-weight: 700; color: #ffaa00;">⚠ LEGACY AUTO SCENARIO — NO TRADE AUTHORITY</span>
                   </label>
-                  <span class="ai-status-pulse">● LIVE LEARNING</span>
+                  <span class="ai-status-pulse">● VERIFIED PAPER BOT PENDING</span>
+                </div>
+
+                <div class="ml-shadow-card" id="mlShadowCard">
+                  <div class="ml-shadow-header">
+                    <div>
+                      <strong>LOCAL ML SHADOW LAB</strong>
+                      <span>REAL CLOSED-BAR TRAINING // CHRONOLOGICAL HOLDOUT // ZERO TRADE INFLUENCE</span>
+                    </div>
+                    <button class="gym-btn" id="btnRunMLShadow">TRAIN + EVALUATE ~2,000 REAL BARS</button>
+                  </div>
+                  <div class="ml-shadow-status" id="mlShadowStatus">NO VALIDATED MODEL — SHADOW ONLY</div>
+                  <div class="ml-shadow-metrics" id="mlShadowMetrics">Run evaluation to create real local weights. Synthetic Gym data is never used here.</div>
                 </div>
 
                 <!-- AI Post-Mortem Trade Journal Stream -->
@@ -972,41 +984,41 @@
                     <div class="profile-title-group">
                       <span class="profile-icon">🧬</span>
                       <div>
-                        <div class="profile-title">AI NEURAL PROFILE & MASTERY MATRIX</div>
-                        <div class="profile-rank" id="aiProfileRankTitle">LEVEL 5 // QUANTUM SMC ARCHITECT</div>
+                        <div class="profile-title">HEURISTIC PROFILE & SIMULATED MASTERY MATRIX</div>
+                        <div class="profile-rank" id="aiProfileRankTitle">LEVEL 1 // HEURISTIC ROOKIE</div>
                       </div>
                     </div>
-                    <span class="profile-status-badge">SYNAPSE ACTIVE</span>
+                    <span class="profile-status-badge">HEURISTIC ACTIVE</span>
                   </div>
 
                   <!-- XP Progress Bar -->
                   <div class="ai-xp-container">
                     <div class="ai-xp-labels">
-                      <span class="xp-lbl">EXPERIENCE COGNITION PROGRESS</span>
-                      <span class="xp-val" id="aiProfileXpText">620 / 700 SAMPLES (88%)</span>
+                      <span class="xp-lbl">PAPER SCENARIO OBSERVATIONS</span>
+                      <span class="xp-val" id="aiProfileXpText">0 / 700 SAMPLES (0%)</span>
                     </div>
                     <div class="ai-xp-bar-track">
-                      <div class="ai-xp-bar-fill" id="aiProfileXpBar" style="width: 88%;"></div>
+                      <div class="ai-xp-bar-fill" id="aiProfileXpBar" style="width: 0%;"></div>
                     </div>
                   </div>
 
                   <!-- 4-Column Key Metrics Grid -->
                   <div class="ai-profile-metrics-grid">
                     <div class="prof-stat">
-                      <span class="lbl">SAMPLES STUDIED</span>
-                      <span class="val glow-cyan" id="aiProfileSamples">3,420+</span>
+                      <span class="lbl">SCENARIO OBSERVATIONS</span>
+                      <span class="val glow-cyan" id="aiProfileSamples">0</span>
                     </div>
                     <div class="prof-stat">
                       <span class="lbl">PROFIT FACTOR</span>
-                      <span class="val glow-cmd" id="aiProfileProfitFactor">2.84x</span>
+                      <span class="val glow-cmd" id="aiProfileProfitFactor">N/A</span>
                     </div>
                     <div class="prof-stat">
-                      <span class="lbl">STRATEGY COGNITION</span>
-                      <span class="val glow-gold" id="aiProfileCognition">92.4%</span>
+                      <span class="lbl">OBSERVED RULE COVERAGE</span>
+                      <span class="val glow-gold" id="aiProfileCognition">0.0%</span>
                     </div>
                     <div class="prof-stat">
-                      <span class="lbl">MEMORY SYNAPSE</span>
-                      <span class="val" id="aiProfileSynapse">14.2 KB</span>
+                      <span class="lbl">PAPER JOURNAL SIZE</span>
+                      <span class="val" id="aiProfileSynapse">0.0 KB</span>
                     </div>
                   </div>
 
@@ -1023,13 +1035,13 @@
                     <div class="radar-title-group">
                       <span class="radar-icon">🌐</span>
                       <div>
-                        <div class="radar-title">LIVE KNOWLEDGE STREAM & INTERNET RADAR</div>
+                        <div class="radar-title">REFERENCE KNOWLEDGE SCENARIOS // NOT MODEL TRAINING</div>
                         <div class="radar-sub">GLOBAL ORDERFLOW, MACRO INTEL & PATTERN REPLAY</div>
                       </div>
                     </div>
                     <div class="radar-live-badge">
                       <span class="radar-dot"></span>
-                      <span>INTERNET INGESTION</span>
+                      <span>STATIC REFERENCE SCENARIOS</span>
                     </div>
                   </div>
 
@@ -1045,8 +1057,8 @@
                     <div class="rules-title-group">
                       <span class="rules-icon">📜</span>
                       <div>
-                        <div class="rules-title">THE AI GOLDEN RULESBOOK // กฎทองคำที่ AI ตกผลึกเอง</div>
-                        <div class="rules-sub">AUTONOMOUSLY EXTRACTED FROM HISTORICAL STOP LOSSES & MISTAKES</div>
+                        <div class="rules-title">ADAPTIVE RULESBOOK // กฎที่ระบบปรับจากผลจำลอง</div>
+                        <div class="rules-sub">DERIVED BY EXPLICIT RULES FROM THE PAPER-SIMULATION JOURNAL</div>
                       </div>
                     </div>
                     <span class="rules-tag">6 AXIOMS ACTIVE</span>
@@ -1063,7 +1075,7 @@
               <div class="paper-trading-card">
                 <div class="paper-header">
                   <span>MANUAL PAPER EXECUTION DECK</span>
-                  <span class="paper-bal">CAPITAL: <strong id="paperCapitalDisplay">$100,000.00</strong></span>
+                  <span class="paper-bal">PAPER BALANCE: <strong id="paperCapitalDisplay">$100,000.00</strong></span>
                 </div>
 
                 <!-- INSTITUTIONAL MONEY MANAGEMENT SUITE -->
@@ -1098,8 +1110,8 @@
                   <!-- Auto Dynamic Lot Size Output -->
                   <div class="mm-lot-output-box">
                     <div class="lot-stat">
-                      <span class="lbl">DYNAMIC LOT SIZE:</span>
-                      <strong class="val glow-cmd" id="mmCalculatedLots">0.45 Lots</strong>
+                      <span class="lbl">STOP-BASED POSITION SIZE:</span>
+                      <strong class="val glow-cmd" id="mmCalculatedLots">--</strong>
                     </div>
                     <div class="lot-stat">
                       <span class="lbl">RISK AMOUNT (USD):</span>
@@ -1110,8 +1122,8 @@
                   <!-- Margin Health Status Bar -->
                   <div class="mm-margin-health-box">
                     <div class="margin-health-top">
-                      <span>MARGIN LEVEL: <strong id="mmMarginLevel">999.9%</strong></span>
-                      <span class="margin-status-tag" id="mmMarginStatus">EXCELLENT (🟢)</span>
+                      <span>MARGIN LEVEL: <strong id="mmMarginLevel">N/A</strong></span>
+                      <span class="margin-status-tag" id="mmMarginStatus">NO OPEN MARGIN</span>
                     </div>
                     <div class="margin-metrics-row">
                       <span>Used Margin: <strong id="mmUsedMargin">$0.00</strong></span>
@@ -1144,8 +1156,8 @@
           <!-- Cockpit Header -->
           <div class="cockpit-top-bar">
             <div class="cockpit-title-group">
-              <span class="cockpit-badge">XM & MT5 LIVE GATEWAY</span>
-              <strong class="cockpit-title">AI QUANTUM EXECUTION COCKPIT</strong>
+              <span class="cockpit-badge">PAPER-ONLY // BROKER UNVERIFIED</span>
+              <strong class="cockpit-title">RULE-BASED EXECUTION CONTROL</strong>
               <span class="live-pulse-dot"></span>
             </div>
             <div class="cockpit-platform-tabs" id="cockpitPlatformTabs">
@@ -1171,7 +1183,7 @@
                   <div class="xm-portal-banner">
                     <div class="xm-banner-left">
                       <span class="xm-logo-tag">XM GLOBAL</span>
-                      <strong>OFFICIAL XM BROKER GATEWAY & LIVE FEED</strong>
+                      <strong>MT5 CONNECTOR STATUS // NO LIVE AUTHORITY</strong>
                     </div>
                     <div class="xm-banner-actions">
                       <a href="https://webtrader.xm.com/" target="_blank" rel="noopener noreferrer" class="xm-portal-btn btn-launch-xm">
@@ -1198,7 +1210,7 @@
                   <div class="matrix-signal-overlay" id="cockpitSignalOverlay">
                     <div class="overlay-row">
                       <span class="lbl">DESK DECISION:</span>
-                      <strong class="val glow-cmd" id="cockpitDeskAction">STRONG BUY (UNANIMOUS 3/3)</strong>
+                      <strong class="val glow-cmd" id="cockpitDeskAction">WAITING FOR RULE CHECK</strong>
                     </div>
                     <div class="overlay-row">
                       <span class="lbl">TARGET TP1:</span>
@@ -1219,7 +1231,7 @@
                 <div class="guardian-header">
                   <span class="guardian-ico">🛡️</span>
                   <div>
-                    <div class="guardian-title">AI RISK GUARDIAN SHIELD</div>
+                    <div class="guardian-title">DETERMINISTIC RISK GUARDIAN</div>
                     <div class="guardian-subtitle" id="cockpitBrainRank">LEVEL 5 // MASTER QUANT SMC</div>
                   </div>
                   <span class="guardian-tag" id="cockpitLiveStatusTag">STANDBY</span>
@@ -1230,13 +1242,13 @@
                   <div class="guardian-field">
                     <label class="g-lbl">🎯 DAILY PROFIT TARGET ($)</label>
                     <input type="number" class="g-input" id="cfgTargetProfit" value="500" min="10" step="50">
-                    <span class="g-hint">เมื่อกำไรแตะเป้าหมาย AI จะล็อกกำไรและหยุดเทรดทันที</span>
+                    <span class="g-hint">ใช้ได้หลัง Demo certification เท่านั้น; รุ่นนี้ยังไม่ส่งคำสั่งไปยังโบรกเกอร์</span>
                   </div>
 
                   <div class="guardian-field">
                     <label class="g-lbl">🛑 DAILY MAX DRAWDOWN ($)</label>
                     <input type="number" class="g-input g-input-danger" id="cfgMaxDrawdown" value="150" min="10" step="10">
-                    <span class="g-hint">หากขาดทุนแตะเพดาน ระบบจะตัดสวิตช์หยุดบอททันที</span>
+                    <span class="g-hint">ค่าตัวอย่างสำหรับการรับรองในอนาคต; ยังไม่มี broker session</span>
                   </div>
 
                   <div class="guardian-field">
@@ -1253,21 +1265,21 @@
                 <div class="guardian-account-stats">
                   <div class="g-acc-row">
                     <span>XM ACCOUNT:</span>
-                    <strong id="cockpitAccLogin">#88492015 (DEMO)</strong>
+                    <strong id="cockpitAccLogin">UNVERIFIED / DISCONNECTED</strong>
                   </div>
                   <div class="g-acc-row">
                     <span>EQUITY / BALANCE:</span>
-                    <strong class="glow-gold" id="cockpitAccBalance">$50,000.00</strong>
+                    <strong class="glow-gold" id="cockpitAccBalance">UNVERIFIED</strong>
                   </div>
                   <div class="g-acc-row">
                     <span>DAILY PnL:</span>
-                    <strong class="glow-cmd" id="cockpitDailyPnL">+$0.00</strong>
+                    <strong class="glow-cmd" id="cockpitDailyPnL">UNVERIFIED</strong>
                   </div>
                 </div>
 
                 <!-- Live Action Trigger Buttons -->
                 <div class="guardian-action-buttons">
-                  <button class="btn-cockpit-start" id="btnCockpitStart">🟢 START AI AUTO-EXECUTION</button>
+                  <button class="btn-cockpit-start" id="btnCockpitStart">🔒 LIVE EXECUTION DISABLED</button>
                   <button class="btn-cockpit-pause hidden" id="btnCockpitPause">⏸️ PAUSE ENGINE</button>
                   <button class="btn-cockpit-kill" id="btnCockpitEmergencyKill">🚨 EMERGENCY KILL-SWITCH</button>
                 </div>
@@ -1315,8 +1327,8 @@
           <div class="hologram-pod-header">
             <div class="hologram-identity">
               <span class="hologram-status-dot" id="hologramStatusDot"></span>
-              <span class="hologram-name">NYX // AI COPILOT</span>
-              <span class="hologram-role-tag">โฮโลแกรม AI</span>
+              <span class="hologram-name">NYX // RULE-BASED COPILOT</span>
+              <span class="hologram-role-tag">ผู้ช่วยแบบสคริปต์</span>
             </div>
             <button class="hologram-voice-toggle-btn" id="holoBtnVoiceToggle" title="เปิด/ปิดเสียงพูดภาษาไทย">
               <span id="holoVoiceIcon">🔊</span>
@@ -1336,18 +1348,18 @@
             <div class="hologram-telemetry-col">
               <div class="telemetry-badge-card">
                 <div class="telemetry-label">
-                  <span>สมองกล KRONOS AI GYM</span>
+                  <span>KRONOS PAPER SIMULATION</span>
                   <span>SYNCED</span>
                 </div>
-                <div class="telemetry-val-gym" id="holoGymBadge">LVL 10 (14,971 ตัวอย่าง | 69.6%)</div>
+                <div class="telemetry-val-gym" id="holoGymBadge">PAPER DATA: VERIFYING</div>
               </div>
 
               <div class="telemetry-badge-card">
                 <div class="telemetry-label">
                   <span>เรดาร์ข่าวกรองตลาดโลก</span>
-                  <span>LIVE</span>
+                  <span>LIVE OR LABELED FALLBACK</span>
                 </div>
-                <div class="telemetry-val-news" id="holoNewsBadge">เฟดส่งสัญญาณผ่อนคลายสภาพคล่อง...</div>
+                <div class="telemetry-val-news" id="holoNewsBadge">SOURCE: VERIFYING</div>
               </div>
 
               <!-- Audio Wave Equalizer Strip -->
@@ -1371,7 +1383,7 @@
           <!-- Speech Balloon & Interactive Telemetry Log -->
           <div class="hologram-speech-balloon" id="assistantSpeechBalloon">
             <div class="speech-balloon-text" id="assistantSpeechText">
-              NYX Neural Copilot ออนไลน์แล้วค่ะ พร้อมรับคำสั่งปฏิบัติการค่ะ
+              NYX rule-based companion พร้อมทำงานค่ะ
             </div>
           </div>
 
@@ -1394,7 +1406,7 @@
       </div>
       <div class="status-right">
         <span>COMMANDS: <kbd>help</kbd> <kbd>explorer</kbd> <kbd>taskmgr</kbd> <kbd>wifi</kbd> <kbd>radio</kbd> <kbd>code</kbd> <kbd>browser</kbd> <kbd>roguelite</kbd> <kbd>speed</kbd> <kbd>exit</kbd></span>
-        <span>AUTO-UPDATE: <span class="update-badge">LIVE V3.0</span></span>
+        <span>AUTO-UPDATE: <span class="update-badge">NOT CONFIGURED</span></span>
       </div>
     </footer>
 
@@ -1406,7 +1418,7 @@
   <div class="network-map-modal hidden" id="cyberNetworkMapModal">
     <div class="network-map-card">
       <div class="map-modal-header">
-        <span>[ ORBITAL CYBER INTRUSION TOPOLOGY MAP ]</span>
+        <span>[ FICTIONAL NETWORK TOPOLOGY // GAME SIMULATION ]</span>
         <button class="map-close-btn" id="mapCloseBtn">✕</button>
       </div>
       <div class="network-map-stage">
@@ -1435,7 +1447,7 @@
         </div>
       </div>
       <div class="map-modal-footer">
-        <span>* Real-time Orbital telemetry uplink via Darknet Mesh. Press Escape or click ✕ to close.</span>
+        <span>* Procedural game map only; no network scan or orbital telemetry. Press Escape or click ✕ to close.</span>
       </div>
     </div>
   </div>
@@ -1482,13 +1494,13 @@
   </div>
 
   <!-- =========================================================================
-       6. WATCH DOGS: LIVE CYBER THREAT WAR GLOBE MODAL
+       6. PROCEDURAL CYBER THREAT VISUALIZATION
        ========================================================================= -->
   <div class="cyber-threat-modal hidden" id="cyberThreatModal">
     <div class="cyber-threat-card">
       <div class="map-modal-header">
-        <span>[ GLOBAL CYBER THREAT WAR MAP // WATCH DOGS ENGINE ]</span>
-        <span class="threat-alert-pill">● DEFCON-1 ACTIVE</span>
+        <span>[ PROCEDURAL CYBER THREAT MAP // SIMULATION ]</span>
+        <span class="threat-alert-pill">● SYNTHETIC EVENTS</span>
         <button class="map-close-btn" id="threatCloseBtn">✕</button>
       </div>
 
@@ -1497,7 +1509,7 @@
       </div>
 
       <div class="threat-ticker-console" id="threatTickerConsole">
-        <div class="threat-ticker-item"><span>[INIT]</span> Global telemetry nodes online. Monitoring darknet packets...</div>
+        <div class="threat-ticker-item"><span>[SIM]</span> Generating fictional attack events for visualization...</div>
       </div>
     </div>
   </div>
@@ -1508,7 +1520,7 @@
   <div class="ducky-modal hidden" id="duckyPayloadModal">
     <div class="ducky-card">
       <div class="map-modal-header">
-        <span>[ MR. ROBOT // USB RUBBER DUCKY PAYLOAD COMPILER ]</span>
+        <span>[ MR. ROBOT // VIRTUAL PAYLOAD TRAINING PREVIEW ]</span>
         <button class="map-close-btn" id="duckyCloseBtn">✕</button>
       </div>
       <div class="ducky-body">
@@ -1518,7 +1530,7 @@
           <button class="ducky-btn" data-payload="sam_dump">SAM_HARVEST</button>
         </div>
         <pre class="ducky-code-preview" id="duckyCodePreview"></pre>
-        <button class="ducky-deploy-btn" id="btnDeployDucky">[ FLASH PAYLOAD TO VIRTUAL RUBBER DUCKY ]</button>
+        <button class="ducky-deploy-btn" id="btnDeployDucky">[ COMPLETE VIRTUAL COMPILE SIMULATION ]</button>
       </div>
     </div>
   </div>
@@ -1549,7 +1561,7 @@
   <div class="cyber-modal hidden" id="nodeGraphModal">
     <div class="modal-card" style="max-width: 1000px; height: 700px;">
       <div class="map-modal-header">
-        <span>[ QUANTUM NODE GRAPH // NETWORK TOPOLOGY SCANNER ]</span>
+        <span>[ PROCEDURAL NODE GRAPH // NO NETWORK SCAN ]</span>
         <button class="map-close-btn" id="nodeGraphCloseBtn">✕</button>
       </div>
       <div class="node-graph-body" id="nodeGraphContainer" style="width: 100%; height: calc(100% - 40px); position: relative; overflow: hidden; background: #050505;">
@@ -1566,27 +1578,27 @@
   <div class="cyber-modal hidden" id="packetSnifferModal">
     <div class="modal-card" style="max-width: 800px;">
       <div class="map-modal-header">
-        <span>[ LIVE PACKET SNIFFER // DEEP PACKET INSPECTION ]</span>
+        <span>[ SYNTHETIC PACKET VISUALIZER // SIMULATION ONLY ]</span>
         <button class="map-close-btn" id="packetSnifferCloseBtn">✕</button>
       </div>
       <div class="packet-sniffer-body" id="packetSnifferOutput" style="height: 400px; overflow-y: auto; padding: 10px; font-family: var(--font-mono); font-size: 12px; background: rgba(0,0,0,0.8); border: 1px solid var(--theme-border);">
-        <div style="color: var(--theme-primary);">[*] BINDING TO PROMISCUOUS MODE...</div>
-        <div style="color: var(--theme-primary);">[*] LISTENING ON INTERFACE ETH0...</div>
+        <div style="color: var(--theme-primary);">[SIM] No network interface is opened.</div>
+        <div style="color: var(--theme-primary);">[SIM] Generating fictional packet rows...</div>
       </div>
     </div>
   </div>
 
-  <!-- CCTV / Webcam Infiltration (camhack) -->
+  <!-- Explicit local webcam preview -->
   <div class="cyber-modal hidden" id="camhackModal">
     <div class="modal-card" style="max-width: 800px;">
       <div class="map-modal-header">
-        <span>[ CCTV // LOCAL FEED INTERCEPTED ]</span>
+        <span>[ LOCAL WEBCAM PREVIEW // USER PERMISSION REQUIRED ]</span>
         <button class="map-close-btn" id="camhackCloseBtn">✕</button>
       </div>
       <div class="camhack-body" style="position: relative; overflow: hidden; background: #000;">
         <video id="camhackVideo" autoplay playsinline style="width: 100%; filter: sepia(100%) hue-rotate(90deg) saturate(200%) brightness(0.8) contrast(1.2);"></video>
         <div style="position: absolute; top: 20px; left: 20px; color: #00ff66; font-family: var(--font-mono); text-shadow: 0 0 5px #00ff66;">
-          <div class="blink">[REC] CAM 01 // OVERRIDE</div>
+          <div class="blink">[LOCAL PREVIEW] NO RECORDING / NO INTERCEPTION</div>
           <div id="camhackTimer">00:00:00</div>
         </div>
       </div>

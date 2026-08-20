@@ -3,12 +3,44 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const { exec, spawn } = require('child_process');
+const { exec, execFile, spawn } = require('child_process');
 const crypto = require('crypto');
 const dns = require('dns');
 const net = require('net');
+const { AtomicJsonStore } = require('./lib/atomicJsonStore.cjs');
+const { createMT5DemoRequestAuth, verifyMT5DemoResponseSignature } = require('./lib/mt5DemoAuth.cjs');
+
+const IS_PACKAGED_SMOKE_TEST = process.argv.includes('--cyberdeck-smoke-test');
+const MT5_DEMO_ACCESS_TOKEN = process.env.CYBERDECK_MT5_DEMO_TOKEN || '';
+const MT5_DEMO_DEV_ENABLED = !app.isPackaged
+  && process.env.CYBERDECK_MT5_DEMO_ENABLED === '1'
+  && MT5_DEMO_ACCESS_TOKEN.length >= 32;
 
 const DB_PATH = path.join(app.getPath('userData'), 'cyber_db.json');
+const profileDatabase = new AtomicJsonStore(DB_PATH);
+const HOST_MUTATIONS_ENABLED = process.env.CYBERDECK_HOST_MUTATIONS === '1';
+const FILE_ROOTS = [
+  process.cwd(),
+  path.join(os.homedir(), 'Desktop'),
+  path.join(os.homedir(), 'Documents'),
+  path.join(os.homedir(), 'Downloads'),
+  path.join(os.homedir(), 'OneDrive')
+].map(root => path.resolve(root));
+const normalizePathForComparison = value => process.platform === 'win32' ? value.toLowerCase() : value;
+
+function canonicalizePathWithExistingParent(inputPath) {
+  const resolved = path.resolve(inputPath);
+  let existing = resolved;
+  while (!fs.existsSync(existing)) {
+    const parent = path.dirname(existing);
+    if (parent === existing) break;
+    existing = parent;
+  }
+  const canonicalExisting = fs.existsSync(existing) ? fs.realpathSync.native(existing) : existing;
+  return path.resolve(canonicalExisting, path.relative(existing, resolved));
+}
+
+const CANONICAL_FILE_ROOTS = FILE_ROOTS.map(canonicalizePathWithExistingParent);
 let tray = null;
 let ghostWindow = null;
 
@@ -19,16 +51,45 @@ const MIME_TYPES = {
   '.json': 'application/json; charset=utf-8',
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.webp': 'image/webp',
   '.svg': 'image/svg+xml',
   '.ico': 'image/x-icon',
   '.wav': 'audio/wav',
-  '.mp3': 'audio/mpeg'
+  '.mp3': 'audio/mpeg',
+  '.ogg': 'audio/ogg'
 };
 
 // Built-in In-Process Local Web Server (100% self-contained inside CyberType.exe)
 const server = http.createServer((req, res) => {
-  const safeUrl = decodeURIComponent(req.url.split('?')[0]);
-  let filePath = path.join(__dirname, safeUrl === '/' ? 'index.html' : safeUrl);
+  if (!['GET', 'HEAD'].includes(req.method || 'GET')) {
+    res.writeHead(405, { Allow: 'GET, HEAD' });
+    res.end();
+    return;
+  }
+
+  let decodedPath = '';
+  try {
+    decodedPath = decodeURIComponent(new URL(req.url, 'http://127.0.0.1').pathname);
+  } catch (error) {
+    res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end('Bad Request');
+    return;
+  }
+
+  const relativePath = decodedPath === '/' ? 'index.html' : decodedPath.replace(/^[/\\]+/, '');
+  const staticRoot = path.resolve(__dirname);
+  const filePath = path.resolve(staticRoot, relativePath);
+  const canonicalStaticRoot = fs.realpathSync.native(staticRoot);
+  const canonicalFilePath = fs.existsSync(filePath) ? fs.realpathSync.native(filePath) : filePath;
+  const normalizedStaticRoot = normalizePathForComparison(canonicalStaticRoot);
+  const normalizedFilePath = normalizePathForComparison(canonicalFilePath);
+  if (normalizedFilePath !== normalizedStaticRoot && !normalizedFilePath.startsWith(`${normalizedStaticRoot}${path.sep}`)) {
+    res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end('Forbidden');
+    return;
+  }
   const ext = path.extname(filePath).toLowerCase();
   const contentType = MIME_TYPES[ext] || 'application/octet-stream';
 
@@ -39,15 +100,233 @@ const server = http.createServer((req, res) => {
     } else {
       res.writeHead(200, {
         'Content-Type': contentType,
-        'Access-Control-Allow-Origin': '*'
+        'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https:; frame-src https:; media-src 'self' data: blob: https:; object-src 'none'; base-uri 'self'; form-action 'self'",
+        'X-Content-Type-Options': 'nosniff',
+        'Referrer-Policy': 'no-referrer',
+        'Permissions-Policy': 'camera=(self), microphone=(), geolocation=()'
       });
-      res.end(content);
+      res.end(req.method === 'HEAD' ? undefined : content);
     }
   });
 });
 
+function isTrustedSender(event) {
+  try {
+    const senderUrl = event.senderFrame?.url || event.sender?.getURL?.() || '';
+    const parsed = new URL(senderUrl);
+    const activePort = server.address()?.port;
+    return parsed.protocol === 'http:' && parsed.hostname === '127.0.0.1' && Number(parsed.port) === Number(activePort);
+  } catch (error) {
+    return false;
+  }
+}
+
+function handleTrusted(channel, handler) {
+  ipcMain.handle(channel, async (event, ...args) => {
+    if (!isTrustedSender(event)) return { success: false, error: 'UNTRUSTED_IPC_SENDER' };
+    return handler(event, ...args);
+  });
+}
+
+function fetchAuthenticatedMT5DemoSnapshot() {
+  return new Promise((resolve, reject) => {
+    const requestPath = '/api/mt5/demo/stream';
+    const requestAuth = createMT5DemoRequestAuth(MT5_DEMO_ACCESS_TOKEN, { requestPath });
+    const request = http.request({
+      hostname: '127.0.0.1',
+      port: 5055,
+      path: requestPath,
+      method: 'GET',
+      headers: {
+        Authorization: requestAuth.authorization,
+        'X-CyberDeck-Timestamp': requestAuth.timestamp,
+        'X-CyberDeck-Nonce': requestAuth.nonce,
+        Accept: 'application/json'
+      },
+      timeout: 1500
+    }, response => {
+      const chunks = [];
+      let totalBytes = 0;
+      response.on('data', chunk => {
+        totalBytes += chunk.length;
+        if (totalBytes > 1024 * 1024) {
+          request.destroy(new Error('MT5_DEMO_RESPONSE_TOO_LARGE'));
+          return;
+        }
+        chunks.push(chunk);
+      });
+      response.on('end', () => {
+        if (response.statusCode !== 200) {
+          reject(new Error(`MT5_DEMO_HTTP_${response.statusCode || 0}`));
+          return;
+        }
+        if (!String(response.headers['content-type'] || '').toLowerCase().startsWith('application/json')) {
+          reject(new Error('MT5_DEMO_INVALID_CONTENT_TYPE'));
+          return;
+        }
+        const responseBody = Buffer.concat(chunks);
+        if (!verifyMT5DemoResponseSignature(
+          MT5_DEMO_ACCESS_TOKEN,
+          requestAuth.nonce,
+          responseBody,
+          response.headers['x-cyberdeck-response-hmac']
+        )) {
+          reject(new Error('MT5_DEMO_RESPONSE_AUTHENTICATION_FAILED'));
+          return;
+        }
+        try {
+          resolve(JSON.parse(responseBody.toString('utf8')));
+        } catch (error) {
+          reject(new Error('MT5_DEMO_INVALID_JSON'));
+        }
+      });
+    });
+    request.on('timeout', () => request.destroy(new Error('MT5_DEMO_TIMEOUT')));
+    request.on('error', reject);
+    request.end();
+  });
+}
+
+handleTrusted('cyber:mt5-demo-snapshot', async () => {
+  if (!MT5_DEMO_DEV_ENABLED) {
+    return { success: false, error: 'MT5_DEMO_GATEWAY_DISABLED' };
+  }
+  try {
+    const packet = await fetchAuthenticatedMT5DemoSnapshot();
+    return { success: true, transportAuthenticated: true, packet };
+  } catch (error) {
+    return { success: false, error: error?.message || 'MT5_DEMO_GATEWAY_UNAVAILABLE' };
+  }
+});
+
+function resolveAllowedPath(inputPath) {
+  if (typeof inputPath !== 'string' || inputPath.length === 0 || inputPath.length > 1024) {
+    throw new Error('INVALID_FILE_PATH');
+  }
+  const resolved = canonicalizePathWithExistingParent(inputPath);
+  const normalized = normalizePathForComparison(resolved);
+  const allowed = CANONICAL_FILE_ROOTS.some(root => {
+    const normalizedRoot = normalizePathForComparison(root);
+    return normalized === normalizedRoot || normalized.startsWith(`${normalizedRoot}${path.sep}`);
+  });
+  if (!allowed) throw new Error('PATH_OUTSIDE_ALLOWED_ROOTS');
+  return resolved;
+}
+
+function isProtectedFileRoot(inputPath) {
+  const normalized = normalizePathForComparison(inputPath);
+  return CANONICAL_FILE_ROOTS.some(root => normalizePathForComparison(root) === normalized);
+}
+
+function requireHostMutations() {
+  if (!HOST_MUTATIONS_ENABLED) {
+    const error = new Error('HOST_MUTATIONS_DISABLED');
+    error.code = 'HOST_MUTATIONS_DISABLED';
+    throw error;
+  }
+}
+
+function validateHostname(host) {
+  const value = String(host || '').trim();
+  if (!value || value.length > 253 || !/^[a-zA-Z0-9.-]+$/.test(value)) throw new Error('INVALID_HOST');
+  return value;
+}
+
+async function writeBinaryAtomic(targetPath, data) {
+  const tempPath = `${targetPath}.${process.pid}.${Date.now()}.tmp`;
+  let handle = null;
+  try {
+    handle = await fs.promises.open(tempPath, 'wx');
+    await handle.writeFile(data);
+    await handle.sync();
+    await handle.close();
+    handle = null;
+    await fs.promises.rename(tempPath, targetPath);
+  } catch (error) {
+    if (handle) await handle.close().catch(() => {});
+    await fs.promises.unlink(tempPath).catch(() => {});
+    throw error;
+  }
+}
+
+function isSafeExternalUrl(value) {
+  try {
+    const parsed = new URL(String(value || ''));
+    return parsed.protocol === 'https:' || parsed.protocol === 'http:';
+  } catch (error) {
+    return false;
+  }
+}
+
+function isLocalAppUrl(value) {
+  try {
+    const parsed = new URL(String(value || ''));
+    const activePort = server.address()?.port;
+    return parsed.protocol === 'http:'
+      && parsed.hostname === '127.0.0.1'
+      && Number(parsed.port) === Number(activePort);
+  } catch (error) {
+    return false;
+  }
+}
+
+function applyWindowSecurity(win) {
+  if (!win || win.isDestroyed()) return;
+  const contents = win.webContents;
+
+  contents.session.setPermissionRequestHandler((requestingContents, permission, callback, details) => {
+    const mediaTypes = Array.isArray(details?.mediaTypes) ? details.mediaTypes : [];
+    const isLocalCameraPreview = permission === 'media'
+      && isLocalAppUrl(requestingContents?.getURL?.())
+      && mediaTypes.includes('video')
+      && !mediaTypes.includes('audio');
+    callback(isLocalCameraPreview);
+  });
+
+  contents.setWindowOpenHandler(({ url }) => {
+    if (isSafeExternalUrl(url)) shell.openExternal(url).catch(() => {});
+    return { action: 'deny' };
+  });
+
+  contents.on('will-navigate', (event, url) => {
+    if (isLocalAppUrl(url)) return;
+    event.preventDefault();
+    if (isSafeExternalUrl(url)) shell.openExternal(url).catch(() => {});
+  });
+
+  contents.on('will-attach-webview', (event, webPreferences, params) => {
+    delete webPreferences.preload;
+    delete webPreferences.preloadURL;
+    webPreferences.nodeIntegration = false;
+    webPreferences.contextIsolation = true;
+    webPreferences.sandbox = true;
+    webPreferences.webSecurity = true;
+    webPreferences.allowRunningInsecureContent = false;
+
+    const src = String(params?.src || 'about:blank');
+    if (src !== 'about:blank' && !isSafeExternalUrl(src)) event.preventDefault();
+  });
+
+  contents.on('did-attach-webview', (_event, guestContents) => {
+    guestContents.setWindowOpenHandler(({ url }) => {
+      if (isSafeExternalUrl(url)) shell.openExternal(url).catch(() => {});
+      return { action: 'deny' };
+    });
+    guestContents.on('will-navigate', (event, url) => {
+      if (url === 'about:blank' || isSafeExternalUrl(url)) return;
+      event.preventDefault();
+    });
+  });
+}
+
 // Register Real System IPC Handlers
-ipcMain.handle('cyber:exec', async (event, command) => {
+handleTrusted('cyber:exec', async (event, command) => {
+  if (!HOST_MUTATIONS_ENABLED) {
+    return { success: false, stdout: '', stderr: '', error: 'HOST_COMMAND_EXECUTION_DISABLED' };
+  }
+  if (typeof command !== 'string' || command.length === 0 || command.length > 4096) {
+    return { success: false, stdout: '', stderr: '', error: 'INVALID_COMMAND' };
+  }
   return new Promise((resolve) => {
     exec(command, { encoding: 'utf-8', maxBuffer: 1024 * 1024 }, (error, stdout, stderr) => {
       resolve({
@@ -60,8 +339,9 @@ ipcMain.handle('cyber:exec', async (event, command) => {
   });
 });
 
-ipcMain.handle('cyber:launch', async (event, target) => {
-  const t = target.trim();
+handleTrusted('cyber:launch', async (event, target) => {
+  const t = typeof target === 'string' ? target.trim() : '';
+  if (!t || t.length > 2048 || /[\r\n\0]/.test(t)) return { success: false, error: 'INVALID_LAUNCH_TARGET' };
 
   // Known Windows App Aliases
   const appMap = {
@@ -82,37 +362,70 @@ ipcMain.handle('cyber:launch', async (event, target) => {
     discord: 'discord:'
   };
 
-  const resolved = appMap[t.toLowerCase()] || t;
+  let resolved = appMap[t.toLowerCase()] || t;
 
   if (resolved.startsWith('http://') || resolved.startsWith('https://') || resolved.startsWith('steam:') || resolved.startsWith('spotify:') || resolved.startsWith('discord:')) {
-    shell.openExternal(resolved);
+    const isWebUrl = resolved.startsWith('http://') || resolved.startsWith('https://');
+    if (isWebUrl) {
+      const parsed = new URL(resolved);
+      if (!['http:', 'https:'].includes(parsed.protocol)) return { success: false, error: 'UNSUPPORTED_URL_PROTOCOL' };
+    }
+    await shell.openExternal(resolved);
     return { success: true, message: `Opened URL/Protocol: ${resolved}` };
   }
 
-  return new Promise((resolve) => {
-    exec(`start "" "${resolved}"`, (err) => {
-      if (err) {
-        // Fallback spawn
-        try {
-          spawn(resolved, [], { detached: true, stdio: 'ignore', shell: true }).unref();
-          resolve({ success: true, message: `Spawned process: ${resolved}` });
-        } catch (e) {
-          resolve({ success: false, error: e.message });
-        }
-      } else {
-        resolve({ success: true, message: `Launched application: ${resolved}` });
-      }
+  if (!Object.hasOwn(appMap, t.toLowerCase())) {
+    try {
+      resolved = resolveAllowedPath(resolved);
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  }
+
+  if (!Object.hasOwn(appMap, t.toLowerCase())) {
+    const errorMessage = await shell.openPath(resolved);
+    return errorMessage
+      ? { success: false, error: errorMessage }
+      : { success: true, message: `Opened local target: ${resolved}` };
+  }
+
+  return await new Promise((resolve) => {
+    const child = spawn(resolved, [], { detached: true, stdio: 'ignore', shell: false, windowsHide: true });
+    child.once('error', error => resolve({ success: false, error: error.message }));
+    child.once('spawn', () => {
+      child.unref();
+      resolve({ success: true, message: `Launched application: ${resolved}` });
     });
   });
 });
 
-ipcMain.handle('cyber:sysinfo', async () => {
+function captureCpuTimes() {
+  return os.cpus().reduce((summary, cpu) => {
+    const total = Object.values(cpu.times).reduce((sum, value) => sum + value, 0);
+    summary.idle += cpu.times.idle;
+    summary.total += total;
+    return summary;
+  }, { idle: 0, total: 0 });
+}
+
+async function sampleCpuPercent() {
+  const before = captureCpuTimes();
+  await new Promise(resolve => setTimeout(resolve, 120));
+  const after = captureCpuTimes();
+  const idleDelta = after.idle - before.idle;
+  const totalDelta = after.total - before.total;
+  return totalDelta > 0 ? Math.max(0, Math.min(100, Math.round((1 - (idleDelta / totalDelta)) * 1000) / 10)) : null;
+}
+
+handleTrusted('cyber:sysinfo', async () => {
   const cpus = os.cpus();
   const totalMem = os.totalmem();
   const freeMem = os.freemem();
   const usedMem = totalMem - freeMem;
+  const cpuPercent = await sampleCpuPercent();
 
   return {
+    source: 'HOST_VERIFIED',
     hostname: os.hostname(),
     platform: os.platform(),
     release: os.release(),
@@ -120,6 +433,7 @@ ipcMain.handle('cyber:sysinfo', async () => {
     uptime: os.uptime(),
     cpuModel: cpus.length > 0 ? cpus[0].model : 'Quantum Processor',
     cpuCores: cpus.length,
+    cpuPercent,
     totalMemGB: (totalMem / (1024 ** 3)).toFixed(2),
     usedMemGB: (usedMem / (1024 ** 3)).toFixed(2),
     freeMemGB: (freeMem / (1024 ** 3)).toFixed(2),
@@ -129,9 +443,140 @@ ipcMain.handle('cyber:sysinfo', async () => {
   };
 });
 
-ipcMain.handle('cyber:fs-ls', async (event, dirPath) => {
+function runPowerShellJson(script) {
+  return new Promise((resolve) => {
+    execFile(
+      'powershell.exe',
+      ['-NoProfile', '-NonInteractive', '-Command', script],
+      { encoding: 'utf8', maxBuffer: 2 * 1024 * 1024, windowsHide: true, timeout: 15000 },
+      (error, stdout, stderr) => {
+        if (error) return resolve({ success: false, error: error.message, stderr: stderr || '' });
+        try {
+          resolve({ success: true, data: stdout.trim() ? JSON.parse(stdout) : [] });
+        } catch (parseError) {
+          resolve({ success: false, error: `INVALID_HOST_RESPONSE: ${parseError.message}` });
+        }
+      }
+    );
+  });
+}
+
+handleTrusted('cyber:process-list', async () => {
+  const result = await runPowerShellJson('Get-Process | Select-Object -First 35 Id, ProcessName, WorkingSet64, CPU | ConvertTo-Json');
+  if (!result.success) return result;
+  return { success: true, source: 'HOST_VERIFIED', processes: Array.isArray(result.data) ? result.data : [result.data] };
+});
+
+handleTrusted('cyber:process-kill', async (event, pid) => {
   try {
-    const targetDir = dirPath ? path.resolve(dirPath) : process.cwd();
+    requireHostMutations();
+    const safePid = Number(pid);
+    if (!Number.isSafeInteger(safePid) || safePid <= 0) throw new Error('INVALID_PROCESS_ID');
+    return await new Promise((resolve) => {
+      execFile(
+        'powershell.exe',
+        ['-NoProfile', '-NonInteractive', '-Command', `Stop-Process -Id ${safePid} -Force`],
+        { windowsHide: true, timeout: 10000 },
+        error => resolve({ success: !error, source: 'HOST_VERIFIED', error: error?.message || null })
+      );
+    });
+  } catch (error) {
+    return { success: false, error: error.message, source: 'HOST_BLOCKED' };
+  }
+});
+
+handleTrusted('cyber:drive-list', async () => {
+  const result = await runPowerShellJson('Get-PSDrive -PSProvider FileSystem | Select-Object Name, Root, Free, Used | ConvertTo-Json');
+  if (!result.success) return result;
+  return { success: true, source: 'HOST_VERIFIED', drives: Array.isArray(result.data) ? result.data : [result.data] };
+});
+
+handleTrusted('cyber:desktop-list', async () => {
+  const roots = [
+    path.join(os.homedir(), 'Desktop'),
+    path.join(os.homedir(), 'OneDrive', 'Desktop'),
+    path.join(os.homedir(), 'OneDrive', 'เดสก์ท็อป')
+  ];
+  const seen = new Set();
+  const items = [];
+  for (const root of roots) {
+    try {
+      const entries = await fs.promises.readdir(root, { withFileTypes: true });
+      for (const entry of entries) {
+        const fullPath = path.join(root, entry.name);
+        if (seen.has(fullPath.toLowerCase())) continue;
+        seen.add(fullPath.toLowerCase());
+        const stats = await fs.promises.stat(fullPath).catch(() => null);
+        items.push({
+          name: entry.name,
+          path: fullPath,
+          ext: path.extname(entry.name).toLowerCase(),
+          isDir: entry.isDirectory(),
+          size: stats?.size || 0,
+          mtime: stats?.mtime?.toISOString() || null
+        });
+      }
+    } catch (error) {}
+  }
+  return { success: true, source: 'HOST_VERIFIED', items };
+});
+
+handleTrusted('cyber:wifi-scan', async () => {
+  return await new Promise((resolve) => {
+    execFile(
+      'netsh.exe',
+      ['wlan', 'show', 'networks', 'mode=bssid'],
+      { encoding: 'utf8', maxBuffer: 1024 * 1024, windowsHide: true, timeout: 15000 },
+      (error, stdout, stderr) => resolve({
+        success: !error,
+        source: error ? 'HOST_UNAVAILABLE' : 'HOST_VERIFIED',
+        stdout: stdout || '',
+        error: error?.message || stderr || null
+      })
+    );
+  });
+});
+
+handleTrusted('cyber:wifi-connect', async (event, ssid) => {
+  try {
+    requireHostMutations();
+    const safeSsid = String(ssid || '').trim();
+    if (!safeSsid || safeSsid.length > 32 || /[\r\n\0]/.test(safeSsid)) throw new Error('INVALID_WIFI_SSID');
+    return await new Promise((resolve) => {
+      execFile(
+        'netsh.exe',
+        ['wlan', 'connect', `name=${safeSsid}`],
+        { encoding: 'utf8', windowsHide: true, timeout: 15000 },
+        (error, stdout, stderr) => resolve({
+          success: !error,
+          source: error ? 'HOST_UNAVAILABLE' : 'HOST_VERIFIED',
+          message: stdout || '',
+          error: error?.message || stderr || null
+        })
+      );
+    });
+  } catch (error) {
+    return { success: false, error: error.message, source: 'HOST_BLOCKED' };
+  }
+});
+
+handleTrusted('cyber:fs-delete', async (event, filePath) => {
+  try {
+    requireHostMutations();
+    const target = resolveAllowedPath(filePath);
+    if (isProtectedFileRoot(target)) throw new Error('PROTECTED_ROOT_PATH');
+    const stats = await fs.promises.stat(target);
+    if (stats.isDirectory()) await fs.promises.rm(target, { recursive: true });
+    else await fs.promises.unlink(target);
+    return { success: true, source: 'HOST_VERIFIED' };
+  } catch (error) {
+    return { success: false, error: error.message, source: 'HOST_BLOCKED' };
+  }
+});
+
+handleTrusted('cyber:fs-ls', async (event, dirPath) => {
+  try {
+    const targetDir = dirPath ? resolveAllowedPath(dirPath) : process.cwd();
     const files = await fs.promises.readdir(targetDir, { withFileTypes: true });
 
     const results = await Promise.all(
@@ -154,75 +599,113 @@ ipcMain.handle('cyber:fs-ls', async (event, dirPath) => {
       })
     );
 
-    return { success: true, dir: targetDir, files: results };
+    return { success: true, source: 'HOST_VERIFIED', dir: targetDir, files: results };
   } catch (err) {
     return { success: false, error: err.message };
   }
 });
 
-ipcMain.handle('cyber:fs-read', async (event, filePath) => {
+handleTrusted('cyber:fs-read', async (event, filePath) => {
   try {
-    const content = await fs.promises.readFile(path.resolve(filePath), 'utf-8');
-    return { success: true, content };
+    const content = await fs.promises.readFile(resolveAllowedPath(filePath), 'utf-8');
+    return { success: true, source: 'HOST_VERIFIED', content };
   } catch (err) {
     return { success: false, error: err.message };
   }
 });
 
-ipcMain.handle('cyber:fs-write', async (event, filePath, content) => {
+handleTrusted('cyber:fs-read-data-url', async (event, filePath) => {
   try {
-    await fs.promises.writeFile(path.resolve(filePath), content, 'utf-8');
-    return { success: true };
-  } catch (err) {
-    return { success: false, error: err.message };
+    const fullPath = resolveAllowedPath(filePath);
+    const stats = await fs.promises.stat(fullPath);
+    if (!stats.isFile() || stats.size > 10 * 1024 * 1024) throw new Error('MEDIA_FILE_TOO_LARGE');
+    const ext = path.extname(fullPath).toLowerCase();
+    const allowedMedia = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.mp3', '.wav', '.ogg']);
+    if (!allowedMedia.has(ext)) throw new Error('UNSUPPORTED_MEDIA_TYPE');
+    const data = await fs.promises.readFile(fullPath);
+    const mime = MIME_TYPES[ext] || (ext === '.gif' ? 'image/gif' : ext === '.webp' ? 'image/webp' : ext === '.ogg' ? 'audio/ogg' : 'application/octet-stream');
+    return { success: true, source: 'HOST_VERIFIED', dataUrl: `data:${mime};base64,${data.toString('base64')}` };
+  } catch (error) {
+    return { success: false, error: error.message };
   }
 });
 
-ipcMain.handle('cyber:fs-mkdir', async (event, dirPath) => {
+handleTrusted('cyber:fs-write', async (event, filePath, content) => {
   try {
-    await fs.promises.mkdir(path.resolve(dirPath), { recursive: true });
-    return { success: true };
+    requireHostMutations();
+    if (typeof content !== 'string' || Buffer.byteLength(content, 'utf8') > 5 * 1024 * 1024) throw new Error('INVALID_FILE_CONTENT');
+    await fs.promises.writeFile(resolveAllowedPath(filePath), content, 'utf-8');
+    return { success: true, source: 'HOST_VERIFIED' };
   } catch (err) {
     return { success: false, error: err.message };
   }
 });
 
-ipcMain.handle('cyber:fs-pwd', async () => {
-  return { pwd: process.cwd(), home: os.homedir() };
+handleTrusted('cyber:fs-mkdir', async (event, dirPath) => {
+  try {
+    requireHostMutations();
+    await fs.promises.mkdir(resolveAllowedPath(dirPath), { recursive: true });
+    return { success: true, source: 'HOST_VERIFIED' };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
 });
 
-ipcMain.handle('cyber:ping', async (event, host) => {
+handleTrusted('cyber:fs-pwd', async () => {
+  return { success: true, source: 'HOST_VERIFIED', pwd: process.cwd(), home: os.homedir() };
+});
+
+handleTrusted('cyber:ping', async (event, host) => {
+  let safeHost = '';
+  try {
+    safeHost = validateHostname(host || '8.8.8.8');
+  } catch (error) {
+    return { success: false, output: '', error: error.message };
+  }
   return new Promise((resolve) => {
-    exec(`ping -n 3 ${host || '8.8.8.8'}`, (err, stdout) => {
-      resolve({ success: !err, output: stdout || 'Host unreachable' });
+    execFile('ping', ['-n', '3', safeHost], { windowsHide: true, timeout: 10000 }, (err, stdout) => {
+      resolve({ success: !err, source: err ? 'HOST_UNAVAILABLE' : 'HOST_VERIFIED', output: stdout || 'Host unreachable', error: err?.message || null });
     });
   });
 });
 
 // Real PRO Backend Database Handlers
-ipcMain.handle('cyber:db-read', async () => {
+handleTrusted('cyber:db-read', async () => {
   try {
-    if (!fs.existsSync(DB_PATH)) return { success: true, data: {} };
-    const raw = await fs.promises.readFile(DB_PATH, 'utf-8');
-    return { success: true, data: JSON.parse(raw) };
+    const result = await profileDatabase.read();
+    if (result.recoveredFromBackup) {
+      console.warn(`[Persistence] Recovered profile database from backup: ${result.warning}`);
+    }
+    return {
+      success: true,
+      data: result.data,
+      source: result.source,
+      recoveredFromBackup: result.recoveredFromBackup,
+      schemaVersion: result.schemaVersion,
+      revision: result.revision,
+      warning: result.warning || null
+    };
   } catch (err) {
-    return { success: false, error: err.message };
+    console.error('[Persistence] Database read failed:', err);
+    return { success: false, error: err.message, code: err.code || 'DATABASE_READ_FAILED' };
   }
 });
 
-ipcMain.handle('cyber:db-write', async (event, data) => {
+handleTrusted('cyber:db-write', async (event, data) => {
   try {
-    await fs.promises.writeFile(DB_PATH, JSON.stringify(data, null, 2), 'utf-8');
-    return { success: true };
+    return await profileDatabase.write(data);
   } catch (err) {
-    return { success: false, error: err.message };
+    console.error('[Persistence] Database write failed:', err);
+    return { success: false, error: err.message, code: 'DATABASE_WRITE_FAILED' };
   }
 });
 
-// Real File Shredder (DoD 5220.22-M Style: 3 Passes)
-ipcMain.handle('cyber:shred', async (event, filePath) => {
+// Best-effort overwrite + delete. This is not a guaranteed secure erase,
+// particularly on SSDs where wear leveling can retain earlier blocks.
+handleTrusted('cyber:shred', async (event, filePath) => {
   try {
-    const fullPath = path.resolve(filePath);
+    requireHostMutations();
+    const fullPath = resolveAllowedPath(filePath);
     if (!fs.existsSync(fullPath)) return { success: false, error: 'File not found' };
     const stat = await fs.promises.stat(fullPath);
     if (stat.isDirectory()) return { success: false, error: 'Cannot shred directory' };
@@ -245,53 +728,66 @@ ipcMain.handle('cyber:shred', async (event, filePath) => {
   }
 });
 
-// AES-256-GCM File Encryption
-ipcMain.handle('cyber:encrypt-file', async (event, filePath, password) => {
+// AES-256-GCM File Encryption (non-destructive: preserves the source file)
+handleTrusted('cyber:encrypt-file', async (event, filePath, password) => {
   try {
-    const fullPath = path.resolve(filePath);
+    requireHostMutations();
+    const fullPath = resolveAllowedPath(filePath);
+    if (typeof password !== 'string' || password.length < 8 || password.length > 1024) throw new Error('INVALID_ENCRYPTION_PASSWORD');
     const content = await fs.promises.readFile(fullPath);
-    const iv = crypto.randomBytes(16);
-    const key = crypto.scryptSync(password, 'cyber-salt', 32);
+    const magic = Buffer.from('CYBERENC1', 'ascii');
+    const salt = crypto.randomBytes(16);
+    const iv = crypto.randomBytes(12);
+    const key = crypto.scryptSync(password, salt, 32);
     const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
     
     const encrypted = Buffer.concat([cipher.update(content), cipher.final()]);
     const authTag = cipher.getAuthTag();
     
-    // Format: IV(16) + AuthTag(16) + EncryptedData
-    const finalBuffer = Buffer.concat([iv, authTag, encrypted]);
-    await fs.promises.writeFile(fullPath + '.enc', finalBuffer);
-    await fs.promises.unlink(fullPath); // Delete original
-    return { success: true, newPath: fullPath + '.enc' };
+    // Format: magic(9) + salt(16) + IV(12) + AuthTag(16) + EncryptedData
+    const finalBuffer = Buffer.concat([magic, salt, iv, authTag, encrypted]);
+    const targetPath = `${fullPath}.enc`;
+    await writeBinaryAtomic(targetPath, finalBuffer);
+    return { success: true, newPath: targetPath, sourcePreserved: true };
   } catch (err) {
     return { success: false, error: err.message };
   }
 });
 
-ipcMain.handle('cyber:decrypt-file', async (event, filePath, password) => {
+handleTrusted('cyber:decrypt-file', async (event, filePath, password) => {
   try {
-    const fullPath = path.resolve(filePath);
+    requireHostMutations();
+    const fullPath = resolveAllowedPath(filePath);
+    if (typeof password !== 'string' || password.length < 8 || password.length > 1024) throw new Error('INVALID_DECRYPTION_PASSWORD');
     const data = await fs.promises.readFile(fullPath);
     if (data.length < 33) return { success: false, error: 'Invalid encrypted file format' };
 
-    const iv = data.subarray(0, 16);
-    const authTag = data.subarray(16, 32);
-    const encrypted = data.subarray(32);
-    const key = crypto.scryptSync(password, 'cyber-salt', 32);
+    const hasV1Header = data.subarray(0, 9).toString('ascii') === 'CYBERENC1';
+    const salt = hasV1Header ? data.subarray(9, 25) : Buffer.from('cyber-salt');
+    const iv = hasV1Header ? data.subarray(25, 37) : data.subarray(0, 16);
+    const authTag = hasV1Header ? data.subarray(37, 53) : data.subarray(16, 32);
+    const encrypted = hasV1Header ? data.subarray(53) : data.subarray(32);
+    if (hasV1Header && data.length < 54) return { success: false, error: 'Invalid CYBERENC1 file format' };
+    const key = crypto.scryptSync(password, salt, 32);
     const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
     decipher.setAuthTag(authTag);
     
     const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]);
-    const origPath = fullPath.replace(/\.enc$/, '');
-    await fs.promises.writeFile(origPath, decrypted);
-    await fs.promises.unlink(fullPath); // Delete .enc
-    return { success: true, newPath: origPath };
+    const origPath = fullPath.endsWith('.enc') ? fullPath.slice(0, -4) : `${fullPath}.dec`;
+    await writeBinaryAtomic(origPath, decrypted);
+    return { success: true, newPath: origPath, encryptedSourcePreserved: true, legacyFormat: !hasV1Header };
   } catch (err) {
     return { success: false, error: err.message };
   }
 });
 
 // OSINT Recon (DNS & Net)
-ipcMain.handle('cyber:osint', async (event, target) => {
+handleTrusted('cyber:osint', async (event, target) => {
+  try {
+    target = validateHostname(target);
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
   return new Promise((resolve) => {
     dns.lookup(target, { all: true }, (err, addresses) => {
       if (err) return resolve({ success: false, error: err.message });
@@ -307,29 +803,14 @@ ipcMain.handle('cyber:osint', async (event, target) => {
   });
 });
 
-// Malware Sandbox VM
-ipcMain.handle('cyber:sandbox-run', async (event, code) => {
-  try {
-    const vm = require('vm');
-    const logs = [];
-    const context = vm.createContext({
-      console: { log: (...args) => logs.push(args.join(' ')) },
-      Math, JSON, Date, setTimeout
-    });
-    
-    // Create an isolated script with a timeout to prevent infinite loops
-    const script = new vm.Script(code);
-    const result = script.runInContext(context, { timeout: 1000 });
-    
-    return { success: true, logs, result: String(result) };
-  } catch (err) {
-    return { success: false, error: err.message };
-  }
+// Disabled: Node's vm module is not a security boundary for untrusted code.
+handleTrusted('cyber:sandbox-run', async () => {
+  return { success: false, error: 'UNTRUSTED_CODE_RUNTIME_DISABLED_FOR_SECURITY' };
 });
 
 
 // Window Management (Tiling)
-ipcMain.handle('cyber:window-split', async (event, opts) => {
+handleTrusted('cyber:window-split', async (event, opts) => {
   const allWins = BrowserWindow.getAllWindows().filter(w => w !== ghostWindow);
   if (allWins.length >= 4) {
     return { success: false, error: 'Maximum split limit reached (4 Windows)' };
@@ -359,11 +840,12 @@ ipcMain.handle('cyber:window-split', async (event, opts) => {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
+      sandbox: true,
       preload: path.join(__dirname, 'preload.cjs'),
-      webSecurity: false,
       webviewTag: true
     }
   });
+  applyWindowSecurity(newWin);
 
   const port = server.address().port;
   const targetQuery = `mode=${encodeURIComponent(mode)}&url=${encodeURIComponent(url)}&skipBoot=1`;
@@ -384,7 +866,7 @@ ipcMain.handle('cyber:window-split', async (event, opts) => {
 });
 
 // Window Controls
-ipcMain.handle('cyber:window-control', (event, action) => {
+handleTrusted('cyber:window-control', (event, action) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   if (!win) return { success: false };
 
@@ -410,6 +892,18 @@ ipcMain.handle('cyber:window-control', (event, action) => {
 server.listen(0, '127.0.0.1', () => {
   const port = server.address().port;
 
+  if (IS_PACKAGED_SMOKE_TEST) {
+    app.whenReady().then(() => {
+      const requiredFiles = ['index.html', 'preload.cjs', 'js/app.js', 'js/runtimeConfig.js', 'lib/atomicJsonStore.cjs'];
+      const runtimeReady = requiredFiles.every(relativePath => fs.existsSync(path.join(__dirname, relativePath)));
+      server.close(() => app.exit(runtimeReady ? 0 : 1));
+    }).catch(() => {
+      try { server.close(); } catch (error) {}
+      app.exit(1);
+    });
+    return;
+  }
+
   function getOrCreateGhostWindow() {
     if (ghostWindow && !ghostWindow.isDestroyed()) return ghostWindow;
 
@@ -429,11 +923,12 @@ server.listen(0, '127.0.0.1', () => {
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true,
+        sandbox: true,
         preload: path.join(__dirname, 'preload.cjs'),
-        webSecurity: false,
         webviewTag: true
       }
     });
+    applyWindowSecurity(ghostWindow);
     
     // Ensure ghost window is completely audio-muted so it never plays sounds in the background
     ghostWindow.webContents.setAudioMuted(true);
@@ -467,7 +962,7 @@ server.listen(0, '127.0.0.1', () => {
     let knownDrives = null; // null indicates initial baseline scan not yet established
 
     const pollDrives = () => {
-      exec('wmic logicaldisk get name,drivetype', (err, stdout) => {
+      execFile('wmic.exe', ['logicaldisk', 'get', 'name,drivetype'], { windowsHide: true, timeout: 10000 }, (err, stdout) => {
         if (err) return;
         const lines = stdout.split('\n').map(l => l.trim()).filter(l => l);
         const currentRemovableDrives = [];
@@ -520,14 +1015,22 @@ server.listen(0, '127.0.0.1', () => {
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true,
+        sandbox: true,
         preload: path.join(__dirname, 'preload.cjs'),
-        webSecurity: false,
         webviewTag: true
       }
     });
+    applyWindowSecurity(mainWindow);
 
     mainWindow.loadURL(`http://127.0.0.1:${port}/index.html`);
     mainWindow.maximize();
+
+    mainWindow.webContents.on('console-message', (_event, level, message, line, sourceId) => {
+      if (level >= 2) console.warn(`[Renderer:${level}] ${message} (${sourceId}:${line})`);
+    });
+    mainWindow.webContents.on('did-fail-load', (_event, code, description, validatedURL, isMainFrame) => {
+      if (isMainFrame) console.error(`[Renderer] Failed to load ${validatedURL}: ${code} ${description}`);
+    });
     
     mainWindow.on('closed', () => {
       app.isQuitting = true;

@@ -1,5 +1,5 @@
 /**
- * CYBER//TYPE HOLLYWOOD HACKER SIMULATOR & REAL-TIME EXPLOIT INTRUSION ENGINE
+ * CYBER//TYPE FICTIONAL HOLLYWOOD HACKER TYPING GAME
  * Features:
  * - Interactive Guided Cyber Infiltration Missions with Real Exploit Payloads
  * - Massive Cascading Code Streamer (100+ lines of real assembly, hex dumps, socket telemetry, kernel overrides)
@@ -40,11 +40,14 @@ export class HackerTyperEngine {
     // Active Trace Alarm & IDS Defense System
     this.tracePercent = 0;
     this.traceInterval = null;
+    this.streamInterval = null;
+    this.injectionTimeout = null;
     this.isTraceActive = false;
     this.traceSpeedMultiplier = 1.0;
   }
 
   reset(missionNum = 1, traceSpeedMod = 1.0) {
+    this.stopInjection();
     this.isBreachOpen = false;
     this.isInjecting = false;
     this.traceSpeedMultiplier = traceSpeedMod || 1.0;
@@ -53,7 +56,7 @@ export class HackerTyperEngine {
 
     const history = this.terminal.querySelector('.terminal-history');
     if (history) {
-      history.innerHTML = '<div class="terminal-line">[*] QUANTUM INFILTRATION TUNNEL INITIALIZED...</div>';
+      history.innerHTML = '<div class="terminal-line">[SIM] FICTIONAL MISSION — NO NETWORK TARGET OR CODE EXECUTION</div>';
     }
 
     this.currentMissionIndex = Math.max(0, Math.min(HACKER_MISSIONS.length - 1, missionNum - 1));
@@ -355,7 +358,7 @@ export class HackerTyperEngine {
     const cascadingLines = generateHackerExploitLogs(mission, stage);
 
     let lineIndex = 0;
-    const streamInterval = setInterval(() => {
+    this.streamInterval = setInterval(() => {
       if (lineIndex < cascadingLines.length) {
         if (history) {
           const lEl = document.createElement('div');
@@ -387,13 +390,15 @@ export class HackerTyperEngine {
         }
         lineIndex++;
       } else {
-        clearInterval(streamInterval);
+        clearInterval(this.streamInterval);
+        this.streamInterval = null;
         if (this.sound.stopLogStreamDrone) {
           this.sound.stopLogStreamDrone();
         }
         this.sound.playSuccessFanfare();
 
-        setTimeout(() => {
+        this.injectionTimeout = setTimeout(() => {
+          this.injectionTimeout = null;
           this.isInjecting = false;
           this.currentStageIndex++;
 
@@ -405,6 +410,24 @@ export class HackerTyperEngine {
         }, 500);
       }
     }, 45);
+  }
+
+  stopInjection() {
+    if (this.streamInterval) clearInterval(this.streamInterval);
+    if (this.injectionTimeout) clearTimeout(this.injectionTimeout);
+    this.streamInterval = null;
+    this.injectionTimeout = null;
+    this.isInjecting = false;
+    if (this.sound?.stopLogStreamDrone) this.sound.stopLogStreamDrone();
+  }
+
+  stop() {
+    this.stopTraceTimer();
+    this.stopInjection();
+    this.isBreachOpen = false;
+    if (this.breachModal) this.breachModal.classList.add('hidden');
+    if (this.kb) this.kb.clearTargetKeys();
+    if (this.hands) this.hands.clearTargetGuide();
   }
 
   scrollToBottom() {

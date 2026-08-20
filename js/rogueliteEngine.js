@@ -66,7 +66,7 @@ export class RogueliteEngine {
         <!-- HUD Header -->
         <div class="rl-hud">
           <div class="rl-hud-left">
-            <div class="rl-hud-badge">CYBER//CRAWL v4.0</div>
+            <div class="rl-hud-badge">CYBER//CRAWL v4.0 // GAME SIMULATION</div>
             <div class="rl-hud-item">DEPTH: <span id="rlDepthDisplay" class="rl-val">1/6</span></div>
             <div class="rl-hud-item">SHIELDS: <span id="rlShieldsDisplay" class="rl-val-shields">♥♥♥♥♥</span></div>
           </div>
@@ -77,7 +77,7 @@ export class RogueliteEngine {
             </div>
           </div>
           <div class="rl-hud-right">
-            <div class="rl-hud-item">BITCOIN: <span id="rlBtcDisplay" class="rl-val-btc">₿ 0</span></div>
+            <div class="rl-hud-item">VIRTUAL BTC: <span id="rlBtcDisplay" class="rl-val-btc">₿ 0</span></div>
             <button class="rl-btn-shop" id="rlBtnOpenShop">🛒 DARKNET SHOP</button>
             <button class="rl-btn-exit" id="rlBtnExitRun">✖ ABORT [ESC]</button>
           </div>
@@ -637,6 +637,20 @@ export class RogueliteEngine {
     dialog.querySelector('#rlBtnCloseShop').addEventListener('click', () => {
       this.shopModal.classList.add('hidden');
     });
+  }
+
+  stop() {
+    const game = this.activeMinigame;
+    if (game) {
+      if (game.timerInterval) clearInterval(game.timerInterval);
+      if (game.animFrame) cancelAnimationFrame(game.animFrame);
+      game.timerInterval = null;
+      game.animFrame = null;
+      game.onComplete = null;
+    }
+    this.activeMinigame = null;
+    if (this.minigameModal) this.minigameModal.classList.add('hidden');
+    if (this.shopModal) this.shopModal.classList.add('hidden');
   }
 
   handleKeyDown(e) {

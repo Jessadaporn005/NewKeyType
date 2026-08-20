@@ -26,6 +26,9 @@ export class CyberExplorerEngine {
     this.drives = [];
     this.searchQuery = '';
     this.selectedFile = null;
+    this.previewAudio = null;
+    this.desktopSource = 'VERIFYING';
+    this.storageSource = 'VERIFYING';
   }
 
   async init(containerEl) {
@@ -73,7 +76,7 @@ export class CyberExplorerEngine {
           <!-- Desktop Telemetry Pill (Visible in Desktop Matrix mode) -->
           <div class="desktop-telemetry-pill ${this.viewMode === 'storage_browser' ? 'hidden' : ''}" id="expDesktopPill">
             <span class="pulse-green-dot"></span>
-            <span>DESKTOP MIRROR: <strong id="desktopItemCounter">0 APPS DETECTED</strong></span>
+            <span>DESKTOP SOURCE: <strong id="desktopItemCounter">VERIFYING</strong></span>
           </div>
 
           <div class="explorer-search-box">
@@ -89,8 +92,8 @@ export class CyberExplorerEngine {
           <!-- Desktop Telemetry Banner -->
           <div class="desktop-hud-banner">
             <div class="hud-left">
-              <span class="hud-tag">[ OPERATOR DESKTOP LINK ]</span>
-              <span class="hud-sub">REFLECTING PHYSICAL WINDOWS WORKSTATION SHORTCUTS</span>
+              <span class="hud-tag" id="desktopSourceTag">[ SOURCE: VERIFYING ]</span>
+              <span class="hud-sub">HOST ITEMS WHEN VERIFIED; LAB DATA WHEN SIMULATED</span>
             </div>
             <div class="hud-right">
               <button class="btn-desktop-refresh" id="btnRefreshDesktop">🔄 RESCAN DESKTOP</button>
@@ -140,7 +143,7 @@ export class CyberExplorerEngine {
           <span class="status-sep">|</span>
           <span id="expSelectedInfo">Ready</span>
           <span class="status-sep">|</span>
-          <span class="status-glow">CYBER//OS DESKTOP BRIDGE [ONLINE]</span>
+          <span class="status-glow" id="explorerSourceStatus">DESKTOP BRIDGE [VERIFYING]</span>
         </div>
       </div>
 
@@ -358,6 +361,7 @@ export class CyberExplorerEngine {
     if (desktopPill) desktopPill.classList.toggle('hidden', mode === 'storage_browser');
 
     if (this.sound) this.sound.playKey(false);
+    this.updateSourceStatus();
     if (mode === 'desktop_matrix') {
       this.renderDesktopMatrix();
     } else {
@@ -370,13 +374,18 @@ export class CyberExplorerEngine {
     const res = await systemBridge.getDesktopShortcuts();
     if (res && res.items) {
       this.desktopItems = res.items;
+      this.desktopSource = res.source || 'UNKNOWN';
     }
 
     if (this.container) {
       const counter = this.container.querySelector('#desktopItemCounter');
+      const sourceTag = this.container.querySelector('#desktopSourceTag');
+      const verified = this.desktopSource === 'HOST_VERIFIED';
       if (counter) {
-        counter.textContent = `${this.desktopItems.length} APPS & SHORTCUTS DETECTED`;
+        counter.textContent = `${verified ? 'HOST VERIFIED' : 'SIMULATED'} // ${this.desktopItems.length} ITEMS`;
       }
+      if (sourceTag) sourceTag.textContent = verified ? '[ SOURCE: HOST VERIFIED ]' : '[ SOURCE: SIMULATED FALLBACK ]';
+      this.updateSourceStatus();
       this.renderDesktopMatrix();
     }
   }
@@ -431,7 +440,7 @@ export class CyberExplorerEngine {
     });
 
     if (!html) {
-      html = `<div class="desktop-empty-state">No desktop shortcuts matching query: '${this.searchQuery}'</div>`;
+      html = `<div class="desktop-empty-state">No desktop shortcuts matching query: '${this.escapeHtml(this.searchQuery)}'</div>`;
     }
 
     scrollContainer.innerHTML = html;
@@ -468,19 +477,22 @@ export class CyberExplorerEngine {
   renderAppCardHtml(item, glowColor) {
     const icon = this.getDesktopAppIcon(item);
     const cleanName = item.name.replace(/\.(lnk|exe|url)$/i, '');
+    const safeName = this.escapeHtml(item.name);
+    const safePath = this.escapeHtml(item.path || '');
+    const safeCleanName = this.escapeHtml(cleanName);
 
     return `
-      <div class="desktop-app-card" data-name="${item.name}" data-path="${item.path || ''}" data-isdir="${item.isDir}" style="--card-glow: ${glowColor};">
+      <div class="desktop-app-card" data-name="${safeName}" data-path="${safePath}" data-isdir="${item.isDir}" style="--card-glow: ${glowColor};">
         <div class="app-card-top">
           <span class="app-card-icon">${icon}</span>
           <span class="app-card-badge">${item.isDir ? 'FOLDER' : 'EXE / LNK'}</span>
         </div>
         <div class="app-card-info">
-          <div class="app-card-name" title="${item.name}">${cleanName}</div>
-          <div class="app-card-path" title="${item.path || ''}">${item.path ? item.path.slice(0, 32) + '...' : 'Physical Desktop'}</div>
+          <div class="app-card-name" title="${safeName}">${safeCleanName}</div>
+          <div class="app-card-path" title="${safePath}">${item.path ? this.escapeHtml(item.path.slice(0, 32)) + '...' : 'Physical Desktop'}</div>
         </div>
         <div class="app-card-actions">
-          <button class="btn-hologram-launch" title="Launch ${cleanName} on PC">
+          <button class="btn-hologram-launch" title="Launch ${safeCleanName} on PC">
             <span class="btn-icon">⚡</span> ${item.isDir ? 'EXPLORE' : 'LAUNCH APP'}
           </button>
         </div>
@@ -525,7 +537,9 @@ export class CyberExplorerEngine {
     // Check image preview
     if (n.endsWith('.jpg') || n.endsWith('.png') || n.endsWith('.jpeg') || n.endsWith('.svg')) {
       if (item.path) {
-        this.showHologramImage(item.name, `file:///${item.path.replace(/\\/g, '/')}`);
+        const media = await systemBridge.readMediaDataUrl(item.path);
+        if (media.success) this.showHologramImage(item.name, media.dataUrl);
+        else if (this.toasts) this.toasts.show('ERROR', `Image preview unavailable: ${media.error}`, 2500);
         return;
       }
     }
@@ -545,7 +559,9 @@ export class CyberExplorerEngine {
     const res = await systemBridge.getDrives();
     if (res && res.drives) {
       this.drives = res.drives;
+      this.storageSource = res.source || 'UNKNOWN';
     }
+    this.updateSourceStatus();
 
     const container = this.container.querySelector('#expQuickDrives');
     if (!container) return;
@@ -558,10 +574,10 @@ export class CyberExplorerEngine {
       else if (d.name.includes('Downloads')) icon = '📥';
 
       html += `
-        <div class="sidebar-drive-item" data-path="${d.path}">
+        <div class="sidebar-drive-item" data-path="${this.escapeHtml(d.path)}">
           <span class="drive-icon">${icon}</span>
           <div class="drive-meta">
-            <span class="drive-name">${d.name}</span>
+            <span class="drive-name">${this.escapeHtml(d.name)}</span>
             <span class="drive-space">${d.freeGB} GB Free</span>
           </div>
         </div>
@@ -597,11 +613,24 @@ export class CyberExplorerEngine {
     const res = await systemBridge.listFiles(dirPath);
     if (res && res.files) {
       this.files = res.files;
+      this.storageSource = res.source || this.storageSource;
     } else {
       this.files = [];
     }
 
+    this.updateSourceStatus();
     this.renderFilesList();
+  }
+
+  updateSourceStatus() {
+    if (!this.container) return;
+    const status = this.container.querySelector('#explorerSourceStatus');
+    if (!status) return;
+    const source = this.viewMode === 'desktop_matrix' ? this.desktopSource : this.storageSource;
+    const verified = source === 'HOST_VERIFIED';
+    const label = this.viewMode === 'desktop_matrix' ? 'DESKTOP' : 'STORAGE';
+    status.textContent = `${label} SOURCE [${verified ? 'HOST VERIFIED' : 'SIMULATED FALLBACK'}]`;
+    status.style.color = verified ? '#00ff66' : '#ffaa00';
   }
 
   renderBreadcrumbs() {
@@ -625,7 +654,7 @@ export class CyberExplorerEngine {
       }
 
       html += `
-        <span class="crumb-item" data-path="${accumulated}">${p}</span>
+        <span class="crumb-item" data-path="${this.escapeHtml(accumulated)}">${this.escapeHtml(p)}</span>
         ${idx < parts.length - 1 ? `<span class="crumb-sep">›</span>` : ''}
       `;
     });
@@ -671,11 +700,11 @@ export class CyberExplorerEngine {
       const dateStr = f.mtime ? new Date(f.mtime).toLocaleDateString() : '--';
 
       html += `
-        <div class="file-row ${f.isDir ? 'is-dir' : 'is-file'} ${isSelected ? 'selected' : ''}" data-name="${f.name}" data-isdir="${f.isDir}">
-          <div class="col-name"><span class="f-icon">${icon}</span> <span class="f-name">${f.name}</span></div>
+        <div class="file-row ${f.isDir ? 'is-dir' : 'is-file'} ${isSelected ? 'selected' : ''}" data-name="${this.escapeHtml(f.name)}" data-isdir="${f.isDir}">
+          <div class="col-name"><span class="f-icon">${icon}</span> <span class="f-name">${this.escapeHtml(f.name)}</span></div>
           <div class="col-size">${sizeStr}</div>
-          <div class="col-type">${typeStr}</div>
-          <div class="col-date">${dateStr}</div>
+          <div class="col-type">${this.escapeHtml(typeStr)}</div>
+          <div class="col-date">${this.escapeHtml(dateStr)}</div>
         </div>
       `;
     });
@@ -701,7 +730,7 @@ export class CyberExplorerEngine {
     });
   }
 
-  handleFileOpen(fileObj) {
+  async handleFileOpen(fileObj) {
     if (!fileObj) return;
 
     const sep = this.currentPath.includes('/') ? '/' : '\\';
@@ -716,51 +745,73 @@ export class CyberExplorerEngine {
     const nameLower = fileObj.name.toLowerCase();
 
     if (nameLower.endsWith('.exe') || nameLower.endsWith('.bat') || nameLower.endsWith('.cmd') || nameLower.endsWith('.lnk')) {
-      if (this.toasts) this.toasts.show('SUCCESS', `Executing binary: ${fileObj.name}...`, 2000);
-      systemBridge.launch(fullPath);
-      if (this.sound) this.sound.playSuccessFanfare();
+      const launchResult = await systemBridge.launch(fullPath);
+      if (launchResult.success) {
+        if (this.toasts) this.toasts.show('SUCCESS', `Opened local target: ${fileObj.name}`, 2000);
+        if (this.sound) this.sound.playSuccessFanfare();
+      } else if (this.toasts) {
+        this.toasts.show('ERROR', `Open failed: ${launchResult.error || 'Unknown error'}`, 3000);
+      }
       return;
     }
 
-    if (nameLower.endsWith('.png') || nameLower.endsWith('.jpg') || nameLower.endsWith('.jpeg') || nameLower.endsWith('.svg') || nameLower.endsWith('.gif')) {
-      this.showHologramImage(fileObj.name, `file:///${fullPath.replace(/\\/g, '/')}`);
+    if (nameLower.endsWith('.png') || nameLower.endsWith('.jpg') || nameLower.endsWith('.jpeg') || nameLower.endsWith('.gif') || nameLower.endsWith('.webp')) {
+      const media = await systemBridge.readMediaDataUrl(fullPath);
+      if (media.success) this.showHologramImage(fileObj.name, media.dataUrl);
+      else if (this.toasts) this.toasts.show('ERROR', `Image preview unavailable: ${media.error}`, 2500);
       return;
     }
 
     if (nameLower.endsWith('.mp3') || nameLower.endsWith('.wav') || nameLower.endsWith('.ogg')) {
-      if (this.toasts) this.toasts.show('SUCCESS', `Streaming Cyber Audio: ${fileObj.name}`, 2500);
-      if (this.app.launchBrowserMode) {
-        this.app.launchBrowserMode(`file:///${fullPath.replace(/\\/g, '/')}`);
+      const media = await systemBridge.readMediaDataUrl(fullPath);
+      if (!media.success) {
+        if (this.toasts) this.toasts.show('ERROR', `Audio preview unavailable: ${media.error}`, 2500);
+        return;
+      }
+      this.stopMedia();
+      this.previewAudio = new Audio(media.dataUrl);
+      this.previewAudio.addEventListener('ended', () => { this.previewAudio = null; }, { once: true });
+      try {
+        await this.previewAudio.play();
+        if (this.toasts) this.toasts.show('SUCCESS', `Playing local audio preview: ${fileObj.name}`, 2500);
+      } catch (error) {
+        this.stopMedia();
+        if (this.toasts) this.toasts.show('ERROR', `Audio playback failed: ${error.message}`, 2500);
       }
       return;
     }
 
     if (nameLower.endsWith('.py') || nameLower.endsWith('.js') || nameLower.endsWith('.html') || nameLower.endsWith('.css') || nameLower.endsWith('.json') || nameLower.endsWith('.cpp') || nameLower.endsWith('.rs') || nameLower.endsWith('.sql') || nameLower.endsWith('.txt')) {
-      systemBridge.readFile(fullPath).then(res => {
-        if (res && res.content !== undefined) {
-          if (this.app.launchVscodeMode) {
-            let lang = 'python';
-            if (nameLower.endsWith('.html')) lang = 'html';
-            else if (nameLower.endsWith('.cpp')) lang = 'cpp';
-            else if (nameLower.endsWith('.rs')) lang = 'rust';
-            else if (nameLower.endsWith('.sql')) lang = 'sql';
-            else if (nameLower.endsWith('.js')) lang = 'bash';
+      const res = await systemBridge.readFile(fullPath);
+      if (!res?.success || res.content === undefined) {
+        if (this.toasts) this.toasts.show('ERROR', `File read failed: ${res?.error || 'Unknown error'}`, 3000);
+        return;
+      }
+      if (this.app.launchVscodeMode) {
+        let lang = 'python';
+        if (nameLower.endsWith('.html') || nameLower.endsWith('.css') || nameLower.endsWith('.js')) lang = 'html';
+        else if (nameLower.endsWith('.cpp')) lang = 'cpp';
+        else if (nameLower.endsWith('.rs')) lang = 'rust';
+        else if (nameLower.endsWith('.sql')) lang = 'sql';
+        else if (nameLower.endsWith('.txt') || nameLower.endsWith('.json')) lang = 'bash';
 
-            this.app.launchVscodeMode(lang);
-            setTimeout(() => {
-              if (this.app.vscodeEngine && this.app.vscodeEngine.editorTextarea) {
-                this.app.vscodeEngine.editorTextarea.value = res.content;
-                this.app.vscodeEngine.updateLineNumbers();
-              }
-            }, 300);
+        this.app.launchVscodeMode(lang);
+        setTimeout(() => {
+          if (this.app.vscodeEngine && this.app.vscodeEngine.editorTextarea) {
+            this.app.vscodeEngine.editorTextarea.value = res.content;
+            this.app.vscodeEngine.updateLineNumbers();
           }
-        }
-      });
+        }, 300);
+      }
       return;
     }
 
-    systemBridge.launch(fullPath);
-    if (this.toasts) this.toasts.show('SUCCESS', `Opened with OS default: ${fileObj.name}`, 2000);
+    const openResult = await systemBridge.launch(fullPath);
+    if (this.toasts) {
+      this.toasts.show(openResult.success ? 'SUCCESS' : 'ERROR', openResult.success
+        ? `Opened with OS default: ${fileObj.name}`
+        : `Open failed: ${openResult.error || 'Unknown error'}`, 2500);
+    }
   }
 
   showHologramImage(title, src) {
@@ -800,6 +851,20 @@ export class CyberExplorerEngine {
     if (zoomVal) zoomVal.textContent = `${Math.round(this.imageZoom * 100)}%`;
     if (rotVal) rotVal.textContent = `${this.imageRot}°`;
     if (filterVal) filterVal.textContent = this.isMatrixFilter ? 'MATRIX NEON' : 'NORMAL';
+  }
+
+  stopMedia() {
+    if (this.previewAudio) {
+      try {
+        this.previewAudio.pause();
+        this.previewAudio.src = '';
+      } catch (error) {}
+      this.previewAudio = null;
+    }
+  }
+
+  destroy() {
+    this.stopMedia();
   }
 
   goBack() {
@@ -864,5 +929,14 @@ export class CyberExplorerEngine {
     const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  }
+
+  escapeHtml(value) {
+    return String(value ?? '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;');
   }
 }

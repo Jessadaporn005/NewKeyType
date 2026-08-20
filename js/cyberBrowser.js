@@ -112,8 +112,8 @@ export class CyberBrowserEngine {
 
         <!-- 4. Bottom Browser Status Bar (Full Mode) -->
         <div class="browser-status-bar" id="browserStatusBar">
-          <span class="b-status-txt" id="bStatusTxt">READY // SECURE CHROMIUM SSL ENCRYPTED</span>
-          <span class="b-security-badge">DEFCON-1 CYBER BROWSER</span>
+          <span class="b-status-txt" id="bStatusTxt">READY // HTTPS-ONLY NAVIGATION POLICY</span>
+          <span class="b-security-badge">SANDBOXED WEBVIEW</span>
         </div>
 
         <!-- 5. Compact Floating Audio Marquee Ticker (Marquee Mode) -->
@@ -164,8 +164,7 @@ export class CyberBrowserEngine {
       const webview = document.createElement('webview');
       webview.className = 'cyber-webview-frame';
       webview.src = url;
-      webview.setAttribute('allowpopups', 'true');
-      webview.setAttribute('webpreferences', 'contextIsolation=false');
+      webview.setAttribute('webpreferences', 'contextIsolation=true,nodeIntegration=false,sandbox=true,webSecurity=true');
 
       webview.addEventListener('did-start-loading', () => {
         const bar = this.container.querySelector('#browserLoadingBar');
@@ -198,8 +197,8 @@ export class CyberBrowserEngine {
       const iframe = document.createElement('iframe');
       iframe.className = 'cyber-webview-frame';
       iframe.src = url;
-      iframe.setAttribute('allow', 'autoplay; camera; microphone; encrypted-media; fullscreen');
-      iframe.sandbox = 'allow-scripts allow-same-origin allow-forms allow-popups';
+      iframe.setAttribute('allow', 'autoplay; encrypted-media; fullscreen');
+      iframe.sandbox = 'allow-scripts allow-same-origin allow-forms';
 
       iframe.onload = () => {
         const bar = this.container.querySelector('#browserLoadingBar');
@@ -345,6 +344,14 @@ export class CyberBrowserEngine {
       }
     }
 
+    try {
+      const parsed = new URL(target);
+      if (parsed.protocol !== 'https:') throw new Error('UNSAFE_BROWSER_PROTOCOL');
+      target = parsed.href;
+    } catch (error) {
+      target = `https://www.google.com/search?q=${encodeURIComponent(rawInput.trim())}`;
+    }
+
     this.currentUrl = target;
     if (this.urlInput) this.urlInput.value = target;
     if (this.marqueeTitle) this.marqueeTitle.textContent = target;
@@ -459,5 +466,10 @@ export class CyberBrowserEngine {
       }
       if (this.app.focusCliInput) this.app.focusCliInput();
     }
+  }
+
+  suspend() {
+    this.terminateMediaStream();
+    this.state = BROWSER_STATES.CLOSED;
   }
 }

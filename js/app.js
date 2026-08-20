@@ -1,5 +1,5 @@
 /**
- * CYBER//TYPE REAL-WORLD CYBER OS WORKSTATION & ADVANCED HACKER CONTROLLER
+ * CYBER//TYPE LOCAL WORKSTATION, TRAINING MODES & HOST-LABELED CONTROLLER
  * Supports real application launching (Chrome, Notepad, Calc, Code, Steam, Spotify),
  * Linux-like file manipulation (ls, pwd, cd, cat, mkdir, touch, nano),
  * Neofetch system hardware diagnostics, real ping/exec bridge,
@@ -40,6 +40,8 @@ import { CyberWifiEngine } from './cyberWifi.js';
 import { AICompanionEngine } from './aiCompanion.js';
 import { AITradingEngine } from './aiTradingEngine.js';
 import { HologramAssistantEngine } from './hologramAssistant.js';
+import { RUNTIME_CAPABILITIES } from './runtimeConfig.js';
+import { ModeLifecycleManager } from './modeManager.js';
 
 // Application States
 const STATES = {
@@ -99,6 +101,9 @@ class WindowsTerminalApp {
     this.toasts = new ToastManager(this.audio);
     this.particles = new ParticleEffectEngine();
     this.holoAvatar = new HologramAvatar();
+    this.modeManager = new ModeLifecycleManager({
+      onError: ({ mode, hook, error }) => console.error(`[ModeLifecycle] ${mode}.${hook} failed`, error)
+    });
 
     profileStore.onAchievementUnlocked = (ach) => {
       if (this.toasts) this.toasts.achievement(ach);
@@ -180,7 +185,7 @@ class WindowsTerminalApp {
     }
 
     try {
-      await profileStore.initStore();
+      await profileStore.ready;
       this.profile = profileStore.getProfile('Anan');
       await this.sys.init();
       this.registerServiceWorker();
@@ -444,6 +449,9 @@ class WindowsTerminalApp {
       aiAdaptationLevel: document.getElementById('aiAdaptationLevel'),
       chkAIAutoTrader: document.getElementById('chkAIAutoTrader'),
       aiJournalFeed: document.getElementById('aiJournalFeed'),
+      btnRunMLShadow: document.getElementById('btnRunMLShadow'),
+      mlShadowStatus: document.getElementById('mlShadowStatus'),
+      mlShadowMetrics: document.getElementById('mlShadowMetrics'),
       tradingSidebarTabs: document.getElementById('tradingSidebarTabs'),
       panelTradingCopilot: document.getElementById('panelTradingCopilot'),
       panelTradingGym: document.getElementById('panelTradingGym'),
@@ -461,7 +469,9 @@ class WindowsTerminalApp {
   }
 
   initEngines() {
-    this.matrix = new MatrixVisualEngine('matrixCanvas', 'particleCanvas');
+    if (!this.matrix) {
+      this.matrix = new MatrixVisualEngine('matrixCanvas', 'particleCanvas');
+    }
     this.virtualNet = new VirtualNetwork(this);
 
     this.kb = new KeyboardVisualizer(this.dom.cyberKeyboard);
@@ -613,6 +623,54 @@ class WindowsTerminalApp {
 
     this.aiCompanion = new AICompanionEngine(this, this.audio);
     this.aiCompanion.init();
+
+    this.modeManager.register('academy', {
+      exit: () => this.academyEngine?.stop()
+    });
+    this.modeManager.register('speed', {
+      exit: () => this.speedEngine?.stopTest()
+    });
+    this.modeManager.register('hacker', {
+      exit: () => this.hackerEngine?.stop()
+    });
+    this.modeManager.register('cli', {
+      enter: () => this.intelFeed?.resume(),
+      exit: () => this.suspendCliResources(),
+      destroy: () => {
+        this.suspendCliResources();
+        this.intelFeed?.destroy();
+      }
+    });
+  }
+
+  suspendCliResources() {
+    this.virtualNet?.stop();
+    this.intelFeed?.suspend();
+
+    if (this.packetSnifferInterval) clearInterval(this.packetSnifferInterval);
+    if (this.camhackInterval) clearInterval(this.camhackInterval);
+    this.packetSnifferInterval = null;
+    this.camhackInterval = null;
+
+    const cameraStream = this.dom?.camhackVideo?.srcObject;
+    if (cameraStream && typeof cameraStream.getTracks === 'function') {
+      cameraStream.getTracks().forEach(track => track.stop());
+      this.dom.camhackVideo.srcObject = null;
+    }
+
+    this.breachEngine?.cancel();
+    this.threatEngine?.stop();
+
+    [
+      this.dom?.camhackModal,
+      this.dom?.heatmapModal,
+      this.dom?.nodeGraphModal,
+      this.dom?.packetSnifferModal,
+      this.dom?.cyberNetworkMapModal,
+      this.dom?.breachProtocolModal,
+      this.dom?.cyberThreatModal,
+      this.dom?.duckyPayloadModal
+    ].forEach(modal => modal?.classList?.add('hidden'));
   }
 
   ensureViewEngineInitialized(mode) {
@@ -628,36 +686,64 @@ class WindowsTerminalApp {
         if (!this.browserEngine && this.dom.views.browser) {
           this.browserEngine = new CyberBrowserEngine(this, this.audio);
           this.browserEngine.init(this.dom.views.browser);
+          this.modeManager.register('browser', {
+            exit: () => this.browserEngine?.suspend()
+          });
         }
         break;
       case 'explorer':
         if (!this.explorerEngine && this.dom.views.explorer) {
           this.explorerEngine = new CyberExplorerEngine(this, this.audio, this.toasts);
           this.explorerEngine.init(this.dom.views.explorer);
+          this.modeManager.register('explorer', {
+            exit: () => this.explorerEngine?.stopMedia(),
+            destroy: () => this.explorerEngine?.destroy()
+          });
         }
         break;
       case 'taskmgr':
         if (!this.taskmgrEngine && this.dom.views.taskmgr) {
           this.taskmgrEngine = new TaskManagerViewEngine(this, this.audio, this.toasts);
           this.taskmgrEngine.init(this.dom.views.taskmgr);
+          this.modeManager.register('taskmgr', {
+            enter: () => this.taskmgrEngine?.startPolling(),
+            exit: () => this.taskmgrEngine?.stopPolling(),
+            destroy: () => this.taskmgrEngine?.destroy()
+          });
         }
         break;
       case 'radio':
         if (!this.radioEngine && this.dom.views.radio) {
           this.radioEngine = new CyberRadioEngine(this, this.audio);
           this.radioEngine.init(this.dom.views.radio);
+          this.modeManager.register('radio', {
+            enter: () => this.radioEngine?.startVisualizer(),
+            exit: () => {
+              this.radioEngine?.pause();
+              this.radioEngine?.stopVisualizer();
+            },
+            destroy: () => this.radioEngine?.destroy()
+          });
         }
         break;
       case 'wifi':
         if (!this.wifiEngine && this.dom.views.wifi) {
           this.wifiEngine = new CyberWifiEngine(this, this.audio, this.toasts);
           this.wifiEngine.init(this.dom.views.wifi);
+          this.modeManager.register('wifi', {
+            enter: () => this.wifiEngine?.resume(),
+            exit: () => this.wifiEngine?.stop(),
+            destroy: () => this.wifiEngine?.stop()
+          });
         }
         break;
       case 'roguelite':
         if (!this.rogueliteEngine && this.dom.views.roguelite) {
           this.rogueliteEngine = new RogueliteEngine(this, this.audio, this.toasts);
           this.rogueliteEngine.init(this.dom.views.roguelite);
+          this.modeManager.register('roguelite', {
+            exit: () => this.rogueliteEngine?.stop()
+          });
         }
         break;
       case 'trading':
@@ -667,7 +753,8 @@ class WindowsTerminalApp {
             canvas: this.dom.tradingCandleCanvas,
             subCanvas: this.dom.tradingSubCanvas,
             sound: this.audio,
-            toasts: this.toasts
+            toasts: this.toasts,
+            capabilities: RUNTIME_CAPABILITIES
           });
 
           this.tradingEngine.onSignalUpdate = (signal) => {
@@ -697,6 +784,10 @@ class WindowsTerminalApp {
             if (this.hologramAssistant) this.hologramAssistant.updateTelemetryHUD();
           };
 
+          this.tradingEngine.onMLShadowUpdate = (shadowState) => {
+            this.updateMLShadowUI(shadowState);
+          };
+
           this.tradingEngine.onKnowledgeStreamUpdate = (logs, latestLog) => {
             this.updateKnowledgeStreamUI(logs, latestLog);
           };
@@ -716,22 +807,63 @@ class WindowsTerminalApp {
           this.tradingEngine.onMT5DataUpdate = (mt5) => {
             const badgeTxt = document.getElementById('mt5SilentStatusTxt');
             if (badgeTxt && mt5) {
-              badgeTxt.textContent = mt5.mt5_connected ? 'MT5: LIVE (XM)' : 'MT5: SYNCED';
+              const disconnectedLabel = mt5.status === 'REJECTED_UNTRUSTED_MT5_PACKET'
+                ? 'UNTRUSTED PACKET BLOCKED'
+                : mt5.status === 'REJECTED_RECONCILIATION_FAILED'
+                  ? 'RECONCILIATION FAILED'
+                : mt5.status === 'DEMO_GATEWAY_DISABLED'
+                  ? 'DEMO GATEWAY DISABLED'
+                  : 'DISCONNECTED';
+              badgeTxt.textContent = mt5.mt5_connected ? 'MT5: DEMO SHADOW VERIFIED' : `MT5: ${disconnectedLabel}`;
+              badgeTxt.style.color = mt5.mt5_connected ? '#00ff88' : '#ff4466';
             }
+          };
+
+          this.tradingEngine.onDataSourceUpdate = (dataSource) => {
+            const badge = document.getElementById('tradingDataSourceBadge');
+            if (!badge || !dataSource) return;
+            const firstReason = dataSource.decisionReasons?.[0] || dataSource.quality || 'UNVERIFIED';
+            if (dataSource.decisionEligible) {
+              badge.textContent = `DATA: ${dataSource.sourceLabel} • CLOSED BARS VERIFIED`;
+              badge.style.color = '#00ff88';
+              badge.style.borderColor = '#00ff88';
+            } else if (dataSource.isSimulation) {
+              badge.textContent = 'DATA: SIMULATION LAB • NO TRADE';
+              badge.style.color = '#ffaa00';
+              badge.style.borderColor = '#ffaa00';
+            } else {
+              badge.textContent = `DATA BLOCKED: ${firstReason}`;
+              badge.style.color = '#ff4466';
+              badge.style.borderColor = '#ff4466';
+            }
+            const ageLabel = Number.isFinite(dataSource.dataAgeMs)
+              ? `${Math.round(dataSource.dataAgeMs / 1000)}s old`
+              : 'age unavailable';
+            badge.title = `${dataSource.sourceLabel} | ${dataSource.closedBars} closed / ${dataSource.formingBars} forming | ${ageLabel} | ${dataSource.decisionReasons?.join(', ') || 'eligible'}`;
           };
 
           this.tradingEngine.onLiveExecutionUpdate = (data) => {
             if (!data) return;
             const balanceEl = document.getElementById('cockpitAccBalance');
             const pnlEl = document.getElementById('cockpitDailyPnL');
-            if (balanceEl && data.state) balanceEl.textContent = `$${data.state.balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+            if (balanceEl && data.state) {
+              balanceEl.textContent = Number.isFinite(Number(data.state.balance))
+                ? `$${Number(data.state.balance).toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+                : 'UNVERIFIED';
+            }
             if (pnlEl && data.state) {
-              const isProfit = (data.state.dailyProfit || 0) >= 0;
-              pnlEl.textContent = `${isProfit ? '+' : ''}$${(data.state.dailyProfit || 0).toFixed(2)}`;
+              const dailyProfit = Number(data.state.dailyProfit);
+              const isProfit = Number.isFinite(dailyProfit) && dailyProfit >= 0;
+              pnlEl.textContent = Number.isFinite(dailyProfit) ? `${isProfit ? '+' : ''}$${dailyProfit.toFixed(2)}` : 'UNVERIFIED';
             }
           };
 
           this.tradingEngine.init();
+          this.modeManager.register('trading', {
+            enter: () => this.tradingEngine?.resumeStreams(),
+            exit: () => this.tradingEngine?.pauseStreams(),
+            destroy: () => this.tradingEngine?.destroy()
+          });
           this.bindTradingUIEvents();
           if (this.tradingEngine.activeNews) {
             this.updateTradingNewsUI(this.tradingEngine.activeNews);
@@ -742,6 +874,11 @@ class WindowsTerminalApp {
           if (this.tradingEngine.aiJournal) {
             this.updateAIJournalUI(this.tradingEngine.aiJournal);
           }
+          this.updateMLShadowUI({
+            model: this.tradingEngine.mlShadowModel,
+            report: this.tradingEngine.mlShadowReport,
+            prediction: this.tradingEngine.mlShadowPrediction
+          });
           if (this.tradingEngine.getAIProfileDetails) {
             this.updateAIProfileUI(this.tradingEngine.getAIProfileDetails());
           }
@@ -780,7 +917,10 @@ class WindowsTerminalApp {
 
   updateTradingNewsUI(news) {
     if (!news) return;
-    if (this.dom.tradingNewsSource) this.dom.tradingNewsSource.textContent = `[ ${news.source} • ${news.time} ]`;
+    if (this.dom.tradingNewsSource) {
+      const provenance = news.provenance === 'SIMULATED_SCENARIO' ? 'SIMULATED' : 'VERIFIED';
+      this.dom.tradingNewsSource.textContent = `[ ${provenance} • ${news.source} • ${news.time} ]`;
+    }
     if (this.dom.tradingNewsHeadline) this.dom.tradingNewsHeadline.textContent = news.headline;
     if (this.dom.tradingNewsSentimentBadge) {
       const isBullish = news.sentiment === 'BULLISH';
@@ -804,7 +944,7 @@ class WindowsTerminalApp {
       this.dom.aiRiskWarning.textContent = signal.riskWarning;
     }
 
-    if (this.dom.aiConfidenceVal) this.dom.aiConfidenceVal.textContent = `${signal.confidence}%`;
+    if (this.dom.aiConfidenceVal) this.dom.aiConfidenceVal.textContent = `${signal.ruleScore} / 100`;
     if (this.dom.aiRrVal) this.dom.aiRrVal.textContent = signal.rrRatio;
 
     const digits = this.tradingEngine?.activeAsset?.digits || 2;
@@ -847,16 +987,17 @@ class WindowsTerminalApp {
       }
     } else {
       if (expBadge) {
-        expBadge.textContent = 'MONITORING';
+        expBadge.textContent = 'ZERO INFLUENCE';
         expBadge.style.color = '#8b9cb0';
         expBadge.style.borderColor = 'rgba(255,255,255,0.1)';
       }
       if (expContent) {
-        expContent.textContent = 'กำลังสแกนเปรียบเทียบพฤติกรรมแท่งเทียนปัจจุบันกับฐานความรู้สถิติในอดีต (Knowledge Matrix)...';
+        const memoryReason = signal.decisionMemoryPolicy?.reason || 'NO_VALIDATED_MEMORY';
+        expContent.textContent = `ความจำจาก Simulation Gym ไม่มีน้ำหนักต่อ Rule Score • ต้องเป็นข้อมูล Walk-forward นอกชุดฝึกที่ผ่านการตรวจสอบก่อน (${memoryReason})`;
       }
     }
 
-    // Render Multi-Agent Quant Desk Consensus
+    // Render deterministic analysis modules.
     const deskBadge = document.getElementById('aiDeskConsensusBadge');
     const agentsGrid = document.getElementById('aiQuantAgentsGrid');
     if (signal.quantDesk && agentsGrid) {
@@ -870,41 +1011,47 @@ class WindowsTerminalApp {
         row.className = 'agent-row-box';
         row.innerHTML = `
           <div class="agent-name-role">
-            <span class="agent-name">${ag.name}</span>
-            <span class="agent-role">${ag.detail}</span>
+            <span class="agent-name">${this.escapeHtml(ag.name)}</span>
+            <span class="agent-role">${this.escapeHtml(ag.detail)}</span>
           </div>
-          <span class="agent-vote-tag">${ag.vote}</span>
+          <span class="agent-vote-tag">${this.escapeHtml(ag.vote)}</span>
         `;
         agentsGrid.appendChild(row);
       });
     }
 
-    // Render Market Regime & Monte Carlo Probability
+    // Render Market Regime & deterministic rule-alignment score.
     const regimeBadge = document.getElementById('tradingRegimeBadge');
     if (regimeBadge && signal.regime) {
       regimeBadge.className = `regime-badge-chip ${signal.regime.badgeClass}`;
       regimeBadge.textContent = `${signal.regime.icon} ${signal.regime.label}`;
     }
-    const mcVal = document.getElementById('monteCarloProbVal');
-    if (mcVal && signal.monteCarlo) {
-      mcVal.textContent = `${signal.monteCarlo.tpProbabilityPercent}%`;
+    const targetScoreVal = document.getElementById('targetRuleScoreVal');
+    if (targetScoreVal && signal.targetScore) {
+      targetScoreVal.textContent = `${signal.targetScore.scorePercent}%`;
     }
 
-    // Render Adversarial Debate (Bull vs Bear)
+    // Render one deterministic bullish-vs-risk countercheck.
     const debateBadge = document.getElementById('aiDebateOutcomeBadge');
     const bullArgs = document.getElementById('aiBullArgsList');
     const bearArgs = document.getElementById('aiBearArgsList');
-    if (signal.adversarialDebate) {
+    const countercheckView = signal.ruleCountercheck ? {
+      debateOutcome: signal.ruleCountercheck.outcome,
+      debateColor: signal.ruleCountercheck.outcomeColor,
+      bullAdvocate: { arguments: signal.ruleCountercheck.bullishFactors },
+      bearSkeptic: { arguments: signal.ruleCountercheck.riskFactors }
+    } : signal.adversarialDebate;
+    if (countercheckView) {
       if (debateBadge) {
-        debateBadge.textContent = signal.adversarialDebate.debateOutcome;
-        debateBadge.style.color = signal.adversarialDebate.debateColor;
-        debateBadge.style.borderColor = signal.adversarialDebate.debateColor;
+        debateBadge.textContent = countercheckView.debateOutcome;
+        debateBadge.style.color = countercheckView.debateColor;
+        debateBadge.style.borderColor = countercheckView.debateColor;
       }
-      if (bullArgs && Array.isArray(signal.adversarialDebate.bullAdvocate.arguments)) {
-        bullArgs.innerHTML = signal.adversarialDebate.bullAdvocate.arguments.map(a => `<div>• ${a}</div>`).join('');
+      if (bullArgs && Array.isArray(countercheckView.bullAdvocate.arguments)) {
+        bullArgs.innerHTML = countercheckView.bullAdvocate.arguments.map(a => `<div>• ${this.escapeHtml(a)}</div>`).join('');
       }
-      if (bearArgs && Array.isArray(signal.adversarialDebate.bearSkeptic.arguments)) {
-        bearArgs.innerHTML = signal.adversarialDebate.bearSkeptic.arguments.map(a => `<div>• ${a}</div>`).join('');
+      if (bearArgs && Array.isArray(countercheckView.bearSkeptic.arguments)) {
+        bearArgs.innerHTML = countercheckView.bearSkeptic.arguments.map(a => `<div>• ${this.escapeHtml(a)}</div>`).join('');
       }
     }
 
@@ -916,8 +1063,8 @@ class WindowsTerminalApp {
         const item = document.createElement('div');
         item.className = 'cot-node-item';
         item.innerHTML = `
-          <span class="cot-node-title">${node.title}</span>
-          <span class="cot-node-status" style="color: ${node.isPass ? '#00ff88' : '#ff4466'};">${node.status}</span>
+          <span class="cot-node-title">${this.escapeHtml(node.title)}</span>
+          <span class="cot-node-status" style="color: ${node.isPass ? '#00ff88' : '#ff4466'};">${this.escapeHtml(node.status)}</span>
         `;
         cotFlow.appendChild(item);
       });
@@ -927,13 +1074,15 @@ class WindowsTerminalApp {
   updateMoneyManagementUI(mm) {
     if (!mm) return;
     const lots = document.getElementById('mmCalculatedLots');
-    if (lots) lots.textContent = `${mm.calculatedLots} Lots`;
+    if (lots) lots.textContent = mm.sizeUnit === 'LOTS'
+      ? `${mm.sizeValue} Lots`
+      : `${mm.sizeValue} Units`;
 
     const riskUSD = document.getElementById('mmRiskUSD');
     if (riskUSD) riskUSD.textContent = `$${mm.riskUSD.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
     const marginLvl = document.getElementById('mmMarginLevel');
-    if (marginLvl) marginLvl.textContent = `${mm.marginLevel}%`;
+    if (marginLvl) marginLvl.textContent = mm.marginLevel === null ? 'N/A' : `${mm.marginLevel}%`;
 
     const marginStatus = document.getElementById('mmMarginStatus');
     if (marginStatus) marginStatus.textContent = mm.marginStatus;
@@ -954,9 +1103,10 @@ class WindowsTerminalApp {
     const rangeSlider = document.getElementById('replayRangeSlider');
     const exitBtn = document.getElementById('btnExitReplay');
     const toggleBtn = document.getElementById('btnToggleReplay');
+    const playPauseBtn = document.getElementById('btnReplayPlayPause');
 
     if (progressText) {
-      progressText.textContent = replayState.isReplay ? `REPLAY (${replayState.index}/${replayState.total})` : `LIVE (${replayState.total}/${replayState.total})`;
+      progressText.textContent = replayState.isReplay ? `REPLAY (${replayState.index}/${replayState.total})` : `DATA WINDOW (${replayState.total}/${replayState.total})`;
     }
     if (rangeSlider) {
       rangeSlider.max = replayState.total;
@@ -968,6 +1118,34 @@ class WindowsTerminalApp {
     if (toggleBtn) {
       toggleBtn.classList.toggle('btn-replay-toggle', !replayState.isReplay);
     }
+    if (playPauseBtn) {
+      playPauseBtn.textContent = replayState.isPlaying ? '⏸️' : '▶️';
+      playPauseBtn.title = replayState.isPlaying ? 'Pause chart replay' : 'Play chart replay';
+    }
+  }
+
+  updateBacktestUI(result) {
+    const summary = document.getElementById('backtestAuditSummary');
+    if (!summary || !result) return;
+    if (!result.metrics) {
+      summary.textContent = `BACKTEST ${result.status} • Input data rejected • No orders evaluated`;
+      return;
+    }
+    const metrics = result.metrics;
+    const profitFactor = metrics.profitFactor === null ? 'NO LOSSES' : metrics.profitFactor;
+    const feedLabel = result.dataProvenance?.feedWasRealAtRuntime ? 'EXCHANGE FEED' : 'SIMULATED FEED';
+    summary.textContent = [
+      `BACKTEST ${result.status}`,
+      `${metrics.totalTrades} TRADES`,
+      `NET $${metrics.netPnl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      `RETURN ${metrics.returnPercent}%`,
+      `MAX DD ${metrics.maximumDrawdownPercent}%`,
+      `PF ${profitFactor}`,
+      `FEES $${metrics.feesPaid.toFixed(2)}`,
+      `${feedLabel} / ${result.dataProvenance?.candleCount || 0} BARS`,
+      'BAR-CLOSE → NEXT-OPEN',
+      'NO NEWS / NO MT5'
+    ].join(' • ');
   }
 
   updateTradingPositionsUI(positions = []) {
@@ -1084,7 +1262,7 @@ class WindowsTerminalApp {
       this.dom.btnOrderLong.addEventListener('click', () => {
         if (this.tradingEngine) {
           const mm = this.tradingEngine.getMoneyManagementDetails();
-          this.tradingEngine.openPosition('LONG', mm.riskUSD || 2000);
+          this.tradingEngine.openPosition('LONG', mm.requiredMarginUSD || 2000);
         }
       });
     }
@@ -1092,7 +1270,7 @@ class WindowsTerminalApp {
       this.dom.btnOrderShort.addEventListener('click', () => {
         if (this.tradingEngine) {
           const mm = this.tradingEngine.getMoneyManagementDetails();
-          this.tradingEngine.openPosition('SHORT', mm.riskUSD || 2000);
+          this.tradingEngine.openPosition('SHORT', mm.requiredMarginUSD || 2000);
         }
       });
     }
@@ -1147,6 +1325,30 @@ class WindowsTerminalApp {
       });
     }
 
+    const btnReplayPlayPause = document.getElementById('btnReplayPlayPause');
+    if (btnReplayPlayPause) {
+      btnReplayPlayPause.addEventListener('click', () => {
+        if (!this.tradingEngine) return;
+        const isPlaying = this.tradingEngine.toggleReplayPlayback();
+        btnReplayPlayPause.textContent = isPlaying ? '⏸️' : '▶️';
+        btnReplayPlayPause.title = isPlaying ? 'Pause chart replay' : 'Play chart replay';
+      });
+    }
+
+    const btnRunRuleBacktest = document.getElementById('btnRunRuleBacktest');
+    if (btnRunRuleBacktest) {
+      btnRunRuleBacktest.addEventListener('click', () => {
+        if (!this.tradingEngine) return;
+        const result = this.tradingEngine.runRuleBacktest();
+        this.updateBacktestUI(result);
+        if (this.toasts) this.toasts.show(
+          result.status === 'COMPLETED' ? 'SUCCESS' : 'INFO',
+          `BACKTEST ${result.status}: ${result.metrics?.totalTrades || 0} TRADES`,
+          2600
+        );
+      });
+    }
+
     const replaySlider = document.getElementById('replayRangeSlider');
     if (replaySlider) {
       replaySlider.addEventListener('input', (e) => {
@@ -1191,7 +1393,26 @@ class WindowsTerminalApp {
     }
     if (this.dom.chkAIAutoTrader) {
       this.dom.chkAIAutoTrader.addEventListener('change', (e) => {
-        if (this.tradingEngine) this.tradingEngine.toggleAutoTrading(e.target.checked);
+        const enabled = this.tradingEngine ? this.tradingEngine.toggleAutoTrading(e.target.checked) : false;
+        e.target.checked = enabled;
+      });
+    }
+    if (this.dom.btnRunMLShadow) {
+      this.dom.btnRunMLShadow.addEventListener('click', async () => {
+        if (!this.tradingEngine || this.dom.btnRunMLShadow.disabled) return;
+        const originalText = this.dom.btnRunMLShadow.textContent;
+        this.dom.btnRunMLShadow.disabled = true;
+        this.dom.btnRunMLShadow.textContent = 'FETCHING + EVALUATING...';
+        try {
+          const result = await this.tradingEngine.runMLShadowEvaluation();
+          if (!result?.success) this.updateMLShadowUI({ error: result?.reason || 'ML_SHADOW_EVALUATION_FAILED' });
+        } catch (error) {
+          console.error('[ML Shadow] Evaluation failed closed:', error);
+          this.updateMLShadowUI({ error: 'ML_SHADOW_EVALUATION_FAILED_CLOSED' });
+        } finally {
+          this.dom.btnRunMLShadow.disabled = false;
+          this.dom.btnRunMLShadow.textContent = originalText;
+        }
       });
     }
 
@@ -1242,14 +1463,42 @@ class WindowsTerminalApp {
     const btnCockpitPause = document.getElementById('btnCockpitPause');
     const btnCockpitKill = document.getElementById('btnCockpitEmergencyKill');
 
+    if (btnCockpitStart && !RUNTIME_CAPABILITIES.liveTradingEnabled) {
+      btnCockpitStart.disabled = true;
+      btnCockpitStart.textContent = '🔒 PAPER ONLY — LIVE DISABLED';
+      btnCockpitStart.title = 'Live broker execution is locked until Demo certification passes.';
+      const tag = document.getElementById('cockpitLiveStatusTag');
+      if (tag) {
+        tag.textContent = 'PAPER ONLY';
+        tag.style.color = '#ffd700';
+        tag.style.borderColor = '#ffd700';
+      }
+      if (btnCockpitKill) {
+        btnCockpitKill.disabled = true;
+        btnCockpitKill.textContent = '🔒 KILL-SWITCH — NO VERIFIED BROKER';
+        btnCockpitKill.title = 'No authenticated broker execution session exists.';
+      }
+    }
+
     if (btnCockpitStart) {
-      btnCockpitStart.addEventListener('click', () => {
+      btnCockpitStart.addEventListener('click', async () => {
         const tp = document.getElementById('cfgTargetProfit')?.value || 500;
         const dd = document.getElementById('cfgMaxDrawdown')?.value || 150;
         const maxPos = document.getElementById('cfgMaxPositions')?.value || 2;
 
-        if (this.tradingEngine) {
-          this.tradingEngine.startLiveAutoExecution({ targetProfitUSD: tp, maxDrawdownUSD: dd, maxPositions: maxPos });
+        const result = this.tradingEngine
+          ? await this.tradingEngine.startLiveAutoExecution({ targetProfitUSD: tp, maxDrawdownUSD: dd, maxPositions: maxPos })
+          : { success: false, reason: 'TRADING_ENGINE_UNAVAILABLE' };
+
+        if (!result || result.success !== true) {
+          const tag = document.getElementById('cockpitLiveStatusTag');
+          if (tag) {
+            tag.textContent = 'PAPER ONLY';
+            tag.style.color = '#ffd700';
+            tag.style.borderColor = '#ffd700';
+          }
+          if (this.toasts) this.toasts.show('WARNING', `🔒 LIVE EXECUTION BLOCKED: ${result?.reason || 'NOT CERTIFIED'}`, 3500);
+          return;
         }
         btnCockpitStart.classList.add('hidden');
         if (btnCockpitPause) btnCockpitPause.classList.remove('hidden');
@@ -1279,18 +1528,25 @@ class WindowsTerminalApp {
     }
 
     if (btnCockpitKill) {
-      btnCockpitKill.addEventListener('click', () => {
-        if (this.tradingEngine) this.tradingEngine.emergencyKillAll();
+      btnCockpitKill.addEventListener('click', async () => {
+        const result = this.tradingEngine
+          ? await this.tradingEngine.emergencyKillAll()
+          : { success: false, reason: 'TRADING_ENGINE_UNAVAILABLE' };
         if (btnCockpitPause) btnCockpitPause.classList.add('hidden');
         if (btnCockpitStart) btnCockpitStart.classList.remove('hidden');
         const tag = document.getElementById('cockpitLiveStatusTag');
         if (tag) {
-          tag.textContent = 'KILL-SWITCH ACTIVATED';
+          tag.textContent = result?.success ? 'KILL-SWITCH VERIFIED' : 'KILL-SWITCH UNVERIFIED';
           tag.style.color = '#ff4466';
           tag.style.borderColor = '#ff4466';
         }
         if (this.audio && this.audio.playError) this.audio.playError();
-        if (this.toasts) this.toasts.show('DANGER', '🚨 EMERGENCY KILL-SWITCH: ALL POSITIONS CLOSED', 5000);
+        if (this.toasts) {
+          const message = result?.success
+            ? '🚨 EMERGENCY KILL-SWITCH VERIFIED: BROKER CONFIRMED'
+            : `⚠️ KILL-SWITCH NOT VERIFIED: ${result?.reason || 'BROKER UNREACHABLE'}`;
+          this.toasts.show(result?.success ? 'DANGER' : 'WARNING', message, 5000);
+        }
       });
     }
 
@@ -1346,12 +1602,46 @@ class WindowsTerminalApp {
     if (this.dom.aiAdaptationLevel) this.dom.aiAdaptationLevel.textContent = `LEVEL ${stats.adaptationLevel}`;
   }
 
+  updateMLShadowUI({ model = null, report = null, prediction = null, error = null } = {}) {
+    if (error) {
+      if (this.dom.mlShadowStatus) this.dom.mlShadowStatus.textContent = `SHADOW EVALUATION BLOCKED: ${error}`;
+      if (this.dom.mlShadowMetrics) this.dom.mlShadowMetrics.textContent = 'No model or trading decision was changed.';
+      return;
+    }
+    if (!model || !report) {
+      if (this.dom.mlShadowStatus) this.dom.mlShadowStatus.textContent = 'NO VALIDATED MODEL — SHADOW ONLY';
+      if (this.dom.mlShadowMetrics) this.dom.mlShadowMetrics.textContent = 'Run evaluation to create real local weights. Synthetic Gym data is never used here.';
+      return;
+    }
+    const collapsedPredictions = report.walkForward
+      && report.walkForward.nonDegenerateFoldCount < report.walkForward.foldCount;
+    const promotionText = collapsedPredictions
+      ? 'ONE-SIDED MODEL COLLAPSE DETECTED — SHADOW'
+      : report.promotionCandidate
+        ? 'EVIDENCE GATE PASSED — STILL SHADOW'
+        : 'EVIDENCE GATE NOT PASSED';
+    if (this.dom.mlShadowStatus) {
+      this.dom.mlShadowStatus.textContent = `${promotionText} • ${model.samplesSeen} REAL TRAINING EXAMPLES • ZERO TRADE INFLUENCE`;
+    }
+    if (this.dom.mlShadowMetrics) {
+      const test = report.test;
+      const walkForward = report.walkForward;
+      const rawPrediction = prediction
+        ? ` • CURRENT RAW P(UP) ${(prediction.rawProbabilityUp * 100).toFixed(1)}% (UNCALIBRATED)`
+        : '';
+      const walkForwardText = walkForward
+        ? ` • WF ${walkForward.foldCount} FOLDS BAL ACC ${(walkForward.aggregate.balancedAccuracy * 100).toFixed(1)}% • WORST ${(walkForward.minimumFoldBalancedAccuracy * 100).toFixed(1)}% • PRED UP ${(walkForward.aggregate.predictedPositiveRate * 100).toFixed(1)}%`
+        : '';
+      this.dom.mlShadowMetrics.textContent = `HOLDOUT ${report.split.test} • BAL ACC ${(test.balancedAccuracy * 100).toFixed(1)}% • BRIER ${test.brier.toFixed(4)} vs BASE ${test.baseline.brier.toFixed(4)}${walkForwardText} • ${report.dataProvenance.source}${rawPrediction}`;
+    }
+  }
+
   updateAIJournalUI(journal) {
     if (!this.dom.aiJournalFeed || !Array.isArray(journal)) return;
     this.dom.aiJournalFeed.innerHTML = '';
 
     if (journal.length === 0) {
-      this.dom.aiJournalFeed.innerHTML = '<div style="color: #64748b; font-size: 10px; text-align: center; padding: 12px;">No training logs recorded yet. Run Fast-Train or let AI trade live.</div>';
+      this.dom.aiJournalFeed.innerHTML = '<div style="color: #64748b; font-size: 10px; text-align: center; padding: 12px;">No paper-simulation logs recorded yet. Run Fast-Train or the automatic paper scenario.</div>';
       return;
     }
 
@@ -1361,16 +1651,18 @@ class WindowsTerminalApp {
 
       const pnlColor = tr.isWin ? '#00ff66' : '#ff2244';
       const badgeClass = tr.isWin ? 'journal-badge-win' : 'journal-badge-loss';
-      const badgeText = tr.isWin ? `WIN (+${tr.pnlPercent}%)` : `LOSS (${tr.pnlPercent}%)`;
+      const pnlPercent = Number.isFinite(Number(tr.pnlPercent)) ? Number(tr.pnlPercent) : 0;
+      const pnlUSD = Number.isFinite(Number(tr.pnlUSD)) ? Number(tr.pnlUSD) : 0;
+      const badgeText = tr.isWin ? `WIN (+${pnlPercent}%)` : `LOSS (${pnlPercent}%)`;
 
       item.innerHTML = `
         <div class="journal-item-top">
-          <span class="journal-asset">🤖 [AI ${tr.side}] ${tr.assetId}</span>
-          <span class="${badgeClass}">${badgeText} • <span style="color: ${pnlColor};">${tr.isWin ? '+' : ''}$${tr.pnlUSD.toFixed(2)}</span></span>
+          <span class="journal-asset">📋 [RULE ${this.escapeHtml(tr.side)}] ${this.escapeHtml(tr.assetId)}</span>
+          <span class="${badgeClass}">${badgeText} • <span style="color: ${pnlColor};">${tr.isWin ? '+' : ''}$${pnlUSD.toFixed(2)}</span></span>
         </div>
-        <div class="journal-setup-tag">SETUP: ${tr.setupName} (${tr.closeTime})</div>
-        <div class="journal-post-mortem">${tr.postMortem}</div>
-        <div class="journal-lesson-box ${tr.isWin ? 'win' : 'loss'}">${tr.learningLesson}</div>
+        <div class="journal-setup-tag">SETUP: ${this.escapeHtml(tr.setupName)} (${this.escapeHtml(tr.closeTime)})</div>
+        <div class="journal-post-mortem">${this.escapeHtml(tr.postMortem)}</div>
+        <div class="journal-lesson-box ${tr.isWin ? 'win' : 'loss'}">${this.escapeHtml(tr.learningLesson)}</div>
       `;
 
       this.dom.aiJournalFeed.appendChild(item);
@@ -1389,16 +1681,16 @@ class WindowsTerminalApp {
     if (xpBar) xpBar.style.width = `${profile.xpPercent}%`;
 
     const samples = document.getElementById('aiProfileSamples');
-    if (samples) samples.textContent = `${profile.samplesStudied.toLocaleString()}+`;
+    if (samples) samples.textContent = profile.samplesStudied.toLocaleString();
 
     const pf = document.getElementById('aiProfileProfitFactor');
-    if (pf) pf.textContent = `${profile.profitFactor}x`;
+    if (pf) pf.textContent = profile.profitFactor === 'N/A' ? 'N/A' : `${profile.profitFactor}x`;
 
     const cog = document.getElementById('aiProfileCognition');
-    if (cog) cog.textContent = profile.strategyCognition;
+    if (cog) cog.textContent = profile.strategyCoverage;
 
     const syn = document.getElementById('aiProfileSynapse');
-    if (syn) syn.textContent = profile.memorySynapse;
+    if (syn) syn.textContent = profile.journalSize;
 
     const skillsGrid = document.getElementById('aiSkillMasteryGrid');
     if (skillsGrid && Array.isArray(profile.skills)) {
@@ -1438,7 +1730,7 @@ class WindowsTerminalApp {
       item.innerHTML = `
         <div class="feed-item-top">
           <span class="feed-cat-badge">${log.badge}</span>
-          <span class="feed-source">${log.source}</span>
+          <span class="feed-source">SIMULATED REFERENCE // ${log.source}</span>
           <span class="feed-time">${log.timestamp}</span>
         </div>
         <div class="feed-text">${log.text}</div>
@@ -1492,6 +1784,7 @@ class WindowsTerminalApp {
 
     // Lazily initialize engine for the target view if needed
     this.ensureViewEngineInitialized(targetMode);
+    this.modeManager.enter(targetMode, { app: this });
 
     // Toggle body.mode-trading to hide the physical keyboard dock when in Trading view
     const isTrading = targetMode === 'trading';
@@ -1538,7 +1831,7 @@ class WindowsTerminalApp {
       updateClock();
     }
 
-    // 2. Real-time PBKDF2/SHA-512 Hash Generation on Secret Gate Input
+    // 2. Decorative input fingerprint preview (the real stored credential is PBKDF2-SHA256)
     const gateInput = document.getElementById('secretGateInput');
     const hashValEl = document.getElementById('hsmHashVal');
     if (gateInput && hashValEl) {
@@ -1763,11 +2056,11 @@ class WindowsTerminalApp {
   // STAGE 0 & 1 AUTHENTICATION
   // =========================================================================
 
-  handleSecretGateSubmit() {
+  async handleSecretGateSubmit() {
     this.audio.ensureContext();
     const code = this.dom.secretGateInput.value.trim();
 
-    if (!profileStore.verifySecretGatePasscode(code)) {
+    if (!await profileStore.verifySecretGatePasscode(code)) {
       this.audio.playErrorSound();
       this.dom.gateErrorMsg.classList.remove('hidden');
       return;
@@ -1798,11 +2091,11 @@ class WindowsTerminalApp {
     // NORMAL INITIAL BOOT FLOW -> Continue to Stage 2 PAM Station
     this.dom.gateStreamBox.classList.remove('hidden');
     const lines = [
-      `[+] HSM MASTER PASSPHRASE VERIFIED [OK]`,
-      `>> DERIVING CRYPTOGRAPHIC KEYS (PBKDF2 / SHA-512)...`,
-      `>> TPM 2.0 PCR ENCLAVE REGISTER MATCHED`,
-      `>> ACCESS CONTROL: SEC-LEVEL 5 ROOT GRANTED`,
-      `[✓] CONNECTING TO ENTERPRISE PAM WORKSTATION DAEMON...`
+      `[+] LOCAL PROFILE PASSPHRASE VERIFIED [OK]`,
+      `>> VERIFYING PBKDF2-SHA256 CREDENTIAL HASH...`,
+      `>> LOCAL APPLICATION PROFILE MATCHED`,
+      `>> ACCESS CONTROL: APP SESSION UNLOCKED`,
+      `[✓] CONTINUING TO LOCAL OPERATOR LOGIN...`
     ];
 
     let lIdx = 0;
@@ -1855,7 +2148,7 @@ class WindowsTerminalApp {
     if (this.toasts) this.toasts.show('INFO', '🔒 WORKSTATION LOCKED // LAYER-1 TOKEN PASS REQUIRED', 2500);
   }
 
-  handleLogin() {
+  async handleLogin() {
     this.audio.ensureContext();
     const user = this.dom.loginUserField.value.trim();
     const pass = this.dom.loginPassField.value.trim();
@@ -1867,13 +2160,13 @@ class WindowsTerminalApp {
     }
 
     if (!pass) {
-      if (this.toasts) this.toasts.show('ERROR', '⚠️ KERBEROS / PAM PASSPHRASE REQUIRED', 2000);
+      if (this.toasts) this.toasts.show('ERROR', '⚠️ LOCAL PROFILE PASSPHRASE REQUIRED', 2000);
       this.dom.loginPassField.focus();
       return;
     }
 
     // STRICT AUTHENTICATION VALIDATION: Must match profile credentials (Default: Anan / Infinity)
-    if (!profileStore.verifyCredentials(user, pass)) {
+    if (!await profileStore.verifyCredentials(user, pass)) {
       if (this.audio && this.audio.playErrorSound) this.audio.playErrorSound();
       if (this.toasts) this.toasts.show('ERROR', '✖ ACCESS DENIED: INVALID USERNAME OR PAM PASSPHRASE', 2500);
       this.dom.loginPassField.value = '';
@@ -1887,7 +2180,7 @@ class WindowsTerminalApp {
 
     this.updatePromptPath();
     if (this.dom.cliSessionUser) {
-      this.dom.cliSessionUser.textContent = `${this.username} (UID: 0)`;
+      this.dom.cliSessionUser.textContent = `${this.username} (LOCAL APP PROFILE)`;
     }
 
     this.audio.playEnterSound();
@@ -2025,7 +2318,7 @@ class WindowsTerminalApp {
         this.dom.transDossierExpFill.style.width = `${pct}%`;
       }
       if (this.dom.transDossierWpm) this.dom.transDossierWpm.textContent = `${prof.stats?.peakWpm || 0} WPM`;
-      if (this.dom.transDossierAcc) this.dom.transDossierAcc.textContent = `${prof.stats?.avgAccuracy || 100}%`;
+      if (this.dom.transDossierAcc) this.dom.transDossierAcc.textContent = `${prof.avgAccuracy ?? 100}%`;
       if (this.dom.transDossierCredits) this.dom.transDossierCredits.textContent = `${(prof.credits || 0).toLocaleString()} CC`;
       if (this.dom.transDossierBtc) this.dom.transDossierBtc.textContent = `₿ ${prof.bitcoin || 0}`;
     }
@@ -2181,7 +2474,7 @@ class WindowsTerminalApp {
   }
 
   // =========================================================================
-  // ADVANCED REAL-WORLD CLI COMMAND PARSER
+  // CLI command parser with explicit host/simulation source labeling
   // =========================================================================
 
   async executeCliCommand(cmdLine) {
@@ -2193,7 +2486,7 @@ class WindowsTerminalApp {
 
     const histLine = document.createElement('div');
     histLine.className = 'cli-history-line';
-    histLine.innerHTML = `<span class="term-prompt">${this.dom.cliPromptPath.textContent}</span> ${this.escapeHtml(raw)}`;
+    histLine.innerHTML = `<span class="term-prompt">${this.escapeHtml(this.dom.cliPromptPath.textContent)}</span> ${this.escapeHtml(raw)}`;
     this.dom.cliHistory.appendChild(histLine);
 
     const parts = raw.split(/\s+/);
@@ -2211,7 +2504,9 @@ class WindowsTerminalApp {
       case 'help':
       case '?':
         output = `
-AVAILABLE CYBER TERMINAL & REAL-WORLD OS COMMANDS:
+AVAILABLE CYBER TERMINAL COMMANDS:
+HOST SOURCE POLICY: READ OPERATIONS ARE LABELED. HOST MUTATIONS ARE DISABLED BY DEFAULT.
+THE LINUX/SOC COMMAND GROUP BELOW IS A FICTIONAL TRAINING DISPLAY, NOT HOST TELEMETRY.
 -----------------------------------------------------------------------------------------
 [ 🖥️ CYBER OPERATING SYSTEM & WORKSPACE SUITE ]
   explorer / files / drives    - 📂 Cyber File Explorer & Real Desktop App Matrix (Steam, Games, Drives)
@@ -2221,23 +2516,23 @@ AVAILABLE CYBER TERMINAL & REAL-WORLD OS COMMANDS:
   workspace / devmode / gamemode - 🕶️ Mr. Robot 1-Click Batch Workspace Launcher (Dev, Gaming, Chill, Sec)
   heat / heatmap / biometric   - 🧠 Matrix Biometric Thermal Keyboard Heatmap & Hand Fatigue Analyzer
 
-[ 🛡️ MILITARY-GRADE LINUX/UNIX SYSADMIN &amp; SOC SUITE ]
-  dmesg                        - 📜 Linux Kernel Boot Ring Buffer (PCIe, eBPF, ACPI, IOMMU, TPM 2.0)
-  netstat / ss / sockets       - 🔌 Real Network Sockets & Active Channel Monitor (TCP/UDP/UNIX)
-  iptables / ufw / firewall    - 🛡️ Kernel IP Packet Filtering Chains (DROP/ACCEPT/PORT-SCAN Defense)
-  systemctl / service          - ⚙️ Systemd Unit Manager & Microservice Daemon Watcher
-  siem / soc                   - 🚨 Live Security Operations Center (SOC) Incident Command & Ban List
-  crypto / cipherbench         - ⚡ Hardware Cryptographic Accelerator Benchmark (AES-NI/AVX-512 GB/s)
-  iotop / iostat               - 💾 NVMe Controller & Storage Bus I/O Throughput (MB/s & IOPS)
-  strace                       - 🔬 Live System Call Tracer (epoll_wait, mprotect, futex, read/write)
-  lsof                         - 📂 Open File Descriptors & Memory-Mapped IPC Socket Auditor
+[ 🛡️ FICTIONAL LINUX/UNIX & SOC TRAINING DISPLAYS ]
+  dmesg                        - 📜 Simulated Linux kernel-log display
+  netstat / ss / sockets       - 🔌 Simulated socket table; does not inspect host sockets
+  iptables / ufw / firewall    - 🛡️ Simulated firewall table; does not change host rules
+  systemctl / service          - ⚙️ Simulated service list; does not control host services
+  siem / soc                   - 🚨 Simulated SOC incident exercise
+  crypto / cipherbench         - ⚡ Simulated benchmark; not a hardware measurement
+  iotop / iostat               - 💾 Simulated storage telemetry
+  strace                       - 🔬 Simulated system-call trace
+  lsof                         - 📂 Simulated descriptor table
 
 [ ⚡ IN-APP CODE STUDIO, BROWSER & INTELLIGENCE ]
   code / vscode / ide [lang]   - ⚡ VS Code Studio (Python, HTML, C++, Rust, SQL) with AI Cyber Tutor
   trade / trading / crypto     - 📈 AI Neural Quantitative Trading Terminal & Pattern Recommendation Engine
   browser / web / surf [url]   - 🌐 In-App Chromium Cyber Browser with Picture-in-Picture mode
   yt / youtube [query]         - 📺 Stream YouTube videos directly inside the terminal browser
-  news / market / btc / intel  - 📈 Live Real-time Binance Crypto (BTC/ETH) & Hacker News Intel Feed
+  news / market / btc / intel  - 📈 Source-labeled Binance crypto/Hacker News with simulated fallbacks
 
 [ 💻 REAL APPLICATION LAUNCHER & FILESYSTEM ]
   open [app / url / path]      - Launch real PC programs (Chrome, Calc, Notepad, Spotify, Steam, Discord)
@@ -2246,14 +2541,14 @@ AVAILABLE CYBER TERMINAL & REAL-WORLD OS COMMANDS:
   pwd                          - Print real working directory
   cd [dir / ..]                - Change real current directory on host computer
   cat / read [file]            - Read and stream actual file contents to terminal
-  mkdir [name]                 - Create real directory on computer
-  touch [name]                 - Create empty file on computer
-  nano / edit [file]           - Open real file in built-in Cyber Notepad editor
-  encrypt [file] [key]         - AES-256 military-grade file encryption
-  shred [file]                 - Secure multi-pass data wiper
-  neofetch / sysinfo           - Hollywood ASCII System Dossier (CPU, RAM, OS, Uptime, Host)
+  mkdir [name]                 - Create directory (blocked while safe mode is enabled)
+  touch [name]                 - Create file (blocked while safe mode is enabled)
+  nano / edit [file]           - Open file in built-in editor; saving may be blocked by safe mode
+  encrypt [file] [key]         - AES-256-GCM copy; source is preserved; blocked by safe mode
+  shred [file]                 - Best-effort overwrite/delete; not guaranteed secure erase; blocked by safe mode
+  neofetch / sysinfo           - Host-labeled CPU, RAM, OS and uptime summary
   ping [host]                  - Real ICMP network latency probe (e.g. 'ping google.com')
-  exec [powershell cmd]        - Run ANY native PowerShell/CMD command directly on host PC
+  exec [powershell cmd]        - Advanced host command bridge; disabled by default
 
 [ 🎮 HACKING SIMULATORS, GAMES & ROGUELITE ]
   roguelite / rl / crawl       - ✨ Cyberspace Node-Crawl Roguelite (Hacky Minigames & Mainframe Boss)
@@ -2261,13 +2556,13 @@ AVAILABLE CYBER TERMINAL & REAL-WORLD OS COMMANDS:
   hacker [1-4|stream]          - 💻 Cyber Infiltration Simulator with Live Automated Stream
   speed [0|15|30|60]           - ⚡ Speed Typing Rush ('speed 0' = Endless Marathon Benchmark)
   breach / cyberpunk           - 🧩 Cyberpunk 2077 Breach Protocol Hex Matrix Mini-game
-  threat / globe               - 🌍 Watch Dogs Live Global Cyber Threat War Map
-  payload / ducky              - 🦆 Mr. Robot USB Rubber Ducky Attack Payload Compiler & Flasher
-  camhack / cctv               - 📹 CCTV Camera Satellite Video Feed Interceptor
-  sniff / wireshark            - 📡 Real-time Network Packet Sniffer Interceptor
+  threat / globe               - 🌍 Procedural cyber-threat visualization (simulation)
+  payload / ducky              - 🦆 Virtual payload syntax preview (never flashed/executed)
+  camhack / cctv               - 📹 Local webcam preview (explicit permission; no interception)
+  sniff / wireshark            - 📡 Synthetic packet-row visualizer (no packet capture)
   emp / sentinel               - ⚡ The Matrix EMP Shockwave Blast (or Ctrl+E)
   crt / glitch                 - 📺 Retro CRT Phosphor Distortion & Barrel Scanlines
-  scan [target]                - 🔍 Live Hollywood Nmap Port Vulnerability Scanner
+  scan [target]                - 🔍 Fictional port-scan visualization (simulation)
   crack / decrypt              - 🔐 Interactive Matrix Password Hash Cracker
   bgm [on|off]                 - 🎶 Toggle Procedural Dark Cyber Synthwave Soundtrack
 
@@ -2280,10 +2575,10 @@ AVAILABLE CYBER TERMINAL & REAL-WORLD OS COMMANDS:
   palette / menu               - Open Command Palette (or Ctrl+K / Ctrl+P)
   settings / config            - Terminal Settings & Live Theme/Sound Matrix (or Ctrl+,)
   dashboard / dossier          - Operator Analytics, WPM Progression & Achievements
-  profile / whoami             - View Operator Credentials & Security Profile
-  passwd <new_pass>            - Change PAM login passphrase directly in terminal
+  profile / whoami             - View local app profile and credential status
+  passwd <new_pass>            - Change local app passphrase (salted PBKDF2 hash)
   username <new_name>          - Change operator username directly in terminal
-  lock / lockscreen            - Instantly lock workstation with Layer-1 HSM Gate
+  lock / lockscreen            - Lock this application session
   cls / clear                  - Clear terminal screen history (or Ctrl+L)
   logout / exit                - Return to Login / CMD prompt
 -----------------------------------------------------------------------------------------
@@ -2313,7 +2608,7 @@ AVAILABLE CYBER TERMINAL & REAL-WORLD OS COMMANDS:
         }
         break;
 
-      // 2. Real System Diagnostics (Neofetch)
+      // 2. Source-labeled system diagnostics
       case 'neofetch':
       case 'fastfetch':
       case 'cyberfetch':
@@ -2323,12 +2618,12 @@ AVAILABLE CYBER TERMINAL & REAL-WORLD OS COMMANDS:
   ██████╗██╗   ██╗██████╗ ███████╗██████╗ 
  ██╔════╝╚██╗ ██╔╝██╔══██╗██╔════╝██╔══██╗   OS       : ${info.platform.toUpperCase()} [${info.release}] ${info.arch}
  ██║      ╚████╔╝ ██████╔╝█████╗  ██████╔╝   HOST     : ${info.hostname}
- ██║       ╚██╔╝  ██╔══██╗██╔══╝  ██╔══██╗   KERNEL   : QUANTUM-v6.8.9 (UID: 0)
+ ██║       ╚██╔╝  ██╔══██╗██╔══╝  ██╔══██╗   SOURCE   : ${(info.source || 'UNKNOWN').toUpperCase()}
  ╚██████╗   ██║   ██████╔╝███████╗██║  ██║   UPTIME   : ${Math.floor(info.uptime / 3600)}h ${Math.floor((info.uptime % 3600) / 60)}m
   ╚═════╝   ╚═╝   ╚═════╝ ╚══════╝╚═╝  ╚═╝   CPU      : ${info.cpuModel} (${info.cpuCores} Cores)
                                              MEMORY   : ${info.usedMemGB} GB / ${info.totalMemGB} GB (${info.memPercent}%)
-                                             OPERATOR : ${this.username} [LVL ${this.profile.level} NETRUNNER]
-                                             ENCRYPT  : RSA-8192 / AES-256-GCM
+                                             OPERATOR : ${this.username} [LOCAL PROFILE LVL ${this.profile.level}]
+                                             FILE ENC : AES-256-GCM AVAILABLE (MUTATIONS OPT-IN)
 `;
         this.addExp(30, 'System Diagnostics Checked');
         this.audio.playSuccessFanfare();
@@ -2357,7 +2652,7 @@ AVAILABLE CYBER TERMINAL & REAL-WORLD OS COMMANDS:
 
       case 'cd':
         if (!args[0] || args[0] === '~') {
-          this.sys.currentWorkingDir = 'C:\\Users\\' + this.username;
+          this.sys.currentWorkingDir = this.sys.homeDir || this.sys.currentWorkingDir;
         } else if (args[0] === '..') {
           const parts = this.sys.currentWorkingDir.split(/[\/\\]/);
           if (parts.length > 1) {
@@ -2415,12 +2710,12 @@ AVAILABLE CYBER TERMINAL & REAL-WORLD OS COMMANDS:
         this.launchSandboxMode();
         return;
 
-      // 4. Real PowerShell / Command Execution Bridge
+      // 4. Advanced host command bridge (fail-closed unless explicitly enabled)
       case 'exec':
       case 'ps1':
       case 'sh':
         if (!args[0]) {
-          output = `Usage: exec [powershell / windows command] (e.g. 'exec Get-Process')`;
+          output = `Usage: exec [powershell / windows command]\nSECURITY: This bridge is disabled by default and must be explicitly enabled by the operator.`;
         } else {
           const realCmd = args.join(' ');
           const execRes = await this.sys.exec(realCmd);
@@ -2448,12 +2743,12 @@ AVAILABLE CYBER TERMINAL & REAL-WORLD OS COMMANDS:
 
       case 'shred':
         if (!args[0]) {
-          output = `Usage: shred [file]\nWARNING: THIS WILL PERMANENTLY WIPE THE FILE (DoD 5220.22-M 3-Pass). CANNOT BE UNDONE.`;
+          output = `Usage: shred [file]\nWARNING: Best-effort overwrite + delete only. Recovery prevention is NOT guaranteed, especially on SSDs. Host mutations are disabled by default.`;
         } else {
-          output = `[+] INITIATING DOD 5220.22-M WIPE SEQUENCE ON: ${args[0]}...`;
+          output = `[+] REQUESTING BEST-EFFORT OVERWRITE + DELETE FOR: ${args[0]}...`;
           this.audio.playKey(false);
           const shRes = await this.sys.shred(args[0]);
-          output += shRes.success ? `\n[✓] FILE SHREDDED SUCCESSFULLY. DATA IS UNRECOVERABLE.` : `\n[✗] Shred failed: ${shRes.error}`;
+          output += shRes.success ? `\n[✓] OVERWRITE + DELETE COMPLETED. FORENSIC RECOVERY PREVENTION IS NOT GUARANTEED.` : `\n[✗] Operation blocked or failed: ${shRes.error}`;
         }
         break;
 
@@ -2568,7 +2863,7 @@ AVAILABLE CYBER TERMINAL & REAL-WORLD OS COMMANDS:
       case 'camhack':
         if (this.dom.camhackModal) {
           this.dom.camhackModal.classList.remove('hidden');
-          this.audio.speak('Bypassing local CCTV security matrix. Intercepting video feed.');
+          this.audio.speak('Requesting permission for a local webcam preview. No recording or interception is performed.');
           this.startCamhack();
         }
         return;
@@ -3058,7 +3353,7 @@ OPEN DESCRIPTORS: 7 Active | LEAKS: 0
           const rawQuery = args.join(' ');
           const result = await this.hologramAssistant.handleUserQuery(rawQuery);
           output = `
-[+] NYX NEURAL COPILOT // ${result.category}
+[+] NYX RULE-BASED COPILOT // ${result.category}
 ------------------------------------------------------------------
 📌 ${result.title}
 💬 "${result.speech}"
@@ -3243,8 +3538,8 @@ CYBERWARE     : [ ${(profObj.inventory || []).join(', ')} ]
 TOTAL DRILLS  : ${profObj.totalKeystrokes} Keystrokes Logged
 BATCHES DONE  : ${profObj.batchesCleared} Cleared
 MISSIONS WON  : ${profObj.missionsCleared} Completed
-ACCESS CLEAR  : DEFCON-1 (ROOT PRIVILEGES)
-ENCRYPTION    : RSA-8192 / AES-256-GCM
+APP ACCESS    : LOCAL PROFILE (NO HOST ROOT PRIVILEGES)
+FILE CIPHER   : AES-256-GCM AVAILABLE (HOST MUTATIONS OPT-IN)
 --------------------------------------------------
 `;
         break;
@@ -3345,7 +3640,7 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
           `[ 👤 OPERATOR PROFILE & SECURITY CREDENTIALS ]`,
           `========================================================================`,
           `  Principal (User):     ${this.username}`,
-          `  Passphrase Status:    CONFIGURED (Active: ${opProf.password || 'Infinity'})`,
+          `  Passphrase Status:    HASHED (PBKDF2-SHA256; value hidden)`,
           `  Security Clearance:   LEVEL ${opProf.level || 1} [ROOT ENCLAVE]`,
           `  Darknet Credits:      ${(opProf.credits || 0).toLocaleString()} CC`,
           `  Bitcoin Balance:      ₿ ${opProf.bitcoin || 0}`,
@@ -3365,9 +3660,11 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
           output = `Usage: passwd <new_password>\nExample: passwd MySecretPass2026\nChanges your login passphrase instantly.`;
         } else {
           const newPass = args.join(' ').trim();
-          profileStore.updatePassword(this.username, newPass);
-          output = `[✓] SECURITY DIRECTIVE: Passphrase for '${this.username}' updated successfully to: '${newPass}'\nThis password is now required for all future logins and lockscreen access.`;
-          if (this.toasts) this.toasts.show('SUCCESS', '🔑 PASSWORD UPDATED SUCCESSFULLY', 3000);
+          const updated = await profileStore.updatePassword(this.username, newPass);
+          output = updated
+            ? `[✓] SECURITY DIRECTIVE: Passphrase for '${this.username}' updated and stored as a salted hash.\nThe value will not be displayed.`
+            : `[✗] Passphrase update failed. Use at least 8 characters.`;
+          if (updated && this.toasts) this.toasts.show('SUCCESS', '🔑 PASSWORD UPDATED SUCCESSFULLY', 3000);
         }
         break;
 
@@ -3380,15 +3677,19 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
         } else {
           const newName = args[0].trim();
           const oldName = this.username;
-          profileStore.updateUsername(oldName, newName);
-          this.username = newName;
-          this.profile = profileStore.getProfile(newName);
-          this.updatePromptPath();
-          if (this.dom.cliSessionUser) {
-            this.dom.cliSessionUser.textContent = `${this.username} (UID: 0)`;
+          const usernameUpdated = await profileStore.updateUsername(oldName, newName);
+          if (!usernameUpdated) {
+            output = `[✗] Username update failed. Use 1-32 letters, numbers, underscores, or hyphens; the name must not already exist.`;
+          } else {
+            this.username = newName;
+            this.profile = profileStore.getProfile(newName);
+            this.updatePromptPath();
+            if (this.dom.cliSessionUser) {
+              this.dom.cliSessionUser.textContent = `${this.username} (LOCAL APP PROFILE)`;
+            }
+            output = `[✓] OPERATOR PRINCIPAL UPDATED: '${oldName}' -> '${newName}'\nAll levels, EXP, and local credits migrated to the new profile.`;
+            if (this.toasts) this.toasts.show('SUCCESS', `👤 USERNAME CHANGED TO: ${newName}`, 3000);
           }
-          output = `[✓] OPERATOR PRINCIPAL UPDATED: '${oldName}' -> '${newName}'\nAll levels, EXP, and darknet credits migrated to new operator profile.`;
-          if (this.toasts) this.toasts.show('SUCCESS', `👤 USERNAME CHANGED TO: ${newName}`, 3000);
         }
         break;
 
@@ -3419,7 +3720,7 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
         if (this.hologramAssistant) {
           const result = await this.hologramAssistant.handleUserQuery(raw);
           output = `
-[+] NYX NEURAL COPILOT // ${result.category}
+[+] NYX RULE-BASED COPILOT // ${result.category}
 ------------------------------------------------------------------
 📌 ${result.title}
 💬 "${result.speech}"
@@ -3435,6 +3736,15 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
         } else {
           output = `'${cmd}' is not recognized as an internal or external command.\nType 'help' to see available commands.`;
         }
+    }
+
+    const simulatedTrainingCommands = new Set([
+      'dmesg', 'netstat', 'ss', 'sockets', 'iptables', 'ufw', 'firewall',
+      'systemctl', 'service', 'crypto', 'cipherbench', 'iotop', 'iostat',
+      'strace', 'lsof', 'siem', 'soc'
+    ]);
+    if (output && simulatedTrainingCommands.has(cmd)) {
+      output = `[SIMULATION — STATIC TRAINING DISPLAY — NO HOST INSPECTION OR MUTATION]\n${output}`;
     }
 
     if (output) {
@@ -3478,7 +3788,8 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
 
   runPortScanner(target) {
     const lines = [
-      `[+] INITIATING NMAP SCAN AGAINST TARGET: ${target}`,
+      `[SIMULATION — NO PACKETS SENT — FICTIONAL RESULTS]`,
+      `[+] DISPLAYING NMAP-STYLE SCENARIO FOR TARGET: ${target}`,
       `>> SYN Stealth Scan (65,535 ports)...`,
       `>> PORT 21/tcp   [OPEN]  FTP  (vsftpd 3.0.3 - ANONYMOUS ALLOWED)`,
       `>> PORT 22/tcp   [OPEN]  SSH  (OpenSSH 8.9p1 Ubuntu)`,
@@ -3487,7 +3798,7 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
       `>> PORT 3306/tcp [FILTERED] MySQL (Database Enclave)`,
       `>> PORT 8080/tcp [OPEN]  HTTP-Proxy (Shadow Gateway)`,
       `>> PORT 8443/tcp [OPEN]  VULNERABLE (Saturn Satellite Command Daemon)`,
-      `[✓] SCAN COMPLETE: 1 CRITICAL ZERO-DAY VULNERABILITY FOUND ON PORT 8443!`
+      `[✓] SCENARIO COMPLETE: FICTIONAL PORT 8443 FINDING — NOT A REAL VULNERABILITY`
     ];
 
     let idx = 0;
@@ -3525,7 +3836,12 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
     const container = document.createElement('div');
     container.className = 'cli-history-output';
     container.style.color = '#00ff66';
-    container.innerHTML = `[⚡ BRUTE-FORCE HASH CRACKER: ${hash}]<br><span id="crackProgressText">SOLVING: </span>`;
+    container.textContent = `[SIMULATION — BRUTE-FORCE VISUALIZER: ${String(hash)}]`;
+    container.appendChild(document.createElement('br'));
+    const progressText = document.createElement('span');
+    progressText.id = 'crackProgressText';
+    progressText.textContent = 'SOLVING: ';
+    container.appendChild(progressText);
     this.dom.cliHistory.appendChild(container);
 
     let charPos = 0;
@@ -3545,7 +3861,9 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
         clearInterval(interval);
         const progressEl = container.querySelector('#crackProgressText');
         if (progressEl) {
-          progressEl.innerHTML = `<span style="color:#ffff00; font-weight:bold;">[✓] HASH CRACKED SUCCESS: '${targetPassword}'</span>`;
+          progressEl.textContent = `[✓] SIMULATED TOKEN REVEALED: '${targetPassword}' — NOT A REAL HASH RESULT`;
+          progressEl.style.color = '#ffff00';
+          progressEl.style.fontWeight = 'bold';
         }
         this.addExp(200, 'Password Hash Decryption');
         this.audio.playSuccessFanfare();
@@ -3588,6 +3906,7 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
       lessonIndex = Math.max(0, Math.min(lessons.length - 1, parseInt(lessonArg, 10) - 1));
     }
     const lesson = lessons[lessonIndex];
+    this.currentLessonNum = lessonIndex + 1;
     this.currentActiveLessonId = lesson.id;
     this.dom.academyLessonTitle.textContent = lesson.title;
     this.academyEngine.loadText(lesson.text);
@@ -3967,7 +4286,7 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
 
     this.playCyberTransition(
       'CYBER FILE EXPLORER & STORAGE MATRIX',
-      'CONNECTING DIRECT TO HOST STORAGE & DRIVES...',
+      'CHECKING HOST STORAGE ACCESS OR LABELED FALLBACK...',
       logs,
       'explorer',
       () => {
@@ -4162,7 +4481,7 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
 
         if (this.speedTimeLeft <= 0) {
           clearInterval(this.speedTimerInterval);
-          this.speedEngine.complete();
+          this.speedEngine.finishTest();
         }
       }, 1000);
     }
@@ -4170,6 +4489,8 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
 
   returnToCli() {
     if (this.speedTimerInterval) clearInterval(this.speedTimerInterval);
+    this.speedTimerInterval = null;
+    this.modeManager.exitActive({ app: this, reason: 'return-to-cli' });
     this.state = STATES.CLI_PROMPT;
     this.kb.clearTargetKeys();
     this.hands.clearTargetGuide();
@@ -4565,7 +4886,7 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
 
   startPacketSniffer() {
     if (this.packetSnifferInterval) clearInterval(this.packetSnifferInterval);
-    if (this.dom.packetSnifferOutput) this.dom.packetSnifferOutput.innerHTML = '<div style="color:var(--theme-primary);">[*] BINDING TO PROMISCUOUS MODE...</div>';
+    if (this.dom.packetSnifferOutput) this.dom.packetSnifferOutput.innerHTML = '<div style="color:var(--theme-primary);">[SIM] SYNTHETIC PACKETS — NO NETWORK INTERFACE OPENED</div>';
     
     this.packetSnifferInterval = setInterval(() => {
       if (!this.dom.packetSnifferOutput || this.dom.packetSnifferModal.classList.contains('hidden')) {
@@ -4579,7 +4900,7 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
       
       const el = document.createElement('div');
       el.style.color = color;
-      el.textContent = `[${new Date().toISOString().split('T')[1]}] ${proto} ${src} -> ${dst} len=${Math.floor(Math.random()*1500)}`;
+      el.textContent = `[SIM ${new Date().toISOString().split('T')[1]}] ${proto} ${src} -> ${dst} len=${Math.floor(Math.random()*1500)}`;
       this.dom.packetSnifferOutput.appendChild(el);
       if (this.dom.packetSnifferOutput.childElementCount > 100) {
         this.dom.packetSnifferOutput.removeChild(this.dom.packetSnifferOutput.firstChild);
@@ -4591,6 +4912,11 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
   async startCamhack() {
     if (!this.dom.camhackVideo) return;
     try {
+      if (this.camhackInterval) clearInterval(this.camhackInterval);
+      if (this.dom.camhackVideo.srcObject) {
+        this.dom.camhackVideo.srcObject.getTracks().forEach(track => track.stop());
+        this.dom.camhackVideo.srcObject = null;
+      }
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
       this.dom.camhackVideo.srcObject = stream;
       
@@ -4607,7 +4933,7 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
       
     } catch (err) {
       console.error('Camhack Error:', err);
-      alert('Failed to intercept CCTV (Webcam access denied or unavailable).');
+      alert('Local webcam preview unavailable. Permission was denied or no camera is present.');
     }
   }
 
@@ -4629,20 +4955,33 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
   startHudTelemetry() {
     if (this.hudInterval) clearInterval(this.hudInterval);
     this.hudInterval = setInterval(async () => {
-      const info = await this.sys.getSysInfo();
-      // CPU
-      const cpuVal = Math.floor(Math.random() * 10) + 15; // Simulated fluctuation around 20%
-      this.dom.hudCpuBar.style.width = `${cpuVal}%`;
-      this.dom.hudCpuVal.textContent = `${cpuVal}%`;
-      
-      // RAM
-      const memPct = info.memPercent || (Math.floor(Math.random() * 10) + 40);
-      this.dom.hudRamBar.style.width = `${memPct}%`;
-      this.dom.hudRamVal.textContent = `${memPct}%`;
-      
-      // Net
-      this.dom.hudNetDown.textContent = (10 + Math.random() * 5).toFixed(1);
-      this.dom.hudNetUp.textContent = (5 + Math.random() * 3).toFixed(1);
+      try {
+        const info = await this.sys.getSysInfo();
+        const cpuVal = Number(info?.cpuPercent);
+        const memPct = Number(info?.memPercent);
+        const hasCpu = Number.isFinite(cpuVal);
+        const hasMem = Number.isFinite(memPct);
+        const verified = info?.source === 'HOST_VERIFIED';
+
+        if (this.dom.hudCpuBar) this.dom.hudCpuBar.style.width = `${hasCpu ? cpuVal : 0}%`;
+        if (this.dom.hudCpuVal) this.dom.hudCpuVal.textContent = hasCpu ? `${cpuVal.toFixed(1)}% // ${verified ? 'HOST' : 'SIMULATED'}` : 'N/A';
+        if (this.dom.hudRamBar) this.dom.hudRamBar.style.width = `${hasMem ? memPct : 0}%`;
+        if (this.dom.hudRamVal) this.dom.hudRamVal.textContent = hasMem ? `${info.usedMemGB}/${info.totalMemGB} GB (${memPct}%) // ${verified ? 'HOST' : 'SIMULATED'}` : 'N/A';
+        if (this.dom.hudNetDown) this.dom.hudNetDown.textContent = 'N/A';
+        if (this.dom.hudNetUp) this.dom.hudNetUp.textContent = 'N/A';
+
+        const hostTag = document.getElementById('polyHostTag');
+        const sourceTag = document.getElementById('polyDataSource');
+        const cpuTag = document.getElementById('polyCpuMetric');
+        const ramTag = document.getElementById('polyRamMetric');
+        if (hostTag) hostTag.textContent = info?.hostname || 'UNKNOWN';
+        if (sourceTag) sourceTag.textContent = verified ? 'HOST VERIFIED' : 'SIMULATED FALLBACK';
+        if (cpuTag) cpuTag.textContent = hasCpu ? `${cpuVal.toFixed(1)}%` : 'N/A';
+        if (ramTag) ramTag.textContent = hasMem ? `${info.usedMemGB}/${info.totalMemGB} GB (${memPct}%)` : 'N/A';
+      } catch (error) {
+        if (this.dom.hudCpuVal) this.dom.hudCpuVal.textContent = 'SOURCE UNAVAILABLE';
+        if (this.dom.hudRamVal) this.dom.hudRamVal.textContent = 'SOURCE UNAVAILABLE';
+      }
     }, 2000);
   }
 
@@ -4710,12 +5049,8 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
       });
     }
     if (this.dom.btnLoginBypass) {
-      this.dom.btnLoginBypass.addEventListener('click', () => {
-        this.audio.playSuccessFanfare();
-        this.dom.loginUserField.value = 'Anan';
-        this.dom.loginPassField.value = 'Infinity';
-        setTimeout(() => this.handleLogin(), 300);
-      });
+      this.dom.btnLoginBypass.disabled = true;
+      this.dom.btnLoginBypass.remove();
     }
     this.dom.loginUserField.addEventListener('keydown', (e) => {
       this.audio.playKey(false);
@@ -4795,7 +5130,7 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
       this.dom.btnDeployDucky.addEventListener('click', () => {
         this.audio.playSuccessFanfare();
         this.addExp(200, 'Rubber Ducky Flashed');
-        alert('[✓] PAYLOAD COMPILED & INJECTED TO RUBBER DUCKY DRIVER (COM3)');
+        alert('[SIMULATION COMPLETE] Payload preview was not executed, flashed, or sent to hardware.');
         this.dom.duckyPayloadModal.classList.add('hidden');
       });
     }
@@ -5154,7 +5489,7 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
             try { await navigator.clipboard.writeText(this.cliInputBuffer); } catch(err) {}
             const cancelLine = document.createElement('div');
             cancelLine.className = 'cli-history-line';
-            cancelLine.innerHTML = `<span class="term-prompt">${this.dom.cliPromptPath.textContent}</span> ${this.escapeHtml(this.cliInputBuffer)}^C`;
+            cancelLine.innerHTML = `<span class="term-prompt">${this.escapeHtml(this.dom.cliPromptPath.textContent)}</span> ${this.escapeHtml(this.cliInputBuffer)}^C`;
             this.dom.cliHistory.appendChild(cancelLine);
             this.cliInputBuffer = '';
             this.cliCursorPos = 0;
@@ -5358,7 +5693,7 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
     overlay.style.zIndex = '999999';
 
     if (this.dom.transBadge) {
-      this.dom.transBadge.textContent = '[ SECURE SHUTDOWN // REAL-TIME DATABASE AUDIT & FLUSH ]';
+      this.dom.transBadge.textContent = '[ SHUTDOWN // ATOMIC PROFILE DATABASE AUDIT & FLUSH ]';
     }
     if (this.dom.transHeadline) {
       this.dom.transHeadline.textContent = 'AUDITING & PERSISTING ENCLAVE DATABASE STATE...';
@@ -5430,7 +5765,7 @@ ENCRYPTION    : RSA-8192 / AES-256-GCM
       {
         pct: 75,
         chip: 3,
-        text: `[FLUSH: LOCALSTORAGE] Key 'cyber_ai_trading_gym_state' & 'CYBERTYPE_OPERATOR_PROFILES_V1' -> WRITTEN TO WEB STORAGE [OK]`,
+        text: `[FLUSH: LOCALSTORAGE] Per-operator Trade state & 'CYBERTYPE_OPERATOR_PROFILES_V1' -> WRITTEN TO WEB STORAGE [OK]`,
         action: async () => {
           if (typeof localStorage !== 'undefined') {
             localStorage.setItem('CYBERTYPE_OPERATOR_PROFILES_V1', JSON.stringify(profileStore.profiles));

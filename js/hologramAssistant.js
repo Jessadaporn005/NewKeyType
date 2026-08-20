@@ -147,7 +147,7 @@ export function phoneticizeForThaiSpeech(text = '') {
 }
 
 // =============================================================================
-// EXPANDED REAL-WORLD INTELLIGENCE RADAR (100+ LIVE GLOBAL NEWS WIRE)
+// STATIC REFERENCE SCENARIOS (shown only with simulated provenance)
 // =============================================================================
 export const GLOBAL_INTELLIGENCE_RADAR = {
   WORLD_AFFAIRS: [
@@ -334,7 +334,7 @@ export class HologramAssistantEngine {
     this.isVoiceEnabled = true;
     this.synth = typeof window !== 'undefined' && window.speechSynthesis ? window.speechSynthesis : null;
 
-    // Audio Playback Engine (ResponsiveVoice Cloud Thai Female + Neural Streamer)
+    // Local operating-system speech synthesis only
     this.currentAudioElement = null;
 
     // Continuous Speech Engine & Keep-Alive Clock
@@ -466,8 +466,8 @@ export class HologramAssistantEngine {
         <div class="hologram-pod-header">
           <div class="hologram-identity">
             <span class="hologram-status-dot" id="hologramStatusDot"></span>
-            <span class="hologram-name">NYX // AI COPILOT</span>
-            <span class="hologram-role-tag">โฮโลแกรม AI</span>
+            <span class="hologram-name">NYX // RULE-BASED COPILOT</span>
+            <span class="hologram-role-tag">ผู้ช่วยแบบสคริปต์</span>
           </div>
           <button class="hologram-voice-toggle-btn" id="holoBtnVoiceToggle" title="เปิด/ปิดเสียงพูดภาษาไทย">
             <span id="holoVoiceIcon">🔊</span>
@@ -484,18 +484,18 @@ export class HologramAssistantEngine {
           <div class="hologram-telemetry-col">
             <div class="telemetry-badge-card">
               <div class="telemetry-label">
-                <span>สมองกล KRONOS AI GYM</span>
+                <span>KRONOS PAPER SIMULATION</span>
                 <span>SYNCED</span>
               </div>
-              <div class="telemetry-val-gym" id="holoGymBadge">LVL 10 (14,971 ตัวอย่าง | 69.6%)</div>
+              <div class="telemetry-val-gym" id="holoGymBadge">PAPER DATA: VERIFYING</div>
             </div>
 
             <div class="telemetry-badge-card">
               <div class="telemetry-label">
                 <span>เรดาร์ข่าวกรองตลาดโลก</span>
-                <span>LIVE</span>
+                <span>LIVE OR LABELED FALLBACK</span>
               </div>
-              <div class="telemetry-val-news" id="holoNewsBadge">เฟดส่งสัญญาณผ่อนคลายสภาพคล่อง...</div>
+              <div class="telemetry-val-news" id="holoNewsBadge">SOURCE: VERIFYING</div>
             </div>
 
             <div class="hologram-audio-wave-strip">
@@ -517,7 +517,7 @@ export class HologramAssistantEngine {
 
         <div class="hologram-speech-balloon" id="assistantSpeechBalloon">
           <div class="speech-balloon-text" id="assistantSpeechText">
-            NYX Neural Copilot ออนไลน์แล้วค่ะ พร้อมรับคำสั่งปฏิบัติการค่ะ
+            NYX rule-based companion พร้อมทำงานค่ะ
           </div>
         </div>
 
@@ -605,11 +605,6 @@ export class HologramAssistantEngine {
   }
 
   stopAllSpeech() {
-    if (typeof window !== 'undefined' && window.responsiveVoice && typeof window.responsiveVoice.cancel === 'function') {
-      try {
-        window.responsiveVoice.cancel();
-      } catch (e) {}
-    }
     if (this.currentAudioElement) {
       try {
         this.currentAudioElement.pause();
@@ -708,7 +703,7 @@ export class HologramAssistantEngine {
     return sentences.length > 0 ? sentences : [text];
   }
 
-  // 100% Genuine Cloud Thai Female Speech Synthesis (ResponsiveVoice Thai Female + Neural Streamer)
+  // Local Web Speech synthesis; text is not sent to a third-party TTS endpoint
   speak(text, onEndCallback = null) {
     this.setSpeechBalloon(text);
 
@@ -740,80 +735,12 @@ export class HologramAssistantEngine {
       if (onEndCallback) onEndCallback();
     };
 
-    // 1. Primary Engine: ResponsiveVoice 'Thai Female' (Genuine Cloud Thai Female Voice)
-    if (typeof window !== 'undefined' && window.responsiveVoice && typeof window.responsiveVoice.speak === 'function') {
-      try {
-        window.responsiveVoice.cancel();
-        window.responsiveVoice.speak(speechPhonetic, 'Thai Female', {
-          pitch: 1.12,
-          rate: 1.0,
-          onstart: () => {
-            this.isSpeaking = true;
-            this.updateAudioWaveBars(true);
-          },
-          onend: () => {
-            onFinish();
-          },
-          onerror: () => {
-            this.speakWithThaiFemaleNeural(speechPhonetic, onFinish);
-          }
-        });
-        return;
-      } catch (e) {
-        this.speakWithThaiFemaleNeural(speechPhonetic, onFinish);
-        return;
-      }
-    }
-
-    // 2. Secondary Engine: Thai Female Neural Audio Queue
-    this.speakWithThaiFemaleNeural(speechPhonetic, onFinish);
+    this.speakLocalFallback(speechPhonetic, onFinish);
   }
 
+  // Backward-compatible method name; kept local and network-free.
   speakWithThaiFemaleNeural(text, onFinish) {
-    const sentences = this.splitTextIntoSentences(text);
-    let currentIndex = 0;
-
-    const playNext = () => {
-      if (currentIndex >= sentences.length) {
-        onFinish();
-        return;
-      }
-
-      const sentenceText = sentences[currentIndex];
-      currentIndex++;
-
-      if (typeof Audio !== 'undefined') {
-        const encoded = encodeURIComponent(sentenceText);
-        const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=th&client=tw-ob&q=${encoded}`;
-        const audio = new Audio();
-        this.currentAudioElement = audio;
-
-        audio.onended = () => {
-          playNext();
-        };
-
-        audio.onerror = () => {
-          this.speakLocalFallback(sentenceText, () => {
-            playNext();
-          });
-        };
-
-        const playPromise = audio.play();
-        if (playPromise !== undefined) {
-          playPromise.catch(() => {
-            this.speakLocalFallback(sentenceText, () => {
-              playNext();
-            });
-          });
-        }
-      } else {
-        this.speakLocalFallback(sentenceText, () => {
-          playNext();
-        });
-      }
-    };
-
-    playNext();
+    this.speakLocalFallback(text, onFinish);
   }
 
   // Local Web Speech API Fallback (STRICTLY HARD BANS NIWAT & ALL MALE VOICES)
@@ -857,7 +784,7 @@ export class HologramAssistantEngine {
     if (typeof document !== 'undefined' && document.getElementById) {
       const balloon = document.getElementById('assistantSpeechText');
       if (balloon) {
-        balloon.innerHTML = text;
+        balloon.textContent = String(text ?? '');
       }
     }
   }
@@ -1252,39 +1179,43 @@ export class HologramAssistantEngine {
   // Telemetry Aggregation
   updateTelemetryHUD() {
     const gymBadge = document.getElementById('holoGymBadge');
-    let gymLevel = 10;
-    let gymSamples = 14971;
-    let gymWinRate = 69.6;
+    let gymLevel = 1;
+    let gymSamples = 0;
+    let gymWinRate = 0;
 
     if (this.app && this.app.tradingEngine && this.app.tradingEngine.aiStats) {
       const stats = this.app.tradingEngine.aiStats;
-      gymLevel = stats.adaptationLevel || Math.min(10, Math.floor((stats.samplesStudied || 0) / 700) + 1);
-      gymSamples = stats.samplesStudied || 0;
-      gymWinRate = stats.winRate || 69.6;
+      gymLevel = stats.adaptationLevel ?? Math.min(10, Math.floor((stats.samplesStudied || 0) / 700) + 1);
+      gymSamples = stats.samplesStudied ?? 0;
+      gymWinRate = stats.winRate ?? 0;
     } else {
       const prof = profileStore.getProfile('Anan');
-      if (prof && prof.aiTradingGymState && prof.aiTradingGymState.stats) {
-        const stats = prof.aiTradingGymState.stats;
-        gymLevel = stats.adaptationLevel || Math.min(10, Math.floor((stats.samplesStudied || 0) / 700) + 1);
-        gymSamples = stats.samplesStudied || 0;
-        gymWinRate = stats.winRate || 69.6;
+      const gymState = profileStore.getTradingGymState(this.app.username || 'Anan');
+      if (prof && gymState && gymState.stats) {
+        const stats = gymState.stats;
+        gymLevel = stats.adaptationLevel ?? Math.min(10, Math.floor((stats.samplesStudied || 0) / 700) + 1);
+        gymSamples = stats.samplesStudied ?? 0;
+        gymWinRate = stats.winRate ?? 0;
       }
     }
 
     this.cachedGymStats = { level: gymLevel, samples: gymSamples, winRate: gymWinRate };
     if (gymBadge) {
-      gymBadge.textContent = `LVL ${gymLevel} (${gymSamples.toLocaleString()} ตัวอย่าง | ${gymWinRate}%)`;
+      gymBadge.textContent = `PAPER LVL ${gymLevel} (${gymSamples.toLocaleString()} synthetic | ${gymWinRate}%)`;
     }
 
     const newsBadge = document.getElementById('holoNewsBadge');
-    let newsTitle = 'ราคาทองคำ Spot Gold พุ่งทำ New High รับแรงหนุนการลดดอกเบี้ย Fed';
+    let newsTitle = 'NO VERIFIED NEWS SOURCE';
+    let newsSource = 'UNAVAILABLE';
     if (this.app && this.app.tradingEngine && this.app.tradingEngine.activeNews) {
       newsTitle = this.app.tradingEngine.activeNews.title || this.app.tradingEngine.activeNews.headline || newsTitle;
+      newsSource = this.app.tradingEngine.activeNews.provenance === 'SIMULATED_SCENARIO' ? 'SIMULATED' : 'VERIFIED';
     }
-    this.cachedNews = newsTitle;
+    const labeledNewsTitle = `[${newsSource}] ${newsTitle}`;
+    this.cachedNews = labeledNewsTitle;
     if (newsBadge) {
-      newsBadge.textContent = newsTitle.length > 34 ? newsTitle.substring(0, 32) + '...' : newsTitle;
-      newsBadge.title = newsTitle;
+      newsBadge.textContent = labeledNewsTitle.length > 34 ? labeledNewsTitle.substring(0, 32) + '...' : labeledNewsTitle;
+      newsBadge.title = labeledNewsTitle;
     }
   }
 
@@ -1294,31 +1225,37 @@ export class HologramAssistantEngine {
   }
 
   // ADVANCED PROACTIVE CO-PILOT SKILLS & CAPABILITIES
-  // 1. Quantitative Institutional Market Analysis
+  // 1. Rule-based market summary using the trading screen's current source state
   handleMarketAnalysis() {
     this.setEmotion('TACTICAL');
-    const gym = this.cachedGymStats || { level: 10, samples: 14971, winRate: 69.6 };
-    const speech = `รายงานวิเคราะห์ตลาดแบบเรียลไทม์จากระบบควอนท์ KRONOS และสภา 4 เทพค่ะ: ขณะนี้ตรวจพบโครงสร้างราคา Liquidity Sweep บริเวณแนวรับสำคัญของ Bitcoin พร้อมสัญญาณ Bullish Order Block จาก ORION ขณะที่ LEVIATHAN ยืนยันแรงซื้อสะสมของวาฬสถาบัน สรุปคำแนะนำ: ถือครองสถานะด้วยการคุมความเสี่ยงตามเกณฑ์ AEGIS ค่ะ`;
+    const engine = this.app?.tradingEngine;
+    const signal = engine?.signal;
+    const sourceLabel = engine?.isRealFeed ? 'ข้อมูลราคาจากตลาดที่ตรวจสอบแล้ว' : 'ข้อมูลจำลองสำรอง';
+    const action = signal?.action || 'ยังไม่มีผลวิเคราะห์';
+    const regime = signal?.marketRegime || 'ยังไม่ทราบสภาวะตลาด';
+    const score = Number.isFinite(Number(signal?.ruleScore)) ? `${signal.ruleScore} จาก 100` : 'ไม่มีค่า';
+    const speech = `รายงานจากชุดกฎวิเคราะห์ KRONOS ค่ะ แหล่งข้อมูลปัจจุบันคือ ${sourceLabel} ผลเชิงกฎคือ ${action} สภาวะตลาด ${regime} และคะแนนความสอดคล้องของกฎ ${score} ข้อมูลนี้เป็นระบบช่วยตัดสินใจ ไม่ใช่คำรับรองผลกำไรค่ะ`;
     this.speak(speech);
 
     return {
-      category: '📊 INSTITUTIONAL QUANT ANALYSIS',
-      title: 'บทวิเคราะห์โครงสร้างตลาด SMC & Order Flow',
-      detail: `[ORION SMC]: ตรวจพบ Bullish Order Block ใน Timeframe 4H\n[LEVIATHAN]: ตรวจพบแรงซื้อสะสมของวาฬสถาบัน On-chain\n[AEGIS RISK]: ความเสี่ยงระดับต่ำ เหมาะแก่การเข้าสะสมตามโซน\n[KRONOS CORE]: คำนวณค่า Win Rate คาดหวังเฉลี่ยที่ ${gym.winRate}%`,
-      speech: speech
+      category: '📊 RULE-BASED MARKET DECISION SUPPORT',
+      title: `${action} // ${sourceLabel}`,
+      detail: `[DATA SOURCE]: ${sourceLabel}\n[RULE RESULT]: ${action}\n[REGIME]: ${regime}\n[CONFLUENCE SCORE]: ${score}\n[NOTICE]: Paper-only decision support; no profit guarantee`,
+      speech,
+      provenance: engine?.isRealFeed ? 'EXCHANGE_VERIFIED' : 'SIMULATED_FALLBACK'
     };
   }
 
   // 2. Security & Enclave Defense Audit
   handleSecurityAudit() {
     this.setEmotion('TACTICAL');
-    const speech = `รายงานตรวจสอบความมั่นคงปลอดภัยระบบ Enclave ค่ะ: ฐานข้อมูลโปรไฟล์ของคุณอนันต์ได้รับการปกป้องด้วยการเข้ารหัส AES-256 และการตรวจสอบ Checksum แบบเรียลไทม์ 100% สมบูรณ์ พร้อมระบบป้องกัน DEFCON-1 ไร้ช่องโหว่การโจมตีค่ะ`;
+    const speech = `รายงานขอบเขตความปลอดภัยที่ตรวจสอบได้ค่ะ รหัสผ่านโปรไฟล์เก็บเป็น PBKDF2 SHA-256 พร้อม salt ฐานข้อมูลเขียนแบบ atomic และมีไฟล์สำรอง หน้าต่าง Electron เปิด sandbox และคำสั่งเปลี่ยนแปลงเครื่องถูกปิดเป็นค่าเริ่มต้น รายงานนี้ไม่รับรองว่าระบบไร้ช่องโหว่ค่ะ`;
     this.speak(speech);
 
     return {
-      category: '🛡️ SECURITY & ENCLAVE DEFENSE AUDIT',
-      title: 'รายงานสถานะความปลอดภัยระดับ Quantum C2',
-      detail: `[ENCRYPTION]: AES-256-GCM + SHA-256 Checksum Verified\n[DEFENSE POSTURE]: DEFCON-1 Hardened Active Defense\n[PROFILE DATABASE]: Integrity 100% Real-Time Synchronized\n[AIR-GAP STATUS]: Isolated Enclave Secure`,
+      category: '🛡️ LOCAL APPLICATION SECURITY STATUS',
+      title: 'ขอบเขตการป้องกันที่ยืนยันจากโค้ดและการทดสอบ',
+      detail: `[CREDENTIALS]: Salted PBKDF2-SHA256\n[PROFILE DATABASE]: Atomic write + known-good backup\n[ELECTRON]: Sandbox + context isolation + validated IPC sender\n[HOST MUTATIONS]: Disabled by default\n[LIMIT]: No claim of air-gap, HSM, DEFCON, or zero vulnerabilities`,
       speech: speech
     };
   }
@@ -1425,13 +1362,14 @@ export class HologramAssistantEngine {
               const ethChange = data.ethereum?.usd_24h_change ? data.ethereum.usd_24h_change.toFixed(2) : '+1.10';
               const solUsd = data.solana?.usd ? data.solana.usd.toLocaleString() : '198.40';
 
-              const speech = `รายงานราคาคริปโตสดจากตลาดโลกค่ะคุณอนันต์: ปัจจุบัน Bitcoin ซื้อขายอยู่ที่ $${btcUsd} หรือประมาณ ${btcThb} บาท มีการเปลี่ยนแปลง ${btcChange}% ใน 24 ชั่วโมงที่ผ่านมา Ethereum อยู่ที่ $${ethUsd} (${ethChange}%) และ Solana อยู่ที่ $${solUsd} ค่ะ วาฬสถาบันยังคงเปิดสถานะ Long อย่างต่อเนื่องค่ะ`;
+              const speech = `รายงานราคาที่ดึงจาก CoinGecko สำเร็จค่ะคุณอนันต์: Bitcoin อยู่ที่ $${btcUsd} หรือประมาณ ${btcThb} บาท เปลี่ยนแปลง ${btcChange}% ใน 24 ชั่วโมง Ethereum อยู่ที่ $${ethUsd} (${ethChange}%) และ Solana อยู่ที่ $${solUsd} ค่ะ ระบบไม่ได้ตรวจข้อมูลสถานะของวาฬหรือบัญชีสถาบันค่ะ`;
               const result = {
-                category: '🪙 LIVE REAL-TIME CRYPTO RADAR',
+                category: '🪙 CRYPTO PRICE API // SOURCE VERIFIED',
                 title: `Bitcoin $${btcUsd} (${btcChange}%) | Ethereum $${ethUsd} | Solana $${solUsd}`,
-                detail: `[BTC/USD]: $${btcUsd} (฿${btcThb})\n[ETH/USD]: $${ethUsd} (${ethChange}%)\n[SOL/USD]: $${solUsd}\n[แหล่งข้อมูล]: CoinGecko Live Global Price API\n[สถานะ]: Real-time Sync Active`,
+                detail: `[BTC/USD]: $${btcUsd} (฿${btcThb})\n[ETH/USD]: $${ethUsd} (${ethChange}%)\n[SOL/USD]: $${solUsd}\n[แหล่งข้อมูล]: CoinGecko Price API\n[สถานะ]: API response verified at request time`,
                 speech: speech,
-                timestamp: Date.now()
+                timestamp: Date.now(),
+                provenance: 'COINGECKO_API_VERIFIED'
               };
               if (this.liveNewsCache) this.liveNewsCache.CRYPTO = result;
               return result;
@@ -1442,10 +1380,12 @@ export class HologramAssistantEngine {
 
       const item = this.getRandomItem(GLOBAL_INTELLIGENCE_RADAR.CRYPTO);
       return {
-        category: '🪙 LIVE REAL-TIME CRYPTO RADAR',
-        title: item.title,
-        detail: item.detail,
-        speech: item.anchor
+        category: '🪙 CRYPTO // SIMULATED REFERENCE',
+        title: `[SIMULATED] ${item.title}`,
+        detail: `[แหล่งข้อมูล]: STATIC SCENARIO — NOT LIVE\n${item.detail}`,
+        speech: `ข้อมูลต่อไปนี้เป็นสถานการณ์จำลอง ไม่ใช่ราคาสดค่ะ ${item.anchor}`,
+        timestamp: Date.now(),
+        provenance: 'SIMULATED_FALLBACK'
       };
     }
 
@@ -1468,13 +1408,14 @@ export class HologramAssistantEngine {
               const goldUsd = goldObj.usd ? goldObj.usd.toLocaleString() : '2,780';
               const goldThb = goldObj.thb ? Math.round(goldObj.thb).toLocaleString() : '96,500';
               const goldChange = goldObj.usd_24h_change ? goldObj.usd_24h_change.toFixed(2) : '+0.85';
-              const speech = `รายงานราคาทองคำสดจากตลาดโลกค่ะ: ราคาทองคำ Spot Gold ซื้อขายอยู่ที่ $${goldUsd} ต่อทรอยออนซ์ (ประมาณ ${goldThb} บาท) มีการเปลี่ยนแปลง ${goldChange}% ตลาดตอบรับแนวโน้มการปรับลดอัตราดอกเบี้ยและแรงซื้อสินทรัพย์ปลอดภัยจากสถาบันการเงินค่ะ`;
+              const speech = `รายงานราคาโทเคนที่อ้างอิงทองคำจาก CoinGecko ค่ะ: ราคาอ้างอิงอยู่ที่ $${goldUsd} หรือประมาณ ${goldThb} บาท เปลี่ยนแปลง ${goldChange}% ข้อมูลนี้เป็นราคา PAX Gold หรือ Tether Gold ไม่ใช่ราคา Spot Gold จากโบรกเกอร์ค่ะ`;
               const result = {
-                category: '🥇 LIVE REAL-TIME GOLD & MACRO RADAR',
-                title: `Spot Gold: $${goldUsd} / oz (${goldChange}%)`,
-                detail: `[Spot Gold / PAXG]: $${goldUsd} USD / oz (฿${goldThb})\n[แนวโน้ม]: Bullish Safe-Haven Demand\n[แหล่งข้อมูล]: Global Macro Spot Rate API`,
+                category: '🥇 TOKENIZED GOLD PRICE // SOURCE VERIFIED',
+                title: `PAXG/XAUT reference: $${goldUsd} (${goldChange}%)`,
+                detail: `[PAXG/XAUT reference]: $${goldUsd} USD (฿${goldThb})\n[ข้อจำกัด]: Not broker Spot Gold / XAUUSD\n[แหล่งข้อมูล]: CoinGecko Price API`,
                 speech: speech,
-                timestamp: Date.now()
+                timestamp: Date.now(),
+                provenance: 'COINGECKO_API_VERIFIED'
               };
               if (this.liveNewsCache) this.liveNewsCache.GOLD = result;
               return result;
@@ -1485,10 +1426,12 @@ export class HologramAssistantEngine {
 
       const item = this.getRandomItem(GLOBAL_INTELLIGENCE_RADAR.FINANCE_GOLD);
       return {
-        category: '🥇 LIVE REAL-TIME GOLD & MACRO RADAR',
-        title: item.title,
-        detail: item.detail,
-        speech: item.anchor
+        category: '🥇 GOLD/MACRO // SIMULATED REFERENCE',
+        title: `[SIMULATED] ${item.title}`,
+        detail: `[แหล่งข้อมูล]: STATIC SCENARIO — NOT LIVE\n${item.detail}`,
+        speech: `ข้อมูลต่อไปนี้เป็นสถานการณ์จำลอง ไม่ใช่ข่าวหรือราคาสดค่ะ ${item.anchor}`,
+        timestamp: Date.now(),
+        provenance: 'SIMULATED_FALLBACK'
       };
     }
 
@@ -1512,11 +1455,12 @@ export class HologramAssistantEngine {
             const cleanTitle = topNews[0].title.replace(/ - .*/g, '');
             const speech = `ข่าวด่วนสดจากสำนักข่าววันนี้ค่ะคุณอนันต์: ${cleanTitle} ค่ะ คุณอนันต์สามารถติดตามรายละเอียดเพิ่มเติมได้ในรายงานข่าวหน้าจอได้เลยนะคะ`;
             const result = {
-              category: '🌍 LIVE GOOGLE NEWS GLOBAL RADAR',
+              category: '🌍 GOOGLE NEWS RSS // SOURCE FETCHED',
               title: cleanTitle,
               detail: `หัวข้อข่าวด่วนล่าสุด:\n${headlines}\n[แหล่งข้อมูล]: Google News Live RSS Feed`,
               speech: speech,
-              timestamp: Date.now()
+              timestamp: Date.now(),
+              provenance: 'GOOGLE_NEWS_RSS_FETCHED'
             };
             if (this.liveNewsCache) this.liveNewsCache.WORLD = result;
             return result;
@@ -1528,10 +1472,12 @@ export class HologramAssistantEngine {
     // Fallback to Dynamic Intelligence Radar
     const item = this.getRandomItem(GLOBAL_INTELLIGENCE_RADAR.WORLD_AFFAIRS);
     return {
-      category: '🌍 WORLD AFFAIRS & GEOPOLITICS',
-      title: `${item.country}: ${item.title}`,
-      detail: item.detail,
-      speech: item.anchor
+      category: '🌍 WORLD AFFAIRS // SIMULATED REFERENCE',
+      title: `[SIMULATED] ${item.country}: ${item.title}`,
+      detail: `[แหล่งข้อมูล]: STATIC SCENARIO — NOT LIVE\n${item.detail}`,
+      speech: `ข้อมูลต่อไปนี้เป็นสถานการณ์จำลอง ไม่ใช่ข่าวสดค่ะ ${item.anchor}`,
+      timestamp: Date.now(),
+      provenance: 'SIMULATED_FALLBACK'
     };
   }
 
@@ -1563,8 +1509,8 @@ export class HologramAssistantEngine {
     let detail = '';
 
     if (q.includes('สวัสดี') || q.includes('hello') || q.includes('ดีครับ') || q.includes('หวัดดี')) {
-      spoken = 'สวัสดีค่ะคุณอนันต์ นิกซ์พร้อมรับคำสั่งและรายงานข่าวกรองสดให้คุณอนันต์แล้วค่ะ วันนี้อยากให้อัปเดตเรื่องไหนก่อนดีคะ?';
-      detail = 'NYX Standby // Neural Enclave Online\nสถานะ: พร้อมรายงานข่าว 6 หมวด และข้อมูล KRONOS AI Gym';
+      spoken = 'สวัสดีค่ะคุณอนันต์ นิกซ์เป็นผู้ช่วยแบบกฎและข้อความที่ตั้งโปรแกรมไว้ พร้อมดึงข้อมูลจากแหล่งออนไลน์เมื่อเชื่อมต่อสำเร็จ และจะติดป้ายสถานการณ์จำลองเมื่อดึงไม่ได้ค่ะ';
+      detail = 'NYX Standby // Rule-based companion\nสถานะ: แยกแหล่งข้อมูลออนไลน์และสถานการณ์จำลอง';
     } else if (q.includes('น่ารัก') || q.includes('สวย') || q.includes('ชอบเธอ') || q.includes('รัก')) {
       this.setEmotion('POUTY');
       spoken = 'ชมแบบนี้ทำเอานิกซ์เขินจนแก้มแดงเลยนะคะคุณอนันต์... ขอบคุณมากเลยนะคะ นิกซ์จะตั้งใจทำหน้าที่เป็นผู้ช่วยที่ดีที่สุดให้คุณอนันต์ค่ะ!';
@@ -1583,16 +1529,16 @@ export class HologramAssistantEngine {
       detail = 'Emotion Status: POUTY / TS высокий tsundere\nPacification Protocol: Active';
     } else if (q.includes('ชื่ออะไร') || q.includes('เธอคือใคร') || q.includes('ใครสร้าง')) {
       this.setEmotion('TACTICAL');
-      spoken = 'นิกซ์คือ NYX โฮโลแกรม AI ผู้ช่วยประจำสถานี C2 Command Workstation ของคุณอนันต์ค่ะ คอยช่วยรายงานข่าวกรองสด วิเคราะห์ตลาด และดูแลระบบประสาท KRONOS AI Gym ค่ะ';
-      detail = 'Identity: NYX // AGI Tactical Co-Pilot\nRole: Live Intelligence Anchor & Neural Gym Specialist';
+      spoken = 'นิกซ์คือ NYX ผู้ช่วยแบบกฎและข้อความสำเร็จรูปในแอป CyberDeck ค่ะ ตอนนี้ยังไม่ได้เชื่อมโมเดลภาษาหรือเอไอที่เรียนรู้เอง หน้าที่คือเรียกข้อมูลจากแหล่งที่ระบุ สรุปกฎตลาด และควบคุมหน้าจอค่ะ';
+      detail = 'Identity: NYX // Rule-based scripted companion\nModel connection: None\nLearning model: None';
     } else {
-      spoken = `รับทราบข้อความค่ะคุณอนันต์ นิกซ์พร้อมรายงานข่าวกรองสด 6 หมวด และข้อมูลสมองกล KRONOS AI Gym ค่ะ คุณอนันต์สามารถพิมพ์ 'มีข่าวอะไรบ้าง' หรือพิมพ์หมายเลข 1 ถึง 6 เพื่อเลือกฟังข่าวสดได้เลยนะคะ`;
+      spoken = `นิกซ์เป็นระบบตอบกลับแบบกฎ จึงยังตอบคำถามเปิดกว้างนี้แบบโมเดลภาษาไม่ได้ค่ะ ลองพิมพ์ 'มีข่าวอะไรบ้าง' หรือเลือกหัวข้อที่ระบบรองรับได้เลยนะคะ`;
       detail = `[ข้อความรับเข้า]: "${rawQuery}"\n[สถานะระบบ]: พร้อมใช้งาน Instant Voice Engine\n[คำสั่งแนะนำ]: 'มีข่าวอะไรบ้าง', 'ข่าวทอง', 'ข่าวคริปโต', 'NYX ยิม'`;
     }
 
     this.speak(spoken);
     return {
-      category: '💬 NYX INTELLIGENT TACTICAL COMPANION',
+      category: '💬 NYX RULE-BASED COMPANION',
       title: `ตอบรับคำสั่ง: "${rawQuery.length > 36 ? rawQuery.substring(0, 34) + '...' : rawQuery}"`,
       detail: detail,
       speech: spoken
@@ -1619,17 +1565,17 @@ export class HologramAssistantEngine {
       q === 'news'
     ) {
       this.setEmotion('TACTICAL');
-      const spokenMenu = 'วันนี้มี 6 หมวดข่าวน่าสนใจสดจากอินเทอร์เน็ตมารายงานค่ะคุณอนันต์: ข้อ 1 ข่าวบ้านเมืองรอบโลกสด, ข้อ 2 ข่าวเกมส์, ข้อ 3 ข่าวคริปโตสด, ข้อ 4 ข่าวทองคำและการเงินสด, ข้อ 5 ข่าว AI และเทคโนโลยี, และข้อ 6 ข่าวความปลอดภัยไซเบอร์ค่ะ คุณอนันต์อยากฟังหมวดไหน พิมพ์บอกหรือพิมพ์หมายเลข 1 ถึง 6 ได้เลยนะคะ';
+      const spokenMenu = 'มี 6 หมวดให้เลือกค่ะ ข่าวโลกและราคาคริปโตจะพยายามดึงออนไลน์และแจ้งแหล่งที่มา ส่วนข่าวเกม เทคโนโลยี และไซเบอร์ในตอนนี้เป็นสถานการณ์อ้างอิงแบบคงที่ ไม่ใช่ข่าวสดค่ะ';
       this.speak(spokenMenu);
       return {
         category: '📰 DAILY INTELLIGENCE MENU // สารบัญข่าวด่วนประจำวัน',
-        title: '6 หมวดข่าวกรองสดรอบโลกประจำวันนี้',
-        detail: `[1] 🌍 ข่าวบ้านเมืองรอบโลก — ดึงข้อมูลสดจาก Google News RSS Feed
-[2] 🎮 ข่าวเกมส์ & อีสปอร์ต — อัปเดต GTA VI & Steam Deck OLED
-[3] 🪙 ข่าวคริปโต & บล็อกเชน — ราคา Bitcoin, ETH, SOL สดจาก CoinGecko
-[4] 🥇 ข่าวทองคำ & ตลาดการเงิน — ราคาทอง Spot Gold สด & การลดดอกเบี้ย Fed
-[5] 🤖 ข่าว AI & เทคโนโลยี — OpenAI & DeepSeek สู่ยุค AGI & ชิป Blackwell
-[6] 🛡️ ข่าวความปลอดภัยไซเบอร์ — สั่งแพตช์ด่วนช่องโหว่ Zero-Day
+        title: '6 หมวดข้อมูล — แยกออนไลน์กับสถานการณ์จำลอง',
+        detail: `[1] 🌍 ข่าวรอบโลก — พยายามดึง Google News RSS; fallback จะติดป้าย SIMULATED
+[2] 🎮 ข่าวเกมส์ — STATIC SIMULATED REFERENCE
+[3] 🪙 คริปโต — พยายามดึงราคา CoinGecko; fallback จะติดป้าย SIMULATED
+[4] 🥇 ทองคำ — ราคาโทเคน PAXG/XAUT จาก CoinGecko ไม่ใช่ Spot broker
+[5] 🤖 เทคโนโลยี — STATIC SIMULATED REFERENCE
+[6] 🛡️ ไซเบอร์ — STATIC SIMULATED REFERENCE
 ------------------------------------------------------------------
 💡 วิธีเลือกฟัง: พิมพ์ "1" ถึง "6" หรือพิมพ์ "ข่าวคริปโต", "ข่าวทอง", "ข่าวบ้านเมือง" ได้เลยค่ะ`,
         speech: spokenMenu
@@ -1646,7 +1592,7 @@ export class HologramAssistantEngine {
         switchedName = this.setVoiceByName(voiceTarget);
       }
       
-      const activeVoiceName = switchedName || this.selectedFemaleVoice?.name || 'ResponsiveVoice Thai Female (เสียงผู้หญิงไทยแท้)';
+      const activeVoiceName = switchedName || this.selectedFemaleVoice?.name || 'Browser speech synthesis (system default)';
       const listStr = thaiList.map((v, i) => `[${i + 1}] ${v.name} (${v.lang})`).join('\n');
       const notifySpeech = `ใช้งานระบบเสียงภาษาไทย ${activeVoiceName} เรียบร้อยแล้วค่ะคุณอนันต์`;
       this.speak(notifySpeech);
@@ -1654,7 +1600,7 @@ export class HologramAssistantEngine {
       return {
         category: '🎙️ THAI VOICE SELECTOR',
         title: `ระบบเสียงภาษาไทย: ${activeVoiceName}`,
-        detail: `ระบบขับเคลื่อนหลัก: ResponsiveVoice Cloud Thai Female (เสียงผู้หญิงไทยแท้ 100%)\nรายการเสียงที่ตรวจพบในระบบ:\n${listStr}`,
+        detail: `ระบบขับเคลื่อนหลัก: Web Speech API ของระบบปฏิบัติการ\nคุณภาพและภาษาเสียงขึ้นกับ voice ที่ติดตั้งในเครื่อง\nรายการเสียงที่ตรวจพบ:\n${listStr}`,
         speech: notifySpeech
       };
     }
@@ -1707,12 +1653,14 @@ export class HologramAssistantEngine {
       this.setEmotion('PLAYFUL');
       const item = this.getRandomItem(GLOBAL_INTELLIGENCE_RADAR.GAMING);
       const text = item.anchor;
-      this.speak(text);
+      const simulatedSpeech = `ข้อมูลต่อไปนี้เป็นสถานการณ์อ้างอิง ไม่ใช่ข่าวสดค่ะ ${text}`;
+      this.speak(simulatedSpeech);
       return {
-        category: '🎮 GAMING INTEL',
-        title: item.title,
-        detail: item.detail,
-        speech: text
+        category: '🎮 GAMING // SIMULATED REFERENCE',
+        title: `[SIMULATED] ${item.title}`,
+        detail: `[STATIC SCENARIO — NOT LIVE]\n${item.detail}`,
+        speech: simulatedSpeech,
+        provenance: 'SIMULATED_REFERENCE'
       };
     }
 
@@ -1737,12 +1685,14 @@ export class HologramAssistantEngine {
       this.setEmotion('TACTICAL');
       const item = this.getRandomItem(GLOBAL_INTELLIGENCE_RADAR.TECH_AI);
       const text = item.anchor;
-      this.speak(text);
+      const simulatedSpeech = `ข้อมูลต่อไปนี้เป็นสถานการณ์อ้างอิง ไม่ใช่ข่าวสดค่ะ ${text}`;
+      this.speak(simulatedSpeech);
       return {
-        category: '🤖 TECH & AI ADVANCEMENT',
-        title: item.title,
-        detail: item.detail,
-        speech: text
+        category: '🤖 TECH // SIMULATED REFERENCE',
+        title: `[SIMULATED] ${item.title}`,
+        detail: `[STATIC SCENARIO — NOT LIVE]\n${item.detail}`,
+        speech: simulatedSpeech,
+        provenance: 'SIMULATED_REFERENCE'
       };
     }
 
@@ -1759,23 +1709,25 @@ export class HologramAssistantEngine {
       this.setEmotion('TACTICAL');
       const item = this.getRandomItem(GLOBAL_INTELLIGENCE_RADAR.CYBER_SEC);
       const text = item.anchor;
-      this.speak(text);
+      const simulatedSpeech = `ข้อมูลต่อไปนี้เป็นสถานการณ์อ้างอิง ไม่ใช่ข่าวสดค่ะ ${text}`;
+      this.speak(simulatedSpeech);
       return {
-        category: '🛡️ ZERO-DAY CYBER DEFENSE',
-        title: item.title,
-        detail: item.detail,
-        speech: text
+        category: '🛡️ CYBER // SIMULATED REFERENCE',
+        title: `[SIMULATED] ${item.title}`,
+        detail: `[STATIC SCENARIO — NOT LIVE]\n${item.detail}`,
+        speech: simulatedSpeech,
+        provenance: 'SIMULATED_REFERENCE'
       };
     }
 
     // 7. สอบถามเกี่ยวกับสมองกล KRONOS AI Gym
     if (q.includes('ยิม') || q.includes('gym') || q.includes('kronos') || q.includes('เลเวล') || q.includes('level') || q.includes('ฉลาด') || q.includes('เรียนรู้')) {
       this.reportAIGym();
-      const gym = this.cachedGymStats || { level: 10, samples: 14971, winRate: 69.6 };
+      const gym = this.cachedGymStats || { level: 1, samples: 0, winRate: 0 };
       return {
-        category: '🧠 KRONOS NEURAL GYM',
-        title: `KRONOS Level ${gym.level} Apex Sovereign Quant`,
-        detail: `สะสมข้อมูลแท่งเทียนไปแล้ว ${gym.samples.toLocaleString()} แท่งเทียน พร้อมสถิติชนะ 69.6%`,
+        category: '🧪 KRONOS PAPER SIMULATION',
+        title: `KRONOS heuristic level ${gym.level}`,
+        detail: `ผลจำลองสะสม ${gym.samples.toLocaleString()} ตัวอย่าง สถิตินี้มาจาก paper/synthetic scenarios ไม่ใช่ผล live broker`,
         speech: this.lastSpokenText
       };
     }
@@ -1788,15 +1740,15 @@ export class HologramAssistantEngine {
   triggerWelcomeGreeting() {
     this.updateTelemetryHUD();
     this.setEmotion('PLAYFUL');
-    const gym = this.cachedGymStats || { level: 10, samples: 14971, winRate: 69.6 };
-    const speech = `ยินดีต้อนรับกลับค่ะคุณอนันต์ NYX โฮโลแกรม AI ผู้ช่วยประจำสถานี C2 พร้อมรายงานข่าวกรองสด 6 หมวด และข้อมูลสมองกล KRONOS AI Gym แล้วค่ะ คุณอนันต์สามารถพิมพ์ 'มีข่าวอะไรบ้าง' หรือเลือกหมายเลข 1 ถึง 6 ได้เลยนะคะ`;
+    const gym = this.cachedGymStats || { level: 1, samples: 0, winRate: 0 };
+    const speech = `ยินดีต้อนรับกลับค่ะคุณอนันต์ NYX ผู้ช่วยแบบกฎพร้อมทำงานแล้วค่ะ ข้อมูลออนไลน์และสถานการณ์จำลองจะแสดงแหล่งที่มาแยกกันอย่างชัดเจนค่ะ`;
     this.speak(speech);
   }
 
   async briefMe() {
     this.updateTelemetryHUD();
     this.setEmotion('TACTICAL');
-    const gym = this.cachedGymStats || { level: 10, samples: 14971, winRate: 69.6 };
+    const gym = this.cachedGymStats || { level: 1, samples: 0, winRate: 0 };
     const liveNews = await this.fetchLiveGlobalNews('WORLD');
 
     setTimeout(() => {
@@ -1807,7 +1759,8 @@ export class HologramAssistantEngine {
       if (this.isSpeaking) this.setGazeMode('NEWS');
     }, 7500);
 
-    const speech = `รายงานสถานการณ์ภาพรวม C2 ค่ะ: สมองกล KRONOS AI Gym ทำงานอยู่ที่เลเวล ${gym.level} ระดับ Apex Sovereign Quant ด้วยอัตราความแม่นยำ ${gym.winRate}% จากข้อมูล ${gym.samples.toLocaleString()} แท่งเทียน ข่าวด่วนล่าสุดจากโลกออนไลน์: ${liveNews.title} ระบบความปลอดภัย DEFCON-1 พร้อมทำงาน 100% ค่ะ`;
+    const sourceLabel = liveNews.provenance || 'UNKNOWN_SOURCE';
+    const speech = `รายงานภาพรวมค่ะ KRONOS เป็นระบบกฎใน paper simulation ระดับ ${gym.level} มีสถิติจำลอง ${gym.winRate}% จาก ${gym.samples.toLocaleString()} ตัวอย่าง หัวข้อข้อมูลล่าสุดคือ ${liveNews.title} แหล่งที่มา ${sourceLabel} ระบบไม่อ้างว่าเป็นเอไอเรียนรู้เองหรือระบบความปลอดภัยไร้ช่องโหว่ค่ะ`;
     this.speak(speech);
   }
 
@@ -1815,8 +1768,8 @@ export class HologramAssistantEngine {
     this.updateTelemetryHUD();
     this.setEmotion('TACTICAL');
     this.setGazeMode('GYM');
-    const gym = this.cachedGymStats || { level: 10, samples: 14971, winRate: 69.6 };
-    const speech = `รายงานข้อมูลระบบประสาท KRONOS AI Gym ค่ะ: ปัจจุบันจัดอยู่ในระดับ เลเวล ${gym.level} จอมราชันย์ Apex Sovereign Quant ผ่านการวิเคราะห์โครงสร้างราคามาแล้วกว่า ${gym.samples.toLocaleString()} ตัวอย่าง พร้อมระบบการเรียนรู้แบบเสริมกำลัง ความเชี่ยวชาญในกลยุทธ์ Smart Money Order Block อยู่ที่ 91% ค่ะ`;
+    const gym = this.cachedGymStats || { level: 1, samples: 0, winRate: 0 };
+    const speech = `รายงาน KRONOS paper simulation ค่ะ ระดับ ${gym.level} ผ่านสถานการณ์จำลอง ${gym.samples.toLocaleString()} ตัวอย่าง ค่า win rate จำลอง ${gym.winRate}% ระบบปรับน้ำหนักกฎตามผลชนะหรือแพ้ แต่ไม่ใช่ neural network หรือ reinforcement learning model ค่ะ`;
     this.speak(speech);
   }
 

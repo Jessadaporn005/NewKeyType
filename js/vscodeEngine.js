@@ -1,8 +1,8 @@
 /**
- * CYBER//TYPE VS CODE INTERACTIVE PLAYGROUND & AI CYBER TUTOR ACADEMY
+ * CYBER//TYPE CODE PLAYGROUND & RULE-BASED TUTOR ACADEMY
  * Dual-Pane Live Editor, Line Numbering, Syntax Highlighting, Real-Time Keyword Docstring Guides (Thai/Eng),
  * Multi-Language Curriculum (HTML/CSS/JS, Python, Java, C++, Rust, SQL, Bash/PowerShell),
- * Syntax Auto-Pairing, Code Export/Copy, Cursor Position Coordinates, and Embedded AI Cyber Tutor.
+ * Syntax Auto-Pairing, Code Export/Copy, Cursor Position Coordinates, and Embedded Rule Guide.
  */
 
 export const CODE_KEYWORD_DOCS = {
@@ -331,7 +331,7 @@ export class VscodeEngine {
         <div class="vscode-topbar">
           <div class="vscode-brand">
             <span class="vsc-icon">⚡</span>
-            <span class="vsc-title">CYBER//CODE STUDIO v4.5 [AI TUTOR]</span>
+            <span class="vsc-title">CYBER//CODE STUDIO v4.5 [RULE GUIDE]</span>
           </div>
 
           <div class="vscode-lang-tabs">
@@ -407,13 +407,13 @@ export class VscodeEngine {
           <!-- Draggable / Resizable Divider -->
           <div class="vscode-divider"></div>
 
-          <!-- Right Pane: Live Execution Terminal Output, Web Preview & AI Cyber Tutor -->
+          <!-- Right Pane: capability-labeled output, static preview & rule guide -->
           <div class="vscode-pane vscode-right-pane">
             <div class="vsc-pane-header">
               <div class="vsc-tabs-right">
                 <button class="vsc-tab-right active" id="vscTabOutput">⚡ TERMINAL OUTPUT</button>
-                <button class="vsc-tab-right" id="vscTabWebPreview">🌐 LIVE WEB PREVIEW</button>
-                <button class="vsc-tab-right vsc-tab-ai" id="vscTabAiTutor">🤖 AI CYBER TUTOR</button>
+                <button class="vsc-tab-right" id="vscTabWebPreview">🌐 STATIC WEB PREVIEW</button>
+                <button class="vsc-tab-right vsc-tab-ai" id="vscTabAiTutor">📋 RULE-BASED TUTOR</button>
               </div>
               <div class="vsc-output-stats" id="vscOutputStats">READY</div>
             </div>
@@ -421,21 +421,21 @@ export class VscodeEngine {
             <div class="vsc-right-content">
               <!-- 1. Console Log Output View -->
               <div class="vsc-console-output" id="vscConsoleOutput">
-                <div class="vsc-out-line system-line">[+] CYBER//CODE RUNTIME READY. PRESS 'RUN CODE' TO EXECUTE.</div>
+                <div class="vsc-out-line system-line">[+] RUNNER CHECKS CAPABILITY ON EACH RUN. FALLBACK OUTPUT IS LABELED SIMULATED.</div>
               </div>
 
-              <!-- 2. Live Web Preview IFrame View -->
+              <!-- 2. Static Web Preview IFrame View; scripts and forms are sandbox-blocked -->
               <div class="vsc-web-preview-container hidden" id="vscWebPreviewContainer">
-                <iframe class="vsc-web-iframe" id="vscWebIframe" sandbox="allow-scripts allow-modals"></iframe>
+                <iframe class="vsc-web-iframe" id="vscWebIframe" sandbox=""></iframe>
               </div>
 
-              <!-- 3. AI Cyber Tutor Interactive Assistant Drawer -->
+              <!-- 3. Rule-based tutor drawer -->
               <div class="vsc-ai-tutor-container hidden" id="vscAiTutorContainer">
                 <div class="ai-tutor-header">
                   <div class="ai-avatar">🤖</div>
                   <div class="ai-meta">
-                    <span class="ai-name">CYBER//TUTOR AI v2.4</span>
-                    <span class="ai-role">Interactive Code Mentor & Diagnostic Guide</span>
+                    <span class="ai-name">CYBER//TUTOR RULE GUIDE v2.4</span>
+                    <span class="ai-role">Template Explanations & Checklists — Not a Parser/Linter</span>
                   </div>
                 </div>
 
@@ -451,7 +451,7 @@ export class VscodeEngine {
                 <div class="ai-chat-history" id="aiChatHistory">
                   <div class="ai-msg ai-msg-bot">
                     <div class="msg-bubble">
-                      สวัสดีครับคุณ <strong>${this.app.username || 'Operative'}</strong>! ผมคือ <strong>AI Cyber Tutor</strong> พร้อมช่วยอธิบายการทำงานของโค้ดแต่ละบรรทัด แนะนำคำสั่ง และตรวจหาข้อผิดพลาดให้คุณครับ สามารถคลิกปุ่มไกด์ด้านบนหรือพิมพ์คำถามได้เลยครับ!
+                      สวัสดีครับคุณ <strong>${this.escapeHtml(this.app.username || 'Operative')}</strong>! นี่คือ <strong>Rule-Based Code Guide</strong> ที่ให้คำอธิบายและ checklist ทั่วไป ไม่ใช่โมเดล AI, parser, compiler หรือ linter และไม่รับรองว่าโค้ดถูกต้องครับ
                     </div>
                   </div>
                 </div>
@@ -459,7 +459,7 @@ export class VscodeEngine {
                 <!-- Chat Input Form -->
                 <div class="ai-chat-input-bar">
                   <input type="text" class="ai-input" id="aiChatInput" placeholder="พิมพ์คำถาม เช่น 'โค้ดนี้ทำงานยังไง', 'Pointer คืออะไร'..." />
-                  <button class="ai-btn-send" id="aiBtnSend">ถาม AI ➔</button>
+                  <button class="ai-btn-send" id="aiBtnSend">ถาม Rule Guide ➔</button>
                 </div>
               </div>
             </div>
@@ -819,8 +819,8 @@ export class VscodeEngine {
     const code = this.editorTextarea.value;
     const statsEl = this.container.querySelector('#vscOutputStats');
 
-    if (statsEl) statsEl.textContent = 'EXECUTING...';
-    this.outputConsole.innerHTML = `<div class="vsc-out-line system-line">[+] COMPILING & RUNNING ${this.currentLanguage.toUpperCase()} RUNTIME...</div>`;
+    if (statsEl) statsEl.textContent = 'CHECKING RUNNER...';
+    this.outputConsole.innerHTML = `<div class="vsc-out-line system-line">[+] CHECKING ${this.currentLanguage.toUpperCase()} EXECUTION CAPABILITY...</div>`;
 
     if (this.sound) this.sound.playSuccessFanfare();
 
@@ -829,7 +829,7 @@ export class VscodeEngine {
       this.renderWebPreview();
       const line = document.createElement('div');
       line.className = 'vsc-out-line success-line';
-      line.textContent = `[✓] HTML/CSS DOM RENDERED TO LIVE PREVIEW CONTAINER.`;
+      line.textContent = `[✓] HTML/CSS RENDERED IN A STATIC SANDBOX; SCRIPTS AND FORMS ARE BLOCKED.`;
       this.outputConsole.appendChild(line);
       if (statsEl) statsEl.textContent = 'STATUS: 200 OK (DOM RENDERED)';
       this.app.addExp(50, 'Web App Rendered');
@@ -840,18 +840,28 @@ export class VscodeEngine {
     if (this.app.sys && this.app.sys.isElectron && (this.currentLanguage === 'python' || this.currentLanguage === 'bash')) {
       try {
         const tempFile = this.currentLanguage === 'python' ? 'temp_runner.py' : 'temp_runner.sh';
-        await this.app.sys.writeFile(tempFile, code);
+        const writeResult = await this.app.sys.writeFile(tempFile, code);
+        if (!writeResult?.success) {
+          const blockedLine = document.createElement('div');
+          blockedLine.className = 'vsc-out-line';
+          blockedLine.textContent = `[BLOCKED] Real execution unavailable: ${writeResult?.error || 'HOST_WRITE_DISABLED'}`;
+          this.outputConsole.appendChild(blockedLine);
+          if (statsEl) statsEl.textContent = 'STATUS: REAL RUNNER BLOCKED';
+          return;
+        }
         const execCmd = this.currentLanguage === 'python' ? `python ${tempFile}` : `bash ${tempFile}`;
         const res = await this.app.sys.exec(execCmd);
 
         const outLine = document.createElement('div');
         outLine.className = 'vsc-out-line';
         outLine.style.whiteSpace = 'pre-wrap';
-        outLine.textContent = res.stdout || res.stderr || '[✓] Execution finished with no output.';
+        outLine.textContent = res.success
+          ? (res.stdout || '[✓] Real execution finished with no output.')
+          : `[BLOCKED/FAILED] ${res.stderr || res.error || 'HOST_EXECUTION_UNAVAILABLE'}`;
         this.outputConsole.appendChild(outLine);
 
-        if (statsEl) statsEl.textContent = res.success ? 'STATUS: PASSED (100%)' : 'STATUS: ERROR';
-        this.app.addExp(80, `Code Executed: ${this.currentLanguage}`);
+        if (statsEl) statsEl.textContent = res.success ? 'STATUS: REAL RUN COMPLETED' : 'STATUS: REAL RUNNER FAILED';
+        if (res.success) this.app.addExp(80, `Code Executed: ${this.currentLanguage}`);
         return;
       } catch (e) {}
     }
@@ -886,15 +896,15 @@ export class VscodeEngine {
       const outLine = document.createElement('div');
       outLine.className = 'vsc-out-line';
       outLine.style.whiteSpace = 'pre-wrap';
-      outLine.textContent = simulatedOutput;
+      outLine.textContent = `[SIMULATED RUNNER — CODE WAS NOT EXECUTED]\n${simulatedOutput}`;
       this.outputConsole.appendChild(outLine);
 
-      if (statsEl) statsEl.textContent = 'STATUS: PASSED (100%)';
+      if (statsEl) statsEl.textContent = 'STATUS: SIMULATED OUTPUT';
       this.app.addExp(75, `Code Playground: ${this.currentLanguage.toUpperCase()}`);
     }, 300);
   }
 
-  // --- AI CYBER TUTOR CONVERSATION & CODE EXPLANATION ENGINE ---
+  // --- RULE-BASED TUTOR CONVERSATION & CHECKLIST ENGINE ---
   askAiPrompt(type) {
     const code = this.editorTextarea ? this.editorTextarea.value : '';
     let promptText = '';
@@ -946,7 +956,7 @@ export class VscodeEngine {
     // Append Bot Typing State & Response
     const botMsg = document.createElement('div');
     botMsg.className = 'ai-msg ai-msg-bot';
-    botMsg.innerHTML = `<div class="msg-bubble"><span class="ai-typing-dots">AI กำลังวิเคราะห์โค้ด...</span></div>`;
+    botMsg.innerHTML = `<div class="msg-bubble"><span class="ai-typing-dots">Rule Guide กำลังเลือกคำตอบจากแม่แบบ...</span></div>`;
     history.appendChild(botMsg);
     history.scrollTop = history.scrollHeight;
 
@@ -961,37 +971,43 @@ export class VscodeEngine {
 
   generateAiResponse(type, code) {
     const lang = this.currentLanguage.toUpperCase();
+    const lineCount = String(code || '').split('\n').length;
     if (type === 'explain') {
       return `
-        <strong>💡 บทวิเคราะห์โค้ด ${lang} ทีละขั้นตอน:</strong><br><br>
-        1. <strong>โครงสร้างหลัก:</strong> โค้ดนี้ถูกออกแบบมาเพื่อประมวลผลข้อมูลในระบบความปลอดภัยแบบเรียลไทม์<br>
-        2. <strong>คีย์เวิร์ดสำคัญ:</strong>
+        <strong>📋 TEMPLATE GUIDE สำหรับ ${lang}:</strong><br><br>
+        โค้ดมี ${lineCount} บรรทัด แต่ Rule Guide นี้ไม่ได้ parse AST และไม่ได้เข้าใจทุกบรรทัดจริง<br>
+        กรุณาตรวจตามลำดับ:<br>
         <ul>
-          <li>มีการประกาศตัวแปร/ฟังก์ชันเพื่อจัดเก็บสถานะระบบ</li>
-          <li>ใช้เงื่อนไขตรวจสอบเพื่อป้องกันค่าความผิดปกติ (Fault Tolerance)</li>
-          <li>ส่งค่า Output ออกมาแสดงผลผ่าน Console หรือ DOM Viewport</li>
+          <li>หา entry point, input และ output</li>
+          <li>ไล่เงื่อนไข, loop และการเปลี่ยน state</li>
+          <li>ตรวจ error handling และผลข้างเคียง</li>
         </ul>
-        3. <strong>คำแนะนำในการต่อยอด:</strong> สามารถเพิ่มฟังก์ชัน Error Handling (try-except) เพื่อความปลอดภัยสูงสุดได้ครับ
+        ใช้ compiler/linter จริงเพื่อยืนยันผลครับ
       `;
     } else if (type === 'bugs') {
       return `
-        <strong>🔍 ผลการตรวจวิเคราะห์ Bug & Vulnerabilities:</strong><br><br>
-        [✓] <strong>Syntax Check:</strong> โครงสร้างไวยากรณ์ถูกต้อง ไม่พบข้อผิดพลาดรุนแรง<br>
-        [✓] <strong>Memory & Scope:</strong> ตัวแปรถูกประกาศและใช้งานอย่างปลอดภัย<br>
-        💡 <strong>จุดที่ควรระวัง:</strong> ควรตรวจสอบค่า Input ว่างเปล่า (Null / None) ก่อนประมวลผลเสมอ เพื่อป้องกัน Runtime Crash ครับ
+        <strong>🔍 BUG CHECKLIST — ยังไม่ได้ตรวจด้วย parser/linter:</strong><br><br>
+        • ทดสอบ null/undefined, ค่าว่าง และค่าขอบเขต<br>
+        • ตรวจ async error, timeout และ resource cleanup<br>
+        • ตรวจ input validation, injection และการเปิดเผยข้อมูลลับ<br>
+        • รัน compiler/linter/tests จริงก่อนสรุปว่าโค้ดผ่าน<br>
+        ระบบนี้ไม่สามารถรับรอง syntax, memory safety หรือ absence of vulnerabilities ได้ครับ
       `;
     } else if (type === 'optimize') {
       return `
-        <strong>🚀 คำแนะนำด้านความเร็วและ Best Practices:</strong><br><br>
-        • <strong>Time Complexity:</strong> โค้ดชุดนี้ทำงานที่ O(N) ซึ่งมีความเร็วระดับมิลลิวินาที<br>
-        • <strong>Memory Efficiency:</strong> หากประมวลผลข้อมูลขนาดใหญ่ แนะนำให้ใช้ Generator หรือ Stream เพื่อประหยัด RAM<br>
-        • <strong>Idiomatic Pattern:</strong> สามารถใช้ฟังก์ชันมาตรฐานของ ${lang} แทนการเขียนลูปแบบแมนนวลเพื่อความกระชับครับ
+        <strong>🚀 GENERIC OPTIMIZATION CHECKLIST:</strong><br><br>
+        Rule Guide ยังไม่ได้ benchmark และไม่สามารถสรุป Big-O จากข้อความนี้โดยอัตโนมัติ<br>
+        • วัด profiler/benchmark ก่อนแก้<br>
+        • ลด I/O ซ้ำ, allocation ซ้ำ และงานใน loop ที่ไม่จำเป็น<br>
+        • เพิ่ม regression test เพื่อยืนยันว่าผลลัพธ์ไม่เปลี่ยน<br>
+        • ใช้เครื่องมือของ ${lang} วัดผลจริงหลังปรับครับ
       `;
     } else {
       return `
-        <strong>📖 ตัวอย่างการนำไปประยุกต์ใช้งานจริง:</strong><br><br>
-        • <strong>Cyber Threat Monitoring:</strong> ใช้สร้างระบบตรวจจับการโจมตี DDoS / Port Scanning แบบอัตโนมัติ<br>
-        • <strong>API Microservice:</strong> นำไปเชื่อมต่อกับ Web Backend หรือ Bot เพื่อส่ง Telemetry Alert เข้ามือถือได้ทันที
+        <strong>📖 แนวทางทดลองต่อ:</strong><br><br>
+        • แยกฟังก์ชันบริสุทธิ์ออกจาก I/O แล้วเขียน unit test<br>
+        • เพิ่มกรณี success, failure, timeout และ invalid input<br>
+        • ใช้ตัวอย่างนี้เพื่อฝึกใน sandbox เท่านั้น ก่อนนำไปเชื่อมระบบจริง
       `;
     }
   }
@@ -1001,13 +1017,13 @@ export class VscodeEngine {
     if (qLower.includes('pointer') || qLower.includes('พอยเตอร์')) {
       return `<strong>⚡ Pointer คืออะไร?</strong><br>Pointer คือตัวแปรพิเศษที่ใช้เก็บ <em>Memory Address (ที่อยู่ในแรม)</em> ของตัวแปรอื่น แทนที่จะเก็บค่าข้อมูลโดยตรง ใน C/C++ เราใช้ <code>*</code> เพื่อประกาศหรือดึงค่า และใช้ <code>&</code> เพื่อหาตำแหน่ง Address ครับ!`;
     } else if (qLower.includes('rust') || qLower.includes('ownership')) {
-      return `<strong>🦀 Rust Ownership & Borrowing:</strong><br>Rust ไม่มี Garbage Collector แต่ใช้ระบบ <strong>Ownership</strong> โดยข้อมูลทุกชิ้นจะมีเจ้าของตัวแปรเพียงตัวเดียว เมื่อตัวแปรหลุดจาก Scope หน่วยความจำจะถูกคืนอัตโนมัติ 100% โดยไม่มี Memory Leak!`;
+      return `<strong>🦀 Rust Ownership & Borrowing:</strong><br>Rust ใช้ ownership และ borrowing เพื่อป้องกันข้อผิดพลาดด้านหน่วยความจำหลายชนิดตั้งแต่ compile time แต่ยังเกิด resource leak เชิงตรรกะหรือปัญหาใน unsafe code ได้ จึงควรทดสอบและตรวจด้วยเครื่องมือจริงครับ`;
     } else if (qLower.includes('sql') || qLower.includes('join')) {
       return `<strong>🗄️ การใช้ JOIN ใน SQL:</strong><br><code>INNER JOIN</code> ใช้ดึงข้อมูลที่ตรงกันของทั้งสองตาราง ส่วน <code>LEFT JOIN</code> จะดึงข้อมูลจากตารางหลักทั้งหมด แม้ว่าอีกตารางจะไม่มีข้อมูลตรงกันก็ตามครับ!`;
     } else if (qLower.includes('html') || qLower.includes('css') || qLower.includes('flex')) {
       return `<strong>🌐 Modern Web CSS Flexbox:</strong><br>ใช้ <code>display: flex; justify-content: center; align-items: center;</code> เพื่อจัดองค์ประกอบให้อยู่กึ่งกลางหน้าจออย่างสมบูรณ์แบบใน 3 บรรทัดครับ!`;
     } else {
-      return `<strong>🤖 คำแนะนำจาก Cyber Tutor:</strong><br>สำหรับคำถาม: <em>"${this.escapeHtml(query)}"</em><br>ในภาษา <strong>${this.currentLanguage.toUpperCase()}</strong> คำสั่งนี้สามารถประยุกต์ใช้เพื่อควบคุม Logic ของโปรแกรมให้มีความเสถียรและแม่นยำสูง สามารถทดลองเขียนและกด <strong>▶ RUN [Ctrl+Enter]</strong> เพื่อดูผลลัพธ์ได้เลยครับ!`;
+      return `<strong>📋 คำตอบจาก Rule Guide:</strong><br>สำหรับคำถาม: <em>"${this.escapeHtml(query)}"</em><br>ระบบนี้ตอบได้เฉพาะแม่แบบความรู้ที่กำหนดไว้ และไม่ได้วิเคราะห์โค้ดด้วยโมเดล AI หรือ compiler หากต้องการยืนยันผล ให้ใช้ runner/linter ที่แสดงว่าเป็นของจริงครับ`;
     }
   }
 

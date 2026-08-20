@@ -21,12 +21,15 @@ export class CyberWifiEngine {
     this.radarAngle = 0;
     this.radarAnimId = null;
     this.searchQuery = '';
+    this.dataSource = 'VERIFYING';
 
     // Quantum Decryptor State
     this.isDecrypting = false;
     this.decryptTargetWord = '';
     this.decryptTyped = '';
     this.decryptProgress = 0;
+    this.decryptListenerAttached = false;
+    this.boundDecryptorKeyDown = this.handleDecryptorKeyDown.bind(this);
     this.decryptWordlist = [
       'P@ssw0rd994_QUANTUM_CORE',
       'ADMIN_OVERRIDE_ROOT_00',
@@ -108,13 +111,13 @@ export class CyberWifiEngine {
             <!-- Quantum Decryptor / Security Training Panel -->
             <div class="quantum-decryptor-panel" id="quantumDecryptorPanel">
               <div class="decryptor-header">
-                <span class="dec-title">⚡ QUANTUM WPA2/WPA3 BRUTE-FORCE DECRYPTOR</span>
+                <span class="dec-title">🧪 WPA TYPING TRAINER — SIMULATION ONLY</span>
                 <span class="dec-target-badge" id="decTargetBadge">TARGET: NONE (SELECT AN AP)</span>
               </div>
               
               <div class="decryptor-body" id="decryptorBody">
                 <div class="dec-instructions">
-                  Select any detected Wi-Fi access point above and click <strong>[ ⚡ QUANTUM DECRYPT ]</strong> to engage the cryptographic brute-force typing challenge!
+                  Select an access point and start a fictional typing drill. This mode does not capture handshakes, recover passwords, or bypass Wi-Fi security.
                 </div>
               </div>
             </div>
@@ -123,11 +126,11 @@ export class CyberWifiEngine {
 
         <!-- 3. Bottom Status Bar -->
         <div class="wifi-status-bar">
-          <span>OPERATOR: <strong>${this.app.username || 'ANAN'} (UID: 0)</strong></span>
+          <span>OPERATOR: <strong>${this.escapeHtml(this.app.username || 'ANAN')} (LOCAL APP PROFILE)</strong></span>
           <span class="status-sep">|</span>
           <span id="wifiSelectedInfo">No access point selected</span>
           <span class="status-sep">|</span>
-          <span class="status-glow">WLAN INTERFACE: Realtek/Intel 802.11ax [ACTIVE]</span>
+          <span class="status-glow">WLAN SOURCE: VERIFIED AFTER SCAN OR LABELED SIMULATION</span>
         </div>
       </div>
 
@@ -139,12 +142,9 @@ export class CyberWifiEngine {
             <button class="wifi-modal-close" id="wifiModalClose">✕</button>
           </div>
           <div class="wifi-modal-body">
-            <div class="wifi-field-group">
-              <label>Network Security Passphrase:</label>
-              <input type="password" class="wifi-modal-input" id="wifiPassInput" placeholder="Enter WPA2/WPA3 key..." />
-            </div>
+            <div class="wifi-field-group">Uses an existing Wi-Fi profile already saved by Windows. This app does not collect, save, or transmit a Wi-Fi password.</div>
             <div class="wifi-modal-actions">
-              <button class="wifi-btn wifi-btn-confirm" id="btnConfirmWifiConnect">⚡ AUTHENTICATE & CONNECT</button>
+              <button class="wifi-btn wifi-btn-confirm" id="btnConfirmWifiConnect">⚡ CONNECT SAVED WINDOWS PROFILE</button>
             </div>
           </div>
         </div>
@@ -187,14 +187,12 @@ export class CyberWifiEngine {
 
     if (btnConfirm) {
       btnConfirm.addEventListener('click', async () => {
-        const passInput = this.container.querySelector('#wifiPassInput');
-        const key = passInput ? passInput.value : '';
         const modal = this.container.querySelector('#wifiConnectModal');
         if (modal) modal.classList.add('hidden');
 
         if (this.activeTargetNetwork) {
           if (this.toasts) this.toasts.show('SUCCESS', `Authenticating with '${this.activeTargetNetwork.ssid}'...`, 2500);
-          const res = await systemBridge.connectWifi(this.activeTargetNetwork.ssid, key);
+          const res = await systemBridge.connectWifi(this.activeTargetNetwork.ssid);
           if (res.success) {
             if (this.sound) this.sound.playSuccessFanfare();
             if (this.toasts) this.toasts.show('ACHIEVEMENT', `Connected to Wi-Fi: ${this.activeTargetNetwork.ssid}!`, 3000);
@@ -309,11 +307,13 @@ export class CyberWifiEngine {
     const res = await systemBridge.scanWifi();
     if (res && res.networks) {
       this.networks = res.networks;
+      this.dataSource = res.source || 'UNKNOWN';
     }
 
     if (badge) {
-      badge.textContent = 'STATUS: LOCKED';
-      badge.style.color = '#00ff66';
+      const verified = this.dataSource === 'HOST_VERIFIED';
+      badge.textContent = verified ? 'SOURCE: HOST VERIFIED' : 'SOURCE: SIMULATED TRAINING';
+      badge.style.color = verified ? '#00ff66' : '#ffaa00';
     }
 
     const apCountEl = this.container ? this.container.querySelector('#radarApCount') : null;
@@ -334,33 +334,35 @@ export class CyberWifiEngine {
     }
 
     if (displayNets.length === 0) {
-      listEl.innerHTML = `<div class="wifi-empty-state">No Wi-Fi access points detected matching '${this.searchQuery}'</div>`;
+      listEl.innerHTML = `<div class="wifi-empty-state">No Wi-Fi access points detected matching '${this.escapeHtml(this.searchQuery)}'</div>`;
       return;
     }
 
     let html = '';
     displayNets.forEach(net => {
       const isSelected = this.activeTargetNetwork && this.activeTargetNetwork.ssid === net.ssid;
-      const isHigh = net.signal >= 75;
+      const signal = Math.max(0, Math.min(100, Number(net.signal) || 0));
+      const isHigh = signal >= 75;
       const isWpa3 = (net.auth || '').includes('WPA3');
+      const safeSsid = this.escapeHtml(net.ssid);
 
       html += `
-        <div class="wifi-row ${isSelected ? 'selected' : ''}" data-ssid="${net.ssid}">
+        <div class="wifi-row ${isSelected ? 'selected' : ''}" data-ssid="${safeSsid}">
           <div class="col-ssid">
             <span class="wifi-icon">📶</span>
-            <span class="wifi-ssid-name">${net.ssid}</span>
+            <span class="wifi-ssid-name">${safeSsid}</span>
           </div>
           <div class="col-signal">
             <span class="signal-bar-wrap">
-              <span class="signal-fill" style="width: ${net.signal}%; background: ${isHigh ? '#00ff66' : '#00e5ff'};"></span>
+              <span class="signal-fill" style="width: ${signal}%; background: ${isHigh ? '#00ff66' : '#00e5ff'};"></span>
             </span>
-            <span class="signal-pct">${net.signal}%</span>
+            <span class="signal-pct">${signal}%</span>
           </div>
-          <div class="col-channel">CH ${net.channel} (${net.band})</div>
-          <div class="col-auth"><span class="auth-pill ${isWpa3 ? 'pill-wpa3' : 'pill-wpa2'}">${net.auth}</span></div>
+          <div class="col-channel">CH ${this.escapeHtml(net.channel)} (${this.escapeHtml(net.band)})</div>
+          <div class="col-auth"><span class="auth-pill ${isWpa3 ? 'pill-wpa3' : 'pill-wpa2'}">${this.escapeHtml(net.auth)}</span></div>
           <div class="col-action">
-            <button class="wifi-action-btn btn-connect-ap" data-ssid="${net.ssid}">⚡ CONNECT</button>
-            <button class="wifi-action-btn btn-decrypt-ap" data-ssid="${net.ssid}">🔓 DECRYPT</button>
+            <button class="wifi-action-btn btn-connect-ap" data-ssid="${safeSsid}">⚡ CONNECT</button>
+            <button class="wifi-action-btn btn-decrypt-ap" data-ssid="${safeSsid}">🔓 DECRYPT</button>
           </div>
         </div>
       `;
@@ -405,13 +407,10 @@ export class CyberWifiEngine {
     if (!this.container) return;
     const modal = this.container.querySelector('#wifiConnectModal');
     const title = this.container.querySelector('#wifiModalSsidTitle');
-    const input = this.container.querySelector('#wifiPassInput');
 
     if (modal && title) {
-      title.textContent = `AUTHENTICATE WI-FI: ${ssid.toUpperCase()}`;
-      if (input) input.value = '';
+      title.textContent = `CONNECT SAVED WINDOWS PROFILE: ${ssid.toUpperCase()}`;
       modal.classList.remove('hidden');
-      if (input) input.focus();
     }
   }
 
@@ -441,8 +440,8 @@ export class CyberWifiEngine {
     body.innerHTML = `
       <div class="decryptor-active-box">
         <div class="dec-telemetry-row">
-          <span>HANDSHAKE CAPTURE: <strong style="color: #00ff66;">[0xFA892B3C // VALID 4-WAY]</strong></span>
-          <span>WORDLIST: <strong>rockyou_quantum.lst</strong></span>
+          <span>TRAINING DATA: <strong style="color: #ffaa00;">[SIMULATED — NO PACKETS CAPTURED]</strong></span>
+          <span>WORDLIST: <strong>fictional_training.lst</strong></span>
           <span>CRACK PROGRESS: <strong id="decProgressTxt">${this.decryptProgress}%</strong></span>
         </div>
 
@@ -451,17 +450,20 @@ export class CyberWifiEngine {
         </div>
 
         <div class="dec-typing-challenge-stream" id="decTypingStream">
-          <div class="dec-target-prompt">TYPE THIS SECURITY KEY TO CRACK PACKET:</div>
+          <div class="dec-target-prompt">TYPE THIS FICTIONAL TRAINING STRING:</div>
           <div class="dec-target-word" id="decTargetWordDisplay">${this.formatTargetWordHtml()}</div>
         </div>
 
         <div class="dec-typing-hint">
-          <span class="cursor-block">█</span> พิมพ์รหัสตามตัวอักษรเพื่อส่งคำสั่ง Brute-force ให้ระบบคำนวณ Hash ถอดรหัส!
+          <span class="cursor-block">█</span> แบบฝึกพิมพ์จำลองเท่านั้น ไม่มีการดักจับแพ็กเก็ตหรือถอดรหัสเครือข่ายจริง
         </div>
       </div>
     `;
 
-    window.addEventListener('keydown', this.handleDecryptorKeyDown.bind(this));
+    if (!this.decryptListenerAttached) {
+      window.addEventListener('keydown', this.boundDecryptorKeyDown);
+      this.decryptListenerAttached = true;
+    }
   }
 
   formatTargetWordHtml() {
@@ -522,6 +524,7 @@ export class CyberWifiEngine {
 
   finishQuantumDecryptionSuccess() {
     this.isDecrypting = false;
+    this.detachDecryptorListener();
     const body = this.container.querySelector('#decryptorBody');
     if (!body) return;
 
@@ -529,13 +532,13 @@ export class CyberWifiEngine {
 
     body.innerHTML = `
       <div class="dec-success-card">
-        <div class="dec-success-headline">[✓] WPA2/WPA3 HANDSHAKE CRACKED SUCCESS!</div>
+        <div class="dec-success-headline">[✓] SIMULATED TYPING DRILL COMPLETE</div>
         <div class="dec-success-details">
-          <span>TARGET SSID: <strong>${this.activeTargetNetwork.ssid}</strong></span>
-          <span>RECOVERED KEY: <strong style="color: #00ff66; font-size: 16px;">'${crackedPassword}'</strong></span>
+          <span>TARGET SSID: <strong>${this.escapeHtml(this.activeTargetNetwork.ssid)}</strong></span>
+          <span>TRAINING TOKEN (NOT A PASSWORD): <strong style="color: #ffaa00; font-size: 16px;">'${crackedPassword}'</strong></span>
           <span>REWARD: <strong style="color: #ffaa00;">+250 EXP | +100 BITCOIN</strong></span>
         </div>
-        <button class="wifi-btn wifi-btn-confirm" id="btnDecAutoconnect">⚡ AUTO-CONNECT WITH CRACKED KEY</button>
+        <button class="wifi-btn wifi-btn-confirm" id="btnDecAutoconnect">CLOSE TRAINING RESULT</button>
       </div>
     `;
 
@@ -546,9 +549,37 @@ export class CyberWifiEngine {
     const btnAuto = body.querySelector('#btnDecAutoconnect');
     if (btnAuto) {
       btnAuto.addEventListener('click', async () => {
-        if (this.toasts) this.toasts.show('SUCCESS', `Connecting to ${this.activeTargetNetwork.ssid}...`, 2000);
-        await systemBridge.connectWifi(this.activeTargetNetwork.ssid, crackedPassword);
+        if (this.toasts) {
+          this.toasts.show('WARNING', 'Training only — no Wi-Fi password was recovered or transmitted.', 3500);
+        }
+        this.isDecrypting = false;
       });
     }
+  }
+
+  escapeHtml(value) {
+    return String(value ?? '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;');
+  }
+
+  detachDecryptorListener() {
+    if (!this.decryptListenerAttached) return;
+    window.removeEventListener('keydown', this.boundDecryptorKeyDown);
+    this.decryptListenerAttached = false;
+  }
+
+  stop() {
+    if (this.radarAnimId) cancelAnimationFrame(this.radarAnimId);
+    this.radarAnimId = null;
+    this.isDecrypting = false;
+    this.detachDecryptorListener();
+  }
+
+  resume() {
+    this.initRadarCanvas();
   }
 }

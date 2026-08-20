@@ -144,6 +144,8 @@ export class CyberIntelFeed {
     this.isPaused = false;
     this.isCollapsed = false;
     this.isOnline = false;
+    this.marketSource = 'SIMULATED_FALLBACK';
+    this.newsSource = 'SIMULATED_FALLBACK';
 
     this.marketInterval = null;
     this.clockInterval = null;
@@ -177,7 +179,7 @@ export class CyberIntelFeed {
           <div class="intel-title-group">
             <span class="radar-pulse-dot ${this.isOnline ? 'online' : ''}" id="radarPulseDot"></span>
             <span class="intel-title">CYBER//INTEL RADAR</span>
-            <span class="intel-live-badge" id="intelLiveBadge">LIVE REAL-TIME</span>
+            <span class="intel-live-badge" id="intelLiveBadge">VERIFYING SOURCES</span>
           </div>
 
           <div class="intel-header-controls">
@@ -199,8 +201,8 @@ export class CyberIntelFeed {
 
           <!-- 3. Real-Time Markets & Crypto Telemetry Grid -->
           <div class="intel-section-title">
-            <span>📈 REAL-TIME QUANTUM MARKETS & TECH STOCKS</span>
-            <span class="market-status-tag" id="marketApiStatus">BINANCE // LIVE STREAM</span>
+            <span>📈 MARKET DATA & SIMULATION</span>
+            <span class="market-status-tag" id="marketApiStatus">VERIFYING SOURCE</span>
           </div>
 
           <div class="markets-grid" id="marketsGrid">
@@ -294,52 +296,48 @@ export class CyberIntelFeed {
     });
   }
 
-  // --- REAL-TIME LIVE CRYPTO & STOCKS API FETCH ---
+  // --- VERIFIED CRYPTO API FETCH; STOCK CARDS REMAIN SIMULATED ---
   async fetchRealMarkets() {
     try {
       const signal = typeof AbortSignal !== 'undefined' && AbortSignal.timeout ? AbortSignal.timeout(4000) : undefined;
       const res = await fetch('https://api.binance.com/api/v3/ticker/24hr?symbols=[%22BTCUSDT%22,%22ETHUSDT%22,%22SOLUSDT%22]', { cache: 'no-store', signal });
       if (res.ok) {
         const data = await res.json();
+        if (!Array.isArray(data)) throw new Error('INVALID_BINANCE_PAYLOAD');
         const btcData = data.find(d => d.symbol === 'BTCUSDT');
         const ethData = data.find(d => d.symbol === 'ETHUSDT');
         const solData = data.find(d => d.symbol === 'SOLUSDT');
 
-        if (btcData) {
-          const btc = this.markets.find(m => m.id === 'btc');
-          if (btc) {
-            const price = parseFloat(btcData.lastPrice);
-            btc.price = price;
-            btc.delta = parseFloat(btcData.priceChangePercent);
-            btc.history.push(price);
-            if (btc.history.length > 10) btc.history.shift();
+        let verifiedMarkets = 0;
+        const applyVerifiedTicker = (id, ticker) => {
+          const market = this.markets.find(item => item.id === id);
+          const price = Number.parseFloat(ticker?.lastPrice);
+          const delta = Number.parseFloat(ticker?.priceChangePercent);
+          if (!market || !Number.isFinite(price) || price <= 0 || !Number.isFinite(delta)) {
+            if (market) market.provenance = 'SIMULATED_SCENARIO';
+            return;
           }
-        }
+          market.price = price;
+          market.delta = delta;
+          market.history.push(price);
+          if (market.history.length > 10) market.history.shift();
+          market.provenance = 'BINANCE_VERIFIED';
+          verifiedMarkets += 1;
+        };
 
-        if (ethData) {
-          const eth = this.markets.find(m => m.id === 'eth');
-          if (eth) {
-            const price = parseFloat(ethData.lastPrice);
-            eth.price = price;
-            eth.delta = parseFloat(ethData.priceChangePercent);
-            eth.history.push(price);
-            if (eth.history.length > 10) eth.history.shift();
-          }
-        }
+        applyVerifiedTicker('btc', btcData);
+        applyVerifiedTicker('eth', ethData);
+        applyVerifiedTicker('sol', solData);
 
-        if (solData) {
-          const sol = this.markets.find(m => m.id === 'sol');
-          if (sol) {
-            const price = parseFloat(solData.lastPrice);
-            sol.price = price;
-            sol.delta = parseFloat(solData.priceChangePercent);
-            sol.history.push(price);
-            if (sol.history.length > 10) sol.history.shift();
-          }
-        }
-
-        this.isOnline = true;
-        this.updateOnlineBadge(true);
+        if (verifiedMarkets === 0) throw new Error('NO_VALID_BINANCE_TICKERS');
+        this.marketSource = verifiedMarkets === 3
+          ? 'BINANCE_CRYPTO_VERIFIED'
+          : 'BINANCE_CRYPTO_PARTIAL';
+        ['nvda', 'msft', 'tsla'].forEach(id => {
+          const market = this.markets.find(item => item.id === id);
+          if (market) market.provenance = 'SIMULATED_SCENARIO';
+        });
+        this.updateSourceBadges();
         this.renderMarkets();
         return;
       }
@@ -349,7 +347,7 @@ export class CyberIntelFeed {
     this.randomizeMarkets();
   }
 
-  // --- REAL-TIME LIVE HACKER NEWS & TECH WIRE API FETCH ---
+  // --- VERIFIED HACKER NEWS FETCH WITH EXPLICIT STATIC FALLBACK ---
   async fetchRealNews() {
     try {
       const signal = typeof AbortSignal !== 'undefined' && AbortSignal.timeout ? AbortSignal.timeout(4000) : undefined;
@@ -404,13 +402,14 @@ export class CyberIntelFeed {
               level: level,
               color: color,
               title: s.title,
-              desc: `Author: ${s.by} // Upvotes: ▲ ${s.score || 1} // Real-time Hacker News Wire`,
-              url: s.url || `https://news.ycombinator.com/item?id=${s.id}`
+              desc: `Author: ${s.by} // Upvotes: ▲ ${s.score || 1} // Hacker News fetched response`,
+              url: s.url || `https://news.ycombinator.com/item?id=${s.id}`,
+              provenance: 'HACKER_NEWS_VERIFIED'
             };
           });
 
-          this.isOnline = true;
-          this.updateOnlineBadge(true);
+          this.newsSource = 'HACKER_NEWS_VERIFIED';
+          this.updateSourceBadges();
           this.renderNewsFeed();
           return;
         }
@@ -418,19 +417,35 @@ export class CyberIntelFeed {
     } catch (e) {}
 
     // Fallback to static rich data
-    this.realNews = FALLBACK_INTEL_STREAM;
+    this.newsSource = 'SIMULATED_FALLBACK';
+    this.realNews = FALLBACK_INTEL_STREAM.map(item => ({ ...item, provenance: 'SIMULATED_SCENARIO' }));
+    this.updateSourceBadges();
     this.renderNewsFeed();
   }
 
-  updateOnlineBadge(online) {
+  updateSourceBadges() {
     if (!this.container) return;
     const dot = this.container.querySelector('#radarPulseDot');
     const badge = this.container.querySelector('#intelLiveBadge');
     const apiStatus = this.container.querySelector('#marketApiStatus');
+    const marketVerified = this.marketSource === 'BINANCE_CRYPTO_VERIFIED' || this.marketSource === 'BINANCE_CRYPTO_PARTIAL';
+    const newsVerified = this.newsSource === 'HACKER_NEWS_VERIFIED';
+    const verifiedCount = Number(marketVerified) + Number(newsVerified);
 
-    if (dot) dot.classList.toggle('online', online);
-    if (badge) badge.textContent = online ? 'LIVE 100% ONLINE' : 'SIMULATED FEED';
-    if (apiStatus) apiStatus.textContent = online ? 'REAL BINANCE & HN API' : 'QUANTUM SYNTHETIC';
+    this.isOnline = verifiedCount > 0;
+    if (dot) dot.classList.toggle('online', this.isOnline);
+    if (badge) {
+      badge.textContent = verifiedCount === 2
+        ? 'LIVE SOURCES VERIFIED'
+        : verifiedCount === 1
+          ? 'PARTIAL LIVE / PARTIAL SIM'
+          : 'SIMULATED FALLBACK';
+    }
+    if (apiStatus) {
+      apiStatus.textContent = marketVerified
+        ? `${this.marketSource === 'BINANCE_CRYPTO_PARTIAL' ? 'CRYPTO: PARTIAL BINANCE' : 'CRYPTO: BINANCE VERIFIED'} // STOCKS: SIMULATED`
+        : 'MARKETS: SIMULATED FALLBACK';
+    }
   }
 
   renderMarkets() {
@@ -445,6 +460,7 @@ export class CyberIntelFeed {
       const arrow = isPositive ? '▲' : '▼';
       const sparklineSvg = this.generateSparkline(m.history, isPositive);
 
+      const sourceLabel = m.provenance === 'BINANCE_VERIFIED' ? 'BINANCE VERIFIED' : 'SIMULATED';
       html += `
         <div class="market-card ${deltaClass}">
           <div class="m-card-top">
@@ -453,7 +469,7 @@ export class CyberIntelFeed {
           </div>
           <div class="m-card-mid">
             <span class="m-price">${m.unit} ${m.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-            <span class="m-name">${m.name}</span>
+            <span class="m-name">${m.name} // ${sourceLabel}</span>
           </div>
           <div class="m-sparkline-box">
             ${sparklineSvg}
@@ -498,7 +514,9 @@ export class CyberIntelFeed {
     const now = new Date();
     const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
-    const sourceData = this.realNews.length > 0 ? this.realNews : FALLBACK_INTEL_STREAM;
+    const sourceData = this.realNews.length > 0
+      ? this.realNews
+      : FALLBACK_INTEL_STREAM.map(item => ({ ...item, provenance: 'SIMULATED_SCENARIO' }));
 
     let filtered = sourceData;
     if (this.activeFilter === 'spacex') {
@@ -515,21 +533,26 @@ export class CyberIntelFeed {
 
     // If filtered category has no items from live feed, fallback to matching items from FALLBACK_INTEL_STREAM
     if (filtered.length === 0) {
-      filtered = FALLBACK_INTEL_STREAM.filter(item => item.category === this.activeFilter);
+      filtered = FALLBACK_INTEL_STREAM
+        .filter(item => item.category === this.activeFilter)
+        .map(item => ({ ...item, provenance: 'SIMULATED_SCENARIO' }));
     }
 
     let html = '';
     filtered.forEach((item, idx) => {
       const minAgo = idx * 3 + 1;
+      const simulated = item.provenance !== 'HACKER_NEWS_VERIFIED';
+      const sourceLabel = simulated ? 'SIMULATED SCENARIO' : 'HACKER NEWS VERIFIED';
+      const safeUrl = this.normalizeArticleUrl(item.url, item.id);
       html += `
-        <div class="intel-news-card" data-url="${item.url || ''}" style="border-left-color: ${item.color};" title="Click to open article in In-App Cyber Browser">
+        <div class="intel-news-card" data-url="${this.escapeHtml(safeUrl)}" style="border-left-color: ${this.escapeHtml(item.color)};" title="Click to open article in In-App Cyber Browser">
           <div class="news-card-header">
-            <span class="news-tag" style="background: ${item.color}22; color: ${item.color}; border: 1px solid ${item.color}66;">${item.tag}</span>
-            <span class="news-level">${item.level}</span>
+            <span class="news-tag" style="background: ${this.escapeHtml(item.color)}22; color: ${this.escapeHtml(item.color)}; border: 1px solid ${this.escapeHtml(item.color)}66;">${this.escapeHtml(item.tag)}</span>
+            <span class="news-level">${this.escapeHtml(item.level)} // ${sourceLabel}</span>
             <span class="news-time">${minAgo}m ago // ${timeStr}</span>
           </div>
-          <div class="news-card-title">${item.title}</div>
-          <div class="news-card-desc">${item.desc}</div>
+          <div class="news-card-title">${this.escapeHtml(item.title)}</div>
+          <div class="news-card-desc">${this.escapeHtml(item.desc)}</div>
         </div>
       `;
     });
@@ -572,7 +595,25 @@ export class CyberIntelFeed {
     }, 60000);
   }
 
+  suspend() {
+    if (this.marketInterval) clearInterval(this.marketInterval);
+    if (this.clockInterval) clearInterval(this.clockInterval);
+    if (this.newsFetchInterval) clearInterval(this.newsFetchInterval);
+    this.marketInterval = null;
+    this.clockInterval = null;
+    this.newsFetchInterval = null;
+  }
+
+  resume() {
+    if (!this.container) return;
+    if (!this.marketInterval && !this.clockInterval && !this.newsFetchInterval) {
+      this.startTimers();
+      this.updateClocks();
+    }
+  }
+
   randomizeMarkets() {
+    this.marketSource = 'SIMULATED_FALLBACK';
     this.markets.forEach(m => {
       const changePct = (Math.random() * 1.6 - 0.75); // -0.75% to +0.85%
       const newPrice = Math.max(1, m.price * (1 + changePct / 100));
@@ -580,9 +621,29 @@ export class CyberIntelFeed {
       m.delta = ((newPrice - m.history[0]) / m.history[0]) * 100;
       m.history.push(newPrice);
       if (m.history.length > 10) m.history.shift();
+      m.provenance = 'SIMULATED_SCENARIO';
     });
 
+    this.updateSourceBadges();
     this.renderMarkets();
+  }
+
+  escapeHtml(value) {
+    return String(value ?? '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;');
+  }
+
+  normalizeArticleUrl(value, id) {
+    try {
+      const parsed = new URL(String(value || ''));
+      if (parsed.protocol === 'https:' || parsed.protocol === 'http:') return parsed.href;
+    } catch (_) {}
+    const safeId = String(id || '').replace(/^hn_/, '').replace(/[^0-9]/g, '');
+    return safeId ? `https://news.ycombinator.com/item?id=${safeId}` : 'https://news.ycombinator.com/';
   }
 
   updateClocks() {
@@ -625,8 +686,7 @@ export class CyberIntelFeed {
   }
 
   destroy() {
-    if (this.marketInterval) clearInterval(this.marketInterval);
-    if (this.clockInterval) clearInterval(this.clockInterval);
-    if (this.newsFetchInterval) clearInterval(this.newsFetchInterval);
+    this.suspend();
+    this.container = null;
   }
 }

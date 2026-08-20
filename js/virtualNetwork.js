@@ -54,7 +54,7 @@ export class VirtualNetwork {
   }
 
   getBBSList() {
-    let out = `\n--- SHADOW BBS : ACTIVE CONTRACTS ---\n`;
+    let out = `\n--- GAME SIMULATION // FICTIONAL SHADOW BBS CONTRACTS ---\n`;
     out += `IP ADDRESS      | CORP / TARGET        | DIFF | REWARD\n`;
     out += `------------------------------------------------------\n`;
     this.targets.forEach(t => {
@@ -69,7 +69,7 @@ export class VirtualNetwork {
     const target = this.targets.find(t => t.ip === ip);
     if (!target) return `nmap: Host ${ip} seems down or unreachable.`;
     
-    let out = `\n[+] Starting Nmap 7.92 ( https://nmap.org ) at ${new Date().toISOString()}\n`;
+    let out = `\n[SIMULATION — NO PACKETS SENT]\n[+] Fictional Nmap-style report at ${new Date().toISOString()}\n`;
     out += `Nmap scan report for ${target.name} (${target.ip})\n`;
     out += `Host is up (0.0${Math.floor(Math.random()*90)+10}s latency).\n\n`;
     out += `PORT     STATE  SERVICE\n`;
@@ -94,7 +94,8 @@ export class VirtualNetwork {
     this.startTrace(target.diff);
 
     return `
-[+] ESTABLISHING SECURE TUNNEL TO ${ip}...
+[GAME SIMULATION — NO NETWORK CONNECTION]
+[+] ESTABLISHING FICTIONAL TUNNEL TO ${ip}...
 [+] BYPASSING FIREWALL (Proxy Bounce Lvl ${this.upgrades.proxyBouncer})...
 [✓] CONNECTION ESTABLISHED.
 
@@ -198,20 +199,25 @@ Type 'hack' to steal data, 'clearlogs' to wipe your trace, and 'disconnect' to e
 
   disconnect() {
     if (!this.activeTarget) return `[✗] Error: Not connected to any target.`;
-    
-    clearInterval(this.traceInterval);
-    if (this.app.dom.hudTracePanel) {
-      this.app.dom.hudTracePanel.classList.add('hidden');
-    }
-    
     const wasTarget = this.activeTarget;
-    this.activeTarget = null;
+    this.stop();
     
     return `[+] Secure tunnel to ${wasTarget.ip} severed. Connection closed.`;
   }
 
+  stop() {
+    if (this.traceInterval) clearInterval(this.traceInterval);
+    this.traceInterval = null;
+    this.traceProgress = 0;
+    this.activeTarget = null;
+    if (this.app?.dom?.hudTracePanel) {
+      this.app.dom.hudTracePanel.classList.add('hidden');
+    }
+  }
+
   busted() {
-    clearInterval(this.traceInterval);
+    if (this.traceInterval) clearInterval(this.traceInterval);
+    this.traceInterval = null;
     if (this.app.dom.hudTracePanel) {
       this.app.dom.hudTracePanel.classList.add('hidden');
     }

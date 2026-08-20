@@ -72,6 +72,7 @@ const mockSound = {
 async function runTests() {
   let passed = 0;
   let total = 0;
+  await profileStore.ready;
 
   function assert(condition, testName) {
     total++;
@@ -85,7 +86,7 @@ async function runTests() {
 
   // 1. ProfileStore & Bitcoin Economy
   console.log('\n[1] Testing ProfileStore & Bitcoin Economy...');
-  await profileStore.initStore();
+  await profileStore.ready;
   const prof = profileStore.getProfile('Anan');
   assert(prof && prof.username === 'Anan', 'Profile "Anan" loaded');
   assert(typeof prof.bitcoin === 'number', 'Bitcoin currency exists on profile');
@@ -157,7 +158,7 @@ async function runTests() {
   console.log('\n[7] Testing Realistic 20s Boot Log Generator...');
   const { generateRealisticBootLogs } = await import('./js/bootLogGenerator.js');
   const bootLogs = generateRealisticBootLogs();
-  assert(bootLogs.length >= 300, `Generated ${bootLogs.length} authentic system boot logs (Target: >=300)`);
+  assert(bootLogs.length >= 300, `Generated ${bootLogs.length} procedural boot-simulation rows (Target: >=300)`);
   assert(bootLogs[0].mod === 'BIOS_POST' && bootLogs[bootLogs.length - 1].mod === 'SYSTEM_BOOT', 'Boot log timeline spans from BIOS_POST to SYSTEM_BOOT');
 
   // 8. Virtual Network Sync
@@ -167,10 +168,10 @@ async function runTests() {
   assert(vNet.targets.length === 5, 'Virtual Network generated 5 active targets');
   const targetIp = vNet.targets[0].ip;
   const scanOut = vNet.scanTarget(targetIp);
-  assert(scanOut.includes('PORT') && scanOut.includes('SERVICE'), 'Target Nmap port scan succeeded');
+  assert(scanOut.includes('PORT') && scanOut.includes('SERVICE') && scanOut.includes('SIMULATION'), 'Fictional Nmap-style training output is explicitly labeled');
 
-  // 9. VS Code Multi-Language Playground & AI Cyber Tutor
-  console.log('\n[9] Testing VS Code Engine & AI Cyber Tutor...');
+  // 9. CODE PLAYGROUND & RULE-BASED TUTOR
+  console.log('\n[9] Testing Code Playground & Rule-Based Tutor...');
   const { VscodeEngine, CODE_CURRICULUM, CODE_KEYWORD_DOCS } = await import('./js/vscodeEngine.js');
   const supportedLangs = Object.keys(CODE_CURRICULUM);
   assert(supportedLangs.length >= 7, `VS Code Engine supports ${supportedLangs.length} languages (Python, HTML, Java, C++, Rust, SQL, Bash)`);
@@ -179,9 +180,9 @@ async function runTests() {
 
   const vscEngine = new VscodeEngine({ username: 'Anan' }, mockSound, {});
   const aiExp = vscEngine.generateAiResponse('explain', 'print("hello")');
-  assert(aiExp.includes('บทวิเคราะห์โค้ด'), 'AI Cyber Tutor generates structured Thai code analysis');
+  assert(aiExp.includes('TEMPLATE GUIDE') && aiExp.includes('ไม่ได้ parse AST'), 'Rule-based tutor discloses that its guidance is template-based');
   const aiChat = vscEngine.generateAiChatResponse('pointer คืออะไร', '');
-  assert(aiChat.includes('Pointer') && aiChat.includes('Memory Address'), 'AI Cyber Tutor answers programming concepts accurately');
+  assert(aiChat.includes('Pointer') && aiChat.includes('Memory Address'), 'Rule-based code tutor returns its configured programming explanation');
 
   // 10. In-App Cyber Browser Engine & 3-State Modes (FULL, PIP, MARQUEE)
   console.log('\n[10] Testing In-App Cyber Browser & State Transitions...');
@@ -246,7 +247,7 @@ async function runTests() {
   // 12. Real-Time Cyber Intelligence & Markets Telemetry Matrix
   console.log('\n[12] Testing Cyber Intelligence & Markets Telemetry Matrix...');
   const { CyberIntelFeed, INITIAL_MARKETS, INTEL_STREAM_DATA } = await import('./js/cyberIntelFeed.js');
-  assert(INITIAL_MARKETS.length >= 4, `INITIAL_MARKETS contains ${INITIAL_MARKETS.length} live crypto & stock tickers (BTC, NVDA, HACK, ETH)`);
+  assert(INITIAL_MARKETS.length >= 4, `INITIAL_MARKETS contains ${INITIAL_MARKETS.length} initial scenarios with per-source labeling`);
   assert(INTEL_STREAM_DATA.length >= 5, `INTEL_STREAM_DATA contains ${INTEL_STREAM_DATA.length} curated intelligence briefs`);
 
   const intelFeed = new CyberIntelFeed(mockTabApp, mockSound);
@@ -273,7 +274,7 @@ async function runTests() {
   assert(explorer.formatSize(1048576) === '1 MB', 'File size formatted accurately to 1 MB');
 
   await explorer.loadDesktopMatrix();
-  assert(explorer.desktopItems.length > 0, `Desktop Matrix detected ${explorer.desktopItems.length} live desktop shortcuts & apps`);
+  assert(explorer.desktopItems.length > 0, `Desktop Matrix exposes ${explorer.desktopItems.length} simulated fallback items in headless tests`);
   assert(explorer.getDesktopAppIcon({ isDir: false, name: 'Steam.lnk' }) === '🎮', 'Steam mapped to Gaming icon');
   assert(explorer.getDesktopAppIcon({ isDir: false, name: 'Visual Studio Code.lnk' }) === '⚡', 'VS Code mapped to Dev icon');
   assert(explorer.getDesktopAppIcon({ isDir: false, name: 'Google Chrome.lnk' }) === '🌐', 'Chrome mapped to Browser icon');
@@ -380,13 +381,13 @@ async function runTests() {
   };
   const companion = new AICompanionEngine(mockTabApp, mockSound);
   companion.init(mockCompanionEl);
-  assert(companion.state === 'IDLE', 'AI Companion initialized in IDLE state');
+  assert(companion.state === 'IDLE', 'Rule-based companion initialized in IDLE state');
   companion.onKeystroke(85, 98, 20, false);
-  assert(companion.state === 'OVERCLOCK', 'AI Companion transitioned to OVERCLOCK state on high WPM/streak');
+  assert(companion.state === 'OVERCLOCK', 'Rule-based companion transitioned to OVERCLOCK state on high WPM/streak');
   companion.onKeystroke(40, 70, 2, true);
-  assert(companion.state === 'ALERT', 'AI Companion transitioned to ALERT state on typing error');
+  assert(companion.state === 'ALERT', 'Rule-based companion transitioned to ALERT state on typing error');
   companion.onVictory(250, 'Root Mainframe Breached');
-  assert(companion.state === 'VICTORY', 'AI Companion transitioned to VICTORY state upon winning');
+  assert(companion.state === 'VICTORY', 'Rule-based companion transitioned to VICTORY state upon winning');
 
   // 23. Kinetic Keystroke Plasma & Sparks Engine
   console.log('\n[23] Testing Kinetic Keystroke Plasma & Sparks Engine...');
@@ -506,13 +507,25 @@ async function runTests() {
   // AI Trade Signal Generator
   const sig = generateAISignal(mockCandles, TRADING_ASSETS[0], patterns);
   assert(sig && typeof sig.action === 'string', `generateAISignal produced actionable trade decision: ${sig.action}`);
-  assert(sig.confidence >= 50 && sig.confidence <= 99, `Neural confidence score calculated: ${sig.confidence}%`);
+  assert(sig.confidence >= 50 && sig.confidence <= 99, `Rule-confluence score calculated: ${sig.confidence}%`);
   assert(sig.tp1 > 0 && sig.sl > 0, `Take Profit ($${sig.tp1}) and Stop Loss ($${sig.sl}) targets generated`);
-  assert(sig.rationale.length > 20, 'Thai AI technical rationale analysis assembled');
+  assert(sig.rationale.length > 20, 'Thai rule-based rationale assembled');
 
   // Paper Trading Engine
   const tradingEngine = new AITradingEngine({ sound: mockSound, toasts: null });
-  tradingEngine.candles = mockCandles;
+  const { createMarketPacket, MARKET_PACKET_SOURCES } = await import('./js/core/trading/marketPacket.js');
+  tradingEngine.marketPacket = createMarketPacket({
+    source: MARKET_PACKET_SOURCES.BINANCE_KLINES_REST,
+    adapter: 'TEST_VERIFIED_FIXTURE',
+    symbol: 'BTC/USDT',
+    timeframe: '5m',
+    timeframeSeconds: 300,
+    observedAt: Date.now(),
+    maxDecisionAgeMs: 1000000000000000,
+    candles: mockCandles
+  });
+  tradingEngine.candles = tradingEngine.marketPacket.candles.map(candle => ({ ...candle }));
+  tradingEngine.fullHistoricalCandles = tradingEngine.marketPacket.decisionCandles.map(candle => ({ ...candle }));
   tradingEngine.analyzeMarket();
   assert(tradingEngine.signal !== null, 'AITradingEngine state analyzed successfully');
 
@@ -536,16 +549,16 @@ async function runTests() {
   assert(bearTest.sentiment === 'BEARISH' && bearTest.score < 0, 'analyzeNewsSentiment detected negative regulatory headwind');
 
   const newsSignal = generateAISignal(mockCandles, TRADING_ASSETS[0], patterns, LIVE_MARKET_NEWS_FEED[0]);
-  assert(newsSignal.activeNews && newsSignal.rationale.includes('ปัจจัยข่าวกระทบสด'), 'AI Copilot dynamically incorporated real-time news impact into trade advice');
+  assert(newsSignal.activeNews && newsSignal.rationale.includes('ปัจจัยข่าวกระทบสด'), 'Rule engine incorporated a labeled simulated-news scenario');
 
   // AI Autonomous Learning Gym & Post-Mortem Journal Engine
-  assert(tradingEngine.isAutoTrading === true, 'AI Auto-Trading Gym enabled by default');
-  assert(tradingEngine.aiJournal.length >= 3, 'AI Learning Journal seeded with realistic post-mortem reflections');
-  assert(tradingEngine.aiStats.winRate > 0, `AI Baseline Win Rate tracked: ${tradingEngine.aiStats.winRate}%`);
+  assert(tradingEngine.isAutoTrading === true, 'Automatic paper-scenario runner enabled by default');
+  assert(tradingEngine.aiJournal.length >= 3, 'Paper journal seeded with labeled synthetic outcomes');
+  assert(tradingEngine.aiStats.winRate > 0, `Simulated baseline win rate tracked: ${tradingEngine.aiStats.winRate}%`);
 
   const sampleJournal = tradingEngine.aiJournal[0];
-  assert(sampleJournal.postMortem.length > 20, 'AI Journal contains root-cause post-mortem analysis');
-  assert(sampleJournal.learningLesson.includes('น้ำหนัก') || sampleJournal.learningLesson.includes('บทเรียน'), 'AI Journal records actionable Thai self-improvement lesson');
+  assert(sampleJournal.postMortem.length > 20, 'Paper journal contains a rule-based post-mortem');
+  assert(sampleJournal.learningLesson.includes('น้ำหนัก') || sampleJournal.learningLesson.includes('บทเรียน'), 'Paper journal records a Thai heuristic update');
 
   const prevTrades = tradingEngine.aiStats.totalTrades;
   tradingEngine.runFastTrainingDrill(25);
@@ -554,31 +567,31 @@ async function runTests() {
   assert(typeof tradingEngine.aiStats.winRate === 'number', `Dynamic Win Rate calculated: ${tradingEngine.aiStats.winRate}%`);
 
   tradingEngine.resetAIMemory();
-  assert(tradingEngine.aiStats.totalTrades === 0, 'AI Agent memory and stats reset to baseline');
+  assert(tradingEngine.aiStats.totalTrades === 0, 'Heuristic weights and paper stats reset to baseline');
 
   // =========================================================================
   // SECTION 28: STRICT AUTHENTICATION & DIRECT IN-TERMINAL PROFILE CREDENTIALS
   // =========================================================================
   console.log('\n[28] Testing Strict Authentication & Direct In-Terminal Credential Updates...');
-  assert(profileStore.verifyCredentials('Anan', 'Infinity') === true, 'Strict Auth: Default credentials (Anan / Infinity) verified');
-  assert(profileStore.verifyCredentials('Anan', 'WrongPassword') === false, 'Strict Auth: Rejected invalid password');
-  assert(profileStore.verifyCredentials('RandomUser', 'Infinity') === false, 'Strict Auth: Rejected non-existent username');
-  assert(profileStore.verifySecretGatePasscode('Infinity') === true, 'Layer-1 HSM Gate passcode verified');
-  assert(profileStore.verifySecretGatePasscode('wrong_code') === false, 'Layer-1 HSM Gate rejected unauthorized passcode');
+  assert(await profileStore.verifyCredentials('Anan', 'Infinity') === true, 'Strict Auth: Default credentials (Anan / Infinity) verified');
+  assert(await profileStore.verifyCredentials('Anan', 'WrongPassword') === false, 'Strict Auth: Rejected invalid password');
+  assert(await profileStore.verifyCredentials('RandomUser', 'Infinity') === false, 'Strict Auth: Rejected non-existent username');
+  assert(await profileStore.verifySecretGatePasscode('Infinity') === true, 'Layer-1 local profile gate passcode verified');
+  assert(await profileStore.verifySecretGatePasscode('wrong_code') === false, 'Layer-1 local profile gate rejected unauthorized passcode');
 
   // Test In-Terminal Password Change
-  profileStore.updatePassword('Anan', 'CyberPass999');
-  assert(profileStore.verifyCredentials('Anan', 'CyberPass999') === true, 'In-Terminal updatePassword successfully modified active credentials');
-  assert(profileStore.verifyCredentials('Anan', 'Infinity') === false, 'Old password revoked immediately');
+  await profileStore.updatePassword('Anan', 'CyberPass999');
+  assert(await profileStore.verifyCredentials('Anan', 'CyberPass999') === true, 'In-Terminal updatePassword successfully modified active credentials');
+  assert(await profileStore.verifyCredentials('Anan', 'Infinity') === false, 'Old password revoked immediately');
 
   // Test In-Terminal Username Change
-  profileStore.updateUsername('Anan', 'NeoOperator');
-  assert(profileStore.verifyCredentials('NeoOperator', 'CyberPass999') === true, 'In-Terminal updateUsername successfully migrated operator identity');
+  await profileStore.updateUsername('Anan', 'NeoOperator');
+  assert(await profileStore.verifyCredentials('NeoOperator', 'CyberPass999') === true, 'In-Terminal updateUsername successfully migrated operator identity');
 
   // Restore baseline
-  profileStore.updateUsername('NeoOperator', 'Anan');
-  profileStore.updatePassword('Anan', 'Infinity');
-  assert(profileStore.verifyCredentials('Anan', 'Infinity') === true, 'Restored baseline credentials for continuous operational parity');
+  await profileStore.updateUsername('NeoOperator', 'Anan');
+  await profileStore.updatePassword('Anan', 'Infinity');
+  assert(await profileStore.verifyCredentials('Anan', 'Infinity') === true, 'Restored baseline credentials for continuous operational parity');
 
   // =========================================================================
   // SECTION 29: XM GLOBAL (FOREX & GOLD XAU/USD) MULTI-ASSET TRADING ENGINE
@@ -619,16 +632,16 @@ async function runTests() {
   assert(tradingEngine.strategyWeights['Liquidity Sweep'].wins >= 16, 'updateStrategyWeight incremented pattern wins dynamically');
 
   // =========================================================================
-  // SECTION 31: AI NEURAL PROFILE & REAL-TIME INTERNET KNOWLEDGE RADAR
+  // SECTION 31: RULE-BASED PROFILE & STATIC REFERENCE KNOWLEDGE RADAR
   // =========================================================================
-  console.log('\n[31] Testing AI Neural Profile & Real-Time Internet Knowledge Radar...');
+  console.log('\n[31] Testing Rule-Based Profile & Static Reference Knowledge Radar...');
   const { LIVE_INTERNET_KNOWLEDGE_FEED } = await import('./js/aiTradingEngine.js');
-  assert(Array.isArray(LIVE_INTERNET_KNOWLEDGE_FEED) && LIVE_INTERNET_KNOWLEDGE_FEED.length >= 6, `LIVE_INTERNET_KNOWLEDGE_FEED contains ${LIVE_INTERNET_KNOWLEDGE_FEED.length} macro market intelligence items`);
+  assert(Array.isArray(LIVE_INTERNET_KNOWLEDGE_FEED) && LIVE_INTERNET_KNOWLEDGE_FEED.length >= 6, `Static reference feed contains ${LIVE_INTERNET_KNOWLEDGE_FEED.length} labeled macro scenarios`);
 
   // =========================================================================
-  // SECTION 32: REAL-TIME BROKER DYNAMIC SPREAD & BID/ASK ENGINE
+  // SECTION 32: SIMULATED DYNAMIC SPREAD & BID/ASK MODEL
   // =========================================================================
-  console.log('\n[32] Testing Real-Time Broker Dynamic Spread & Bid/Ask Engine...');
+  console.log('\n[32] Testing Simulated Dynamic Spread & Bid/Ask Model...');
   const { calculateDynamicSpread } = await import('./js/aiTradingEngine.js');
   const gold = TRADING_ASSETS.find(a => a.id === 'XAU/USD');
   const normalSpread = calculateDynamicSpread(gold, 2748.50, null, null);
@@ -636,12 +649,12 @@ async function runTests() {
   assert(normalSpread.spreadFormatted.includes('pts'), `Gold spread formatted in points: ${normalSpread.spreadFormatted}`);
 
   // =========================================================================
-  // SECTION 33: MULTI-AGENT QUANT DESK CONSENSUS ENGINE (3 SPECIALIZED AGENTS)
+  // SECTION 33: DETERMINISTIC QUANT ANALYSIS MODULES
   // =========================================================================
-  console.log('\n[33] Testing Multi-Agent Quant Desk Consensus Engine...');
+  console.log('\n[33] Testing Deterministic Quant Analysis Modules...');
   const sigDesk = generateAISignal(mockCandles, TRADING_ASSETS[0], [], null, null, null);
-  assert(sigDesk.quantDesk && Array.isArray(sigDesk.quantDesk.agents), 'generateAISignal outputs quantDesk with specialized multi-agent council');
-  assert(sigDesk.quantDesk.agents.length >= 3, 'Quant Desk contains specialized multi-agent quant council (SMC, Macro, CRO, Whale)');
+  assert(sigDesk.quantDesk && Array.isArray(sigDesk.quantDesk.agents), 'generateAISignal outputs the compatibility quantDesk analysis structure');
+  assert(sigDesk.quantDesk.agents.length >= 3, 'Quant Desk contains multiple deterministic analysis modules');
   assert(sigDesk.quantDesk.consensusType !== undefined, `Consensus Type generated: ${sigDesk.quantDesk.consensusType}`);
 
   // Test CRO VETO functionality when spread is dangerously widened
@@ -651,16 +664,16 @@ async function runTests() {
   assert(sigVetoed.action.includes('VETOED'), 'Signal action updated to RISK VETOED');
 
   // =========================================================================
-  // SECTION 34: CHAIN-OF-THOUGHT (CoT) REASONING NODES
+  // SECTION 34: DISPLAYABLE DECISION AUDIT FACTORS
   // =========================================================================
-  console.log('\n[34] Testing Chain-of-Thought (CoT) Visual Reasoning Tree...');
-  assert(Array.isArray(sigDesk.cotNodes) && sigDesk.cotNodes.length === 5, 'generateAISignal outputs 5 sequential CoT reasoning nodes');
-  assert(sigDesk.cotNodes[0].title.includes('REGIME') && sigDesk.cotNodes[4].title.includes('DECISION'), 'CoT nodes start from Market Regime to Final Decision Execution');
+  console.log('\n[34] Testing Displayable Decision Audit Factors...');
+  assert(Array.isArray(sigDesk.cotNodes) && sigDesk.cotNodes.length === 5, 'generateAISignal outputs 5 displayable audit factors');
+  assert(sigDesk.cotNodes[0].title.includes('REGIME') && sigDesk.cotNodes[4].title.includes('DECISION'), 'Audit factors run from market regime to the final rule decision');
 
   // =========================================================================
-  // SECTION 35: INSTITUTIONAL MONEY MANAGEMENT & DYNAMIC LOT SIZING
+  // SECTION 35: RISK SIZING & MONEY MANAGEMENT
   // =========================================================================
-  console.log('\n[35] Testing Institutional Money Management & Lot Sizing Suite...');
+  console.log('\n[35] Testing Risk Sizing & Money Management Suite...');
   tradingEngine.setAccountCapital(50000);
   tradingEngine.setRiskPercent(2);
   const mmDetails = tradingEngine.getMoneyManagementDetails();
@@ -683,9 +696,9 @@ async function runTests() {
   assert(tradingEngine.isReplayMode === false, 'exitReplay restored live streaming state');
 
   // =========================================================================
-  // SECTION 37: HEADLESS MT5 SILENT BACKGROUND DATA PIPELINE & INGESTION
+  // SECTION 37: EXPLICIT MOCK MT5 PACKET INGESTION
   // =========================================================================
-  console.log('\n[37] Testing Headless MT5 Silent Background Data Pipeline...');
+  console.log('\n[37] Testing Explicit Mock MT5 Packet Ingestion...');
   const mockMT5Packet = {
     status: 'ONLINE',
     mt5_connected: true,
@@ -704,7 +717,7 @@ async function runTests() {
   };
 
   const sigMT5 = generateAISignal(mockCandles, TRADING_ASSETS[0], [], null, null, null, mockMT5Packet);
-  assert(sigMT5.mt5Intel !== null, 'generateAISignal ingested MT5 silent data stream');
+  assert(sigMT5.mt5Intel !== null, 'generateAISignal ingested the explicitly supplied mock MT5 packet');
   assert(sigMT5.mt5Intel.connected === true, 'mt5Intel marked connection status');
   assert(sigMT5.mt5Intel.whaleWall.includes('500 Lots'), `mt5Intel detected Whale Liquidity Wall: ${sigMT5.mt5Intel.whaleWall}`);
 
@@ -712,21 +725,20 @@ async function runTests() {
   // SECTION 38: LIVE MT5 & XM EXECUTION GATEWAY & RISK GUARDIAN SHIELD
   // =========================================================================
   console.log('\n[38] Testing Live MT5 / XM Execution Gateway & Risk Guardian Shield...');
-  tradingEngine.startLiveAutoExecution({ targetProfitUSD: 600, maxDrawdownUSD: 200, maxPositions: 2 });
-  assert(tradingEngine.isLiveExecutionActive === true, 'startLiveAutoExecution enabled live broker execution mode');
-  assert(tradingEngine.liveGuardianConfig.targetProfitUSD === 600, 'Risk Guardian Target Profit configured to $600');
-  assert(tradingEngine.liveGuardianConfig.maxDrawdownUSD === 200, 'Risk Guardian Max Drawdown configured to $200');
+  const liveStartRes = tradingEngine.startLiveAutoExecution({ targetProfitUSD: 600, maxDrawdownUSD: 200, maxPositions: 2 });
+  assert(liveStartRes.success === false && liveStartRes.reason === 'LIVE_TRADING_DISABLED_PAPER_ONLY', 'Paper-only capability blocks live broker execution');
+  assert(tradingEngine.isLiveExecutionActive === false, 'Live execution remains inactive while Paper-only is enforced');
 
   // Test live order execution
   const orderRes = await tradingEngine.executeLiveOrder('BUY', 0.25, 2735.00, 2775.00);
-  assert(orderRes.success === true && orderRes.ticket !== undefined, `Live Order routed successfully with Ticket #${orderRes.ticket}`);
-  assert(tradingEngine.liveAccountState.positions.length === 1, 'Live position registered in Live Account state');
+  assert(orderRes.success === false && orderRes.reason === 'LIVE_TRADING_DISABLED_PAPER_ONLY', 'Paper-only capability rejects direct live orders');
+  assert(tradingEngine.liveAccountState.positions.length === 0, 'Rejected live order does not create a simulated broker position');
 
   // Test Emergency Kill-Switch
   const killRes = await tradingEngine.emergencyKillAll();
-  assert(killRes.success === true, 'emergencyKillAll executed successfully');
+  assert(typeof killRes.success === 'boolean', 'emergencyKillAll reports a verifiable broker result');
   assert(tradingEngine.isLiveExecutionActive === false, 'Emergency Kill-Switch paused live auto-execution');
-  assert(tradingEngine.liveAccountState.positions.length === 0, 'Emergency Kill-Switch purged all open positions');
+  assert(tradingEngine.liveAccountState.positions.length === 0, 'Emergency Kill-Switch did not fabricate an open position');
 
   // =========================================================================
   // SECTION 39: DYNAMIC MARKET REGIME DETECTION & MONTE CARLO PROBABILITY
@@ -743,13 +755,13 @@ async function runTests() {
   assert(mcTest.slRiskPercent === Number((100 - mcTest.tpProbabilityPercent).toFixed(1)), 'Monte Carlo probability risk parity maintained');
 
   // =========================================================================
-  // SECTION 40: ADVERSARIAL MULTI-AGENT COUNCIL & WHALE FLOW AGENT
+  // SECTION 40: DETERMINISTIC COUNTER-ARGUMENT & ORDER-FLOW RULES
   // =========================================================================
-  console.log('\n[40] Testing Adversarial Multi-Agent Council & Whale Flow Specialist...');
+  console.log('\n[40] Testing Deterministic Counter-Argument & Order-Flow Rules...');
   const debateTest = evaluateAdversarialDebate(patterns, regimeTest, mockMT5Packet.dom_depth, 42, 2748.50);
   assert(debateTest.bullAdvocate.arguments.length > 0, 'Bull Advocate generated bullish thesis arguments');
   assert(debateTest.bearSkeptic.arguments.length > 0, 'Bear Skeptic generated counter-arguments & risk scrutiny');
-  assert(debateTest.whaleSpecialist.verdict.includes('WHALE'), `Whale Specialist evaluated L2 DOM orderflow: ${debateTest.whaleSpecialist.verdict}`);
+  assert(debateTest.whaleSpecialist.verdict.includes('WHALE'), `Order-flow rule classified the supplied mock DOM packet: ${debateTest.whaleSpecialist.verdict}`);
   assert(typeof debateTest.debateOutcome === 'string', `Adversarial debate resolved outcome: ${debateTest.debateOutcome}`);
 
   // =========================================================================
@@ -760,16 +772,16 @@ async function runTests() {
   assert(tradingEngine.riskAppetite === 'alpha_hunter', 'setRiskAppetite switched to ALPHA_HUNTER mode');
 
   const hunterSignal = generateAISignal(mockCandles, TRADING_ASSETS[0], patterns, null, null, null, null, 'alpha_hunter');
-  assert(hunterSignal.regime !== undefined, 'Signal synthesizes real-time Market Regime');
+  assert(hunterSignal.regime !== undefined, 'Signal classifies the supplied candle window into a market regime');
   assert(hunterSignal.adversarialDebate !== undefined, 'Signal synthesizes Adversarial Debate outcome');
   assert(hunterSignal.monteCarlo !== undefined, 'Signal synthesizes Monte Carlo target probability');
 
   // =========================================================================
-  // SECTION 42: THE AI GOLDEN RULESBOOK & SETUP MASTERY MATRIX
+  // SECTION 42: RULE EXTRACTION & SIMULATED SETUP MASTERY MATRIX
   // =========================================================================
-  console.log('\n[42] Testing AI Golden Rulesbook & Setup Mastery Matrix...');
+  console.log('\n[42] Testing Explicit Rule Extraction & Simulated Setup Mastery Matrix...');
   const goldenRules = extractGoldenRulesFromJournal(tradingEngine.aiJournal);
-  assert(Array.isArray(goldenRules) && goldenRules.length >= 5, `Autonomous Golden Rulesbook extracted ${goldenRules.length} axioms from post-mortem memory`);
+  assert(Array.isArray(goldenRules) && goldenRules.length >= 5, `Deterministic rules extractor returned ${goldenRules.length} rules from journal data`);
   assert(goldenRules[0].text.length > 10, `Golden Rule #1: ${goldenRules[0].text}`);
 
   const masteryList = tradingEngine.getSetupMastery();
@@ -782,9 +794,9 @@ async function runTests() {
   assert(profDetails.riskAppetite === 'alpha_hunter', 'getAIProfileDetails reflects active Risk Appetite');
 
   // =========================================================================
-  // SECTION 43: REAL-TIME PERSISTENCE & LEVEL 10 PRESERVATION ON RESTART
+  // SECTION 43: PERSISTENCE & LEVEL 10 PRESERVATION ON RESTART
   // =========================================================================
-  console.log('\n[43] Testing Real-Time Persistence & Level 10 Preservation across Restarts...');
+  console.log('\n[43] Testing Persistence & Level 10 Preservation across Restarts...');
   tradingEngine.aiStats.samplesStudied = 14971;
   tradingEngine.aiStats.totalTrades = 349;
   tradingEngine.aiStats.wins = 243;
@@ -801,7 +813,7 @@ async function runTests() {
   const freshEngine = new AITradingEngine({ sound: mockSound, toasts: null });
   assert(freshEngine.aiStats.samplesStudied === 14971, `Fresh engine restored 14,971 samples (got: ${freshEngine.aiStats.samplesStudied})`);
   assert(freshEngine.aiStats.adaptationLevel === 10, `Fresh engine preserved Level 10 on reload (got: Level ${freshEngine.aiStats.adaptationLevel})`);
-  assert(freshEngine.getAIProfileDetails().rankTitle === 'LEVEL 10 // APEX SOVEREIGN QUANT AI', 'Rank title evaluates to LEVEL 10 // APEX SOVEREIGN QUANT AI');
+  assert(freshEngine.getAIProfileDetails().rankTitle === 'LEVEL 10 // APEX PAPER-QUANT RULE ENGINE', 'Rank title remains explicit about the paper-quant rule engine');
 
   // =========================================================================
   // SECTION 44: SECURE SHUTDOWN DATABASE AUDIT & FLUSH VERIFICATION
@@ -816,9 +828,9 @@ async function runTests() {
   assert(typeof profileStore.saveAllAsync === 'function', 'profileStore.saveAllAsync is registered');
 
   // =========================================================================
-  // SECTION 45: ANIMATED FEMALE HOLOGRAM AI ASSISTANT (NYX) 3D FACIAL RIG & PROACTIVE CO-PILOT
+  // SECTION 45: ANIMATED RULE-BASED ASSISTANT (NYX), SPEECH & ROUTED SKILLS
   // =========================================================================
-  console.log('\n[45] Testing NYX 3D Holographic Facial Rig, Gaze Tracking, Thai Phonetics & Proactive Skills...');
+  console.log('\n[45] Testing NYX Rule-Based Assistant, Gaze State, Thai Phonetics & Routed Skills...');
   const { HologramAssistantEngine, phoneticizeForThaiSpeech } = await import('./js/hologramAssistant.js');
   const assistant = new HologramAssistantEngine({ tradingEngine: freshEngine }, mockSound, null);
   assert(assistant !== null, 'HologramAssistantEngine instantiated successfully');
@@ -858,10 +870,10 @@ async function runTests() {
   assistant.reportAIGym();
   assert(assistant.lastSpokenText.includes('KRONOS') && (assistant.lastSpokenText.includes('10') || assistant.lastSpokenText.includes('Apex Sovereign')), `AI Gym Telemetry vocal report in Thai: "${assistant.lastSpokenText}"`);
 
-  assistant.reportWorldNews();
+  await assistant.reportWorldNews();
   assert(assistant.lastSpokenText.includes('รายงาน') || assistant.lastSpokenText.includes('ข่าว'), `World News Wire report in Thai: "${assistant.lastSpokenText}"`);
 
-  assistant.briefMe();
+  await assistant.briefMe();
   assert(assistant.lastSpokenText.includes('รายงานสถานการณ์ภาพรวม') || assistant.lastSpokenText.includes('KRONOS'), 'Executive situation briefing in Thai generated');
 
   assistant.toggleVoice();
@@ -886,7 +898,7 @@ async function runTests() {
   // Test Daily News Menu & Sequential Number Queries
   const qMenu = await assistant.handleUserQuery('มีข่าวอะไรบ้าง');
   assert(qMenu.category.includes('DAILY INTELLIGENCE MENU'), `Daily Menu Query: 'มีข่าวอะไรบ้าง' -> Category: ${qMenu.category}`);
-  assert(qMenu.speech.includes('6 หมวดข่าว'), 'NYX speaks daily headlines overview');
+  assert(qMenu.speech.includes('6 หมวด') && qMenu.speech.includes('สถานการณ์อ้างอิง'), 'NYX explains which menu sources are online versus static references');
 
   const qNum2 = await assistant.handleUserQuery('2');
   assert(qNum2.category.includes('GAMING'), `Numeric Query: '2' -> Category: ${qNum2.category}`);
@@ -914,13 +926,13 @@ async function runTests() {
 
   // Test Multi-Source Live Global News Aggregator (Google News, CoinGecko)
   const liveCrypto = await assistant.fetchLiveGlobalNews('CRYPTO');
-  assert(liveCrypto.category.includes('CRYPTO') && (liveCrypto.title.includes('Bitcoin') || liveCrypto.speech.includes('Bitcoin')), 'Live Crypto Real-Time Market Radar (CoinGecko)');
+  assert(liveCrypto.category.includes('CRYPTO') && liveCrypto.speech.length > 20, 'Crypto market radar returned a usable live-or-fallback response');
 
   const liveGold = await assistant.fetchLiveGlobalNews('GOLD');
-  assert(liveGold.category.includes('GOLD') && (liveGold.title.includes('Gold') || liveGold.speech.includes('ทองคำ')), 'Live Gold Real-Time Macro Radar (Spot Rates)');
+  assert(liveGold.category.includes('GOLD') && liveGold.speech.length > 20, 'Gold market radar returned a usable live-or-fallback response');
 
   const liveWorld = await assistant.fetchLiveGlobalNews('WORLD');
-  assert(liveWorld.category.includes('WORLD') || liveWorld.category.includes('GOOGLE NEWS'), 'Live Global News Feed (Google News RSS & Wire)');
+  assert(liveWorld.category.includes('WORLD') || liveWorld.category.includes('GOOGLE NEWS'), 'World news returned an explicitly sourced live-or-fallback response');
 
   // Test Sentiment Detector
   assert(assistant.detectSentimentAndEmotion('555 แกล้งกันชัดๆ') === 'PLAYFUL', 'Sentiment detector: Playful/Teasing');
@@ -942,10 +954,18 @@ async function runTests() {
   const qLove = await assistant.handleUserQuery('นิกซ์น่ารักจัง');
   assert(assistant.emotionalState === 'POUTY' && assistant.blushAmount > 0.5, 'NYX blushes and acts cute when complimented');
 
+  const failed = total - passed;
+  monkeyEngine.stopTest();
+  tradingEngine.destroy();
+  freshEngine.destroy();
+  profileStore.destroy();
   console.log('\n====================================================');
-  console.log(`🏁 TEST RESULTS: ${passed}/${total} TESTS PASSED (100%)`);
+  console.log(`🏁 TEST RESULTS: ${passed}/${total} TESTS PASSED (${Math.round((passed / total) * 100)}%)`);
   console.log('====================================================');
+  if (failed > 0) process.exitCode = 1;
 }
 
-runTests().catch(console.error);
-
+runTests().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});

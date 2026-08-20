@@ -5775,6 +5775,22 @@ body.mode-trading .sub-chart-container {
   color: #ffaa00;
 }
 
+.btn-audited-backtest {
+  border-color: rgba(0, 229, 255, 0.45);
+  color: #00e5ff;
+}
+
+.backtest-audit-summary {
+  margin-top: 4px;
+  padding: 4px 8px;
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  border-radius: 3px;
+  background: rgba(2, 12, 24, 0.82);
+  color: #94a3b8;
+  font: 700 9px var(--font-mono);
+  line-height: 1.45;
+}
+
 .replay-speed-tag {
   font-size: 9px;
   color: #64748b;
@@ -6801,7 +6817,44 @@ body.mode-trading .sub-chart-container {
   white-space: nowrap;
 }
 
+.ml-shadow-card {
+  margin: 10px 0;
+  padding: 10px;
+  border: 1px solid rgba(0, 240, 255, 0.38);
+  border-left: 3px solid #00f0ff;
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.08), rgba(5, 10, 20, 0.72));
+  font-family: var(--font-mono);
+}
 
+.ml-shadow-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.ml-shadow-header strong {
+  display: block;
+  color: #00f0ff;
+  font-size: 10px;
+  letter-spacing: 0.8px;
+}
+
+.ml-shadow-header span,
+.ml-shadow-metrics {
+  display: block;
+  margin-top: 3px;
+  color: #8b9cb0;
+  font-size: 8px;
+  line-height: 1.5;
+}
+
+.ml-shadow-status {
+  margin-top: 9px;
+  color: #ffd700;
+  font-size: 9px;
+  font-weight: 800;
+}
 
 
 

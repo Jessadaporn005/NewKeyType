@@ -4,7 +4,15 @@
  * Bitcoin (₿), Roguelite upgrades, and Achievements.
  */
 
+import { createZeroPaperGymStats, migrateLegacyDemoSeed } from './core/trading/gymState.js';
+import { PAPER_ACCOUNT_MODEL, normalizeRiskPercent, restorePaperPositions, restorePaperTradeHistory } from './core/trading/paperAccount.js';
+import { restorePaperExecutionAudit } from './core/trading/paperExecutionAudit.js';
+import { restoreMLShadowModel, restoreMLShadowReport } from './core/trading/mlShadowModel.js';
+
 const STORAGE_KEY = 'CYBERTYPE_OPERATOR_PROFILES_V1';
+export const PROFILE_SCHEMA_VERSION = 6;
+const CREDENTIAL_KDF = 'PBKDF2-SHA256';
+const CREDENTIAL_ITERATIONS = 210000;
 
 export const ACHIEVEMENTS_LIST = [
   { id: 'first_blood', title: 'SEC-AUDIT: Initial Physical Handshake', desc: 'Verify and calibrate initial keystroke actuation matrix', icon: '⚡', rewardBtc: 100 },
@@ -22,8 +30,9 @@ export const ACHIEVEMENTS_LIST = [
 ];
 
 const DEFAULT_PROFILE = {
+  profileSchemaVersion: PROFILE_SCHEMA_VERSION,
   username: 'Anan',
-  password: 'Infinity',
+  credentials: null,
   level: 1,
   exp: 0,
   expNext: 300,
@@ -66,21 +75,28 @@ const DEFAULT_PROFILE = {
     prompt: 'default',
     customAliases: {}
   },
-  aiTradingGymState: {
-    stats: {
-      totalTrades: 18,
-      wins: 14,
-      losses: 4,
-      winRate: 77.8,
-      netPnlUSD: 8420.50,
-      samplesStudied: 3420,
-      adaptationLevel: 5
+  tradingData: {
+    paper: {
+      domain: 'PAPER_SIMULATION',
+      stats: createZeroPaperGymStats(),
+      journal: [],
+      weights: null,
+      paperBalanceUSD: 100000.00,
+      paperAccountModel: PAPER_ACCOUNT_MODEL,
+      positions: [],
+      tradeHistory: [],
+      executionAudit: [],
+      mlShadow: { model: null, report: null },
+      riskAppetite: 'balanced',
+      riskPercent: 2
     },
-    journal: [],
-    weights: null,
-    paperBalanceUSD: 100000.00,
-    riskAppetite: 'balanced',
-    riskPercent: 2
+    live: {
+      domain: 'LIVE_BROKER',
+      status: 'UNVERIFIED',
+      source: null,
+      accountSnapshot: null,
+      lastVerifiedAt: null
+    },
   },
   vscodeFiles: {},
   browserData: {
@@ -91,9 +107,181 @@ const DEFAULT_PROFILE = {
   lastLogin: new Date().toISOString()
 };
 
+function isRecord(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function clone(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function finiteNumber(value, fallback) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function bytesToBase64(bytes) {
+  let binary = '';
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary);
+}
+
+function base64ToBytes(value) {
+  const binary = atob(value);
+  return Uint8Array.from(binary, char => char.charCodeAt(0));
+}
+
+function isValidCredential(value) {
+  return isRecord(value)
+    && value.kdf === CREDENTIAL_KDF
+    && Number.isSafeInteger(value.iterations)
+    && value.iterations >= 100000
+    && typeof value.salt === 'string'
+    && typeof value.hash === 'string';
+}
+
+async function derivePasswordHash(password, salt, iterations = CREDENTIAL_ITERATIONS) {
+  if (!globalThis.crypto?.subtle) throw new Error('SECURE_CREDENTIAL_CRYPTO_UNAVAILABLE');
+  const encoder = new TextEncoder();
+  const keyMaterial = await globalThis.crypto.subtle.importKey(
+    'raw',
+    encoder.encode(password),
+    'PBKDF2',
+    false,
+    ['deriveBits']
+  );
+  const bits = await globalThis.crypto.subtle.deriveBits(
+    { name: 'PBKDF2', hash: 'SHA-256', salt, iterations },
+    keyMaterial,
+    256
+  );
+  return new Uint8Array(bits);
+}
+
+async function createCredential(password) {
+  const salt = globalThis.crypto.getRandomValues(new Uint8Array(16));
+  const hash = await derivePasswordHash(password, salt);
+  return {
+    version: 1,
+    kdf: CREDENTIAL_KDF,
+    iterations: CREDENTIAL_ITERATIONS,
+    salt: bytesToBase64(salt),
+    hash: bytesToBase64(hash)
+  };
+}
+
+async function verifyCredential(credential, password) {
+  if (!isValidCredential(credential) || typeof password !== 'string') return false;
+  try {
+    const expected = base64ToBytes(credential.hash);
+    const actual = await derivePasswordHash(password, base64ToBytes(credential.salt), credential.iterations);
+    if (expected.length !== actual.length) return false;
+    let mismatch = 0;
+    for (let i = 0; i < expected.length; i++) mismatch |= expected[i] ^ actual[i];
+    return mismatch === 0;
+  } catch (error) {
+    return false;
+  }
+}
+
+export function migrateProfile(rawProfile = {}, username = 'Anan') {
+  const source = isRecord(rawProfile) ? rawProfile : {};
+  const { aiTradingGymState: legacyPaperState, password: _legacyPassword, ...sourceWithoutLegacyGym } = source;
+  const defaults = clone(DEFAULT_PROFILE);
+  const sourcePaperCandidate = isRecord(source.tradingData?.paper)
+    ? source.tradingData.paper
+    : (isRecord(legacyPaperState) ? legacyPaperState : {});
+  const paperMigration = migrateLegacyDemoSeed(sourcePaperCandidate);
+  const sourcePaper = isRecord(paperMigration.state) ? paperMigration.state : {};
+  const sourceLive = isRecord(source.tradingData?.live) ? source.tradingData.live : {};
+
+  const sessions = Array.isArray(source.wpmSessions)
+    ? source.wpmSessions.filter(session => isRecord(session)).slice(-100)
+    : [];
+  const accuracySessions = sessions.filter(session => Number.isFinite(Number(session.accuracy)));
+  const avgAccuracy = accuracySessions.length
+    ? Math.round((accuracySessions.reduce((sum, session) => sum + Number(session.accuracy), 0) / accuracySessions.length) * 10) / 10
+    : finiteNumber(source.avgAccuracy, 100);
+
+  return {
+    ...defaults,
+    ...sourceWithoutLegacyGym,
+    profileSchemaVersion: PROFILE_SCHEMA_VERSION,
+    username: String(source.username || username || 'Anan'),
+    level: finiteNumber(source.level, defaults.level),
+    exp: finiteNumber(source.exp, defaults.exp),
+    expNext: finiteNumber(source.expNext, defaults.expNext),
+    credits: finiteNumber(source.credits, defaults.credits),
+    bitcoin: finiteNumber(source.bitcoin, defaults.bitcoin),
+    peakWpm: finiteNumber(source.peakWpm, defaults.peakWpm),
+    avgAccuracy,
+    totalKeystrokes: finiteNumber(source.totalKeystrokes, defaults.totalKeystrokes),
+    batchesCleared: finiteNumber(source.batchesCleared, defaults.batchesCleared),
+    missionsCleared: finiteNumber(source.missionsCleared, defaults.missionsCleared),
+    daemonsUnlocked: Array.isArray(source.daemonsUnlocked) ? [...source.daemonsUnlocked] : defaults.daemonsUnlocked,
+    badges: Array.isArray(source.badges) ? [...source.badges] : defaults.badges,
+    achievements: Array.isArray(source.achievements) ? [...source.achievements] : [],
+    inventory: Array.isArray(source.inventory) ? [...source.inventory] : defaults.inventory,
+    weakKeys: isRecord(source.weakKeys) ? { ...source.weakKeys } : {},
+    records: { ...defaults.records, ...(isRecord(source.records) ? source.records : {}) },
+    lessonStars: isRecord(source.lessonStars) ? { ...source.lessonStars } : {},
+    rogueliteStats: { ...defaults.rogueliteStats, ...(isRecord(source.rogueliteStats) ? source.rogueliteStats : {}) },
+    rogueliteUpgrades: { ...defaults.rogueliteUpgrades, ...(isRecord(source.rogueliteUpgrades) ? source.rogueliteUpgrades : {}) },
+    settings: {
+      ...defaults.settings,
+      ...(isRecord(source.settings) ? source.settings : {}),
+      customAliases: isRecord(source.settings?.customAliases) ? { ...source.settings.customAliases } : {}
+    },
+    tradingData: {
+      paper: {
+        ...defaults.tradingData.paper,
+        ...sourcePaper,
+        domain: 'PAPER_SIMULATION',
+        stats: {
+          ...defaults.tradingData.paper.stats,
+          ...(isRecord(sourcePaper.stats) ? sourcePaper.stats : {})
+        },
+        journal: Array.isArray(sourcePaper.journal) ? sourcePaper.journal.slice(0, 50) : [],
+        paperAccountModel: PAPER_ACCOUNT_MODEL,
+        positions: sourcePaper.paperAccountModel === PAPER_ACCOUNT_MODEL
+          ? restorePaperPositions(sourcePaper.positions, 50)
+          : [],
+        tradeHistory: sourcePaper.paperAccountModel === PAPER_ACCOUNT_MODEL
+          ? restorePaperTradeHistory(sourcePaper.tradeHistory, 100)
+          : [],
+        executionAudit: sourcePaper.paperAccountModel === PAPER_ACCOUNT_MODEL
+          ? restorePaperExecutionAudit(sourcePaper.executionAudit, 250)
+          : [],
+        mlShadow: {
+          model: restoreMLShadowModel(sourcePaper.mlShadow?.model),
+          report: restoreMLShadowReport(sourcePaper.mlShadow?.report)
+        }
+      },
+      live: {
+        ...defaults.tradingData.live,
+        ...sourceLive,
+        domain: 'LIVE_BROKER',
+        status: sourceLive.status === 'VERIFIED' ? 'VERIFIED' : 'UNVERIFIED',
+        accountSnapshot: sourceLive.status === 'VERIFIED' && isRecord(sourceLive.accountSnapshot)
+          ? sourceLive.accountSnapshot
+          : null
+      }
+    },
+    vscodeFiles: isRecord(source.vscodeFiles) ? { ...source.vscodeFiles } : {},
+    browserData: {
+      bookmarks: Array.isArray(source.browserData?.bookmarks) ? [...source.browserData.bookmarks] : [],
+      history: Array.isArray(source.browserData?.history) ? [...source.browserData.history] : []
+    },
+    wpmSessions: sessions
+  };
+}
+
 class ProfileStore {
   constructor() {
     this.profiles = {};
+    this.autoSaveInterval = null;
+    this.lastPersistenceError = null;
+    this.lastLoadMeta = null;
     this.isElectron = typeof window !== 'undefined' && window.cyberSystemAPI && window.cyberSystemAPI.isElectron;
     this.onAchievementUnlocked = null;
     if (typeof window !== 'undefined' && window.addEventListener) {
@@ -105,38 +293,38 @@ class ProfileStore {
         if (document.visibilityState === 'hidden') this.saveAllAsync();
       });
     }
-    if (typeof setInterval !== 'undefined') {
-      setInterval(() => this.saveAllAsync(), 2000);
+    if (typeof window !== 'undefined' && typeof setInterval !== 'undefined') {
+      this.autoSaveInterval = setInterval(() => this.saveAllAsync(), 10000);
     }
-    this.initStore();
+    this.ready = this.initStore();
   }
 
   async initStore() {
-    this.profiles = await this.loadAllAsync();
-    if (!this.profiles['anan']) {
-      this.profiles['anan'] = { ...DEFAULT_PROFILE };
-      this.saveAllAsync();
-    } else {
-      // Ensure all schema fields exist on old saved profile
-      this.profiles['anan'] = {
-        ...DEFAULT_PROFILE,
-        ...this.profiles['anan'],
-        settings: { ...DEFAULT_PROFILE.settings, ...(this.profiles['anan'].settings || {}) },
-        rogueliteStats: { ...DEFAULT_PROFILE.rogueliteStats, ...(this.profiles['anan'].rogueliteStats || {}) },
-        rogueliteUpgrades: { ...DEFAULT_PROFILE.rogueliteUpgrades, ...(this.profiles['anan'].rogueliteUpgrades || {}) },
-        aiTradingGymState: { ...DEFAULT_PROFILE.aiTradingGymState, ...(this.profiles['anan'].aiTradingGymState || {}) },
-        achievements: this.profiles['anan'].achievements || [],
-        wpmSessions: this.profiles['anan'].wpmSessions || []
-      };
-      this.saveAllAsync();
+    const loadedProfiles = await this.loadAllAsync();
+    this.profiles = {};
+    for (const [key, profile] of Object.entries(isRecord(loadedProfiles) ? loadedProfiles : {})) {
+      const migrated = migrateProfile(profile, profile?.username || key);
+      if (!isValidCredential(migrated.credentials) && typeof profile?.password === 'string' && profile.password.length >= 8) {
+        migrated.credentials = await createCredential(profile.password);
+      }
+      this.profiles[key.toLowerCase()] = migrated;
     }
+    if (!this.profiles['anan']) {
+      this.profiles['anan'] = migrateProfile({}, 'Anan');
+      this.profiles['anan'].credentials = await createCredential('Infinity');
+    } else if (!isValidCredential(this.profiles['anan'].credentials)) {
+      this.profiles['anan'].credentials = await createCredential('Infinity');
+    }
+    await this.saveAllAsync();
   }
 
   async loadAllAsync() {
     try {
       if (this.isElectron && window.cyberSystemAPI.dbRead) {
         const res = await window.cyberSystemAPI.dbRead();
-        if (res && res.success && res.data && Object.keys(res.data).length > 0) return res.data;
+        this.lastLoadMeta = res || null;
+        if (res && res.success && isRecord(res.data) && Object.keys(res.data).length > 0) return res.data;
+        if (res && !res.success) this.lastPersistenceError = res.error || 'DATABASE_READ_FAILED';
       }
       if (typeof localStorage !== 'undefined') {
         const data = localStorage.getItem(STORAGE_KEY);
@@ -151,29 +339,59 @@ class ProfileStore {
   async saveAllAsync() {
     try {
       if (this.isElectron && window.cyberSystemAPI.dbWrite) {
-        await window.cyberSystemAPI.dbWrite(this.profiles);
+        const result = await window.cyberSystemAPI.dbWrite(this.profiles);
+        if (!result?.success) throw new Error(result?.error || 'DATABASE_WRITE_FAILED');
       }
       if (typeof localStorage !== 'undefined') {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(this.profiles));
       }
+      this.lastPersistenceError = null;
+      return { success: true };
     } catch (e) {
-      // ignore
+      this.lastPersistenceError = e?.message || 'DATABASE_WRITE_FAILED';
+      return { success: false, error: this.lastPersistenceError };
     }
   }
 
   getTradingGymState(username = 'Anan') {
     const prof = this.getProfile(username);
-    if (!prof.aiTradingGymState) {
-      prof.aiTradingGymState = JSON.parse(JSON.stringify(DEFAULT_PROFILE.aiTradingGymState));
+    if (!prof.tradingData?.paper) {
+      prof.tradingData = prof.tradingData || {};
+      prof.tradingData.paper = clone(DEFAULT_PROFILE.tradingData.paper);
       this.saveAllAsync();
     }
-    return prof.aiTradingGymState;
+    return clone(prof.tradingData.paper);
   }
 
   saveTradingGymState(username = 'Anan', state) {
     const prof = this.getProfile(username);
-    prof.aiTradingGymState = { ...(prof.aiTradingGymState || {}), ...state };
-    this.saveAllAsync();
+    prof.tradingData = prof.tradingData || clone(DEFAULT_PROFILE.tradingData);
+    const currentPaper = isRecord(prof.tradingData.paper) ? prof.tradingData.paper : clone(DEFAULT_PROFILE.tradingData.paper);
+    const incoming = isRecord(state) ? state : {};
+    const acceptsAccountState = incoming.paperAccountModel === PAPER_ACCOUNT_MODEL;
+    const balance = Number(incoming.paperBalanceUSD);
+    prof.tradingData.paper = {
+      ...currentPaper,
+      ...incoming,
+      domain: 'PAPER_SIMULATION',
+      paperAccountModel: PAPER_ACCOUNT_MODEL,
+      paperBalanceUSD: Number.isFinite(balance) && balance >= 0 ? balance : currentPaper.paperBalanceUSD,
+      riskPercent: normalizeRiskPercent(incoming.riskPercent, currentPaper.riskPercent || 2),
+      positions: acceptsAccountState
+        ? restorePaperPositions(incoming.positions, 50)
+        : restorePaperPositions(currentPaper.positions, 50),
+      tradeHistory: acceptsAccountState
+        ? restorePaperTradeHistory(incoming.tradeHistory, 100)
+        : restorePaperTradeHistory(currentPaper.tradeHistory, 100),
+      executionAudit: acceptsAccountState
+        ? restorePaperExecutionAudit(incoming.executionAudit, 250)
+        : restorePaperExecutionAudit(currentPaper.executionAudit, 250),
+      mlShadow: {
+        model: restoreMLShadowModel(incoming.mlShadow?.model) || restoreMLShadowModel(currentPaper.mlShadow?.model),
+        report: restoreMLShadowReport(incoming.mlShadow?.report) || restoreMLShadowReport(currentPaper.mlShadow?.report)
+      }
+    };
+    return this.saveAllAsync();
   }
 
   getVSCodeFiles(username = 'Anan') {
@@ -201,72 +419,57 @@ class ProfileStore {
   getProfile(username = 'Anan') {
     const key = (username || 'Anan').toLowerCase().trim();
     if (!this.profiles[key]) {
-      this.profiles[key] = {
-        ...DEFAULT_PROFILE,
-        username: username || 'Anan',
-        password: (username || 'Anan') === 'Anan' ? 'Infinity' : 'password'
-      };
+      this.profiles[key] = migrateProfile({ username: username || 'Anan' }, username);
       this.saveAllAsync();
     }
     return this.profiles[key];
   }
 
-  verifyCredentials(username, password) {
+  async verifyCredentials(username, password) {
     const key = (username || '').toLowerCase().trim();
     if (!key || !password) return false;
-
-    // Check existing stored profile
     const profile = this.profiles[key];
-    if (profile) {
-      return profile.password === password;
-    }
+    return profile ? verifyCredential(profile.credentials, password) : false;
+  }
 
-    // Default fallback: Anan / Infinity
-    if (key === 'anan' && password === 'Infinity') {
-      return true;
+  async verifySecretGatePasscode(passcode) {
+    if (!passcode) return false;
+    const clean = passcode.trim();
+    for (const profile of Object.values(this.profiles)) {
+      if (await verifyCredential(profile?.credentials, clean)) return true;
     }
-
     return false;
   }
 
-  verifySecretGatePasscode(passcode) {
-    if (!passcode) return false;
-    const clean = passcode.trim();
-
-    // Check if passcode matches password of any registered profile
-    for (const key in this.profiles) {
-      const p = this.profiles[key];
-      if (p && p.password && (p.password === clean || p.password.toLowerCase() === clean.toLowerCase())) {
-        return true;
-      }
-    }
-
-    // Fallback default master tokens
-    const lower = clean.toLowerCase();
-    return lower === 'infinity' || lower === 'anan';
-  }
-
-  updatePassword(username, newPassword) {
-    if (!newPassword) return false;
+  async updatePassword(username, newPassword) {
+    if (typeof newPassword !== 'string' || newPassword.length < 8 || newPassword.length > 1024) return false;
     const key = (username || 'Anan').toLowerCase().trim();
     const profile = this.getProfile(username);
-    profile.password = newPassword;
+    profile.credentials = await createCredential(newPassword);
+    delete profile.password;
     this.profiles[key] = profile;
-    this.saveAllAsync();
-    return true;
+    const saved = await this.saveAllAsync();
+    return saved.success;
   }
 
-  updateUsername(oldUsername, newUsername) {
+  async updateUsername(oldUsername, newUsername) {
     const oldKey = (oldUsername || 'Anan').toLowerCase().trim();
     const newKey = (newUsername || '').toLowerCase().trim();
-    if (!newKey) return false;
+    if (!isValidUsername(newUsername) || !newKey || (newKey !== oldKey && this.profiles[newKey])) return false;
 
     const profile = this.getProfile(oldUsername);
-    profile.username = newUsername;
+    const previousUsername = profile.username;
+    profile.username = newUsername.trim();
 
     delete this.profiles[oldKey];
     this.profiles[newKey] = profile;
-    this.saveAllAsync();
+    const saved = await this.saveAllAsync();
+    if (!saved.success) {
+      delete this.profiles[newKey];
+      profile.username = previousUsername;
+      this.profiles[oldKey] = profile;
+      return false;
+    }
     return true;
   }
 
@@ -462,9 +665,18 @@ class ProfileStore {
     if (profile.wpmSessions.length > 100) {
       profile.wpmSessions = profile.wpmSessions.slice(-100);
     }
+    const accuracySessions = profile.wpmSessions.filter(session => Number.isFinite(Number(session?.accuracy)));
+    profile.avgAccuracy = accuracySessions.length
+      ? Math.round((accuracySessions.reduce((sum, session) => sum + Number(session.accuracy), 0) / accuracySessions.length) * 10) / 10
+      : 100;
 
     this.saveProfile(profile);
     return profile;
+  }
+
+  destroy() {
+    if (this.autoSaveInterval) clearInterval(this.autoSaveInterval);
+    this.autoSaveInterval = null;
   }
 
   getUserSettings(username) {
@@ -484,3 +696,7 @@ class ProfileStore {
 }
 
 export const profileStore = new ProfileStore();
+export function isValidUsername(value) {
+  return typeof value === 'string'
+    && /^[\p{L}\p{N}_-]{1,32}$/u.test(value.trim());
+}

@@ -570,4 +570,14 @@ export class MonkeySpeedEngine {
       this.onCompleted(testSummary);
     }
   }
+
+  stopTest() {
+    if (this.timerInterval) clearInterval(this.timerInterval);
+    if (this.telemetryInterval) clearInterval(this.telemetryInterval);
+    this.timerInterval = null;
+    this.telemetryInterval = null;
+    this.isActive = false;
+    if (this.kb) this.kb.clearTargetKeys();
+    if (this.hands) this.hands.clearTargetGuide();
+  }
 }

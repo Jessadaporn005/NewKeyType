@@ -49,20 +49,30 @@ export class ToastManager {
     const toast = document.createElement('div');
     toast.className = `cyber-toast toast-${type}`;
 
-    let rewardHtml = '';
-    if (reward) {
-      rewardHtml = `<div class="toast-reward">+${reward}</div>`;
-    }
+    const iconEl = document.createElement('div');
+    iconEl.className = 'toast-icon';
+    iconEl.textContent = String(icon ?? '⚡');
 
-    toast.innerHTML = `
-      <div class="toast-icon">${icon}</div>
-      <div class="toast-content">
-        <div class="toast-title">${title}</div>
-        <div class="toast-message">${message}</div>
-      </div>
-      ${rewardHtml}
-      <div class="toast-bar"></div>
-    `;
+    const contentEl = document.createElement('div');
+    contentEl.className = 'toast-content';
+    const titleEl = document.createElement('div');
+    titleEl.className = 'toast-title';
+    titleEl.textContent = String(title ?? 'SYSTEM NOTIFICATION');
+    const messageEl = document.createElement('div');
+    messageEl.className = 'toast-message';
+    messageEl.textContent = String(message ?? '');
+    contentEl.append(titleEl, messageEl);
+
+    toast.append(iconEl, contentEl);
+    if (reward) {
+      const rewardEl = document.createElement('div');
+      rewardEl.className = 'toast-reward';
+      rewardEl.textContent = `+${String(reward)}`;
+      toast.appendChild(rewardEl);
+    }
+    const barEl = document.createElement('div');
+    barEl.className = 'toast-bar';
+    toast.appendChild(barEl);
 
     toast.addEventListener('click', () => {
       this.dismiss(toast);
@@ -100,7 +110,7 @@ export class ToastManager {
   achievement(ach) {
     this.show({
       title: '★ ACHIEVEMENT UNLOCKED',
-      message: `<strong>${ach.title}</strong>: ${ach.desc}`,
+      message: `${ach.title}: ${ach.desc}`,
       type: 'achievement',
       icon: ach.icon || '🏆',
       reward: ach.rewardBtc ? `₿ ${ach.rewardBtc}` : null,
@@ -111,7 +121,7 @@ export class ToastManager {
   levelUp(level, title = 'NETRUNNER') {
     this.show({
       title: '▲ OPERATOR LEVEL UP',
-      message: `Reached <strong>LEVEL ${level}</strong> [${title}]`,
+      message: `Reached LEVEL ${level} [${title}]`,
       type: 'level_up',
       icon: '⚡',
       duration: 4500

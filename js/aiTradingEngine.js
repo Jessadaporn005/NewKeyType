@@ -3,85 +3,56 @@
  * Inspired by TradingView and Binance Pro. Features real-time OHLCV market feeds,
  * technical indicators (EMA Ribbon, Bollinger Bands, RSI, MACD),
  * neural chart pattern recognition (Double Bottom/Top, Engulfing, Head & Shoulders, SMC Order Blocks),
- * real-time AI Trade Signals (STRONG BUY/SELL with TP/SL & Confidence Score),
+ * real-time deterministic Trade Signals (BUY/SELL with TP/SL & Rule Score),
  * interactive HTML5 Canvas Candlestick Chart with crosshair, and Paper Trading simulator.
  */
 
 import { profileStore } from './profileStore.js';
+import { resolveRuntimeCapabilities } from './runtimeConfig.js';
+import { MARKET_TYPES, TRADING_ASSETS, TIMEFRAMES } from './core/trading/marketCatalog.js';
+import { calculateDynamicSpread as calculateSpreadFromCore } from './core/trading/spreadModel.js';
+import { calculateEMA, calculateBollingerBands, calculateRSI, calculateMACD } from './core/trading/indicators.js';
+import { calculateTargetScore } from './core/trading/targetScore.js';
+import {
+  PAPER_ACCOUNT_MODEL,
+  calculatePaperPositionSize,
+  createPaperPosition,
+  deriveProtectiveOrders,
+  evaluatePaperExit,
+  evaluatePaperOpenRisk,
+  markPaperPosition,
+  normalizeRiskPercent,
+  restorePaperPositions,
+  restorePaperTradeHistory,
+  settlePaperPosition,
+  summarizePaperAccount
+} from './core/trading/paperAccount.js';
+import { createZeroPaperGymStats, migrateLegacyDemoSeed, selectLatestPaperState } from './core/trading/gymState.js';
+import { evaluateRuleCountercheck as evaluateRuleCountercheckCore } from './core/trading/ruleCountercheck.js';
+import { runBarCloseBacktest } from './core/trading/backtestEngine.js';
+import { resolveDecisionNews } from './core/trading/newsInputPolicy.js';
+import { resolveDecisionStrategyMemory } from './core/trading/strategyMemoryPolicy.js';
+import { createPaperExecutionAuditEvent, restorePaperExecutionAudit } from './core/trading/paperExecutionAudit.js';
+import { reconcileMT5DemoAccount, validateMT5DemoPacket } from './core/trading/mt5DemoGateway.js';
+import { predictMLDirection, restoreMLShadowModel, restoreMLShadowReport, trainAndEvaluateMLShadow } from './core/trading/mlShadowModel.js';
+import {
+  MARKET_PACKET_SOURCES,
+  createMarketPacket,
+  evaluateMarketPacketDecisionEligibility,
+  summarizeMarketPacket
+} from './core/trading/marketPacket.js';
+import { fetchHistoricalExchangeCandles as fetchBinanceHistory, fetchRealExchangeCandles as fetchBinanceCandles, getMarketDataDisclosure } from './services/trading/binanceMarketData.js';
 
-// Market Source Definitions
-export const MARKET_TYPES = {
-  BINANCE: 'binance',
-  XM: 'xm'
-};
-
-// Asset Definitions (Binance Crypto & XM Global Forex / Commodities)
-export const TRADING_ASSETS = [
-  // BINANCE CRYPTO & EQUITIES
-  { id: 'BTC/USDT', name: 'Bitcoin Network', market: 'binance', basePrice: 96420.50, unit: '₿', minTick: 0.5, digits: 2, leverageMax: 50, baseSpread: 2.50, spreadUnit: '$', binanceSymbol: 'BTCUSDT' },
-  { id: 'ETH/USDT', name: 'Ethereum Network', market: 'binance', basePrice: 3580.00, unit: 'Ξ', minTick: 0.1, digits: 2, leverageMax: 50, baseSpread: 0.35, spreadUnit: '$', binanceSymbol: 'ETHUSDT' },
-  { id: 'SOL/USDT', name: 'Solana High-Speed L1', market: 'binance', basePrice: 198.40, unit: '◎', minTick: 0.01, digits: 2, leverageMax: 20, baseSpread: 0.08, spreadUnit: '$', binanceSymbol: 'SOLUSDT' },
-  { id: 'NVDA/USD', name: 'NVIDIA AI Semiconductor', market: 'binance', basePrice: 142.80, unit: '$', minTick: 0.01, digits: 2, leverageMax: 10, baseSpread: 0.05, spreadUnit: '$' },
-  { id: 'CYBER/USDT', name: 'Darknet Hashrate Index', market: 'binance', basePrice: 42.50, unit: '⚡', minTick: 0.01, digits: 2, leverageMax: 25, baseSpread: 0.02, spreadUnit: '$' },
-  { id: 'QUANTUM/USDT', name: 'Qubit Yield Protocol', market: 'binance', basePrice: 850.00, unit: 'Ψ', minTick: 0.1, digits: 2, leverageMax: 20, baseSpread: 0.30, spreadUnit: '$' },
-
-  // XM GLOBAL FOREX & COMMODITIES (GOLD, EUR, GBP, USOIL)
-  { id: 'XAU/USD', name: 'Gold Spot (XM Global)', market: 'xm', basePrice: 2748.50, unit: 'oz', minTick: 0.05, digits: 2, leverageMax: 500, lotSize: 100, pipValue: 10, baseSpread: 0.22, spreadUnit: 'pts', binanceSymbol: 'PAXGUSDT' },
-  { id: 'EUR/USD', name: 'Euro / US Dollar', market: 'xm', basePrice: 1.0845, unit: '€', minTick: 0.0001, digits: 4, leverageMax: 500, lotSize: 100000, pipValue: 10, baseSpread: 0.00012, spreadUnit: 'pips' },
-  { id: 'GBP/USD', name: 'British Pound / USD', market: 'xm', basePrice: 1.2980, unit: '£', minTick: 0.0001, digits: 4, leverageMax: 500, lotSize: 100000, pipValue: 10, baseSpread: 0.00015, spreadUnit: 'pips' },
-  { id: 'USOIL', name: 'WTI Crude Oil Spot', market: 'xm', basePrice: 71.40, unit: 'bbl', minTick: 0.01, digits: 2, leverageMax: 100, lotSize: 100, pipValue: 10, baseSpread: 0.035, spreadUnit: 'pts' }
-];
+export { MARKET_TYPES, TRADING_ASSETS, TIMEFRAMES };
+export { calculateEMA, calculateBollingerBands, calculateRSI, calculateMACD };
+export { calculateTargetScore };
+export { calculatePaperPositionSize, normalizeRiskPercent, summarizePaperAccount };
+export { evaluateRuleCountercheckCore as evaluateRuleCountercheck };
+export { runBarCloseBacktest };
 
 export function calculateDynamicSpread(asset = TRADING_ASSETS[0], currentPrice = 100, candle = null, activeNews = null) {
-  const baseSpread = asset.baseSpread || (currentPrice * 0.00015);
-  let multiplier = 1.0 + (Math.random() * 0.18 - 0.09); // normal micro-noise (0.91x to 1.09x)
-
-  // 1. High Volatility Spurt (Candle range compared to normal)
-  if (candle && candle.high && candle.low) {
-    const range = candle.high - candle.low;
-    const normRange = currentPrice * 0.002;
-    if (range > normRange * 1.5) {
-      multiplier += Math.min(1.4, (range / normRange) * 0.35);
-    }
-  }
-
-  // 2. High-Impact Breaking News Widening (e.g. CPI, Non-Farm Payrolls, FOMC)
-  if (activeNews && typeof activeNews.sentimentScore === 'number' && Math.abs(activeNews.sentimentScore) >= 15) {
-    multiplier += 0.75;
-  }
-
-  const isWidened = multiplier >= 1.45;
-  const spreadValue = Number((baseSpread * multiplier).toFixed(asset.digits));
-  const bidPrice = Number((currentPrice - spreadValue / 2).toFixed(asset.digits));
-  const askPrice = Number((currentPrice + spreadValue / 2).toFixed(asset.digits));
-
-  let spreadFormatted = '';
-  if (asset.spreadUnit === 'pips') {
-    spreadFormatted = (spreadValue / 0.0001).toFixed(1) + ' Pips';
-  } else if (asset.spreadUnit === 'pts') {
-    spreadFormatted = Math.round(spreadValue / 0.01) + ' pts ($' + spreadValue.toFixed(2) + ')';
-  } else {
-    spreadFormatted = '$' + spreadValue.toFixed(asset.digits);
-  }
-
-  return {
-    spreadValue,
-    spreadFormatted,
-    bidPrice,
-    askPrice,
-    isWidened,
-    multiplier: Number(multiplier.toFixed(2)),
-    status: isWidened ? 'WIDENED (HIGH VOLATILITY ⚠️)' : 'STANDARD TIGHT (🟢)'
-  };
+  return calculateSpreadFromCore(asset, currentPrice, candle, activeNews);
 }
-
-export const TIMEFRAMES = [
-  { id: '1m', label: '1m', seconds: 60, candleCount: 80, binanceInterval: '1m' },
-  { id: '5m', label: '5m', seconds: 300, candleCount: 80, binanceInterval: '5m' },
-  { id: '15m', label: '15m', seconds: 900, candleCount: 80, binanceInterval: '15m' },
-  { id: '1h', label: '1h', seconds: 3600, candleCount: 80, binanceInterval: '1h' },
-  { id: '1D', label: '1D', seconds: 86400, candleCount: 80, binanceInterval: '1d' }
-];
 
 export const LIVE_MARKET_NEWS_FEED = [
   {
@@ -248,175 +219,7 @@ export const LIVE_INTERNET_KNOWLEDGE_FEED = [
 ];
 
 export async function fetchRealExchangeCandles(symbol = 'BTC/USDT', interval = '5m', limit = 80) {
-  const binanceMap = {
-    'BTC/USDT': 'BTCUSDT',
-    'ETH/USDT': 'ETHUSDT',
-    'SOL/USDT': 'SOLUSDT',
-    'XAU/USD': 'PAXGUSDT'
-  };
-
-  const binanceSymbol = binanceMap[symbol];
-  if (!binanceSymbol) return null;
-
-  const tfMap = {
-    '1m': '1m',
-    '5m': '5m',
-    '15m': '15m',
-    '1h': '1h',
-    '1D': '1d'
-  };
-  const binanceInterval = tfMap[interval] || '5m';
-
-  try {
-    const url = `https://api.binance.com/api/v3/klines?symbol=${binanceSymbol}&interval=${binanceInterval}&limit=${limit}`;
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3500);
-
-    const res = await fetch(url, { signal: controller.signal });
-    clearTimeout(timeoutId);
-
-    if (!res.ok) return null;
-    const rawData = await res.json();
-    if (!Array.isArray(rawData) || rawData.length === 0) return null;
-
-    return rawData.map(item => ({
-      time: Math.floor(item[0] / 1000),
-      open: parseFloat(item[1]),
-      high: parseFloat(item[2]),
-      low: parseFloat(item[3]),
-      close: parseFloat(item[4]),
-      volume: parseFloat(item[5])
-    }));
-  } catch (err) {
-    return null;
-  }
-}
-
-/**
- * Technical Indicator Calculation Algorithms
- */
-export function calculateEMA(candles, period = 20) {
-  const ema = [];
-  const k = 2 / (period + 1);
-  if (candles.length === 0) return ema;
-
-  let sum = 0;
-  for (let i = 0; i < Math.min(period, candles.length); i++) {
-    sum += candles[i].close;
-  }
-  let prevEma = sum / Math.min(period, candles.length);
-
-  for (let i = 0; i < candles.length; i++) {
-    if (i < period - 1) {
-      ema.push(null);
-    } else if (i === period - 1) {
-      ema.push(prevEma);
-    } else {
-      const curEma = candles[i].close * k + prevEma * (1 - k);
-      ema.push(curEma);
-      prevEma = curEma;
-    }
-  }
-  return ema;
-}
-
-export function calculateBollingerBands(candles, period = 20, stdDevMultiplier = 2) {
-  const upper = [];
-  const middle = [];
-  const lower = [];
-
-  for (let i = 0; i < candles.length; i++) {
-    if (i < period - 1) {
-      upper.push(null);
-      middle.push(null);
-      lower.push(null);
-      continue;
-    }
-
-    let sum = 0;
-    for (let j = i - period + 1; j <= i; j++) {
-      sum += candles[j].close;
-    }
-    const sma = sum / period;
-
-    let varianceSum = 0;
-    for (let j = i - period + 1; j <= i; j++) {
-      varianceSum += Math.pow(candles[j].close - sma, 2);
-    }
-    const stdDev = Math.sqrt(varianceSum / period);
-
-    middle.push(sma);
-    upper.push(sma + stdDev * stdDevMultiplier);
-    lower.push(sma - stdDev * stdDevMultiplier);
-  }
-
-  return { upper, middle, lower };
-}
-
-export function calculateRSI(candles, period = 14) {
-  const rsi = [];
-  if (candles.length <= period) return candles.map(() => 50);
-
-  let gains = 0;
-  let losses = 0;
-
-  for (let i = 1; i <= period; i++) {
-    const diff = candles[i].close - candles[i - 1].close;
-    if (diff >= 0) gains += diff;
-    else losses += Math.abs(diff);
-  }
-
-  let avgGain = gains / period;
-  let avgLoss = losses / period;
-
-  for (let i = 0; i < candles.length; i++) {
-    if (i < period) {
-      rsi.push(50);
-      continue;
-    }
-    if (i > period) {
-      const diff = candles[i].close - candles[i - 1].close;
-      const gain = diff > 0 ? diff : 0;
-      const loss = diff < 0 ? Math.abs(diff) : 0;
-      avgGain = (avgGain * (period - 1) + gain) / period;
-      avgLoss = (avgLoss * (period - 1) + loss) / period;
-    }
-
-    if (avgLoss === 0) {
-      rsi.push(100);
-    } else {
-      const rs = avgGain / avgLoss;
-      rsi.push(Math.round(100 - (100 / (1 + rs))));
-    }
-  }
-
-  return rsi;
-}
-
-export function calculateMACD(candles, fast = 12, slow = 26, signal = 9) {
-  const fastEMA = calculateEMA(candles, fast);
-  const slowEMA = calculateEMA(candles, slow);
-  const macdLine = [];
-
-  for (let i = 0; i < candles.length; i++) {
-    if (fastEMA[i] === null || slowEMA[i] === null) {
-      macdLine.push(0);
-    } else {
-      macdLine.push(fastEMA[i] - slowEMA[i]);
-    }
-  }
-
-  // Signal line is EMA of MACD Line
-  const dummyCandles = macdLine.map(v => ({ close: v }));
-  const signalLine = calculateEMA(dummyCandles, signal);
-  const histogram = [];
-
-  for (let i = 0; i < candles.length; i++) {
-    const sig = signalLine[i] === null ? 0 : signalLine[i];
-    histogram.push(macdLine[i] - sig);
-  }
-
-  return { macdLine, signalLine, histogram };
+  return fetchBinanceCandles(symbol, interval, limit);
 }
 
 /**
@@ -517,17 +320,17 @@ export function detectChartPatterns(candles) {
   return patterns;
 }
 
-// Infinite Knowledge Matrix (Strategy Weight Table)
+// Neutral starting weights. Observations are added only by explicit Paper scenarios.
 export const DEFAULT_STRATEGY_WEIGHTS = {
-  'Bullish Engulfing': { wins: 12, losses: 3, winRate: 80.0, weightMultiplier: 1.25, lastLesson: 'แนวรับ EMA20 หนุนส่งแรงซื้อต่อเนื่อง' },
-  'Bearish Engulfing': { wins: 14, losses: 2, winRate: 87.5, weightMultiplier: 1.35, lastLesson: 'แรงปฏิเสธโซน Resistance แข็งแกร่ง' },
-  'Double Bottom': { wins: 9, losses: 2, winRate: 81.8, weightMultiplier: 1.28, lastLesson: 'สัญญาณ RSI Oversold ร่วมกับแนวรับจิตวิทยา' },
-  'Double Top': { wins: 8, losses: 3, winRate: 72.7, weightMultiplier: 1.15, lastLesson: 'ระวังไส้เทียนสะบัดก่อนหลุด Neckline' },
-  'Hammer / Bullish Pinbar': { wins: 10, losses: 3, winRate: 76.9, weightMultiplier: 1.20, lastLesson: 'แท่งเทียนไส้ยาวด้านล่างปฏิเสธราคาชัดเจน' },
-  'Shooting Star / Bearish Pinbar': { wins: 9, losses: 3, winRate: 75.0, weightMultiplier: 1.18, lastLesson: 'แรงขายกดลงมาจากแนวต้านระดับชั่วโมง' },
-  'Fair Value Gap (FVG)': { wins: 11, losses: 2, winRate: 84.6, weightMultiplier: 1.30, lastLesson: 'ราคาดึงกลับมาเติมสภาพคล่องใน FVG Zone' },
-  'Liquidity Sweep': { wins: 15, losses: 2, winRate: 88.2, weightMultiplier: 1.40, lastLesson: 'เจ้ามือกวาด Stop Loss ใต้แนวรับก่อนลากราคาขึ้น' },
-  'Ascending Triangle': { wins: 4, losses: 6, winRate: 40.0, weightMultiplier: 0.70, lastLesson: 'ห้ามเข้า Breakout หาก Volume ต่ำกว่าค่าเฉลี่ย 20 แท่ง' }
+  'Bullish Engulfing': { wins: 0, losses: 0, winRate: 0, weightMultiplier: 1, lastLesson: '' },
+  'Bearish Engulfing': { wins: 0, losses: 0, winRate: 0, weightMultiplier: 1, lastLesson: '' },
+  'Double Bottom': { wins: 0, losses: 0, winRate: 0, weightMultiplier: 1, lastLesson: '' },
+  'Double Top': { wins: 0, losses: 0, winRate: 0, weightMultiplier: 1, lastLesson: '' },
+  'Hammer / Bullish Pinbar': { wins: 0, losses: 0, winRate: 0, weightMultiplier: 1, lastLesson: '' },
+  'Shooting Star / Bearish Pinbar': { wins: 0, losses: 0, winRate: 0, weightMultiplier: 1, lastLesson: '' },
+  'Fair Value Gap (FVG)': { wins: 0, losses: 0, winRate: 0, weightMultiplier: 1, lastLesson: '' },
+  'Liquidity Sweep': { wins: 0, losses: 0, winRate: 0, weightMultiplier: 1, lastLesson: '' },
+  'Ascending Triangle': { wins: 0, losses: 0, winRate: 0, weightMultiplier: 1, lastLesson: '' }
 };
 
 // =========================================================================
@@ -559,14 +362,14 @@ export function detectMarketRegime(candles = [], activeNews = null, spreadInfo =
   const curBBLower = bb.lower[bb.lower.length - 1] || curPrice * 0.98;
   const bbWidth = (curBBUpper - curBBLower) / (curPrice || 1);
 
-  // 1. News Shock / High Spread Shock
-  if (spreadInfo && spreadInfo.isSpreadWide) {
+  // 1. High-spread volatility shock.
+  if (spreadInfo && spreadInfo.isWidened) {
     return {
       type: 'MACRO_VOLATILITY_SHOCK',
       label: 'MACRO VOLATILITY SHOCK (ตลาดข่าวผันผวนสูง)',
       badgeClass: 'regime-shock',
       icon: '⚡',
-      desc: 'สเปรดถ่างตัวและมีข่าวกระทบรุนแรง แนะนำใช้เกราะป้องกันความเสี่ยงสูงสุด',
+      desc: 'สเปรดถ่างตัวตามข้อมูล/แบบจำลองที่ระบุแหล่งที่มา แนะนำระงับการเปิดสถานะใหม่',
       volatilityRatio: 2.5,
       trendStrength: 85
     };
@@ -616,75 +419,28 @@ export function detectMarketRegime(candles = [], activeNews = null, spreadInfo =
 }
 
 export function calculateMonteCarloProbability(entry = 0, tp = 0, sl = 0, regime = null, curRSI = 50) {
-  const tpDist = Math.abs(tp - entry);
-  const slDist = Math.abs(entry - sl) || 1;
-  const rr = tpDist / slDist;
-
-  let baseProb = 68.0;
-  if (rr <= 1.5) baseProb += 12.0;
-  else if (rr >= 3.0) baseProb -= 14.0;
-
-  if (curRSI > 40 && curRSI < 60) baseProb += 4.5;
-  if (regime && regime.type === 'TRENDING_MOMENTUM') baseProb += 8.0;
-  else if (regime && regime.type === 'MACRO_VOLATILITY_SHOCK') baseProb -= 12.0;
-
-  const finalProb = Math.min(94.5, Math.max(35.0, Number(baseProb.toFixed(1))));
+  const targetScore = calculateTargetScore(entry, tp, sl, regime, curRSI);
   return {
-    tpProbabilityPercent: finalProb,
-    slRiskPercent: Number((100 - finalProb).toFixed(1)),
-    confidenceRating: finalProb >= 75 ? 'VERY HIGH (🟢)' : finalProb >= 60 ? 'BALANCED (🟡)' : 'ELEVATED RISK (🔴)'
+    tpProbabilityPercent: targetScore.scorePercent,
+    slRiskPercent: targetScore.cautionScorePercent,
+    confidenceRating: targetScore.rating,
+    method: targetScore.method,
+    calibrated: false,
+    deprecated: true
   };
 }
 
 export function evaluateAdversarialDebate(patterns = [], marketRegime = null, whaleData = null, curRSI = 50, currentPrice = 0) {
-  // Agent 1: Bull Advocate
-  const bullArguments = [];
-  if (curRSI < 45) bullArguments.push(`RSI (${curRSI.toFixed(1)}) อยู่ในโซนสะสมราคา มี Room ให้ราคาดีดตัวขึ้น`);
-  if (patterns.some(p => p.sentiment === 'BULLISH')) {
-    const p = patterns.find(p => p.sentiment === 'BULLISH');
-    bullArguments.push(`ตรวจพบแพทเทิร์นกระทิง: ${p.name}`);
-  }
-  if (marketRegime && marketRegime.type === 'TRENDING_MOMENTUM') {
-    bullArguments.push('สภาวะตลาดเป็น Momentum Trend ชัดเจน ได้เปรียบในการถือ Run');
-  }
-  if (bullArguments.length === 0) bullArguments.push('แนวรับโครงสร้างราคายังรักษาฐานไว้ได้');
-
-  // Agent 2: Bear Skeptic (Adversarial Critic)
-  const bearCounterArguments = [];
-  if (curRSI > 65) bearCounterArguments.push(`RSI (${curRSI.toFixed(1)}) เข้าใกล้ Overbought เสี่ยงโดนเทขายทำกำไร`);
-  if (patterns.some(p => p.sentiment === 'BEARISH')) {
-    const p = patterns.find(p => p.sentiment === 'BEARISH');
-    bearCounterArguments.push(`มีสัญญาณต้านกลับ: ${p.name}`);
-  }
-  if (marketRegime && marketRegime.type === 'LIQUIDITY_HUNT') {
-    bearCounterArguments.push('มีแรงเทขายทิ้งไส้บน ระวังกับดัก Bull Trap ของเจ้ามือ');
-  }
-  if (bearCounterArguments.length === 0) bearCounterArguments.push('ยังไม่พบจุดอ่อนที่น่ากังวล แต่ควรตั้ง SL ป้องกันความเสี่ยง');
-
-  // Agent 3: Whale Flow Specialist
-  let whaleVerdict = 'NEUTRAL / MONITORING';
-  let whaleDesc = 'วอลุ่มเจ้ามือยังกระจายตัวปกติ ไม่มีแรงต้านผิดสังเกต';
-  if (whaleData && whaleData.whale_walls && whaleData.whale_walls.length > 0) {
-    const wall = whaleData.whale_walls[0];
-    if (wall.price <= currentPrice) {
-      whaleVerdict = 'WHALE BID SHIELD (🟢)';
-      whaleDesc = `ตรวจพบกำแพงซื้อเจ้ามือขนาดใหญ่ ${wall.volume_lots} Lots ที่ระดับ $${wall.price}`;
-    } else {
-      whaleVerdict = 'WHALE ASK CEILING (🔴)';
-      whaleDesc = `ตรวจพบกำแพงขายเจ้ามือขนาดใหญ่ ${wall.volume_lots} Lots ที่ระดับ $${wall.price}`;
-    }
-  }
-
-  // Consensus Resolution
-  const isBullPrevails = bullArguments.length >= bearCounterArguments.length && curRSI < 62;
-  const isDebateUnanimous = isBullPrevails && bearCounterArguments.length <= 1;
-
+  const result = evaluateRuleCountercheckCore(patterns, marketRegime, whaleData, curRSI, currentPrice);
   return {
-    bullAdvocate: { name: 'ARES // Bull Vanguard', stance: 'BULLISH', arguments: bullArguments },
-    bearSkeptic: { name: 'HADES // Bear Skeptic', stance: 'BEARISH_CRITIC', arguments: bearCounterArguments },
-    whaleSpecialist: { name: 'LEVIATHAN // Whale Flow', verdict: whaleVerdict, description: whaleDesc },
-    debateOutcome: isDebateUnanimous ? 'UNANIMOUS BULL CONVICTION' : isBullPrevails ? 'MODERATE BULL MAJORITY' : 'CONTESTED / HIGH SKEPTICISM',
-    debateColor: isDebateUnanimous ? '#00ff88' : isBullPrevails ? '#00e5ff' : '#ffaa00'
+    method: result.method,
+    independentAgents: false,
+    bullAdvocate: { name: 'BULLISH FACTOR RULES', stance: 'BULLISH_FACTORS', arguments: result.bullishFactors },
+    bearSkeptic: { name: 'RISK FACTOR RULES', stance: 'RISK_FACTORS', arguments: result.riskFactors },
+    whaleSpecialist: { name: 'ORDER-BOOK INPUT CHECK', ...result.orderBook },
+    debateOutcome: result.outcome,
+    debateColor: result.outcomeColor,
+    deprecated: true
   };
 }
 
@@ -715,12 +471,12 @@ export function extractGoldenRulesFromJournal(journal = []) {
   return baseRules.slice(0, 6);
 }
 
-export function generateAISignal(candles = [], asset = null, patterns = [], activeNews = null, strategyWeights = null, spreadInfo = null, mt5Data = null, riskAppetite = 'balanced') {
+export function generateAISignal(candles = [], asset = null, patterns = [], activeNews = null, strategyWeights = null, spreadInfo = null, mt5Data = null, riskAppetite = 'balanced', decisionTime = Date.now()) {
   if (!candles || candles.length < 20) {
     return {
       action: 'CALCULATING...',
       badgeClass: 'signal-calc',
-      confidence: 50,
+      ruleScore: 50,
       entry: asset ? asset.basePrice : 0,
       tp1: asset ? asset.basePrice * 1.01 : 0,
       tp2: asset ? asset.basePrice * 1.02 : 0,
@@ -776,90 +532,81 @@ export function generateAISignal(candles = [], asset = null, patterns = [], acti
     score += p.weight;
   });
 
-  // 6. Real-Time News Sentiment Factor
+  // 6. Only verified, fresh, timestamped news may affect a decision.
+  const decisionNewsPolicy = resolveDecisionNews(activeNews, { decisionTime });
+  const decisionNews = decisionNewsPolicy.news;
   let newsImpactText = '';
-  if (activeNews && typeof activeNews.sentimentScore === 'number') {
-    score += activeNews.sentimentScore;
-    newsImpactText = `\n\n📰 [ปัจจัยข่าวกระทบสด]: ข่าว "${activeNews.headline}" (${activeNews.sentiment === 'BULLISH' ? 'ปัจจัยบวก 🟢' : 'ปัจจัยลบ/ความเสี่ยง 🔴'}) มีอิทธิพลต่อความเชื่อมั่นของตลาดในขณะนี้`;
+  if (decisionNews) {
+    score += decisionNews.sentimentScore;
+    newsImpactText = `\n\n📰 [VERIFIED NEWS INPUT]: ข่าว "${decisionNews.headline}" (${decisionNews.sentiment}) ถูกนำมาถ่วงน้ำหนักตามเวลาที่ตรวจสอบแล้ว`;
+  } else if (activeNews) {
+    newsImpactText = `\n\n🧪 [DISPLAY-ONLY NEWS SCENARIO]: ข่าวจำลอง/ข่าวที่ไม่ผ่านการยืนยันมีน้ำหนักต่อสัญญาณเป็นศูนย์`;
   }
 
-  // 7. Infinite Knowledge Matrix & Experience Replay Feedback Loop
+  // 7. Only validated out-of-sample strategy memory may affect a decision.
   let appliedMemoryInsight = null;
+  let decisionMemoryPolicy = Object.freeze({
+    accepted: false,
+    reason: 'NO_MATCHING_PATTERN',
+    observations: 0,
+    scoreAdjustment: 0
+  });
   const weights = strategyWeights || DEFAULT_STRATEGY_WEIGHTS;
   if (patterns.length > 0 && weights) {
     for (const pat of patterns) {
       const matchKey = Object.keys(weights).find(k => pat.name.toLowerCase().includes(k.toLowerCase()) || k.toLowerCase().includes(pat.name.toLowerCase()));
       if (matchKey) {
         const exp = weights[matchKey];
-        const isHighConviction = exp.winRate >= 75;
-        const isLowConviction = exp.winRate < 50;
-
-        const boost = (exp.winRate - 50) * 0.4;
-        if (score >= 0) {
-          score += boost;
-        } else {
-          score -= boost;
+        decisionMemoryPolicy = resolveDecisionStrategyMemory(exp, { decisionTime });
+        if (decisionMemoryPolicy.accepted) {
+          const boost = decisionMemoryPolicy.scoreAdjustment;
+          score += score >= 0 ? boost : -boost;
+          const isHighConviction = decisionMemoryPolicy.winRate >= 75;
+          const isLowConviction = decisionMemoryPolicy.winRate < 50;
+          appliedMemoryInsight = {
+            setupName: matchKey,
+            winRate: decisionMemoryPolicy.winRate,
+            observations: decisionMemoryPolicy.observations,
+            scoreAdjustment: boost,
+            isHighConviction,
+            isLowConviction,
+            badgeText: `VALIDATED MEMORY (${decisionMemoryPolicy.observations} OOS)`,
+            text: `สถิติ Walk-forward นอกชุดฝึกของ "${matchKey}" ผ่านนโยบายแล้ว: ${decisionMemoryPolicy.winRate}% จาก ${decisionMemoryPolicy.observations} ตัวอย่าง • ปรับ Rule Score ${boost >= 0 ? '+' : ''}${boost}`
+          };
         }
-
-        appliedMemoryInsight = {
-          setupName: matchKey,
-          winRate: exp.winRate,
-          weightMultiplier: exp.weightMultiplier,
-          lastLesson: exp.lastLesson,
-          isHighConviction,
-          isLowConviction,
-          badgeText: isHighConviction ? `🔥 HIGH CONVICTION (${exp.winRate}%)` : isLowConviction ? `⚠️ CAUTION PENALTY (${exp.winRate}%)` : `STABLE (${exp.winRate}%)`,
-          text: isHighConviction
-            ? `ดึงความจำสถิติอดีต: รูปแบบ "${matchKey}" มี Win Rate สูงถึง ${exp.winRate}% (ปรับเพิ่มน้ำหนักความมั่นใจ x${exp.weightMultiplier}) • บทเรียน: ${exp.lastLesson}`
-            : isLowConviction
-            ? `ดึงบทเรียนเตือนภัย: รูปแบบ "${matchKey}" มีประวัติแพ้บ่อย (Win Rate ${exp.winRate}%) • สั่งลดคะแนนความเสี่ยงลง • บทเรียน: ${exp.lastLesson}`
-            : `ประมวลผลความจำ: รูปแบบ "${matchKey}" มีสถิติ ${exp.winRate}% • บทเรียน: ${exp.lastLesson}`
-        };
         break;
       }
     }
   }
 
-  // 7.5 MT5 Ingested DOM Depth & Tick Velocity Boost
-  let mt5Intel = null;
-  if (mt5Data) {
-    let mt5Boost = 0;
-    if (mt5Data.dom_depth && mt5Data.dom_depth.whale_walls && mt5Data.dom_depth.whale_walls.length > 0) {
-      const wall = mt5Data.dom_depth.whale_walls[0];
-      if (wall.price <= currentPrice && score >= 0) {
-        mt5Boost += 12; // Institutional Bid Support Wall
-      } else if (wall.price >= currentPrice && score <= 0) {
-        mt5Boost -= 12; // Institutional Ask Resistance Wall
-      }
-    }
-    if (mt5Data.tick_metrics && mt5Data.tick_metrics.volume_absorption === 'WHALE_ACCUMULATION') {
-      mt5Boost += 10;
-    }
-    score += mt5Boost;
-
-    mt5Intel = {
-      connected: mt5Data.mt5_connected,
-      status: mt5Data.status,
-      whaleWall: mt5Data.dom_depth?.whale_walls?.[0] ? `$${mt5Data.dom_depth.whale_walls[0].price} (${mt5Data.dom_depth.whale_walls[0].volume_lots} Lots)` : 'Scanning Depth...',
-      tickVelocity: `${mt5Data.tick_metrics?.tick_velocity || 15} ticks/s`,
-      macroScore: `${mt5Data.mtf_alignment?.macro_confluence_score || 85}%`
-    };
-  }
+  // 7.5 Authenticated MT5 Demo packets remain shadow-only until separately certified.
+  const validatedMT5Shadow = mt5Data?.validation?.accepted === true && mt5Data?.mode === 'DEMO' ? mt5Data : null;
+  const decisionMT5Data = validatedMT5Shadow?.validation?.decisionEligible === true ? validatedMT5Shadow : null;
+  const mt5Intel = validatedMT5Shadow ? {
+    connected: true,
+    status: validatedMT5Shadow.status,
+    mode: 'DEMO_SHADOW',
+    symbol: validatedMT5Shadow.symbol,
+    bid: validatedMT5Shadow.quote.bid,
+    ask: validatedMT5Shadow.quote.ask,
+    decisionInfluence: false
+  } : null;
 
   // 8. Dynamic Market Regime Detection
-  const regime = detectMarketRegime(candles, activeNews, spreadInfo);
+  const regime = detectMarketRegime(candles, decisionNews, spreadInfo);
 
-  // 9. Adversarial Debate Resolution
-  const debate = evaluateAdversarialDebate(patterns, regime, mt5Data?.dom_depth, curRSI, currentPrice);
+  // 9. Deterministic bullish-vs-risk rule countercheck (not independent agents).
+  const countercheckCore = evaluateRuleCountercheckCore(patterns, regime, decisionMT5Data?.dom_depth, curRSI, currentPrice);
+  const debate = evaluateAdversarialDebate(patterns, regime, decisionMT5Data?.dom_depth, curRSI, currentPrice);
 
-  // 10. Multi-Agent Quant Desk Consensus Engine (4 Specialized Agents)
+  // 10. Four deterministic analysis modules.
   const smcVote = score >= 35 ? 'BUY 🟢' : score <= -35 ? 'SELL 🔴' : 'HOLD 🟡';
   const smcHighlight = patterns.length > 0 ? patterns[0].name : (curEMA20 > curEMA50 ? 'EMA Ribbon Uptrend' : 'EMA Downtrend');
   const smcConfidence = Math.min(99, Math.round(50 + Math.abs(score) / 2));
 
-  const newsScore = activeNews?.sentimentScore || 0;
+  const newsScore = decisionNews?.sentimentScore || 0;
   const macroVote = newsScore > 5 ? 'BULLISH 🟢' : newsScore < -5 ? 'BEARISH 🔴' : 'NEUTRAL 🟡';
-  const macroHeadline = activeNews?.headline || 'Stable Global Macro Orderflow';
+  const macroHeadline = decisionNews?.headline || 'NO VERIFIED NEWS INPUT';
 
   const isSpreadWidened = spreadInfo ? spreadInfo.isWidened : false;
   const isVetoed = isSpreadWidened && (Math.abs(score) < 60);
@@ -870,15 +617,15 @@ export function generateAISignal(candles = [], asset = null, patterns = [], acti
   let action = 'NEUTRAL / HOLD';
   let badgeClass = 'signal-hold';
   let isExplorationProbe = false;
-  let consensusType = 'MAJORITY 3/4';
+  let consensusType = '3/4 RULE ALIGNMENT';
 
   if (isVetoed) {
     action = 'RISK VETOED / HOLD';
     badgeClass = 'signal-veto';
     consensusType = 'CRO VETO OVERRIDE ❌';
   } else if (score >= 45 || (riskAppetite === 'alpha_hunter' && score >= 28)) {
-    const isUnanimous = macroVote.includes('BULLISH') && debate.debateOutcome.includes('UNANIMOUS');
-    consensusType = isUnanimous ? 'UNANIMOUS 4/4 🌟' : 'MAJORITY 3/4';
+    const isUnanimous = macroVote.includes('BULLISH') && countercheckCore.outcome === 'BULL RULES ALIGNED';
+    consensusType = isUnanimous ? '4/4 RULE ALIGNMENT 🌟' : '3/4 RULE ALIGNMENT';
     if (score < 45 && riskAppetite === 'alpha_hunter') {
       isExplorationProbe = true;
       action = 'ALPHA PROBE BUY (🧪)';
@@ -889,7 +636,7 @@ export function generateAISignal(candles = [], asset = null, patterns = [], acti
     }
   } else if (score <= -45 || (riskAppetite === 'alpha_hunter' && score <= -28)) {
     const isUnanimous = macroVote.includes('BEARISH');
-    consensusType = isUnanimous ? 'UNANIMOUS 4/4 🌟' : 'MAJORITY 3/4';
+    consensusType = isUnanimous ? '4/4 RULE ALIGNMENT 🌟' : '3/4 RULE ALIGNMENT';
     if (score > -45 && riskAppetite === 'alpha_hunter') {
       isExplorationProbe = true;
       action = 'ALPHA PROBE SELL (🧪)';
@@ -900,22 +647,22 @@ export function generateAISignal(candles = [], asset = null, patterns = [], acti
     }
   }
 
-  // Multi-Agent Desk Summary (4 Specialized Named Quant Agents)
+  // Deterministic desk summary (four named rule modules; no independent AI agents)
   const quantDesk = {
     consensusType,
     isVetoed,
     agents: [
-      { id: 'smc', name: '🏹 ORION (SMC Tech Quant)', role: 'Price Action & SMC', vote: smcVote, detail: smcHighlight, confidence: `${smcConfidence}%` },
-      { id: 'macro', name: '⚡ HERMES (Macro Intel)', role: 'Global Sentiment & News', vote: macroVote, detail: macroHeadline.slice(0, 38) + '...', confidence: `${Math.abs(newsScore)} pts` },
-      { id: 'cro', name: '🛡️ AEGIS (Chief Risk Officer)', role: 'Spread & Capital Defense', vote: croVote, detail: croReason, isSafe: !isVetoed },
-      { id: 'whale', name: '🐋 LEVIATHAN (Whale Orderflow)', role: 'L2 DOM Depth & Iceberg', vote: debate.whaleSpecialist.verdict, detail: debate.whaleSpecialist.description, isSafe: true }
+      { id: 'smc', name: '🏹 PRICE-ACTION RULE', role: 'Price Action & SMC', vote: smcVote, detail: smcHighlight, confidence: `${smcConfidence}% rule score` },
+      { id: 'macro', name: '⚡ MACRO SCENARIO RULE', role: 'Scenario Sentiment', vote: macroVote, detail: macroHeadline.slice(0, 38) + '...', confidence: `${Math.abs(newsScore)} pts` },
+      { id: 'cro', name: '🛡️ RISK GATE', role: 'Spread & Capital Defense', vote: croVote, detail: croReason, isSafe: !isVetoed },
+      { id: 'whale', name: '🐋 ORDER-BOOK INPUT CHECK', role: 'External Depth Packet', vote: countercheckCore.orderBook.verdict, detail: countercheckCore.orderBook.description, isSafe: countercheckCore.orderBook.source !== 'UNVERIFIED_EXTERNAL_PACKET' }
     ]
   };
 
-  // Chain-of-Thought (CoT) Visual Reasoning Tree Nodes
+  // Auditable decision-factor nodes
   const cotNodes = [
     { step: 1, title: '1. MARKET REGIME', desc: `${regime.label} (${regime.desc})`, status: regime.badgeClass, isPass: true },
-    { step: 2, title: '2. ADVERSARIAL DEBATE', desc: `${debate.debateOutcome} • Bull (${debate.bullAdvocate.arguments.length}) vs Bear (${debate.bearSkeptic.arguments.length})`, status: debate.debateOutcome, isPass: true },
+    { step: 2, title: '2. RULE COUNTERCHECK', desc: `${countercheckCore.outcome} • Bullish (${countercheckCore.bullishFactors.length}) vs Risk (${countercheckCore.riskFactors.length})`, status: countercheckCore.outcome, isPass: true },
     { step: 3, title: '3. SMC & ORDERFLOW', desc: patterns.length > 0 ? patterns[0].name : 'Price Action Structure', status: patterns.length > 0 ? 'CONFIRMED 🟢' : 'NEUTRAL', isPass: patterns.length > 0 },
     { step: 4, title: '4. SPREAD & RISK CLEARANCE', desc: croReason, status: isVetoed ? 'VETOED ❌' : 'CLEARED ✅', isPass: !isVetoed },
     { step: 5, title: '5. FINAL DECISION', desc: `Consensus: ${action} (${consensusType})`, status: action, isPass: !isVetoed }
@@ -934,8 +681,8 @@ export function generateAISignal(candles = [], asset = null, patterns = [], acti
   const rewardAmount = Math.abs(tp1 - entry);
   const rrRatio = (rewardAmount / (riskAmount || 1)).toFixed(2);
 
-  // Monte Carlo Probability Estimator
-  const monteCarlo = calculateMonteCarloProbability(entry, tp1, sl, regime, curRSI);
+  // Deterministic, uncalibrated rule-alignment score (not a probability).
+  const targetScore = calculateTargetScore(entry, tp1, sl, regime, curRSI);
 
   // Confluence Factors Checklist
   const factors = [
@@ -951,14 +698,14 @@ export function generateAISignal(candles = [], asset = null, patterns = [], acti
     antiFomoWarning: Math.abs(currentPrice - curEMA20) / currentPrice > 0.006 ? '⚠️ ราคาอยู่ห่างจากเส้น EMA20 มากเกินไป ห้ามไล่ราคาเด็ดขาด!' : '✅ ระยะห่างจากแนวรับอยู่ในเกณฑ์ปลอดภัย'
   };
 
-  // Thai AI Rationale Breakdown
+  // Thai deterministic rationale breakdown
   let rationale = '';
   if (isVetoed) {
     rationale = `⚠️ [CRO RISK VETO]: หัวหน้าฝ่ายบริหารความเสี่ยง (CRO) สั่งระงับการเข้าเปิดสถานะชั่วคราว เนื่องจากค่า Spread ของโบรกเกอร์เกิดการถ่างออกผิดปกติ (High Volatility Spurt) แนะนำรอให้สเปรดบีบตัวกลับสู่ระดับปกติก่อนเข้าออเดอร์`;
   } else {
-    rationale = `สภา AI ประเมินมติ ${consensusType} สภาวะตลาดอยู่ในช่วง "${regime.label}" ` +
+    rationale = `ชุดกฎวิเคราะห์ประเมินมติ ${consensusType} สภาวะตลาดอยู่ในช่วง "${regime.label}" ` +
       `ฝ่ายเทคนิคพบสัญญาณ ${smcHighlight} สอดคล้องกับค่า RSI (${curRSI.toFixed(1)}) ` +
-      `โอกาสแตะ TP1 ตามแบบจำลอง Monte Carlo อยู่ที่ ${monteCarlo.tpProbabilityPercent}% ` +
+      `คะแนนความสอดคล้องของกฎสำหรับ TP1 อยู่ที่ ${targetScore.scorePercent}% (ยังไม่ใช่ค่าความน่าจะเป็นที่ผ่านการสอบเทียบ) ` +
       (isExplorationProbe ? `[🧪 ALPHA PROBE EXPLORATION]: ส่งไม้หยั่งเชิงขนาดเล็กเพื่อสำรวจโครงสร้างราคาใหม่และเก็บเกี่ยวข้อมูลการเรียนรู้` : `[🎯 HIGH CONVICTION]: อัตราส่วน Risk/Reward คุ้มค่าที่ 1:${rrRatio}`) +
       newsImpactText;
   }
@@ -966,7 +713,7 @@ export function generateAISignal(candles = [], asset = null, patterns = [], acti
   return {
     action,
     badgeClass,
-    confidence: Math.min(99, Math.round(50 + Math.abs(score) / 2)),
+    ruleScore: Math.min(99, Math.round(50 + Math.abs(score) / 2)),
     entry,
     tp1,
     tp2,
@@ -975,8 +722,20 @@ export function generateAISignal(candles = [], asset = null, patterns = [], acti
     rrRatio: `1:${rrRatio}`,
     rationale,
     activeNews,
+    decisionNewsPolicy: Object.freeze({ accepted: decisionNewsPolicy.accepted, reason: decisionNewsPolicy.reason }),
+    decisionMemoryPolicy,
     regime,
-    monteCarlo,
+    targetScore,
+    // Temporary compatibility field for older callers. New UI must use targetScore.
+    monteCarlo: {
+      tpProbabilityPercent: targetScore.scorePercent,
+      slRiskPercent: targetScore.cautionScorePercent,
+      confidenceRating: targetScore.rating,
+      method: targetScore.method,
+      calibrated: false,
+      deprecated: true
+    },
+    ruleCountercheck: countercheckCore,
     adversarialDebate: debate,
     optimalTiming,
     isExplorationProbe,
@@ -996,6 +755,9 @@ export class AITradingEngine {
     this.app = options.app || null;
     this.sound = options.sound || null;
     this.toasts = options.toasts || null;
+    this.capabilities = resolveRuntimeCapabilities(options.capabilities);
+    this.liveTradingEnabled = this.capabilities.liveTradingEnabled === true;
+    this.lastLiveError = null;
 
     // DOM Elements
     this.canvas = options.canvas || null;
@@ -1010,9 +772,11 @@ export class AITradingEngine {
     this.patterns = [];
     this.signal = null;
     this.isRealFeed = false;
+    this.marketPacket = null;
+    this.lastDataSourceStateKey = null;
 
     // Real-Time News Stream
-    this.newsList = [...LIVE_MARKET_NEWS_FEED];
+    this.newsList = LIVE_MARKET_NEWS_FEED.map(item => ({ ...item, provenance: 'SIMULATED_SCENARIO' }));
     this.newsIndex = 0;
     this.activeNews = this.newsList[0];
     this.newsInterval = null;
@@ -1035,26 +799,21 @@ export class AITradingEngine {
     // Paper Trading Positions (Manual Operator)
     this.positions = [];
     this.tradeHistory = [];
+    this.executionAudit = [];
+    this.paperAuditSequence = 0;
     this.paperBalanceUSD = 100000.00; // $100,000 Paper Capital
     this.leverage = 10;
+    this.paperRiskConfig = Object.freeze({ maxPositions: 3, maxUsedMarginPercent: 50, minimumRiskReward: 1.5 });
 
     // AI Continuous Learning Gym & Auto-Trader Sandbox
-    this.isAutoTrading = true;
+    this.isAutoTrading = false;
     this.aiPositions = [];
     this.aiJournal = [];
-    this.aiStats = {
-      totalTrades: 18,
-      wins: 14,
-      losses: 4,
-      winRate: 77.8,
-      netPnlUSD: 8420.50,
-      samplesStudied: 3420,
-      adaptationLevel: 5
-    };
+    this.aiStats = createZeroPaperGymStats();
 
     // Live Global Knowledge Stream & Real-Time Internet Ingestion
-    this.knowledgeFeed = [...LIVE_INTERNET_KNOWLEDGE_FEED];
-    this.knowledgeLogs = [...LIVE_INTERNET_KNOWLEDGE_FEED];
+    this.knowledgeFeed = LIVE_INTERNET_KNOWLEDGE_FEED.map(item => ({ ...item, provenance: 'SIMULATED_REFERENCE' }));
+    this.knowledgeLogs = this.knowledgeFeed.map(item => ({ ...item }));
     this.knowledgeIndex = 0;
     this.knowledgeStreamInterval = null;
 
@@ -1076,12 +835,23 @@ export class AITradingEngine {
     // Live MT5 / XM Execution Gateway & Risk Guardian Shield
     this.isLiveExecutionActive = false;
     this.liveGuardianConfig = { targetProfitUSD: 500, maxDrawdownUSD: 150, maxPositions: 2, magicNumber: 99001 };
-    this.liveAccountState = { connected: false, balance: 50000, equity: 50000, dailyProfit: 0, dailyDrawdown: 0, positions: [] };
+    this.liveAccountState = { connected: false, mode: 'DISABLED', balance: null, equity: null, dailyProfit: null, dailyDrawdown: null, positions: [] };
     this.livePollingInterval = null;
+    this.mt5Data = null;
+    this.mt5Status = { status: 'DISCONNECTED', mt5_connected: false, decisionInfluence: false };
+    this.lastMT5SessionId = null;
+    this.lastMT5Sequence = 0;
+    this.mt5StreamGeneration = 0;
+    this.lastReconciledMT5Packet = null;
+    this.mt5Reconciliation = null;
+    this.mlShadowModel = null;
+    this.mlShadowReport = null;
+    this.mlShadowPrediction = null;
 
     // Callbacks
     this.onSignalUpdate = options.onSignalUpdate || null;
-    this.onPositionsUpdate = options.onPositionsUpdate || null;
+    this.onPositionUpdate = options.onPositionUpdate || options.onPositionsUpdate || null;
+    this.onPositionsUpdate = this.onPositionUpdate;
     this.onAIStatsUpdate = options.onAIStatsUpdate || null;
     this.onAIJournalUpdate = options.onAIJournalUpdate || null;
     this.onAIProfileUpdate = options.onAIProfileUpdate || null;
@@ -1089,15 +859,12 @@ export class AITradingEngine {
     this.onMoneyManagementUpdate = options.onMoneyManagementUpdate || null;
     this.onReplayUpdate = options.onReplayUpdate || null;
     this.onMT5DataUpdate = options.onMT5DataUpdate || null;
+    this.onDataSourceUpdate = options.onDataSourceUpdate || null;
     this.onLiveExecutionUpdate = options.onLiveExecutionUpdate || null;
+    this.onMLShadowUpdate = options.onMLShadowUpdate || null;
 
-    // Load persisted training memory from storage or seed baseline
-    if (!this.loadGymState()) {
-      this.seedInitialAIJournal();
-    }
-
-    // Start background MT5 ingestion stream immediately
-    this.startMT5BackgroundStream();
+    // Load only persisted operator data. New profiles start at a truthful zero baseline.
+    this.loadGymState();
 
     // Auto-save on Alt+F4 or sudden tab closure
     if (typeof window !== 'undefined' && window.addEventListener) {
@@ -1112,14 +879,20 @@ export class AITradingEngine {
   }
 
   startLiveAutoExecution(config = {}) {
-    this.isLiveExecutionActive = true;
-    if (config.targetProfitUSD) this.liveGuardianConfig.targetProfitUSD = Number(config.targetProfitUSD);
-    if (config.maxDrawdownUSD) this.liveGuardianConfig.maxDrawdownUSD = Number(config.maxDrawdownUSD);
-    if (config.maxPositions) this.liveGuardianConfig.maxPositions = Number(config.maxPositions);
-    this.startLiveAccountPolling();
+    this.isLiveExecutionActive = false;
+    this.lastLiveError = this.liveTradingEnabled
+      ? 'LIVE_EXECUTION_COMPONENT_NOT_INSTALLED'
+      : 'LIVE_TRADING_DISABLED_PAPER_ONLY';
     if (this.onLiveExecutionUpdate) {
-      this.onLiveExecutionUpdate({ active: true, config: this.liveGuardianConfig, state: this.liveAccountState });
+      this.onLiveExecutionUpdate({
+        active: false,
+        mode: 'PAPER_ONLY',
+        error: this.lastLiveError,
+        config: this.liveGuardianConfig,
+        state: this.liveAccountState
+      });
     }
+    return { success: false, reason: this.lastLiveError };
   }
 
   pauseLiveAutoExecution() {
@@ -1132,146 +905,128 @@ export class AITradingEngine {
 
   async emergencyKillAll() {
     this.pauseLiveAutoExecution();
-    try {
-      if (typeof fetch !== 'undefined') {
-        const res = await fetch('http://127.0.0.1:5056/api/live/kill_all', { method: 'POST', signal: AbortSignal.timeout(2000) });
-        if (res.ok) {
-          const data = await res.json();
-          this.liveAccountState.positions = [];
-          if (this.onLiveExecutionUpdate) {
-            this.onLiveExecutionUpdate({ active: false, config: this.liveGuardianConfig, state: this.liveAccountState, emergency: true });
-          }
-          return data;
-        }
-      }
-    } catch (e) {}
-
-    // Fallback Sandbox kill
-    this.liveAccountState.positions = [];
+    this.lastLiveError = this.liveTradingEnabled
+      ? 'LIVE_EXECUTION_COMPONENT_NOT_INSTALLED'
+      : 'LIVE_TRADING_DISABLED_PAPER_ONLY';
     if (this.onLiveExecutionUpdate) {
-      this.onLiveExecutionUpdate({ active: false, config: this.liveGuardianConfig, state: this.liveAccountState, emergency: true });
+      this.onLiveExecutionUpdate({
+        active: false,
+        config: this.liveGuardianConfig,
+        state: this.liveAccountState,
+        emergency: true,
+        verified: false,
+        error: this.lastLiveError
+      });
     }
-    return { success: true, closed_positions: 0 };
+    return { success: false, closed_positions: 0, reason: this.lastLiveError };
   }
 
   startLiveAccountPolling() {
     if (this.livePollingInterval) clearInterval(this.livePollingInterval);
-    const poll = async () => {
-      try {
-        if (typeof fetch !== 'undefined') {
-          const res = await fetch('http://127.0.0.1:5056/api/live/account', { signal: AbortSignal.timeout(1500) });
-          if (res.ok) {
-            const data = await res.json();
-            this.liveAccountState = { ...this.liveAccountState, ...data };
-            if (this.onLiveExecutionUpdate) {
-              this.onLiveExecutionUpdate({ active: this.isLiveExecutionActive, config: this.liveGuardianConfig, state: this.liveAccountState });
-            }
-          }
-        }
-      } catch (e) {}
-    };
-    poll();
-    this.livePollingInterval = setInterval(poll, 2500);
+    this.livePollingInterval = null;
+    return false;
   }
 
   async executeLiveOrder(action = 'BUY', lots = 0.1, sl = 0, tp = 0) {
-    if (!this.isLiveExecutionActive) return { success: false, reason: 'Live execution paused' };
-    if (this.liveAccountState.positions.length >= this.liveGuardianConfig.maxPositions) {
-      return { success: false, reason: 'Max simultaneous positions reached' };
-    }
-    if (this.liveAccountState.dailyProfit >= this.liveGuardianConfig.targetProfitUSD) {
-      this.pauseLiveAutoExecution();
-      return { success: false, reason: 'Target profit reached! AI locked profits.' };
-    }
-    if (this.liveAccountState.dailyDrawdown >= this.liveGuardianConfig.maxDrawdownUSD) {
-      this.emergencyKillAll();
-      return { success: false, reason: 'Max drawdown floor hit! Kill switch activated.' };
-    }
-
-    try {
-      if (typeof fetch !== 'undefined') {
-        const res = await fetch('http://127.0.0.1:5056/api/live/order', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            symbol: this.activeAsset.id.replace('/', ''),
-            action,
-            lot: lots,
-            sl,
-            tp,
-            magic: this.liveGuardianConfig.magicNumber
-          }),
-          signal: AbortSignal.timeout(2500)
-        });
-        if (res.ok) {
-          const data = await res.json();
-          this.startLiveAccountPolling();
-          return data;
-        }
-      }
-    } catch (e) {}
-
-    // Fallback Virtual Order
-    const fakeTicket = Math.floor(1000000 + Math.random() * 9000000);
-    this.liveAccountState.positions.push({
-      ticket: fakeTicket,
-      symbol: this.activeAsset.id,
-      type: action,
-      volume: lots,
-      price_open: this.candles.length > 0 ? this.candles[this.candles.length - 1].close : this.activeAsset.basePrice,
-      sl,
-      tp,
-      profit: 0.00
-    });
-    if (this.onLiveExecutionUpdate) {
-      this.onLiveExecutionUpdate({ active: this.isLiveExecutionActive, config: this.liveGuardianConfig, state: this.liveAccountState });
-    }
-    return { success: true, ticket: fakeTicket, message: 'Order executed in Sandbox Gateway' };
+    this.lastLiveError = this.liveTradingEnabled
+      ? 'LIVE_EXECUTION_COMPONENT_NOT_INSTALLED'
+      : 'LIVE_TRADING_DISABLED_PAPER_ONLY';
+    return { success: false, reason: this.lastLiveError };
   }
 
   startMT5BackgroundStream() {
     if (this.mt5PollingInterval) clearInterval(this.mt5PollingInterval);
+    this.mt5PollingInterval = null;
+    const streamGeneration = (Number(this.mt5StreamGeneration) || 0) + 1;
+    this.mt5StreamGeneration = streamGeneration;
+    this.lastMT5SessionId = null;
+    this.lastMT5Sequence = 0;
+    this.lastReconciledMT5Packet = null;
+    this.mt5Reconciliation = null;
 
-    // Immediate high-fidelity fallback baseline
-    this.mt5Data = {
-      status: 'STANDALONE_FALLBACK',
-      mt5_connected: false,
-      dom_depth: {
-        whale_walls: [{ price: Number((this.activeAsset.basePrice * 0.998).toFixed(2)), volume_lots: 280 }]
-      },
-      tick_metrics: {
-        tick_velocity: 16.2,
-        volume_absorption: 'WHALE_ACCUMULATION'
-      },
-      mtf_alignment: {
-        h4_trend: 'BULLISH',
-        d1_trend: 'BULLISH',
-        macro_confluence_score: 88
-      }
-    };
+    const trustedSnapshot = typeof window !== 'undefined'
+      ? window.cyberSystemAPI?.getMT5DemoSnapshot
+      : null;
+    if (typeof trustedSnapshot !== 'function') {
+      this.mt5Data = null;
+      this.mt5Status = { status: 'DEMO_GATEWAY_DISABLED', mt5_connected: false, decisionInfluence: false };
+      if (this.onMT5DataUpdate) this.onMT5DataUpdate(this.mt5Status);
+      return false;
+    }
+
+    // The renderer never receives the bearer token. Electron main authenticates
+    // the read-only observer, then this layer validates freshness/schema/account.
+    this.mt5Data = null;
+    this.mt5Status = { status: 'DISCONNECTED', mt5_connected: false, decisionInfluence: false };
 
     const fetchMT5Stream = async () => {
       try {
-        if (typeof fetch !== 'undefined') {
-          const res = await fetch('http://127.0.0.1:5055/api/mt5/stream', { signal: AbortSignal.timeout(1500) });
-          if (res.ok) {
-            const data = await res.json();
-            this.mt5Data = data;
-            if (this.onMT5DataUpdate) this.onMT5DataUpdate(this.mt5Data);
-            return;
-          }
+        const response = await trustedSnapshot();
+        if (streamGeneration !== this.mt5StreamGeneration) return false;
+        if (!response?.success) {
+          const isDisabled = response?.error === 'MT5_DEMO_GATEWAY_DISABLED';
+          this.mt5Data = null;
+          this.mt5Status = {
+            status: isDisabled ? 'DEMO_GATEWAY_DISABLED' : 'DISCONNECTED',
+            mt5_connected: false,
+            decisionInfluence: false,
+            reason: response?.error || 'MT5_DEMO_GATEWAY_UNAVAILABLE'
+          };
+          if (this.onMT5DataUpdate) this.onMT5DataUpdate(this.mt5Status);
+          return !isDisabled;
         }
+
+        const validation = validateMT5DemoPacket(response.packet, {
+          now: Date.now(),
+          lastSequence: this.lastMT5Sequence,
+          expectedSessionId: this.lastMT5SessionId,
+          transportAuthenticated: response.transportAuthenticated === true
+        });
+        const reconciliation = validation.accepted
+          ? reconcileMT5DemoAccount(this.lastReconciledMT5Packet, validation.packet, {
+              expectedMagic: this.liveGuardianConfig.magicNumber,
+              expectedOpenTickets: []
+            })
+          : null;
+        if (validation.accepted && reconciliation.reconciled) {
+          this.mt5Data = validation.packet;
+          this.lastMT5SessionId = validation.packet.sessionId;
+          this.lastMT5Sequence = validation.packet.sequence;
+          this.lastReconciledMT5Packet = validation.packet;
+          this.mt5Reconciliation = reconciliation;
+          this.mt5Status = validation.packet;
+        } else {
+          this.mt5Data = null;
+          this.mt5Reconciliation = reconciliation;
+          this.mt5Status = {
+            status: validation.accepted ? 'REJECTED_RECONCILIATION_FAILED' : 'REJECTED_UNTRUSTED_MT5_PACKET',
+            mt5_connected: false,
+            decisionInfluence: false,
+            reason: validation.accepted ? reconciliation.reasons.join('|') : validation.reason
+          };
+        }
+        if (this.onMT5DataUpdate) this.onMT5DataUpdate(this.mt5Status);
+        return true;
       } catch (e) {
-        // Fallback simulation when bridge is not running
+        if (streamGeneration !== this.mt5StreamGeneration) return false;
+        this.mt5Data = null;
+        this.mt5Status = { status: 'DISCONNECTED', mt5_connected: false, decisionInfluence: false };
+        if (this.onMT5DataUpdate) this.onMT5DataUpdate(this.mt5Status);
+        return true;
       }
     };
 
-    fetchMT5Stream();
-    this.mt5PollingInterval = setInterval(fetchMT5Stream, 3000);
+    fetchMT5Stream().then(shouldContinue => {
+      if (shouldContinue && streamGeneration === this.mt5StreamGeneration && !this.mt5PollingInterval) {
+        this.mt5PollingInterval = setInterval(fetchMT5Stream, 3000);
+      }
+    });
+    return true;
   }
 
   saveGymState() {
     try {
+      const operatorUsername = this.getOperatorUsername();
       const samples = this.aiStats.samplesStudied || 0;
       this.aiStats.adaptationLevel = Math.min(10, Math.floor(samples / 700) + 1);
 
@@ -1280,6 +1035,14 @@ export class AITradingEngine {
         journal: this.aiJournal ? this.aiJournal.slice(0, 50) : [],
         weights: this.strategyWeights,
         paperBalanceUSD: this.paperBalanceUSD,
+        paperAccountModel: PAPER_ACCOUNT_MODEL,
+        positions: this.positions.slice(0, 50),
+        tradeHistory: this.tradeHistory.slice(0, 100),
+        executionAudit: this.executionAudit.slice(0, 250),
+        mlShadow: {
+          model: this.mlShadowModel,
+          report: this.mlShadowReport
+        },
         riskAppetite: this.riskAppetite,
         riskPercent: this.riskPercent,
         savedAt: new Date().toISOString()
@@ -1287,56 +1050,113 @@ export class AITradingEngine {
 
       // 1. Synchronous Web Storage Layer
       if (typeof localStorage !== 'undefined') {
-        localStorage.setItem('cyber_ai_trading_gym_state', JSON.stringify(state));
+        localStorage.setItem(this.getGymStorageKey(operatorUsername), JSON.stringify(state));
       }
 
       // 2. Real System Hard-Disk Storage (cyber_db.json via Electron IPC)
       if (profileStore && typeof profileStore.saveTradingGymState === 'function') {
-        profileStore.saveTradingGymState('Anan', state);
+        profileStore.saveTradingGymState(operatorUsername, state);
       }
     } catch (e) {}
+  }
+
+  getOperatorUsername() {
+    const username = String(this.app?.username || 'Anan').trim();
+    return username || 'Anan';
+  }
+
+  getGymStorageKey(username = this.getOperatorUsername()) {
+    return `cyber_ai_trading_gym_state:${encodeURIComponent(String(username).trim().toLowerCase())}`;
+  }
+
+  getMarketDecisionState(now = Date.now()) {
+    const packetDecision = evaluateMarketPacketDecisionEligibility(this.marketPacket, { now });
+    if (!this.isReplayMode) return packetDecision;
+    return Object.freeze({
+      ...packetDecision,
+      eligible: false,
+      reasons: Object.freeze([...new Set([...packetDecision.reasons, 'REPLAY_MODE_NO_EXECUTION'])])
+    });
+  }
+
+  getDecisionCandles() {
+    return Array.isArray(this.marketPacket?.decisionCandles)
+      ? this.marketPacket.decisionCandles
+      : [];
+  }
+
+  publishDataSourceState(now = Date.now()) {
+    const packetSummary = summarizeMarketPacket(this.marketPacket, { now });
+    const decision = this.getMarketDecisionState(now);
+    const state = Object.freeze({
+      ...packetSummary,
+      decisionEligible: decision.eligible,
+      decisionReasons: decision.reasons,
+      dataAgeMs: decision.dataAgeMs
+    });
+    const stateKey = JSON.stringify([
+      state.source,
+      state.quality,
+      state.decisionEligible,
+      state.decisionReasons,
+      state.closedBars,
+      state.formingBars
+    ]);
+    const changed = stateKey !== this.lastDataSourceStateKey;
+    this.lastDataSourceStateKey = stateKey;
+    if (changed && this.onDataSourceUpdate) this.onDataSourceUpdate(state);
+    return changed;
   }
 
   loadGymState() {
     try {
       let state = null;
+      const operatorUsername = this.getOperatorUsername();
+      const storageKey = this.getGymStorageKey(operatorUsername);
 
       // 1. Try loading from ProfileStore / Real Disk first
       if (profileStore && typeof profileStore.getTradingGymState === 'function') {
-        const diskState = profileStore.getTradingGymState('Anan');
-        if (diskState && diskState.stats && (diskState.stats.samplesStudied > 0 || (diskState.journal && diskState.journal.length > 0))) {
-          state = diskState;
-        }
+        const diskState = profileStore.getTradingGymState(operatorUsername);
+        if (diskState && typeof diskState === 'object') state = diskState;
       }
 
       // 2. Cross-reference with LocalStorage and pick the most advanced state
       if (typeof localStorage !== 'undefined') {
-        const raw = localStorage.getItem('cyber_ai_trading_gym_state');
-        if (raw) {
-          const localState = JSON.parse(raw);
-          if (localState && localState.stats) {
-            if (!state || (localState.stats.samplesStudied || 0) >= (state.stats?.samplesStudied || 0)) {
-              state = localState;
-            }
+        let raw = localStorage.getItem(storageKey);
+        if (!raw && operatorUsername.toLowerCase() === 'anan') {
+          raw = localStorage.getItem('cyber_ai_trading_gym_state');
+          if (raw) {
+            localStorage.setItem(storageKey, raw);
+            localStorage.removeItem('cyber_ai_trading_gym_state');
           }
         }
+        if (raw) {
+          const localState = JSON.parse(raw);
+          if (localState && localState.stats) state = selectLatestPaperState(state, localState);
+        }
       }
+
+      const legacyMigration = migrateLegacyDemoSeed(state);
+      state = legacyMigration.state;
 
       if (state && state.stats) {
         this.aiStats = { ...this.aiStats, ...state.stats };
         const samples = this.aiStats.samplesStudied || 0;
         this.aiStats.adaptationLevel = Math.min(10, Math.floor(samples / 700) + 1);
 
-        if (Array.isArray(state.journal) && state.journal.length > 0) {
-          this.aiJournal = state.journal;
-        } else {
-          this.seedInitialAIJournal();
-        }
+        this.aiJournal = Array.isArray(state.journal) ? state.journal : [];
         if (state.weights && typeof state.weights === 'object') {
           this.strategyWeights = { ...DEFAULT_STRATEGY_WEIGHTS, ...state.weights };
         }
         if (typeof state.paperBalanceUSD === 'number') {
           this.paperBalanceUSD = state.paperBalanceUSD;
+        }
+        if (state.paperAccountModel === PAPER_ACCOUNT_MODEL) {
+          this.positions = restorePaperPositions(state.positions, 50);
+          this.tradeHistory = restorePaperTradeHistory(state.tradeHistory, 100);
+          this.executionAudit = restorePaperExecutionAudit(state.executionAudit, 250);
+          this.mlShadowModel = restoreMLShadowModel(state.mlShadow?.model);
+          this.mlShadowReport = restoreMLShadowReport(state.mlShadow?.report);
         }
         if (state.riskAppetite) {
           this.riskAppetite = state.riskAppetite;
@@ -1344,6 +1164,7 @@ export class AITradingEngine {
         if (typeof state.riskPercent === 'number') {
           this.riskPercent = state.riskPercent;
         }
+        if (legacyMigration.migrated) this.saveGymState();
         return true;
       }
     } catch (e) {}
@@ -1351,7 +1172,7 @@ export class AITradingEngine {
   }
 
   setRiskPercent(risk) {
-    this.riskPercent = Number(risk) || 2;
+    this.riskPercent = normalizeRiskPercent(risk);
     this.saveGymState();
     if (this.onMoneyManagementUpdate) {
       this.onMoneyManagementUpdate(this.getMoneyManagementDetails());
@@ -1359,64 +1180,170 @@ export class AITradingEngine {
   }
 
   setAccountCapital(cap) {
-    this.paperBalanceUSD = Number(cap) || 100000;
+    const nextCapital = Number(cap);
+    if (this.positions.length > 0 || !Number.isFinite(nextCapital) || nextCapital <= 0) {
+      if (this.toasts) this.toasts.show('ERROR', 'CLOSE PAPER POSITIONS BEFORE RESETTING CAPITAL', 2500);
+      return false;
+    }
+    this.paperBalanceUSD = nextCapital;
     this.accountCapital = this.paperBalanceUSD;
+    this.saveGymState();
     if (this.onMoneyManagementUpdate) {
       this.onMoneyManagementUpdate(this.getMoneyManagementDetails());
     }
+    return true;
   }
 
   getMoneyManagementDetails() {
     const curPrice = this.candles.length > 0 ? this.candles[this.candles.length - 1].close : this.activeAsset.basePrice;
     const sl = this.signal ? this.signal.sl : curPrice * 0.99;
     const slDistance = Math.max(curPrice * 0.002, Math.abs(curPrice - sl));
-    const riskUSD = (this.paperBalanceUSD * (this.riskPercent / 100));
-
-    // Standard Lot math
-    const pipSize = this.activeAsset.market === 'xm' ? (this.activeAsset.id === 'XAU/USD' ? 0.10 : 0.0001) : (curPrice * 0.001);
-    const pipValue = this.activeAsset.pipValue || 10;
-    const slPips = Math.max(5, slDistance / pipSize);
-    let calculatedLots = (riskUSD / (slPips * pipValue));
-    calculatedLots = Number(Math.max(0.01, Math.min(20.00, calculatedLots)).toFixed(2));
-
-    // Margin Health
-    const usedMargin = this.positions.reduce((sum, p) => sum + (p.amountUSD / p.leverage), 0);
-    const totalUnrealizedPnL = this.positions.reduce((sum, p) => sum + p.pnlUSD, 0);
-    const equity = Math.max(0, this.paperBalanceUSD + totalUnrealizedPnL);
-    const freeMargin = Math.max(0, equity - usedMargin);
-    const marginLevel = usedMargin > 0 ? Number(((equity / usedMargin) * 100).toFixed(1)) : 999.9;
-
-    let marginStatus = 'EXCELLENT (HEALTHY 🟢)';
-    if (marginLevel < 120) marginStatus = 'MARGIN CALL RISK 🔴';
-    else if (marginLevel < 250) marginStatus = 'MODERATE 🟡';
+    const account = summarizePaperAccount(this.paperBalanceUSD, this.positions);
+    const sizing = calculatePaperPositionSize({
+      asset: this.activeAsset,
+      entryPrice: curPrice,
+      stopPrice: curPrice > slDistance ? sl : curPrice - slDistance,
+      equityUSD: Math.max(0, account.equity),
+      freeMarginUSD: Math.max(0, account.freeMargin),
+      riskPercent: this.riskPercent,
+      leverage: this.leverage
+    });
 
     return {
-      capital: this.paperBalanceUSD,
+      capital: account.balance,
       riskPercent: this.riskPercent,
-      riskUSD: Number(riskUSD.toFixed(2)),
-      calculatedLots,
-      equity: Number(equity.toFixed(2)),
-      usedMargin: Number(usedMargin.toFixed(2)),
-      freeMargin: Number(freeMargin.toFixed(2)),
-      marginLevel,
-      marginStatus,
-      leverage: this.leverage
+      riskUSD: sizing?.riskBudgetUSD || 0,
+      actualRiskUSD: sizing?.actualRiskUSD || 0,
+      calculatedLots: sizing?.sizeUnit === 'LOTS' ? sizing.sizeValue : null,
+      sizeValue: sizing?.sizeValue || 0,
+      sizeUnit: sizing?.sizeUnit || 'UNITS',
+      requiredMarginUSD: sizing?.requiredMarginUSD || 0,
+      limitedByMargin: sizing?.limitedByMargin === true,
+      equity: account.equity,
+      usedMargin: account.usedMargin,
+      freeMargin: account.freeMargin,
+      marginLevel: account.marginLevel,
+      marginStatus: account.marginStatus,
+      leverage: sizing?.effectiveLeverage || this.leverage,
+      accountModel: account.accountModel
     };
   }
 
   // Time-Machine Strategy Replay Methods
+  async runMLShadowEvaluation(options = {}) {
+    const asset = this.activeAsset;
+    const timeframe = this.activeTimeframe;
+    const sourceDisclosure = getMarketDataDisclosure(asset.id);
+    if (sourceDisclosure === 'NO VERIFIED ADAPTER') {
+      return { success: false, reason: 'VERIFIED_MARKET_DATA_ADAPTER_REQUIRED' };
+    }
+
+    const fetchedCandles = await fetchBinanceHistory(asset.id, timeframe.id, 2000, options.fetchOptions || {});
+    if (!Array.isArray(fetchedCandles) || fetchedCandles.length < 121) {
+      return { success: false, reason: 'REAL_MARKET_HISTORY_UNAVAILABLE' };
+    }
+    // Binance may include the currently forming bar. Train/evaluate on closed bars only.
+    const closedCandles = fetchedCandles.slice(0, -1);
+    const result = trainAndEvaluateMLShadow(closedCandles, {
+      assetId: asset.id,
+      timeframe: timeframe.id,
+      source: sourceDisclosure,
+      horizonBars: options.horizonBars || 3,
+      roundTripCostBps: options.roundTripCostBps ?? (asset.market === MARKET_TYPES.BINANCE ? 12 : 20),
+      now: options.now || Date.now()
+    });
+    if (!result.success) return result;
+    this.mlShadowModel = result.model;
+    this.mlShadowReport = result.report;
+    this.mlShadowPrediction = null;
+    this.saveGymState();
+    if (this.onMLShadowUpdate) {
+      this.onMLShadowUpdate({ model: this.mlShadowModel, report: this.mlShadowReport, prediction: null });
+    }
+    return result;
+  }
+
+  runRuleBacktest(options = {}) {
+    const sourceCandles = this.fullHistoricalCandles?.length
+      ? this.fullHistoricalCandles
+      : this.getDecisionCandles().length
+        ? this.getDecisionCandles()
+        : this.candles;
+    const asset = this.activeAsset;
+    const packetSummary = summarizeMarketPacket(this.marketPacket, { now: options.now || Date.now() });
+    const result = runBarCloseBacktest(sourceCandles, history => {
+      const patterns = detectChartPatterns(history);
+      const lastCandle = history.at(-1);
+      const deterministicSpread = calculateSpreadFromCore(asset, lastCandle.close, lastCandle, null, () => 0.5);
+      const signal = generateAISignal(
+        history,
+        asset,
+        patterns,
+        null,
+        null,
+        deterministicSpread,
+        null,
+        this.riskAppetite || 'balanced'
+      );
+      return {
+        action: signal.action,
+        sl: signal.sl,
+        tp1: signal.tp1,
+        reason: signal.rationale,
+        signalId: `${asset.id}:${lastCandle.time}`
+      };
+    }, {
+      warmupCandles: 50,
+      initialCapital: 100000,
+      riskPerTradePercent: 1,
+      maxDrawdownPercent: 10,
+      feeBps: asset.market === MARKET_TYPES.BINANCE ? 10 : 0,
+      slippageBps: 2,
+      maximumLeverage: Math.min(3, asset.leverageMax || 1),
+      minimumRiskReward: 1.2,
+      ...options
+    });
+
+    return Object.freeze({
+      ...result,
+      strategy: Object.freeze({
+        id: 'CYBERDECK_DETERMINISTIC_RULE_SIGNAL_V1',
+        modelType: 'RULE_BASED_NOT_ML',
+        newsIncluded: false,
+        mt5Included: false,
+        strategyMemoryIncluded: false,
+        spreadMode: 'DETERMINISTIC_MEDIAN_SIMULATION'
+      }),
+      dataProvenance: Object.freeze({
+        marketPacketSchema: packetSummary.schemaVersion,
+        source: packetSummary.source,
+        sourceLabel: packetSummary.sourceLabel,
+        quality: packetSummary.quality,
+        simulation: packetSummary.isSimulation,
+        decisionEligibleAtRun: packetSummary.decisionEligible,
+        decisionReasons: Object.freeze([...packetSummary.decisionReasons]),
+        assetId: asset.id,
+        catalogMode: asset.dataMode,
+        feedWasRealAtRuntime: packetSummary.isRealFeed || this.isRealFeed === true,
+        candleCount: Array.isArray(sourceCandles) ? sourceCandles.length : 0
+      })
+    });
+  }
+
   startReplay() {
     if (this.candles.length < 20) return;
+    this.stopReplayPlayback();
     this.isReplayMode = true;
     if (!this.fullHistoricalCandles || this.fullHistoricalCandles.length === 0) {
       this.fullHistoricalCandles = [...this.candles];
     }
     this.replayIndex = Math.floor(this.fullHistoricalCandles.length / 2);
     this.candles = this.fullHistoricalCandles.slice(0, this.replayIndex);
+    this.publishDataSourceState(Date.now());
     this.analyzeMarket();
     this.requestRender();
     if (this.onReplayUpdate) {
-      this.onReplayUpdate({ isReplay: true, index: this.replayIndex, total: this.fullHistoricalCandles.length });
+      this.onReplayUpdate({ isReplay: true, isPlaying: false, index: this.replayIndex, total: this.fullHistoricalCandles.length });
     }
   }
 
@@ -1426,10 +1353,10 @@ export class AITradingEngine {
     this.replayIndex = newIdx;
     this.candles = this.fullHistoricalCandles.slice(0, this.replayIndex);
     this.analyzeMarket();
-    this.updatePositionPnL();
     this.requestRender();
+    if (this.replayIndex >= this.fullHistoricalCandles.length) this.stopReplayPlayback();
     if (this.onReplayUpdate) {
-      this.onReplayUpdate({ isReplay: true, index: this.replayIndex, total: this.fullHistoricalCandles.length });
+      this.onReplayUpdate({ isReplay: true, isPlaying: Boolean(this.replayInterval), index: this.replayIndex, total: this.fullHistoricalCandles.length });
     }
   }
 
@@ -1438,24 +1365,42 @@ export class AITradingEngine {
     this.replayIndex = Math.min(this.fullHistoricalCandles.length, Math.max(15, Number(index)));
     this.candles = this.fullHistoricalCandles.slice(0, this.replayIndex);
     this.analyzeMarket();
-    this.updatePositionPnL();
     this.requestRender();
     if (this.onReplayUpdate) {
-      this.onReplayUpdate({ isReplay: true, index: this.replayIndex, total: this.fullHistoricalCandles.length });
+      this.onReplayUpdate({ isReplay: true, isPlaying: Boolean(this.replayInterval), index: this.replayIndex, total: this.fullHistoricalCandles.length });
     }
+  }
+
+  toggleReplayPlayback() {
+    if (!this.isReplayMode) this.startReplay();
+    if (!this.isReplayMode) return false;
+    if (this.replayInterval) {
+      this.stopReplayPlayback();
+      return false;
+    }
+    this.replayInterval = setInterval(() => this.stepReplay(1), Math.max(100, 750 / this.replaySpeed));
+    if (this.onReplayUpdate) {
+      this.onReplayUpdate({ isReplay: true, isPlaying: true, index: this.replayIndex, total: this.fullHistoricalCandles.length });
+    }
+    return true;
+  }
+
+  stopReplayPlayback() {
+    if (this.replayInterval) clearInterval(this.replayInterval);
+    this.replayInterval = null;
   }
 
   exitReplay() {
     this.isReplayMode = false;
-    if (this.replayInterval) clearInterval(this.replayInterval);
-    this.replayInterval = null;
+    this.stopReplayPlayback();
     if (this.fullHistoricalCandles && this.fullHistoricalCandles.length > 0) {
       this.candles = [...this.fullHistoricalCandles];
     }
+    this.publishDataSourceState(Date.now());
     this.analyzeMarket();
     this.requestRender();
     if (this.onReplayUpdate) {
-      this.onReplayUpdate({ isReplay: false, index: this.candles.length, total: this.candles.length });
+      this.onReplayUpdate({ isReplay: false, isPlaying: false, index: this.candles.length, total: this.candles.length });
     }
   }
 
@@ -1467,26 +1412,32 @@ export class AITradingEngine {
     const losses = this.aiStats.losses || 0;
 
     const rankTitles = {
-      1: 'LEVEL 1 // NEURAL ROOKIE',
+      1: 'LEVEL 1 // HEURISTIC ROOKIE',
       2: 'LEVEL 2 // SMC PATTERN APPRENTICE',
       3: 'LEVEL 3 // SMC ORDERFLOW OPERATOR',
       4: 'LEVEL 4 // QUANTUM CONFLUENCE SPECIALIST',
       5: 'LEVEL 5 // MASTER QUANT SMC ARCHITECT',
       6: 'LEVEL 6 // INSTITUTIONAL LIQUIDITY SNIPER',
-      7: 'LEVEL 7 // DEEP ALPHA QUANT OPERATOR',
+      7: 'LEVEL 7 // ALPHA RULE OPERATOR',
       8: 'LEVEL 8 // MULTI-ASSET PORTFOLIO STRATEGIST',
       9: 'LEVEL 9 // HIGH-FREQUENCY SMC ENGINE',
-      10: 'LEVEL 10 // APEX SOVEREIGN QUANT AI'
+      10: 'LEVEL 10 // APEX PAPER-QUANT RULE ENGINE'
     };
 
-    const rankTitle = rankTitles[level] || `LEVEL ${level} // ADAPTIVE QUANT AI`;
+    const rankTitle = rankTitles[level] || `LEVEL ${level} // ADAPTIVE QUANT RULE ENGINE`;
     const xpPerLevel = 700;
     const xpCurrent = samples % xpPerLevel;
     const xpPercent = Math.min(100, Math.round((xpCurrent / xpPerLevel) * 100));
 
-    const profitFactor = losses === 0 ? (wins > 0 ? '∞' : '1.00') : ((wins * 2.15) / (losses * 1.05)).toFixed(2);
-    const strategyCognition = (Math.min(99.4, 72.0 + level * 2.6)).toFixed(1) + '%';
-    const memorySynapse = `${(9.2 + Object.keys(this.strategyWeights).length * 0.75).toFixed(1)} KB`;
+    const grossProfit = this.aiJournal.reduce((sum, trade) => sum + Math.max(0, Number(trade?.pnlUSD) || 0), 0);
+    const grossLoss = this.aiJournal.reduce((sum, trade) => sum + Math.abs(Math.min(0, Number(trade?.pnlUSD) || 0)), 0);
+    const profitFactor = grossLoss > 0 ? (grossProfit / grossLoss).toFixed(2) : grossProfit > 0 ? '∞' : 'N/A';
+    const strategyEntries = Object.values(this.strategyWeights);
+    const observedStrategies = strategyEntries.filter(data => (Number(data?.wins) || 0) + (Number(data?.losses) || 0) > 0).length;
+    const strategyCoverage = strategyEntries.length > 0 ? `${((observedStrategies / strategyEntries.length) * 100).toFixed(1)}%` : '0.0%';
+    const journalText = JSON.stringify(this.aiJournal);
+    const journalBytes = typeof TextEncoder !== 'undefined' ? new TextEncoder().encode(journalText).length : journalText.length;
+    const journalSize = `${(journalBytes / 1024).toFixed(1)} KB`;
 
     const skills = Object.entries(this.strategyWeights).map(([name, data]) => {
       const isHigh = data.winRate >= 75;
@@ -1508,8 +1459,8 @@ export class AITradingEngine {
       xpPercent,
       samplesStudied: samples,
       profitFactor,
-      strategyCognition,
-      memorySynapse,
+      strategyCoverage,
+      journalSize,
       skills,
       riskAppetite: this.riskAppetite,
       goldenRules: this.getGoldenRules(),
@@ -1547,7 +1498,7 @@ export class AITradingEngine {
 
   startKnowledgeStreamLoop() {
     if (this.knowledgeStreamInterval) clearInterval(this.knowledgeStreamInterval);
-    this.knowledgeLogs = [...LIVE_INTERNET_KNOWLEDGE_FEED];
+    this.knowledgeLogs = this.knowledgeFeed.map(item => ({ ...item }));
     this.knowledgeIndex = 0;
 
     this.knowledgeStreamInterval = setInterval(() => {
@@ -1570,7 +1521,8 @@ export class AITradingEngine {
       source: currentIntel.source,
       text: currentIntel.text,
       impactFactor: currentIntel.impactFactor,
-      timestamp: new Date().toLocaleTimeString()
+      timestamp: new Date().toLocaleTimeString(),
+      provenance: 'SIMULATED_REFERENCE'
     };
 
     this.knowledgeLogs.unshift(liveLog);
@@ -1645,16 +1597,33 @@ export class AITradingEngine {
   }
 
   destroy() {
+    this.pauseStreams();
+    if (this.resizeObserver) this.resizeObserver.disconnect();
+    this.resizeObserver = null;
+  }
+
+  pauseStreams() {
     if (this.tickInterval) clearInterval(this.tickInterval);
     if (this.newsInterval) clearInterval(this.newsInterval);
     if (this.knowledgeStreamInterval) clearInterval(this.knowledgeStreamInterval);
     if (this.mt5PollingInterval) clearInterval(this.mt5PollingInterval);
-    if (this.resizeObserver) this.resizeObserver.disconnect();
+    this.mt5StreamGeneration += 1;
+    if (this.replayInterval) clearInterval(this.replayInterval);
+    if (this.animFrameId) cancelAnimationFrame(this.animFrameId);
+    this.pauseLiveAutoExecution();
     this.tickInterval = null;
     this.newsInterval = null;
     this.knowledgeStreamInterval = null;
     this.mt5PollingInterval = null;
-    this.resizeObserver = null;
+    this.replayInterval = null;
+    this.animFrameId = null;
+  }
+
+  resumeStreams() {
+    this.startLiveTickStream();
+    this.startNewsStream();
+    this.startKnowledgeStreamLoop();
+    this.startMT5BackgroundStream();
   }
 
   async setMarket(marketType) {
@@ -1682,15 +1651,42 @@ export class AITradingEngine {
   }
 
   async loadCandles() {
-    // Attempt real live Binance Kline API fetch first
+    const observedAt = Date.now();
+    // Attempt a verified exchange snapshot first. Canonical decision candles are
+    // created by MarketPacket and never mutated by the visual simulation loop.
     const realData = await fetchRealExchangeCandles(this.activeAsset.id, this.activeTimeframe.id, 80);
     if (realData && realData.length > 0) {
-      this.candles = realData;
-      this.isRealFeed = true;
+      this.marketPacket = createMarketPacket({
+        source: MARKET_PACKET_SOURCES.BINANCE_KLINES_REST,
+        adapter: getMarketDataDisclosure(this.activeAsset.id),
+        symbol: this.activeAsset.id,
+        timeframe: this.activeTimeframe.id,
+        timeframeSeconds: this.activeTimeframe.seconds,
+        observedAt,
+        candles: realData
+      });
     } else {
       this.generateHistoricalCandles();
-      this.isRealFeed = false;
+      this.marketPacket = createMarketPacket({
+        source: MARKET_PACKET_SOURCES.SIMULATED_FALLBACK,
+        adapter: 'LOCAL_RANDOM_WALK_SIMULATION',
+        symbol: this.activeAsset.id,
+        timeframe: this.activeTimeframe.id,
+        timeframeSeconds: this.activeTimeframe.seconds,
+        observedAt,
+        candles: this.candles
+      });
     }
+    this.candles = this.marketPacket.candles.map(candle => ({ ...candle }));
+    this.fullHistoricalCandles = this.marketPacket.decisionCandles.map(candle => ({ ...candle }));
+    this.isRealFeed = this.marketPacket.provenance.verified === true
+      && this.marketPacket.provenance.simulation !== true;
+    const quoteCandle = this.candles.at(-1);
+    if (quoteCandle) {
+      this.currentSpreadInfo = calculateDynamicSpread(this.activeAsset, quoteCandle.close, quoteCandle, this.activeNews);
+      if (this.onSpreadUpdate) this.onSpreadUpdate(this.currentSpreadInfo);
+    }
+    this.publishDataSourceState(observedAt);
     this.analyzeMarket();
   }
 
@@ -1745,7 +1741,14 @@ export class AITradingEngine {
   }
 
   simulateLiveTick() {
-    if (this.candles.length === 0) return;
+    if (this.isReplayMode || this.candles.length === 0) return;
+    if (this.marketPacket?.provenance?.simulation !== true) {
+      const eligibilityChanged = this.publishDataSourceState(Date.now());
+      if (eligibilityChanged) this.analyzeMarket();
+      this.updatePositionPnL();
+      this.requestRender();
+      return;
+    }
     const last = this.candles[this.candles.length - 1];
     const delta = (Math.random() - 0.49) * (last.close * 0.0018);
     const newClose = Number((last.close + delta).toFixed(this.activeAsset.digits));
@@ -1762,49 +1765,49 @@ export class AITradingEngine {
     // 1. Update Manual Paper Trading Positions
     this.updatePositionPnL();
 
-    // 2. Evaluate and Update AI Continuous Auto-Trading Sandbox
-    if (this.isAutoTrading) {
-      this.evaluateAIPositions();
-      this.checkAutoTradeExecution();
-
-      // Real-Time Live Continuous Cognition Progression
-      const prevLevel = this.aiStats.adaptationLevel;
-      this.aiStats.samplesStudied += 1;
-      const newLevel = Math.min(10, Math.floor(this.aiStats.samplesStudied / 700) + 1);
-      this.aiStats.adaptationLevel = newLevel;
-
-      // Level-Up Event Trigger
-      if (newLevel > prevLevel) {
-        if (this.sound && this.sound.playSuccessFanfare) this.sound.playSuccessFanfare();
-        if (this.toasts) {
-          this.toasts.show('SUCCESS', `🎉 AI EVOLVED TO LEVEL ${newLevel}! RANK UNLOCKED: ${this.getAIProfileDetails().rankTitle}`, 5000);
-        }
-        if (this.onAIStatsUpdate) this.onAIStatsUpdate(this.aiStats);
-      }
-
-      if (this.onAIProfileUpdate) {
-        this.onAIProfileUpdate(this.getAIProfileDetails());
-      }
-
-      this.saveGymState();
-    }
-
-    // 3. Recompute Signals and Redraw smoothly
+    // Legacy automatic scenarios are display-only and have no decision authority.
+    // Recompute a blocked simulation signal for chart exploration only.
     this.analyzeMarket();
     this.requestRender();
   }
 
   analyzeMarket() {
-    this.patterns = detectChartPatterns(this.candles);
-    this.signal = generateAISignal(this.candles, this.activeAsset, this.patterns, this.activeNews, this.strategyWeights, this.currentSpreadInfo, this.mt5Data, this.riskAppetite);
+    const marketDecisionState = this.getMarketDecisionState(Date.now());
+    const canonicalClosedCandles = this.getDecisionCandles();
+    const analysisCandles = this.isReplayMode
+      ? this.candles
+      : canonicalClosedCandles.length > 0
+        ? canonicalClosedCandles
+        : this.candles;
+    this.patterns = detectChartPatterns(analysisCandles);
+    const rawSignal = generateAISignal(analysisCandles, this.activeAsset, this.patterns, this.activeNews, this.strategyWeights, this.currentSpreadInfo, this.mt5Data, this.riskAppetite);
+    this.signal = Object.freeze({
+      ...rawSignal,
+      action: marketDecisionState.eligible ? rawSignal.action : 'DATA BLOCKED / NO TRADE',
+      badgeClass: marketDecisionState.eligible ? rawSignal.badgeClass : 'signal-veto',
+      rationale: marketDecisionState.eligible
+        ? rawSignal.rationale
+        : `[MARKET SOURCE GUARD]: ไม่มีอำนาจตัดสินใจ (${marketDecisionState.reasons.join(', ') || 'UNVERIFIED_DATA'}) ข้อมูลนี้แสดงเพื่อ Simulation/Inspection เท่านั้น`,
+      patterns: Object.freeze(this.patterns.map(pattern => Object.freeze({ ...pattern }))),
+      marketRegime: rawSignal.regime?.label || 'UNKNOWN',
+      marketDataState: marketDecisionState
+    });
+    const modelMatchesActiveMarket = this.mlShadowModel?.dataProvenance?.assetId === this.activeAsset.id
+      && this.mlShadowModel?.dataProvenance?.timeframe === this.activeTimeframe.id;
+    this.mlShadowPrediction = modelMatchesActiveMarket
+      ? predictMLDirection(this.mlShadowModel, canonicalClosedCandles)
+      : null;
+    if (this.onMLShadowUpdate) {
+      this.onMLShadowUpdate({ model: this.mlShadowModel, report: this.mlShadowReport, prediction: this.mlShadowPrediction });
+    }
     if (this.onSignalUpdate) {
       this.onSignalUpdate(this.signal);
     }
     if (this.onRegimeUpdate && this.signal.regime) {
       this.onRegimeUpdate(this.signal.regime);
     }
-    if (this.onDebateUpdate && this.signal.adversarialDebate) {
-      this.onDebateUpdate(this.signal.adversarialDebate);
+    if (this.onDebateUpdate && this.signal.ruleCountercheck) {
+      this.onDebateUpdate(this.signal.ruleCountercheck);
     }
   }
 
@@ -1813,46 +1816,15 @@ export class AITradingEngine {
   // =========================================================================
 
   toggleAutoTrading(enabled) {
-    this.isAutoTrading = enabled !== undefined ? enabled : !this.isAutoTrading;
-    return this.isAutoTrading;
+    this.isAutoTrading = false;
+    if (enabled && this.toasts) {
+      this.toasts.show('INFO', 'LEGACY AUTO SCENARIO HAS ZERO DECISION AUTHORITY — WAIT FOR VERIFIED PAPER BOT', 3200);
+    }
+    return false;
   }
 
   checkAutoTradeExecution() {
-    if (!this.signal || this.candles.length === 0) return;
-    const minConf = this.riskAppetite === 'alpha_hunter' ? 58 : this.riskAppetite === 'conservative' ? 74 : 66;
-    if (this.signal.confidence < minConf && !this.signal.isExplorationProbe) return;
-    
-    // Only open 1 active position per asset for the AI to avoid over-exposure
-    const existing = this.aiPositions.find(p => p.assetId === this.activeAsset.id);
-    if (existing) return;
-
-    const isLong = this.signal.action.includes('BUY');
-    const isShort = this.signal.action.includes('SELL');
-    if (!isLong && !isShort) return;
-
-    const currentPrice = this.candles[this.candles.length - 1].close;
-    const isProbe = this.signal.isExplorationProbe || false;
-    const posAmount = isProbe ? 800 : 2500; // Smaller micro-probe size for safe exploration
-
-    const pos = {
-      id: (isProbe ? 'PROBE_' : 'AI_POS_') + Date.now().toString(36),
-      isAI: true,
-      isProbe: isProbe,
-      assetId: this.activeAsset.id,
-      side: isLong ? 'LONG' : 'SHORT',
-      entryPrice: currentPrice,
-      currentPrice: currentPrice,
-      amountUSD: posAmount,
-      leverage: 10,
-      tp: this.signal.tp1,
-      sl: this.signal.sl,
-      setupName: isProbe ? `[ALPHA PROBE] ${this.patterns.length > 0 ? this.patterns[0].name : 'Price Exploration'}` : (this.patterns.length > 0 ? this.patterns[0].name : (isLong ? 'EMA Ribbon Trend Ride' : 'Resistance Rejection')),
-      entryRSI: this.signal.curRSI,
-      openTime: new Date().toLocaleTimeString(),
-      confidence: this.signal.confidence
-    };
-
-    this.aiPositions.push(pos);
+    return { success: false, reason: 'LEGACY_AUTO_SCENARIO_DECISION_AUTHORITY_DISABLED' };
   }
 
   evaluateAIPositions() {
@@ -1937,71 +1909,11 @@ export class AITradingEngine {
   }
 
   // Fast-Training Simulation Drill (Runs 25 accelerated training runs)
-  runFastTrainingDrill(count = 25) {
-    const setups = [
-      { name: 'Double Bottom W-Pattern', winProb: 0.82 },
-      { name: 'Bullish Engulfing at EMA20', winProb: 0.78 },
-      { name: 'Order Block (SMC) Demand Bounce', winProb: 0.85 },
-      { name: 'RSI Bullish Divergence Rebound', winProb: 0.75 },
-      { name: 'High Volatility Squeeze Breakout', winProb: 0.64 },
-      { name: 'Bearish Shooting Star Resistance', winProb: 0.80 },
-      { name: 'Early Entry before Confirmation', winProb: 0.35 }
-    ];
-
-    for (let i = 0; i < count; i++) {
-      const setup = setups[Math.floor(Math.random() * setups.length)];
-      const asset = TRADING_ASSETS[Math.floor(Math.random() * TRADING_ASSETS.length)];
-      const isWin = Math.random() < setup.winProb;
-      const isLong = Math.random() > 0.4;
-      const entry = asset.basePrice * (1 + (Math.random() - 0.5) * 0.05);
-      const delta = isWin ? (0.015 + Math.random() * 0.02) : (-0.01 - Math.random() * 0.012);
-      const exit = isLong ? entry * (1 + delta) : entry * (1 - delta);
-      const pnlPercent = delta * 100 * 10;
-      const pnlUSD = (2000 * pnlPercent) / 100;
-
-      const trade = {
-        id: 'AI_FAST_' + Date.now().toString(36) + '_' + i,
-        assetId: asset.id,
-        side: isLong ? 'LONG' : 'SHORT',
-        entryPrice: Number(entry.toFixed(asset.digits)),
-        exitPrice: Number(exit.toFixed(asset.digits)),
-        pnlUSD: Number(pnlUSD.toFixed(2)),
-        pnlPercent: Number(pnlPercent.toFixed(2)),
-        isWin: isWin,
-        setupName: setup.name,
-        exitReason: isWin ? 'TAKE_PROFIT_HIT' : 'STOP_LOSS_HIT',
-        closeTime: `Epoch #${this.aiStats.totalTrades + 1}`,
-        postMortem: isWin
-          ? `[ซ้อมเทรดอัตโนมัติ] สัญญาณ ${setup.name} บน ${asset.id} ทำงานสมบูรณ์แบบ เกิดแรงหนุนจากโมเมนตัมและอินดิเคเตอร์ยืนยันตรงเป้าหมาย`
-          : `[ซ้อมเทรดอัตโนมัติ] สัญญาณ ${setup.name} บน ${asset.id} ล้มเหลวเนื่องจากติดแรงเทขายบริเวณแนวต้านใหญ่และเกิด False Signal`,
-        learningLesson: isWin
-          ? `✅ จดจำและเพิ่มน้ำหนักความแม่นยำให้กับ ${setup.name} (Reward Weight +${Math.round(10 + Math.random()*10)}%)`
-          : `❌ บันทึกข้อผิดพลาด (Penalty Applied): เพิ่มตัวกรอง Filter ยืนยันการปิดของแท่งเทียน 2 แท่งก่อนเปิดสถานะ`
-      };
-
-      this.aiStats.totalTrades++;
-      if (isWin) this.aiStats.wins++;
-      else this.aiStats.losses++;
-      this.aiStats.winRate = Number(((this.aiStats.wins / this.aiStats.totalTrades) * 100).toFixed(1));
-      this.aiStats.netPnlUSD += trade.pnlUSD;
-      this.aiStats.samplesStudied += 35;
-      this.aiStats.adaptationLevel = Math.min(10, Math.floor(this.aiStats.samplesStudied / 700) + 1);
-
-      this.aiJournal.unshift(trade);
-    }
-
-    if (this.aiJournal.length > 50) this.aiJournal.length = 50;
-
-    this.saveGymState();
-
-    if (this.sound && this.sound.playSuccessFanfare) this.sound.playSuccessFanfare();
+  runFastTrainingDrill() {
     if (this.toasts) {
-      this.toasts.show('SUCCESS', `⚡ AI FAST-TRAINING COMPLETE: ${count} TRADES PROCESSED (WIN RATE: ${this.aiStats.winRate}%)`, 3000);
+      this.toasts.show('INFO', 'SYNTHETIC FAST-TRAIN DISABLED — RANDOM RESULTS CANNOT UPDATE TRADE KNOWLEDGE', 3200);
     }
-
-    if (this.onAIStatsUpdate) this.onAIStatsUpdate(this.aiStats);
-    if (this.onAIJournalUpdate) this.onAIJournalUpdate(this.aiJournal);
-    if (this.onAIProfileUpdate) this.onAIProfileUpdate(this.getAIProfileDetails());
+    return { success: false, reason: 'SYNTHETIC_LEARNING_AUTHORITY_DISABLED' };
   }
 
   updateStrategyWeight(setupName, isWin, lesson) {
@@ -2028,25 +1940,18 @@ export class AITradingEngine {
   resetAIMemory() {
     try {
       if (typeof localStorage !== 'undefined') {
-        localStorage.removeItem('cyber_ai_trading_gym_state');
+        localStorage.removeItem(this.getGymStorageKey());
       }
     } catch (e) {}
 
     this.strategyWeights = JSON.parse(JSON.stringify(DEFAULT_STRATEGY_WEIGHTS));
-    this.aiStats = {
-      totalTrades: 0,
-      wins: 0,
-      losses: 0,
-      winRate: 0,
-      netPnlUSD: 0,
-      samplesStudied: 0,
-      adaptationLevel: 1
-    };
+    this.aiStats = createZeroPaperGymStats();
     this.aiJournal = [];
     this.aiPositions = [];
+    this.saveGymState();
 
     if (this.toasts) {
-      this.toasts.show('INFO', '🔄 AI AGENT MEMORY & TRAINING JOURNAL RESET TO BASELINE', 2500);
+      this.toasts.show('INFO', '🔄 HEURISTIC WEIGHTS & PAPER JOURNAL RESET TO BASELINE', 2500);
     }
 
     if (this.onAIStatsUpdate) this.onAIStatsUpdate(this.aiStats);
@@ -2468,38 +2373,141 @@ export class AITradingEngine {
   }
 
   // Paper Trading Operations
-  openPosition(side = 'LONG', amountUSD = 1000) {
-    if (this.candles.length === 0) return;
+  createPaperDecisionSnapshot() {
+    const lastCandle = this.getDecisionCandles().at(-1) || null;
+    const marketState = summarizeMarketPacket(this.marketPacket, { now: Date.now() });
+    const marketDecision = this.getMarketDecisionState(Date.now());
+    return {
+      action: this.signal?.action || 'MANUAL_ORDER_NO_SIGNAL',
+      ruleScore: this.signal?.ruleScore ?? null,
+      targetScoreMethod: this.signal?.targetScore?.method || null,
+      newsAccepted: this.signal?.decisionNewsPolicy?.accepted === true,
+      memoryAccepted: this.signal?.decisionMemoryPolicy?.accepted === true,
+      feedMode: marketState.isRealFeed ? 'REAL_MARKET_FEED' : (this.activeAsset?.dataMode || 'SIMULATED_OR_UNKNOWN_FEED'),
+      marketPacketSchema: marketState.schemaVersion,
+      marketSource: marketState.source,
+      marketQuality: marketState.quality,
+      marketDecisionEligible: marketDecision.eligible,
+      marketDecisionReasons: marketDecision.reasons.join('|'),
+      dataAgeMs: marketDecision.dataAgeMs,
+      candleTime: lastCandle?.time ?? null
+    };
+  }
+
+  recordPaperExecutionAudit(rawEvent) {
+    if (!Array.isArray(this.executionAudit)) this.executionAudit = [];
+    const nextSequence = (Number(this.paperAuditSequence) || 0) + 1;
+    this.paperAuditSequence = nextSequence;
+    const event = createPaperExecutionAuditEvent({
+      ...rawEvent,
+      eventId: rawEvent?.eventId || `PAPER_AUD_${Date.now().toString(36)}_${nextSequence}`,
+      at: rawEvent?.at || new Date().toISOString(),
+      decision: rawEvent?.decision || this.createPaperDecisionSnapshot()
+    });
+    if (!event) return null;
+    this.executionAudit.unshift(event);
+    if (this.executionAudit.length > 250) this.executionAudit.length = 250;
+    return event;
+  }
+
+  rejectPaperOpen(reason, context = {}) {
+    this.recordPaperExecutionAudit({
+      eventType: 'OPEN_REJECTED',
+      reason,
+      riskGateReason: context.riskGateReason || reason,
+      executionSource: context.executionSource,
+      assetId: this.activeAsset?.id,
+      side: context.side,
+      marginUSD: context.marginUSD
+    });
+    this.saveGymState();
+    return { success: false, reason };
+  }
+
+  openPosition(side = 'LONG', amountUSD = 1000, executionSource = 'MANUAL_PAPER') {
+    const normalizedExecutionSource = executionSource === 'RULE_AUTO_PAPER' ? 'RULE_AUTO_PAPER' : 'MANUAL_PAPER';
+    const marketDecisionState = this.getMarketDecisionState(Date.now());
+    if (!marketDecisionState.eligible) {
+      const guardReason = marketDecisionState.reasons.join('|') || 'MARKET_DATA_NOT_DECISION_ELIGIBLE';
+      if (this.toasts) this.toasts.show('ERROR', `PAPER DATA GUARD: ${guardReason}`, 2800);
+      return this.rejectPaperOpen('MARKET_DATA_NOT_DECISION_ELIGIBLE', {
+        side,
+        marginUSD: amountUSD,
+        executionSource: normalizedExecutionSource,
+        riskGateReason: guardReason
+      });
+    }
+    if (this.candles.length === 0) return this.rejectPaperOpen('NO_MARKET_DATA', { side, marginUSD: amountUSD, executionSource: normalizedExecutionSource });
     const currentPrice = this.candles[this.candles.length - 1].close;
     const spreadInfo = this.currentSpreadInfo || calculateDynamicSpread(this.activeAsset, currentPrice, this.candles[this.candles.length - 1], this.activeNews);
 
-    if (amountUSD > this.paperBalanceUSD) {
-      if (this.toasts) this.toasts.show('ERROR', 'INSUFFICIENT PAPER CAPITAL BALANCE', 2000);
-      return;
+    const marginUSD = Number(amountUSD);
+    const riskConfig = this.paperRiskConfig || { maxPositions: 3, maxUsedMarginPercent: 50, minimumRiskReward: 1.5 };
+    const riskGate = evaluatePaperOpenRisk({
+      balanceUSD: this.paperBalanceUSD,
+      positions: this.positions,
+      requestedMarginUSD: marginUSD,
+      maxPositions: riskConfig.maxPositions,
+      maxUsedMarginPercent: riskConfig.maxUsedMarginPercent
+    });
+    if (!riskGate.allowed) {
+      if (this.toasts) this.toasts.show('ERROR', `PAPER RISK GATE: ${riskGate.reason}`, 2200);
+      return this.rejectPaperOpen(riskGate.reason, { side, marginUSD, executionSource: normalizedExecutionSource, riskGateReason: riskGate.reason });
     }
 
     const isLong = side.toUpperCase() === 'LONG';
     const executionPrice = isLong ? spreadInfo.askPrice : spreadInfo.bidPrice;
+    const protectiveOrders = deriveProtectiveOrders({
+      side,
+      entryPrice: executionPrice,
+      signal: this.signal ? { ...this.signal, digits: this.activeAsset.digits } : null,
+      spreadValue: spreadInfo.spreadValue,
+      minimumRiskReward: riskConfig.minimumRiskReward
+    });
+    if (!protectiveOrders) {
+      if (this.toasts) this.toasts.show('ERROR', 'PAPER RISK GATE: INVALID PROTECTIVE ORDERS', 2200);
+      return this.rejectPaperOpen('INVALID_PROTECTIVE_ORDERS', { side, marginUSD, executionSource: normalizedExecutionSource });
+    }
 
-    const pos = {
+    const basePosition = createPaperPosition({
       id: 'POS_' + Date.now().toString(36),
       assetId: this.activeAsset.id,
-      side: side.toUpperCase(), // 'LONG' | 'SHORT'
+      side,
       entryPrice: executionPrice,
-      currentPrice: executionPrice,
-      amountUSD: amountUSD,
-      leverage: this.leverage,
-      size: (amountUSD * this.leverage) / executionPrice,
-      pnlUSD: -((amountUSD * (spreadInfo.spreadValue / executionPrice) * this.leverage) / 2),
-      pnlPercent: -((spreadInfo.spreadValue / executionPrice) * 100 * this.leverage / 2),
-      openTime: new Date().toLocaleTimeString(),
+      marginUSD,
+      leverage: Math.min(this.leverage, this.activeAsset.leverageMax || this.leverage),
+      openedAt: new Date().toISOString(),
       spreadAtOpen: spreadInfo.spreadFormatted,
-      sl: this.signal ? this.signal.sl : null,
-      tp: this.signal ? this.signal.tp1 : null
+      sl: protectiveOrders.stopPrice,
+      tp: protectiveOrders.targetPrice
+    });
+    const immediateExitPrice = isLong ? spreadInfo.bidPrice : spreadInfo.askPrice;
+    const markedPosition = markPaperPosition(basePosition, immediateExitPrice);
+    if (!markedPosition) return this.rejectPaperOpen('POSITION_MARK_FAILED', { side, marginUSD, executionSource: normalizedExecutionSource });
+    const pos = {
+      ...markedPosition,
+      executionSource: normalizedExecutionSource,
+      protectiveOrderSource: protectiveOrders.source,
+      riskRewardRatio: protectiveOrders.riskRewardRatio
     };
-
-    this.paperBalanceUSD -= amountUSD;
     this.positions.unshift(pos);
+    const auditEvent = this.recordPaperExecutionAudit({
+      eventType: 'OPEN_ACCEPTED',
+      reason: 'RISK_GATE_CLEARED',
+      riskGateReason: riskGate.reason,
+      executionSource: normalizedExecutionSource,
+      orderId: pos.id,
+      assetId: pos.assetId,
+      side: pos.side,
+      marginUSD: pos.marginUSD,
+      entryPrice: pos.entryPrice,
+      exitPrice: pos.currentPrice,
+      stopPrice: pos.sl,
+      targetPrice: pos.tp,
+      pnlUSD: pos.pnlUSD,
+      balanceAfterUSD: this.paperBalanceUSD
+    });
+    if (auditEvent) pos.decisionAuditId = auditEvent.eventId;
     this.saveGymState();
 
     if (this.sound && this.sound.playSuccessFanfare) this.sound.playSuccessFanfare();
@@ -2508,27 +2516,50 @@ export class AITradingEngine {
     }
 
     if (this.onPositionUpdate) this.onPositionUpdate(this.positions);
+    if (this.onMoneyManagementUpdate) this.onMoneyManagementUpdate(this.getMoneyManagementDetails());
+    return { success: true, position: pos, auditEvent };
   }
 
-  closePosition(posId) {
+  closePosition(posId, exitReason = 'MANUAL_CLOSE') {
     const idx = this.positions.findIndex(p => p.id === posId);
-    if (idx === -1) return;
+    if (idx === -1) return { success: false, reason: 'POSITION_NOT_FOUND' };
 
     const pos = this.positions[idx];
-    const returnAmount = pos.amountUSD + pos.pnlUSD;
-    this.paperBalanceUSD += Math.max(0, returnAmount);
+    const settledBalance = settlePaperPosition(this.paperBalanceUSD, pos);
+    if (settledBalance === null) return { success: false, reason: 'SETTLEMENT_FAILED' };
+    this.paperBalanceUSD = settledBalance;
 
-    pos.closeTime = new Date().toLocaleTimeString();
-    this.tradeHistory.unshift(pos);
+    pos.closedAt = new Date().toISOString();
+    pos.closeTime = new Date(pos.closedAt).toLocaleTimeString();
+    pos.exitReason = exitReason;
+    this.tradeHistory.unshift({ ...pos });
+    if (this.tradeHistory.length > 100) this.tradeHistory.length = 100;
     this.positions.splice(idx, 1);
+    const auditEvent = this.recordPaperExecutionAudit({
+      eventType: 'POSITION_CLOSED',
+      reason: exitReason,
+      executionSource: pos.executionSource,
+      orderId: pos.id,
+      assetId: pos.assetId,
+      side: pos.side,
+      marginUSD: pos.marginUSD,
+      entryPrice: pos.entryPrice,
+      exitPrice: pos.currentPrice,
+      stopPrice: pos.sl,
+      targetPrice: pos.tp,
+      pnlUSD: pos.pnlUSD,
+      balanceAfterUSD: this.paperBalanceUSD
+    });
     this.saveGymState();
 
     if (this.sound && this.sound.playKey) this.sound.playKey(false);
     if (this.toasts) {
-      this.toasts.show(pos.pnlUSD >= 0 ? 'SUCCESS' : 'ERROR', `POSITION CLOSED: PnL $${pos.pnlUSD.toFixed(2)} (${pos.pnlPercent.toFixed(2)}%)`, 2500);
+      this.toasts.show(pos.pnlUSD >= 0 ? 'SUCCESS' : 'ERROR', `POSITION CLOSED [${exitReason}]: PnL $${pos.pnlUSD.toFixed(2)} (${pos.pnlPercent.toFixed(2)}%)`, 2500);
     }
 
     if (this.onPositionUpdate) this.onPositionUpdate(this.positions);
+    if (this.onMoneyManagementUpdate) this.onMoneyManagementUpdate(this.getMoneyManagementDetails());
+    return { success: true, position: pos, balance: this.paperBalanceUSD, auditEvent };
   }
 
   updatePositionPnL() {
@@ -2536,16 +2567,22 @@ export class AITradingEngine {
     const lastCandle = this.candles[this.candles.length - 1];
     const spreadInfo = this.currentSpreadInfo || calculateDynamicSpread(this.activeAsset, lastCandle.close, lastCandle, this.activeNews);
 
-    this.positions.forEach(pos => {
+    const automaticExits = [];
+    this.positions = this.positions.map(pos => {
+      if (pos.assetId !== this.activeAsset.id) return pos;
       // Long positions close at Bid; Short positions close at Ask
       const exitPrice = pos.side === 'LONG' ? spreadInfo.bidPrice : spreadInfo.askPrice;
-      pos.currentPrice = exitPrice;
-
-      const priceDiff = pos.side === 'LONG' ? exitPrice - pos.entryPrice : pos.entryPrice - exitPrice;
-      pos.pnlPercent = Number(((priceDiff / pos.entryPrice) * 100 * pos.leverage).toFixed(2));
-      pos.pnlUSD = Number(((pos.amountUSD * pos.pnlPercent) / 100).toFixed(2));
+      const marked = markPaperPosition(pos, exitPrice) || pos;
+      const exitReason = evaluatePaperExit(marked);
+      if (exitReason) automaticExits.push({ id: marked.id, reason: exitReason });
+      return marked;
     });
 
-    if (this.onPositionUpdate) this.onPositionUpdate(this.positions);
+    if (automaticExits.length > 0) {
+      automaticExits.forEach(exit => this.closePosition(exit.id, exit.reason));
+    } else {
+      if (this.onPositionUpdate) this.onPositionUpdate(this.positions);
+      if (this.onMoneyManagementUpdate) this.onMoneyManagementUpdate(this.getMoneyManagementDetails());
+    }
   }
 }

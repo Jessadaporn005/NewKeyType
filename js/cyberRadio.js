@@ -1,6 +1,6 @@
 /**
- * CYBER//TYPE TRON 3D AUDIO VISUALIZER & CYBER RADIO STATION
- * Web Audio API Frequency FFT Visualizer & Procedural Synthwave Streamer.
+ * CYBER//TYPE TRON 3D AUDIO VISUALIZER & PROCEDURAL SYNTH LAB
+ * Web Audio oscillator plus decorative spectrum visualization; no radio stream.
  */
 
 export const RADIO_STATIONS = [
@@ -45,8 +45,8 @@ export class CyberRadioEngine {
         <div class="radio-header-bar">
           <div class="radio-title-group">
             <span class="radio-pulse"></span>
-            <span class="radio-title">TRON 3D CYBER//RADIO & EQUALIZER</span>
-            <span class="radio-station-badge" id="radioActiveBadge">NIGHT CITY SYNTHWAVE</span>
+            <span class="radio-title">TRON 3D PROCEDURAL SYNTH LAB</span>
+            <span class="radio-station-badge" id="radioActiveBadge">LOCAL OSCILLATOR // NIGHT CITY</span>
           </div>
 
           <button class="radio-exit-btn" id="radioBtnExit" title="Return to CLI">✕</button>
@@ -60,7 +60,7 @@ export class CyberRadioEngine {
         <!-- 3. Channel Selector & Playback Controls -->
         <div class="radio-controls-bar">
           <div class="radio-main-actions">
-            <button class="radio-btn-play" id="radioBtnPlay">▶ PLAY STREAM</button>
+            <button class="radio-btn-play" id="radioBtnPlay">▶ PLAY LOCAL SYNTH</button>
             <div class="radio-vol-box">
               <span>🔊 VOL:</span>
               <input type="range" class="radio-vol-slider" id="radioVolSlider" min="0" max="100" value="75" />
@@ -154,7 +154,7 @@ export class CyberRadioEngine {
     if (this.container) {
       const badge = this.container.querySelector('#radioActiveBadge');
       if (badge) {
-        badge.textContent = station.name.toUpperCase();
+        badge.textContent = `LOCAL OSCILLATOR // ${station.name.toUpperCase()}`;
         badge.style.color = station.color;
         badge.style.borderColor = station.color;
       }
@@ -171,7 +171,7 @@ export class CyberRadioEngine {
     if (this.container) {
       const btnPlay = this.container.querySelector('#radioBtnPlay');
       if (btnPlay) {
-        btnPlay.textContent = this.isPlaying ? '⏸ PAUSE STREAM' : '▶ PLAY STREAM';
+        btnPlay.textContent = this.isPlaying ? '⏸ PAUSE LOCAL SYNTH' : '▶ PLAY LOCAL SYNTH';
         btnPlay.classList.toggle('playing', this.isPlaying);
       }
     }
@@ -220,9 +220,15 @@ export class CyberRadioEngine {
   pause() {
     this.isPlaying = false;
     this.stopSynthesizer();
+    const btnPlay = this.container?.querySelector('#radioBtnPlay');
+    if (btnPlay) {
+      btnPlay.textContent = '▶ PLAY LOCAL SYNTH';
+      btnPlay.classList.remove('playing');
+    }
   }
 
   startVisualizer() {
+    if (this.animFrameId) return;
     const draw = () => {
       this.animFrameId = requestAnimationFrame(draw);
       if (!this.canvas || !this.ctx) return;
@@ -272,8 +278,13 @@ export class CyberRadioEngine {
     draw();
   }
 
+  stopVisualizer() {
+    if (this.animFrameId) cancelAnimationFrame(this.animFrameId);
+    this.animFrameId = null;
+  }
+
   destroy() {
     this.pause();
-    if (this.animFrameId) cancelAnimationFrame(this.animFrameId);
+    this.stopVisualizer();
   }
 }

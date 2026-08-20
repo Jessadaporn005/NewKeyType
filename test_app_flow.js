@@ -26,12 +26,13 @@ function assert(condition, name) {
 
 // 1. Test Profile Store Persistence
 console.log('--- TESTING PROFILE STORE & CREDENTIALS ---');
+await profileStore.ready;
 const ananProfile = profileStore.getProfile('Anan');
 assert(ananProfile.username.toLowerCase() === 'anan', 'Master profile Anan exists');
-assert(profileStore.verifySecretGatePasscode('Infinity'), 'Secret passcode Infinity verified');
-assert(profileStore.verifySecretGatePasscode('infinity'), 'Secret passcode case-insensitive verified');
-assert(profileStore.verifySecretGatePasscode('Anan'), 'Secret passcode Anan verified');
-assert(!profileStore.verifySecretGatePasscode('wrongcode'), 'Wrong passcode rejected');
+assert(await profileStore.verifySecretGatePasscode('Infinity'), 'Secret passcode Infinity verified');
+assert(!await profileStore.verifySecretGatePasscode('infinity'), 'Secret passcode remains case-sensitive');
+assert(!await profileStore.verifySecretGatePasscode('Anan'), 'Username cannot bypass secret gate');
+assert(!await profileStore.verifySecretGatePasscode('wrongcode'), 'Wrong passcode rejected');
 
 const expRes = profileStore.addExp('Anan', 400);
 assert(expRes.profile.level >= 1, 'EXP added and level updated');

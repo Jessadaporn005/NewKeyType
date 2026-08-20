@@ -8,6 +8,13 @@
 
 import { profileStore, ACHIEVEMENTS_LIST } from './profileStore.js';
 
+const escapeHtml = value => String(value ?? '')
+  .replaceAll('&', '&amp;')
+  .replaceAll('<', '&lt;')
+  .replaceAll('>', '&gt;')
+  .replaceAll('"', '&quot;')
+  .replaceAll("'", '&#039;');
+
 export class ControlCenter {
   constructor(app, soundEngine, toastManager) {
     this.app = app;
@@ -449,7 +456,7 @@ export class ControlCenter {
           <div class="dash-profile-card">
             <div class="prof-avatar">👤</div>
             <div class="prof-meta">
-              <div class="prof-name">${prof.username.toUpperCase()} (LVL ${prof.level} [${rankTitle}])</div>
+              <div class="prof-name">${escapeHtml(prof.username.toUpperCase())} (LVL ${prof.level} [${rankTitle}])</div>
               <div class="prof-exp">EXP: ${prof.exp} / ${prof.expNext}</div>
               <div class="prof-balance">
                 <span>💰 CREDITS: <strong>${prof.credits || 0} CC</strong></span>

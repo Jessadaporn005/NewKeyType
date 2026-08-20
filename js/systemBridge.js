@@ -1,12 +1,20 @@
 /**
- * CYBER//TYPE REAL-WORLD SYSTEM BRIDGE & UNIX UTILITIES
- * Connects the Hollywood cyber terminal directly to Windows 11 host system via Electron IPC
+ * CYBER//TYPE HOST-LABELED SYSTEM BRIDGE & TRAINING FALLBACKS
+ * Connects allowlisted capabilities to Electron IPC and labels browser fallbacks.
  */
+
+export const DATA_SOURCES = Object.freeze({
+  HOST_VERIFIED: 'HOST_VERIFIED',
+  SIMULATED: 'SIMULATED',
+  HOST_BLOCKED: 'HOST_BLOCKED',
+  HOST_UNAVAILABLE: 'HOST_UNAVAILABLE'
+});
 
 class SystemBridge {
   constructor() {
     this.isElectron = typeof window !== 'undefined' && window.cyberSystemAPI && window.cyberSystemAPI.isElectron;
     this.currentWorkingDir = 'C:\\Users\\asus';
+    this.homeDir = this.currentWorkingDir;
   }
 
   async init() {
@@ -15,6 +23,7 @@ class SystemBridge {
         const pwdData = await window.cyberSystemAPI.getPwd();
         if (pwdData && pwdData.pwd) {
           this.currentWorkingDir = pwdData.pwd;
+          this.homeDir = pwdData.home || pwdData.pwd;
         }
       } catch (e) {}
     }
@@ -28,7 +37,7 @@ class SystemBridge {
       if (typeof window !== 'undefined' && typeof window.open === 'function') {
         window.open(target.startsWith('http') ? target : `https://www.google.com/search?q=${encodeURIComponent(target)}`, '_blank');
       }
-      return { success: true, message: `[Simulated Launch] Target: ${target}` };
+      return { success: true, source: DATA_SOURCES.SIMULATED, simulated: true, message: `[Simulated Launch] Target: ${target}` };
     }
   }
 
@@ -36,7 +45,7 @@ class SystemBridge {
     if (this.isElectron) {
       return await window.cyberSystemAPI.exec(cmd);
     } else {
-      return { success: true, stdout: `[Simulation Mode] Command executed: ${cmd}\nOutput: 0 errors.` };
+      return { success: false, source: DATA_SOURCES.SIMULATED, simulated: true, stdout: '', error: 'HOST_COMMAND_EXECUTION_UNAVAILABLE' };
     }
   }
 
@@ -45,6 +54,8 @@ class SystemBridge {
       return await window.cyberSystemAPI.getSysInfo();
     } else {
       return {
+        source: DATA_SOURCES.SIMULATED,
+        simulated: true,
         hostname: 'CYBER-MAINFRAME-01',
         platform: 'win32',
         release: '10.0.26200',
@@ -52,6 +63,7 @@ class SystemBridge {
         uptime: 86400,
         cpuModel: 'AMD EPYC 9654 96-Core Processor',
         cpuCores: 96,
+        cpuPercent: 24.5,
         totalMemGB: '128.00',
         usedMemGB: '38.45',
         freeMemGB: '89.55',
@@ -68,6 +80,8 @@ class SystemBridge {
     } else {
       return {
         success: true,
+        source: DATA_SOURCES.SIMULATED,
+        simulated: true,
         dir: this.currentWorkingDir,
         files: [
           { name: 'Desktop', isDir: true, size: 4096, mtime: new Date().toISOString() },
@@ -85,15 +99,22 @@ class SystemBridge {
     if (this.isElectron) {
       return await window.cyberSystemAPI.readFile(filePath);
     } else {
-      return { success: true, content: `// Classified File Content for: ${filePath}\n// UID: 0 [ROOT ACCESS GRANTED]\n// All systems nominal.` };
+      return { success: true, source: DATA_SOURCES.SIMULATED, simulated: true, content: `// Simulated file preview for: ${filePath}` };
     }
+  }
+
+  async readMediaDataUrl(filePath) {
+    if (this.isElectron && window.cyberSystemAPI.readMediaDataUrl) {
+      return await window.cyberSystemAPI.readMediaDataUrl(filePath);
+    }
+    return { success: false, source: DATA_SOURCES.SIMULATED, simulated: true, error: 'HOST_MEDIA_READ_UNAVAILABLE' };
   }
 
   async writeFile(filePath, content) {
     if (this.isElectron) {
       return await window.cyberSystemAPI.writeFile(filePath, content);
     } else {
-      return { success: true };
+      return { success: false, source: DATA_SOURCES.SIMULATED, simulated: true, error: 'HOST_FILE_WRITE_UNAVAILABLE' };
     }
   }
 
@@ -101,7 +122,7 @@ class SystemBridge {
     if (this.isElectron) {
       return await window.cyberSystemAPI.makeDir(dirPath);
     } else {
-      return { success: true };
+      return { success: false, source: DATA_SOURCES.SIMULATED, simulated: true, error: 'HOST_DIRECTORY_WRITE_UNAVAILABLE' };
     }
   }
 
@@ -109,7 +130,7 @@ class SystemBridge {
     if (this.isElectron) {
       return await window.cyberSystemAPI.ping(host);
     } else {
-      return { success: true, output: `Pinging ${host} [142.250.190.46] with 32 bytes of data:\nReply from 142.250.190.46: bytes=32 time=12ms TTL=117\nReply from 142.250.190.46: bytes=32 time=14ms TTL=117\nReply from 142.250.190.46: bytes=32 time=11ms TTL=117\nPing statistics for ${host}: Packets: Sent = 3, Received = 3, Lost = 0 (0% loss)` };
+      return { success: false, source: DATA_SOURCES.SIMULATED, simulated: true, output: '', error: 'HOST_PING_UNAVAILABLE' };
     }
   }
 
@@ -141,7 +162,7 @@ class SystemBridge {
     if (this.isElectron && window.cyberSystemAPI.osint) {
       return await window.cyberSystemAPI.osint(target);
     } else {
-      return { success: true, ips: ['104.21.33.5', '172.67.13.12'], mx: [{ exchange: 'mail.protonmail.ch', priority: 10 }] };
+      return { success: false, source: DATA_SOURCES.SIMULATED, simulated: true, ips: [], mx: [], error: 'HOST_OSINT_UNAVAILABLE' };
     }
   }
 
@@ -149,17 +170,7 @@ class SystemBridge {
     if (this.isElectron && window.cyberSystemAPI.sandboxRun) {
       return await window.cyberSystemAPI.sandboxRun(code);
     } else {
-      try {
-        let logs = [];
-        const originalLog = console.log;
-        console.log = (...args) => logs.push(args.join(' '));
-        const fn = new Function(code);
-        const res = fn();
-        console.log = originalLog;
-        return { success: true, logs, result: String(res) };
-      } catch (err) {
-        return { success: false, error: err.message };
-      }
+      return { success: false, source: DATA_SOURCES.SIMULATED, error: 'SANDBOX_RUNTIME_UNAVAILABLE' };
     }
   }
 
@@ -175,17 +186,17 @@ class SystemBridge {
   async getProcesses() {
     if (this.isElectron) {
       try {
-        const psRes = await this.exec('powershell -NoProfile -Command "Get-Process | Select-Object -First 35 Id, ProcessName, WorkingSet64, CPU | ConvertTo-Json"');
-        if (psRes && psRes.success && psRes.stdout) {
-          const list = JSON.parse(psRes.stdout);
-          const raw = Array.isArray(list) ? list : [list];
+        const hostResult = await window.cyberSystemAPI.getProcesses();
+        if (hostResult?.success && hostResult.processes) {
+          const raw = hostResult.processes;
           return {
             success: true,
+            source: DATA_SOURCES.HOST_VERIFIED,
             processes: raw.map(p => ({
               pid: p.Id,
               name: p.ProcessName,
               memMB: Math.round((p.WorkingSet64 || 0) / (1024 * 1024)),
-              cpu: p.CPU ? p.CPU.toFixed(1) : '0.0',
+              cpu: p.CPU ? Number(p.CPU).toFixed(1) : '0.0',
               status: 'RUNNING'
             }))
           };
@@ -196,6 +207,8 @@ class SystemBridge {
     // Fallback simulation processes
     return {
       success: true,
+      source: DATA_SOURCES.SIMULATED,
+      simulated: true,
       processes: [
         { pid: 4892, name: 'System Idle Process', memMB: 16, cpu: '0.0', status: 'RUNNING' },
         { pid: 1420, name: 'chrome.exe', memMB: 1420, cpu: '3.4', status: 'RUNNING' },
@@ -214,24 +227,24 @@ class SystemBridge {
   async killProcess(pid) {
     if (this.isElectron) {
       try {
-        const res = await this.exec(`powershell -NoProfile -Command "Stop-Process -Id ${pid} -Force"`);
-        return { success: res.success, message: `Process PID [${pid}] terminated.` };
+        const res = await window.cyberSystemAPI.killProcess(pid);
+        return { ...res, message: res.success ? `Process PID [${pid}] terminated.` : undefined };
       } catch (e) {
         return { success: false, error: e.message };
       }
     }
-    return { success: true, message: `[Simulated] Process PID [${pid}] terminated.` };
+    return { success: false, source: DATA_SOURCES.SIMULATED, simulated: true, error: 'HOST_PROCESS_CONTROL_UNAVAILABLE' };
   }
 
   async getDrives() {
     if (this.isElectron) {
       try {
-        const driveRes = await this.exec('powershell -NoProfile -Command "Get-PSDrive -PSProvider FileSystem | Select-Object Name, Root, Free, Used | ConvertTo-Json"');
-        if (driveRes && driveRes.success && driveRes.stdout) {
-          const list = JSON.parse(driveRes.stdout);
-          const raw = Array.isArray(list) ? list : [list];
+        const driveRes = await window.cyberSystemAPI.getDrives();
+        if (driveRes?.success && driveRes.drives) {
+          const raw = driveRes.drives;
           return {
             success: true,
+            source: DATA_SOURCES.HOST_VERIFIED,
             drives: raw.map(d => ({
               name: `${d.Name}:\\`,
               path: d.Root || `${d.Name}:\\`,
@@ -245,6 +258,8 @@ class SystemBridge {
 
     return {
       success: true,
+      source: DATA_SOURCES.SIMULATED,
+      simulated: true,
       drives: [
         { name: 'C:\\ [System NVMe]', path: 'C:\\', freeGB: 420, usedGB: 580 },
         { name: 'D:\\ [Cyber Storage]', path: 'D:\\', freeGB: 890, usedGB: 1110 },
@@ -258,33 +273,32 @@ class SystemBridge {
   async deleteFile(filePath) {
     if (this.isElectron) {
       try {
-        const res = await this.exec(`powershell -NoProfile -Command "Remove-Item -Path '${filePath}' -Force -Recurse"`);
-        return { success: res.success, message: `Removed '${filePath}'.` };
+        const res = await window.cyberSystemAPI.deleteFile(filePath);
+        return { ...res, message: res.success ? `Removed '${filePath}'.` : undefined };
       } catch (e) {
         return { success: false, error: e.message };
       }
     }
-    return { success: true, message: `[Simulated] Removed '${filePath}'.` };
+    return { success: false, source: DATA_SOURCES.SIMULATED, simulated: true, error: 'HOST_DELETE_UNAVAILABLE' };
   }
 
   // --- Real-World Desktop Mirror & App Matrix ---
   async getDesktopShortcuts() {
     if (this.isElectron) {
       try {
-        const psCmd = `powershell -NoProfile -Command "$paths = @('$env:USERPROFILE\\Desktop', '$env:USERPROFILE\\OneDrive\\Desktop', '$env:USERPROFILE\\OneDrive\\เดสก์ท็อป', '$env:PUBLIC\\Desktop'); Get-ChildItem -Path $paths -ErrorAction SilentlyContinue | Select-Object Name, FullName, Extension, Length, LastWriteTime | ConvertTo-Json"`;
-        const res = await this.exec(psCmd);
-        if (res && res.success && res.stdout) {
-          const list = JSON.parse(res.stdout);
-          const raw = Array.isArray(list) ? list : [list];
+        const res = await window.cyberSystemAPI.getDesktopShortcuts();
+        if (res?.success && res.items) {
+          const raw = res.items;
           return {
             success: true,
+            source: DATA_SOURCES.HOST_VERIFIED,
             items: raw.map(item => ({
-              name: item.Name,
-              path: item.FullName,
-              ext: (item.Extension || '').toLowerCase(),
-              isDir: !item.Extension,
-              size: item.Length || 0,
-              mtime: item.LastWriteTime || new Date().toISOString()
+              name: item.name ?? item.Name,
+              path: item.path ?? item.FullName,
+              ext: String(item.ext ?? item.Extension ?? '').toLowerCase(),
+              isDir: typeof item.isDir === 'boolean' ? item.isDir : !item.Extension,
+              size: item.size ?? item.Length ?? 0,
+              mtime: item.mtime ?? item.LastWriteTime ?? null
             }))
           };
         }
@@ -294,6 +308,8 @@ class SystemBridge {
     // Realistic default desktop reflection
     return {
       success: true,
+      source: DATA_SOURCES.SIMULATED,
+      simulated: true,
       items: [
         // Gaming
         { name: 'Steam.lnk', path: 'C:\\Users\\Public\\Desktop\\Steam.lnk', ext: '.lnk', isDir: false, category: 'gaming' },
@@ -330,7 +346,7 @@ class SystemBridge {
   async scanWifi() {
     if (this.isElectron) {
       try {
-        const res = await this.exec('powershell -NoProfile -Command "netsh wlan show networks mode=bssid"');
+        const res = await window.cyberSystemAPI.scanWifi();
         if (res && res.success && res.stdout) {
           const raw = res.stdout;
           const networks = [];
@@ -350,7 +366,7 @@ class SystemBridge {
               if (l.startsWith('Encryption')) encryption = l.split(':')[1]?.trim() || encryption;
               if (l.startsWith('Signal')) signal = parseInt(l.split(':')[1]?.replace('%', '').trim() || '75', 10);
               if (l.startsWith('Channel')) channel = parseInt(l.split(':')[1]?.trim() || '36', 10);
-              if (l.startsWith('BSSID')) bssid = l.split(':')[1]?.trim() || bssid;
+              if (l.startsWith('BSSID')) bssid = l.slice(l.indexOf(':') + 1).trim() || bssid;
             });
 
             networks.push({
@@ -365,7 +381,7 @@ class SystemBridge {
           });
 
           if (networks.length > 0) {
-            return { success: true, networks };
+            return { success: true, source: DATA_SOURCES.HOST_VERIFIED, networks };
           }
         }
       } catch (e) {}
@@ -374,6 +390,9 @@ class SystemBridge {
     // Default authentic simulation if offline or browser mode
     return {
       success: true,
+      source: DATA_SOURCES.SIMULATED,
+      simulated: true,
+      fallbackReason: this.isElectron ? 'HOST_WIFI_SCAN_UNAVAILABLE' : 'BROWSER_MODE',
       networks: [
         { ssid: 'Rod-5G', bssid: 'FA:89:2B:3C:90:12', auth: 'WPA2-Personal', encryption: 'CCMP', signal: 98, channel: 36, band: '5.0 GHz' },
         { ssid: 'CyberNet_Public_Guest', bssid: '00:1B:44:11:3A:B7', auth: 'Open', encryption: 'None', signal: 82, channel: 6, band: '2.4 GHz' },
@@ -384,19 +403,16 @@ class SystemBridge {
     };
   }
 
-  async connectWifi(ssid, key = '') {
+  async connectWifi(ssid) {
     if (this.isElectron) {
       try {
-        const cmd = key
-          ? `powershell -NoProfile -Command "netsh wlan connect name='${ssid}'"`
-          : `powershell -NoProfile -Command "netsh wlan connect name='${ssid}'"`;
-        const res = await this.exec(cmd);
-        return { success: res.success, message: res.stdout || `Connected to '${ssid}'.` };
+        const res = await window.cyberSystemAPI.connectWifi(ssid);
+        return { ...res, message: res.message || (res.success ? `Connected to saved Wi-Fi profile '${ssid}'.` : '') };
       } catch (e) {
         return { success: false, error: e.message };
       }
     }
-    return { success: true, message: `[Simulated Network Handshake] Connected to '${ssid}'.` };
+    return { success: false, source: DATA_SOURCES.SIMULATED, simulated: true, error: 'HOST_WIFI_CONNECT_UNAVAILABLE' };
   }
 }
 
