@@ -20,6 +20,10 @@ if (fs.existsSync(asarPath)) {
     '/index.html', '/main.cjs', '/preload.cjs', '/js/app.js',
     '/js/runtimeconfig.js', '/js/aitradingengine.js',
     '/js/core/trading/mlshadowmodel.js', '/js/core/trading/mt5demogateway.js', '/js/core/trading/mt5democertification.js',
+    '/js/core/trading/mt5demoreadiness.js', '/js/core/trading/mt5demoexecutiongate.js',
+    '/js/core/trading/aireadercontract.js', '/js/core/trading/verifiedpaperbot.js',
+    '/js/core/trading/patternevidence.js', '/js/core/trading/patternoutcomeresearch.js', '/js/core/trading/patternmemorypromotion.js',
+    '/js/core/trading/marketdatahealth.js', '/js/core/trading/marketregime.js',
     '/js/core/trading/paperaccount.js', '/js/services/trading/binancemarketdata.js',
     '/lib/atomicjsonstore.cjs', '/lib/mt5demoauth.cjs'
   ];

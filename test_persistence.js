@@ -4,6 +4,8 @@ import path from 'node:path';
 import { createRequire } from 'node:module';
 import { migrateProfile, PROFILE_SCHEMA_VERSION } from './js/profileStore.js';
 import { createMLShadowModel } from './js/core/trading/mlShadowModel.js';
+import { createVerifiedPaperBotState, setVerifiedPaperBotEnabled } from './js/core/trading/verifiedPaperBot.js';
+import { buildPatternOutcomeResearchDataset } from './js/core/trading/patternOutcomeResearch.js';
 
 const require = createRequire(import.meta.url);
 const { AtomicJsonStore, STORE_FORMAT, STORE_SCHEMA_VERSION } = require('./lib/atomicJsonStore.cjs');
@@ -81,6 +83,24 @@ try {
   assert(migrated.tradingData.live.domain === 'LIVE_BROKER' && migrated.tradingData.live.accountSnapshot === null, 'Unverified broker snapshots cannot enter the Live domain');
   assert(!Object.hasOwn(migrated, 'aiTradingGymState'), 'Legacy mixed trading field is removed after migration');
 
+  const researchStart = 1750000000000;
+  const persistedPatternResearch = buildPatternOutcomeResearchDataset(Array.from({ length: 60 }, (_, index) => ({
+    time: researchStart + index * 300000,
+    open: 100,
+    high: 100.3,
+    low: 99.7,
+    close: 100.02,
+    volume: 10
+  })), {
+    source: 'BINANCE_KLINES_REST',
+    assetId: 'BTC/USDT',
+    timeframe: '5m',
+    timeframeSeconds: 300,
+    collectedAt: researchStart + 60 * 300000,
+    verified: true,
+    simulation: false
+  });
+
   const auditMigrated = migrateProfile({
     tradingData: {
       paper: {
@@ -89,12 +109,18 @@ try {
           { eventId: 'audit-persist-1', at: '2026-08-20T00:00:00.000Z', eventType: 'OPEN_REJECTED', reason: 'MAX_OPEN_POSITIONS' },
           { eventId: 'audit-invalid', at: 'not-a-date', eventType: 'OPEN_ACCEPTED' }
         ],
-        mlShadow: { model: createMLShadowModel({ source: 'TEST', assetId: 'BTC/USDT', timeframe: '5m' }), report: null }
+        mlShadow: { model: createMLShadowModel({ source: 'TEST', assetId: 'BTC/USDT', timeframe: '5m' }), report: null },
+        patternResearch: { ...persistedPatternResearch, decisionEligible: true, weightInfluence: true },
+        aiReader: { schemaVersion: 'AI_READER_REPORT_V1', authority: { executionInfluence: true } },
+        verifiedPaperBot: setVerifiedPaperBotEnabled(createVerifiedPaperBotState(100000), true, { balanceUSD: 100000 })
       }
     }
   });
   assert(auditMigrated.tradingData.paper.executionAudit.length === 1, 'Profile migration preserves only valid Paper execution audit events');
   assert(auditMigrated.tradingData.paper.mlShadow.model?.certification.decisionEligible === false, 'Profile migration preserves ML Shadow state without decision authority');
+  assert(auditMigrated.tradingData.paper.patternResearch?.decisionEligible === false && auditMigrated.tradingData.paper.patternResearch?.weightInfluence === false, 'Profile migration preserves Pattern Research while stripping forged trading authority');
+  assert(auditMigrated.tradingData.paper.aiReader === null, 'Profile migration rejects an AI Reader report with forged execution authority');
+  assert(auditMigrated.tradingData.paper.verifiedPaperBot?.enabled === true && auditMigrated.tradingData.paper.verifiedPaperBot?.killSwitch === false, 'Profile migration preserves a valid Verified Paper Bot operator setting');
 
   const isolatedA = migrateProfile({}, 'A');
   const isolatedB = migrateProfile({}, 'B');

@@ -1,6 +1,6 @@
 {
   "name": "cyberdeck",
-  "version": "4.2.0",
+  "version": "4.3.0",
   "description": "CyberDeck Terminal Native Desktop Application with Hacky Roguelite Mode",
   "type": "module",
   "main": "main.cjs",
@@ -15,6 +15,7 @@
     "test:persistence": "node test_persistence.js",
     "test:security": "node test_security.js",
     "test:trade": "node test_trade_core.js",
+    "test:trade-soak": "node test_trade_soak.js",
     "test:features": "node test_all_features.js",
     "verify:release": "node scripts/verify_release_config.cjs",
     "verify:artifact": "node scripts/verify_packaged_artifact.cjs",

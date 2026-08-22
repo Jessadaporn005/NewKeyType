@@ -17,7 +17,8 @@ export function calculateTargetScore(entry = 0, target = 0, stop = 0, regime = n
   const safeRsi = finiteNumber(rsi);
   const targetDistance = safeEntry === null || safeTarget === null ? 0 : Math.abs(safeTarget - safeEntry);
   const stopDistance = safeEntry === null || safeStop === null ? 0 : Math.abs(safeEntry - safeStop);
-  const valid = targetDistance > 0 && stopDistance > 0 && safeRsi !== null;
+  const regimeEvidenceAvailable = regime?.decisionEligible !== false;
+  const valid = targetDistance > 0 && stopDistance > 0 && safeRsi !== null && regimeEvidenceAvailable;
 
   if (!valid) {
     return {
@@ -26,7 +27,7 @@ export function calculateTargetScore(entry = 0, target = 0, stop = 0, regime = n
       valid: false,
       scorePercent: 50,
       cautionScorePercent: 50,
-      rating: 'INSUFFICIENT INPUT',
+      rating: regimeEvidenceAvailable ? 'INSUFFICIENT INPUT' : 'INSUFFICIENT REGIME EVIDENCE',
       riskRewardRatio: null
     };
   }
@@ -39,7 +40,7 @@ export function calculateTargetScore(entry = 0, target = 0, stop = 0, regime = n
 
   if (safeRsi > 40 && safeRsi < 60) score += 4.5;
   if (regime?.type === 'TRENDING_MOMENTUM') score += 8;
-  else if (regime?.type === 'MACRO_VOLATILITY_SHOCK') score -= 12;
+  else if (regime?.type === 'VOLATILITY_EXPANSION') score -= 12;
 
   const scorePercent = Math.min(94.5, Math.max(35, Number(score.toFixed(1))));
   return {

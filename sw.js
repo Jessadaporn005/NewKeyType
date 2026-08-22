@@ -3,7 +3,7 @@
  * Checks for updates on every launch and syncs new versions immediately.
  */
 
-const CACHE_NAME = 'cybertype-v2.8';
+const CACHE_NAME = 'cybertype-v4.3.0';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();

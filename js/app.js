@@ -448,10 +448,19 @@ class WindowsTerminalApp {
       aiNetPnlDisplay: document.getElementById('aiNetPnlDisplay'),
       aiAdaptationLevel: document.getElementById('aiAdaptationLevel'),
       chkAIAutoTrader: document.getElementById('chkAIAutoTrader'),
+      verifiedPaperBotStatus: document.getElementById('verifiedPaperBotStatus'),
+      btnVerifiedBotKill: document.getElementById('btnVerifiedBotKill'),
+      btnVerifiedBotReset: document.getElementById('btnVerifiedBotReset'),
       aiJournalFeed: document.getElementById('aiJournalFeed'),
       btnRunMLShadow: document.getElementById('btnRunMLShadow'),
       mlShadowStatus: document.getElementById('mlShadowStatus'),
       mlShadowMetrics: document.getElementById('mlShadowMetrics'),
+      btnRunPatternResearch: document.getElementById('btnRunPatternResearch'),
+      patternResearchStatus: document.getElementById('patternResearchStatus'),
+      patternResearchMetrics: document.getElementById('patternResearchMetrics'),
+      btnRunLocalAIReader: document.getElementById('btnRunLocalAIReader'),
+      localAIReaderStatus: document.getElementById('localAIReaderStatus'),
+      localAIReaderMetrics: document.getElementById('localAIReaderMetrics'),
       tradingSidebarTabs: document.getElementById('tradingSidebarTabs'),
       panelTradingCopilot: document.getElementById('panelTradingCopilot'),
       panelTradingGym: document.getElementById('panelTradingGym'),
@@ -788,6 +797,18 @@ class WindowsTerminalApp {
             this.updateMLShadowUI(shadowState);
           };
 
+          this.tradingEngine.onPatternResearchUpdate = (researchState) => {
+            this.updatePatternResearchUI(researchState);
+          };
+
+          this.tradingEngine.onAIReaderUpdate = (readerState) => {
+            this.updateLocalAIReaderUI(readerState);
+          };
+
+          this.tradingEngine.onVerifiedPaperBotUpdate = (botState) => {
+            this.updateVerifiedPaperBotUI(botState);
+          };
+
           this.tradingEngine.onKnowledgeStreamUpdate = (logs, latestLog) => {
             this.updateKnowledgeStreamUI(logs, latestLog);
           };
@@ -819,16 +840,30 @@ class WindowsTerminalApp {
             }
           };
 
+          this.tradingEngine.onMT5ReadinessUpdate = (readiness) => {
+            this.updateMT5ReadinessUI(readiness);
+          };
+
           this.tradingEngine.onDataSourceUpdate = (dataSource) => {
             const badge = document.getElementById('tradingDataSourceBadge');
             if (!badge || !dataSource) return;
             const firstReason = dataSource.decisionReasons?.[0] || dataSource.quality || 'UNVERIFIED';
-            if (dataSource.decisionEligible) {
-              badge.textContent = `DATA: ${dataSource.sourceLabel} • CLOSED BARS VERIFIED`;
+            const healthStatus = dataSource.healthStatus || 'NOT_STARTED';
+            const sourceDegraded = healthStatus === 'DEGRADED' || healthStatus === 'OFFLINE';
+            if ((dataSource.health?.inFlight || healthStatus === 'STARTING') && dataSource.schemaVersion === null) {
+              badge.textContent = 'DATA: VERIFYING SOURCE...';
+              badge.style.color = '#66ccff';
+              badge.style.borderColor = '#66ccff';
+            } else if (dataSource.decisionEligible && !sourceDegraded) {
+              badge.textContent = `DATA: ${dataSource.sourceLabel} • CLOSED BARS VERIFIED${dataSource.health?.inFlight ? ' • REFRESHING' : ''}`;
               badge.style.color = '#00ff88';
               badge.style.borderColor = '#00ff88';
+            } else if (dataSource.decisionEligible) {
+              badge.textContent = `DATA: VERIFIED SNAPSHOT • ${healthStatus} • RETRYING`;
+              badge.style.color = '#ffaa00';
+              badge.style.borderColor = '#ffaa00';
             } else if (dataSource.isSimulation) {
-              badge.textContent = 'DATA: SIMULATION LAB • NO TRADE';
+              badge.textContent = `DATA: SIMULATION LAB • ${healthStatus} • NO TRADE`;
               badge.style.color = '#ffaa00';
               badge.style.borderColor = '#ffaa00';
             } else {
@@ -839,7 +874,10 @@ class WindowsTerminalApp {
             const ageLabel = Number.isFinite(dataSource.dataAgeMs)
               ? `${Math.round(dataSource.dataAgeMs / 1000)}s old`
               : 'age unavailable';
-            badge.title = `${dataSource.sourceLabel} | ${dataSource.closedBars} closed / ${dataSource.formingBars} forming | ${ageLabel} | ${dataSource.decisionReasons?.join(', ') || 'eligible'}`;
+            const nextRefreshLabel = Number.isFinite(dataSource.nextRefreshAtMs)
+              ? `next refresh ${Math.max(0, Math.round((dataSource.nextRefreshAtMs - Date.now()) / 1000))}s`
+              : 'no refresh scheduled';
+            badge.title = `${dataSource.sourceLabel} | packet #${dataSource.packetSequence || 0} | ${dataSource.closedBars} closed / ${dataSource.formingBars} forming | ${ageLabel} | health ${healthStatus} | failures ${dataSource.consecutiveFailures || 0} | ${nextRefreshLabel} | last ${dataSource.latestEvidence?.outcome || 'none'} | ${dataSource.decisionReasons?.join(', ') || 'eligible'}`;
           };
 
           this.tradingEngine.onLiveExecutionUpdate = (data) => {
@@ -878,6 +916,13 @@ class WindowsTerminalApp {
             model: this.tradingEngine.mlShadowModel,
             report: this.tradingEngine.mlShadowReport,
             prediction: this.tradingEngine.mlShadowPrediction
+          });
+          this.updatePatternResearchUI({ dataset: this.tradingEngine.patternResearchDataset, promotion: this.tradingEngine.patternMemoryPromotionReport });
+          this.updateLocalAIReaderUI({ report: this.tradingEngine.aiReaderReport });
+          this.updateVerifiedPaperBotUI({ state: this.tradingEngine.verifiedPaperBotState });
+          this.tradingEngine.inspectMT5DemoReadiness();
+          this.tradingEngine.getLocalAIReaderStatus().then(status => {
+            if (!this.tradingEngine?.aiReaderReport) this.updateLocalAIReaderUI({ status });
           });
           if (this.tradingEngine.getAIProfileDetails) {
             this.updateAIProfileUI(this.tradingEngine.getAIProfileDetails());
@@ -959,13 +1004,14 @@ class WindowsTerminalApp {
         signal.patterns.forEach(p => {
           const pill = document.createElement('span');
           pill.className = 'pattern-pill';
-          pill.textContent = `[ ${p.name} ]`;
+          pill.textContent = `[ ✓ ${p.name} ]`;
+          pill.title = `${p.id || 'NO_EVIDENCE_ID'} • ${p.confirmation?.method || 'NO_CONFIRMATION'} • Invalidation: ${p.invalidation?.condition || 'NOT_DEFINED'}`;
           this.dom.aiPatternTags.appendChild(pill);
         });
       } else {
         const pill = document.createElement('span');
         pill.className = 'pattern-pill';
-        pill.textContent = '[ Price Action Consolidation ]';
+        pill.textContent = '[ NO CONFIRMED PATTERN ]';
         this.dom.aiPatternTags.appendChild(pill);
       }
     }
@@ -1393,8 +1439,18 @@ class WindowsTerminalApp {
     }
     if (this.dom.chkAIAutoTrader) {
       this.dom.chkAIAutoTrader.addEventListener('change', (e) => {
-        const enabled = this.tradingEngine ? this.tradingEngine.toggleAutoTrading(e.target.checked) : false;
+        const enabled = this.tradingEngine ? this.tradingEngine.toggleVerifiedPaperBot(e.target.checked) : false;
         e.target.checked = enabled;
+      });
+    }
+    if (this.dom.btnVerifiedBotKill) {
+      this.dom.btnVerifiedBotKill.addEventListener('click', () => {
+        if (this.tradingEngine) this.tradingEngine.triggerVerifiedPaperBotKillSwitch({ closeBotPositions: true });
+      });
+    }
+    if (this.dom.btnVerifiedBotReset) {
+      this.dom.btnVerifiedBotReset.addEventListener('click', () => {
+        if (this.tradingEngine) this.tradingEngine.resetVerifiedPaperBotSafety();
       });
     }
     if (this.dom.btnRunMLShadow) {
@@ -1415,6 +1471,42 @@ class WindowsTerminalApp {
         }
       });
     }
+    if (this.dom.btnRunPatternResearch) {
+      this.dom.btnRunPatternResearch.addEventListener('click', async () => {
+        if (!this.tradingEngine || this.dom.btnRunPatternResearch.disabled) return;
+        const originalText = this.dom.btnRunPatternResearch.textContent;
+        this.dom.btnRunPatternResearch.disabled = true;
+        this.dom.btnRunPatternResearch.textContent = 'FETCHING + LABELING...';
+        try {
+          const result = await this.tradingEngine.runPatternResearchEvaluation();
+          if (!result?.success) this.updatePatternResearchUI({ error: result?.reason || 'PATTERN_RESEARCH_FAILED' });
+        } catch (error) {
+          console.error('[Pattern Research] Evaluation failed closed:', error);
+          this.updatePatternResearchUI({ error: 'PATTERN_RESEARCH_FAILED_CLOSED' });
+        } finally {
+          this.dom.btnRunPatternResearch.disabled = false;
+          this.dom.btnRunPatternResearch.textContent = originalText;
+        }
+      });
+    }
+    if (this.dom.btnRunLocalAIReader) {
+      this.dom.btnRunLocalAIReader.addEventListener('click', async () => {
+        if (!this.tradingEngine || this.dom.btnRunLocalAIReader.disabled) return;
+        const originalText = this.dom.btnRunLocalAIReader.textContent;
+        this.dom.btnRunLocalAIReader.disabled = true;
+        this.dom.btnRunLocalAIReader.textContent = 'LOCAL AI READING...';
+        try {
+          const result = await this.tradingEngine.runLocalAIReaderInterpretation();
+          if (!result?.success) this.updateLocalAIReaderUI({ error: result?.reason || 'LOCAL_AI_READER_FAILED', status: result?.status });
+        } catch (error) {
+          console.error('[Local AI Reader] Failed closed:', error);
+          this.updateLocalAIReaderUI({ error: 'LOCAL_AI_READER_FAILED_CLOSED' });
+        } finally {
+          this.dom.btnRunLocalAIReader.disabled = false;
+          this.dom.btnRunLocalAIReader.textContent = originalText;
+        }
+      });
+    }
 
     // Live Cockpit Modal Launcher
     const btnLaunchCockpit = document.getElementById('btnLaunchLiveCockpit');
@@ -1424,6 +1516,7 @@ class WindowsTerminalApp {
     if (btnLaunchCockpit && cockpitModal) {
       btnLaunchCockpit.addEventListener('click', () => {
         cockpitModal.classList.remove('hidden');
+        if (this.tradingEngine) this.tradingEngine.inspectMT5DemoReadiness();
         if (this.tradingEngine && this.tradingEngine.getAIProfileDetails) {
           const prof = this.tradingEngine.getAIProfileDetails();
           const rankEl = document.getElementById('cockpitBrainRank');
@@ -1560,7 +1653,7 @@ class WindowsTerminalApp {
     }
   }
 
-  switchTradingMarket(market = 'binance') {
+  switchTradingMarket(market = 'binance', preferredAsset = null) {
     const marketSwitcher = document.getElementById('tradingMarketSwitcher');
     if (marketSwitcher) {
       marketSwitcher.querySelectorAll('.market-src-btn').forEach(b => {
@@ -1575,14 +1668,18 @@ class WindowsTerminalApp {
         pill.classList.toggle('hidden-pair', !isMatch);
       });
 
-      const firstVisible = this.dom.tradingPairTabs.querySelector(`.trading-pair-pill[data-market="${market}"]`);
-      if (firstVisible) {
+      const visiblePills = [...this.dom.tradingPairTabs.querySelectorAll('.trading-pair-pill')]
+        .filter(pill => (pill.dataset.market || 'binance') === market);
+      const selectedPill = visiblePills.find(pill => pill.dataset.pair === preferredAsset) || visiblePills[0] || null;
+      if (selectedPill) {
         this.dom.tradingPairTabs.querySelectorAll('.trading-pair-pill').forEach(b => b.classList.remove('active'));
-        firstVisible.classList.add('active');
-        const pair = firstVisible.dataset.pair;
+        selectedPill.classList.add('active');
+        const pair = selectedPill.dataset.pair;
         if (this.tradingEngine) {
-          this.tradingEngine.setMarket(market);
-          this.tradingEngine.setAsset(pair);
+          this.tradingEngine.activeMarket = market;
+          const alreadyLoadingOrVisible = this.tradingEngine.activeAsset?.id === pair
+            && (this.tradingEngine.marketPacket || this.tradingEngine.marketDataActiveRequest);
+          if (!alreadyLoadingOrVisible) this.tradingEngine.setAsset(pair);
         }
         if (this.tabManager) this.tabManager.syncActiveTabFromMode('trading', pair);
       }
@@ -1634,6 +1731,121 @@ class WindowsTerminalApp {
         : '';
       this.dom.mlShadowMetrics.textContent = `HOLDOUT ${report.split.test} • BAL ACC ${(test.balancedAccuracy * 100).toFixed(1)}% • BRIER ${test.brier.toFixed(4)} vs BASE ${test.baseline.brier.toFixed(4)}${walkForwardText} • ${report.dataProvenance.source}${rawPrediction}`;
     }
+  }
+
+  updatePatternResearchUI({ dataset = null, promotion = null, error = null } = {}) {
+    if (error) {
+      if (this.dom.patternResearchStatus) this.dom.patternResearchStatus.textContent = `PATTERN RESEARCH BLOCKED: ${error}`;
+      if (this.dom.patternResearchMetrics) this.dom.patternResearchMetrics.textContent = 'No dataset, strategy weight, or trading decision was changed.';
+      return;
+    }
+    if (!dataset?.success) {
+      if (this.dom.patternResearchStatus) this.dom.patternResearchStatus.textContent = 'NO PATTERN OUTCOME DATASET — RESEARCH ONLY';
+      if (this.dom.patternResearchMetrics) this.dom.patternResearchMetrics.textContent = 'No Pattern is called skilled until enough forward-only outcomes have been observed.';
+      return;
+    }
+    const summary = dataset.summary;
+    const aggregate = summary.byAssetTimeframe?.[0] || null;
+    const expectancy = aggregate?.expectancyR === null || aggregate?.expectancyR === undefined
+      ? 'N/A'
+      : `${aggregate.expectancyR >= 0 ? '+' : ''}${aggregate.expectancyR.toFixed(3)}R`;
+    const targetRate = aggregate?.targetHitRatePercent === null || aggregate?.targetHitRatePercent === undefined
+      ? 'N/A'
+      : `${aggregate.targetHitRatePercent.toFixed(1)}%`;
+    if (this.dom.patternResearchStatus) {
+      this.dom.patternResearchStatus.textContent = `${summary.completed} COMPLETED • ${summary.pending} PENDING • ${summary.rejected} REJECTED • ZERO TRADE INFLUENCE`;
+    }
+    if (this.dom.patternResearchMetrics) {
+      this.dom.patternResearchMetrics.textContent = [
+        `${summary.byPattern.length} PATTERN TYPES`,
+        `TARGET HIT ${targetRate}`,
+        `EXPECTANCY ${expectancy} AFTER COST`,
+        `HORIZON ${dataset.config.horizonBars} BARS`,
+        `TARGET ${dataset.config.targetR}R`,
+        `${dataset.provenance.source}`,
+        `PROMOTED MEMORY ${promotion?.promotedCount || 0}`,
+        'DESCRIPTIVE / UNCALIBRATED'
+      ].join(' • ');
+    }
+  }
+
+  updateLocalAIReaderUI({ report = null, status = null, error = null } = {}) {
+    if (error) {
+      const unavailable = ['OLLAMA_NOT_RUNNING_OR_NOT_INSTALLED', 'OLLAMA_NOT_RESPONDING', 'OLLAMA_MODEL_NOT_INSTALLED'].includes(error);
+      if (this.dom.localAIReaderStatus) {
+        this.dom.localAIReaderStatus.textContent = unavailable
+          ? `REAL LOCAL AI NOT READY: ${error}`
+          : `AI READER BLOCKED SAFELY: ${error}`;
+      }
+      if (this.dom.localAIReaderMetrics) {
+        this.dom.localAIReaderMetrics.textContent = unavailable
+          ? 'ไม่มีข้อความ AI ปลอมถูกสร้างขึ้น • ติดตั้ง Ollama และโมเดล Local ก่อนใช้งาน • ไม่ต้องมี API key'
+          : 'ผลลัพธ์นี้ไม่มีอำนาจตัดสินใจหรือส่งคำสั่งซื้อขาย';
+      }
+      return;
+    }
+    if (report) {
+      if (this.dom.localAIReaderStatus) {
+        this.dom.localAIReaderStatus.textContent = `${report.provider.model} • REAL LOCAL LLM • ${report.stance} • SHADOW ONLY`;
+      }
+      if (this.dom.localAIReaderMetrics) {
+        const uncertainty = report.uncertainties?.[0] || 'Uncertainty retained';
+        this.dom.localAIReaderMetrics.textContent = `${report.summary} • ความไม่แน่นอน: ${uncertainty} • ZERO EXECUTION / WEIGHT INFLUENCE`;
+      }
+      return;
+    }
+    if (status?.success && status.model) {
+      if (this.dom.localAIReaderStatus) this.dom.localAIReaderStatus.textContent = `${status.model} READY • LOCAL LOOPBACK • SHADOW ONLY`;
+      if (this.dom.localAIReaderMetrics) this.dom.localAIReaderMetrics.textContent = 'โมเดลทำงานบนเครื่อง ไม่ใช้ API key และยังไม่มีสิทธิ์ส่งออเดอร์';
+      return;
+    }
+    if (status?.success && !status.model) {
+      if (this.dom.localAIReaderStatus) this.dom.localAIReaderStatus.textContent = 'OLLAMA RUNNING • NO LOCAL MODEL INSTALLED';
+      if (this.dom.localAIReaderMetrics) this.dom.localAIReaderMetrics.textContent = 'ต้องติดตั้งโมเดล Local อย่างน้อยหนึ่งตัวก่อน • ไม่มีค่า API';
+      return;
+    }
+    if (this.dom.localAIReaderStatus) this.dom.localAIReaderStatus.textContent = 'REAL LOCAL AI NOT CONNECTED — SHADOW READER ONLY';
+    if (this.dom.localAIReaderMetrics) this.dom.localAIReaderMetrics.textContent = 'ไม่มี AI จำลองทำงานแทน • ระบบเทรดยังคงใช้กฎที่ตรวจสอบได้';
+  }
+
+  updateVerifiedPaperBotUI({ state = null, result = null, opened = null, killed = false } = {}) {
+    if (!state) return;
+    if (this.dom.chkAIAutoTrader) this.dom.chkAIAutoTrader.checked = state.enabled === true;
+    if (!this.dom.verifiedPaperBotStatus) return;
+    if (state.killSwitch || killed) {
+      this.dom.verifiedPaperBotStatus.textContent = '● KILL SWITCH ARMED • BOT OFF';
+      this.dom.verifiedPaperBotStatus.style.color = '#ff4466';
+      return;
+    }
+    if (opened?.success) {
+      this.dom.verifiedPaperBotStatus.textContent = `● PAPER OPENED • ${result?.decision?.side || ''} • ${(result?.decision?.requestedRiskPercent || 0).toFixed(2)}% RISK`;
+      this.dom.verifiedPaperBotStatus.style.color = '#00ff88';
+      return;
+    }
+    if (state.enabled) {
+      const reason = result?.reason && result.reason !== 'CANDLE_ALREADY_EVALUATED' ? ` • WAIT: ${result.reason}` : '';
+      this.dom.verifiedPaperBotStatus.textContent = `● ON • VERIFIED PAPER ONLY${reason}`;
+      this.dom.verifiedPaperBotStatus.style.color = '#ffaa00';
+      return;
+    }
+    this.dom.verifiedPaperBotStatus.textContent = '● OFF • PAPER ONLY';
+    this.dom.verifiedPaperBotStatus.style.color = '#94a3b8';
+  }
+
+  updateMT5ReadinessUI(readiness) {
+    const element = document.getElementById('cockpitMT5Readiness');
+    if (!element || !readiness) return;
+    element.textContent = readiness.status;
+    element.style.color = readiness.readyForDemoOrderCertification ? '#00ff88' : '#ffaa00';
+    const checks = readiness.checks || {};
+    element.title = [
+      `Terminal installed: ${checks.terminalInstalled ? 'YES' : 'NO'}`,
+      `Terminal running: ${checks.terminalRunning ? 'YES' : 'NO'}`,
+      `Python bridge: ${checks.pythonBridgeDependencyAvailable && checks.bridgeScriptPresent ? 'READY' : 'NOT READY'}`,
+      `Authenticated gateway: ${checks.gatewayEnabled && checks.accessTokenConfigured ? 'READY' : 'NOT CONFIGURED'}`,
+      `Demo account observed: ${checks.demoAccountObserved ? 'YES' : 'NO'}`,
+      `30-second telemetry certified: ${checks.telemetryCertified ? 'YES' : 'NO'}`
+    ].join(' | ');
   }
 
   updateAIJournalUI(journal) {
@@ -1698,7 +1910,14 @@ class WindowsTerminalApp {
       profile.skills.forEach(sk => {
         const chip = document.createElement('div');
         chip.className = `skill-mastery-chip ${sk.statusClass}`;
-        chip.innerHTML = `<span>${sk.name}</span><strong>${sk.winRate}% (x${sk.weight})</strong>`;
+        const evidenceText = sk.observations > 0
+          ? `${sk.winRate}% PAPER (${sk.observations} obs, x${sk.weight})`
+          : 'UNOBSERVED (0 obs)';
+        const name = document.createElement('span');
+        name.textContent = sk.name;
+        const evidence = document.createElement('strong');
+        evidence.textContent = evidenceText;
+        chip.append(name, evidence);
         skillsGrid.appendChild(chip);
       });
     }
@@ -1741,11 +1960,21 @@ class WindowsTerminalApp {
   }
 
   launchTradingMode(assetArg) {
-    let targetAsset = assetArg ? assetArg.toUpperCase() : 'BTC/USDT';
+    const lowerAssetArg = assetArg ? assetArg.toLowerCase() : '';
+    const exchangeAliases = {
+      btc: 'BTC/USDT',
+      bitcoin: 'BTC/USDT',
+      eth: 'ETH/USDT',
+      ethereum: 'ETH/USDT',
+      sol: 'SOL/USDT',
+      solana: 'SOL/USDT',
+      binance: 'BTC/USDT'
+    };
+    let targetAsset = exchangeAliases[lowerAssetArg] || (assetArg ? assetArg.toUpperCase() : 'BTC/USDT');
     let targetMarket = 'binance';
 
     if (assetArg) {
-      const lower = assetArg.toLowerCase();
+      const lower = lowerAssetArg;
       if (['xm', 'forex', 'gold', 'xau', 'eur', 'gbp', 'oil', 'usoil'].includes(lower)) {
         targetMarket = 'xm';
         if (lower === 'gold' || lower === 'xau' || lower === 'xm' || lower === 'forex') targetAsset = 'XAU/USD';
@@ -1759,12 +1988,7 @@ class WindowsTerminalApp {
     this.state = STATES.MODE_TRADING;
 
     this.ensureViewEngineInitialized('trading');
-
-    if (this.tradingEngine) {
-      this.tradingEngine.setMarket(targetMarket);
-      this.tradingEngine.setAsset(targetAsset);
-    }
-    this.switchTradingMarket(targetMarket);
+    this.switchTradingMarket(targetMarket, targetAsset);
 
     this.playCyberTransition(
       targetMarket === 'xm' ? 'XM GLOBAL FOREX & GOLD TERMINAL' : 'AI QUANTUM TRADING TERMINAL',

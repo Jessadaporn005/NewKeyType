@@ -507,7 +507,7 @@ async function runTests() {
   // AI Trade Signal Generator
   const sig = generateAISignal(mockCandles, TRADING_ASSETS[0], patterns);
   assert(sig && typeof sig.action === 'string', `generateAISignal produced actionable trade decision: ${sig.action}`);
-  assert(sig.confidence >= 50 && sig.confidence <= 99, `Rule-confluence score calculated: ${sig.confidence}%`);
+  assert(sig.ruleScore >= 50 && sig.ruleScore <= 99, `Rule-confluence score calculated: ${sig.ruleScore}/99`);
   assert(sig.tp1 > 0 && sig.sl > 0, `Take Profit ($${sig.tp1}) and Stop Loss ($${sig.sl}) targets generated`);
   assert(sig.rationale.length > 20, 'Thai rule-based rationale assembled');
 
@@ -549,22 +549,17 @@ async function runTests() {
   assert(bearTest.sentiment === 'BEARISH' && bearTest.score < 0, 'analyzeNewsSentiment detected negative regulatory headwind');
 
   const newsSignal = generateAISignal(mockCandles, TRADING_ASSETS[0], patterns, LIVE_MARKET_NEWS_FEED[0]);
-  assert(newsSignal.activeNews && newsSignal.rationale.includes('ปัจจัยข่าวกระทบสด'), 'Rule engine incorporated a labeled simulated-news scenario');
+  assert(newsSignal.activeNews && newsSignal.decisionNewsPolicy.accepted === false
+    && newsSignal.rationale.includes('DISPLAY-ONLY NEWS SCENARIO'), 'Rule engine labels simulated news and gives it zero decision influence');
 
   // AI Autonomous Learning Gym & Post-Mortem Journal Engine
-  assert(tradingEngine.isAutoTrading === true, 'Automatic paper-scenario runner enabled by default');
-  assert(tradingEngine.aiJournal.length >= 3, 'Paper journal seeded with labeled synthetic outcomes');
-  assert(tradingEngine.aiStats.winRate > 0, `Simulated baseline win rate tracked: ${tradingEngine.aiStats.winRate}%`);
-
-  const sampleJournal = tradingEngine.aiJournal[0];
-  assert(sampleJournal.postMortem.length > 20, 'Paper journal contains a rule-based post-mortem');
-  assert(sampleJournal.learningLesson.includes('น้ำหนัก') || sampleJournal.learningLesson.includes('บทเรียน'), 'Paper journal records a Thai heuristic update');
+  assert(tradingEngine.isAutoTrading === false, 'Legacy automatic paper-scenario runner starts disabled');
+  assert(tradingEngine.aiJournal.length === 0, 'New Paper journal starts without seeded synthetic outcomes');
+  assert(tradingEngine.aiStats.winRate === 0, 'New Paper statistics start at a truthful zero baseline');
 
   const prevTrades = tradingEngine.aiStats.totalTrades;
-  tradingEngine.runFastTrainingDrill(25);
-  assert(tradingEngine.aiStats.totalTrades === prevTrades + 25, `Fast-Training Drill executed 25 simulated trades (Total: ${tradingEngine.aiStats.totalTrades})`);
-  assert(tradingEngine.aiStats.wins > 0 && tradingEngine.aiStats.losses > 0, `Win/Loss record updated: ${tradingEngine.aiStats.wins} W - ${tradingEngine.aiStats.losses} L`);
-  assert(typeof tradingEngine.aiStats.winRate === 'number', `Dynamic Win Rate calculated: ${tradingEngine.aiStats.winRate}%`);
+  const fastTrainResult = tradingEngine.runFastTrainingDrill(25);
+  assert(fastTrainResult.success === false && tradingEngine.aiStats.totalTrades === prevTrades, 'Random Fast-Training cannot fabricate Trade observations');
 
   tradingEngine.resetAIMemory();
   assert(tradingEngine.aiStats.totalTrades === 0, 'Heuristic weights and paper stats reset to baseline');
@@ -618,18 +613,17 @@ async function runTests() {
   console.log('\n[30] Testing Infinite Knowledge Matrix & Experience Replay Loop...');
   const { DEFAULT_STRATEGY_WEIGHTS } = await import('./js/aiTradingEngine.js');
   assert(DEFAULT_STRATEGY_WEIGHTS['Bullish Engulfing'] && DEFAULT_STRATEGY_WEIGHTS['Liquidity Sweep'], 'DEFAULT_STRATEGY_WEIGHTS contains core Price Action & SMC matrix');
-  assert(DEFAULT_STRATEGY_WEIGHTS['Liquidity Sweep'].winRate > 80, 'Liquidity Sweep starts with high-conviction baseline');
+  assert(DEFAULT_STRATEGY_WEIGHTS['Liquidity Sweep'].wins === 0 && DEFAULT_STRATEGY_WEIGHTS['Liquidity Sweep'].losses === 0, 'Liquidity Sweep starts unobserved without fabricated conviction');
 
   // Test Experience Replay in generateAISignal
   const mockPat = [{ name: 'Liquidity Sweep', weight: 30, desc: 'Sweep below support' }];
   const sigWithMemory = generateAISignal(mockCandles, TRADING_ASSETS[0], mockPat, null, DEFAULT_STRATEGY_WEIGHTS);
-  assert(sigWithMemory.appliedMemoryInsight !== null, 'generateAISignal successfully generated Experience Replay memory insight');
-  assert(sigWithMemory.appliedMemoryInsight.isHighConviction === true, 'High-conviction pattern triggered Confidence Boost');
-  assert(sigWithMemory.appliedMemoryInsight.text.includes('ดึงความจำสถิติอดีต'), 'Memory insight contains Thai experience narrative');
+  assert(sigWithMemory.appliedMemoryInsight === null && sigWithMemory.decisionMemoryPolicy.accepted === false, 'Unvalidated default memory has zero signal influence');
 
   // Test dynamic weight updating
   tradingEngine.updateStrategyWeight('Liquidity Sweep', true, 'เจ้ามือกวาดสภาพคล่องสำเร็จ');
-  assert(tradingEngine.strategyWeights['Liquidity Sweep'].wins >= 16, 'updateStrategyWeight incremented pattern wins dynamically');
+  assert(tradingEngine.strategyWeights['Liquidity Sweep'].wins === 1
+    && tradingEngine.strategyWeights['Liquidity Sweep'].provenance !== 'WALK_FORWARD_OUT_OF_SAMPLE_VALIDATED', 'Paper observation can update its journal count but cannot claim validated provenance');
 
   // =========================================================================
   // SECTION 31: RULE-BASED PROFILE & STATIC REFERENCE KNOWLEDGE RADAR
@@ -680,8 +674,8 @@ async function runTests() {
   assert(mmDetails.capital === 50000, 'Account capital set to $50,000');
   assert(mmDetails.riskPercent === 2, 'Risk per trade set to 2% ($1,000)');
   assert(mmDetails.riskUSD === 1000, `Calculated risk USD: $${mmDetails.riskUSD}`);
-  assert(mmDetails.calculatedLots > 0, `Dynamic Lot Size calculated: ${mmDetails.calculatedLots} Lots`);
-  assert(mmDetails.marginLevel > 0 && mmDetails.marginStatus.includes('🟢'), `Margin health level verified: ${mmDetails.marginLevel}% (${mmDetails.marginStatus})`);
+  assert(mmDetails.sizeValue > 0 && mmDetails.requiredMarginUSD > 0, `Stop-based Paper size calculated: ${mmDetails.sizeValue} ${mmDetails.sizeUnit}`);
+  assert(typeof mmDetails.marginStatus === 'string', `Margin health state available: ${mmDetails.marginStatus}`);
 
   // =========================================================================
   // SECTION 36: TIME-MACHINE STRATEGY REPLAY & BACKTESTING
@@ -717,9 +711,7 @@ async function runTests() {
   };
 
   const sigMT5 = generateAISignal(mockCandles, TRADING_ASSETS[0], [], null, null, null, mockMT5Packet);
-  assert(sigMT5.mt5Intel !== null, 'generateAISignal ingested the explicitly supplied mock MT5 packet');
-  assert(sigMT5.mt5Intel.connected === true, 'mt5Intel marked connection status');
-  assert(sigMT5.mt5Intel.whaleWall.includes('500 Lots'), `mt5Intel detected Whale Liquidity Wall: ${sigMT5.mt5Intel.whaleWall}`);
+  assert(sigMT5.mt5Intel === null, 'Unvalidated legacy-shaped MT5 packets are rejected from signal telemetry');
 
   // =========================================================================
   // SECTION 38: LIVE MT5 & XM EXECUTION GATEWAY & RISK GUARDIAN SHIELD
@@ -748,11 +740,11 @@ async function runTests() {
 
   const regimeTest = detectMarketRegime(mockCandles);
   assert(regimeTest && typeof regimeTest.label === 'string', `detectMarketRegime identified regime: ${regimeTest.label}`);
-  assert(regimeTest.volatilityRatio > 0, `Market Regime calculated volatility ratio: ${regimeTest.volatilityRatio}`);
+  assert(regimeTest.schema === 'MARKET_REGIME_EVIDENCE_V1' && regimeTest.evidence.closedBarCount >= 50, 'Market Regime exposes closed-bar evidence instead of an unlabeled volatility claim');
 
   const mcTest = calculateMonteCarloProbability(2748.50, 2775.50, 2735.00, regimeTest, 45);
-  assert(mcTest.tpProbabilityPercent >= 35 && mcTest.tpProbabilityPercent <= 95, `Monte Carlo TP probability computed: ${mcTest.tpProbabilityPercent}% (${mcTest.confidenceRating})`);
-  assert(mcTest.slRiskPercent === Number((100 - mcTest.tpProbabilityPercent).toFixed(1)), 'Monte Carlo probability risk parity maintained');
+  assert(mcTest.tpProbabilityPercent >= 0 && mcTest.tpProbabilityPercent <= 100 && mcTest.calibrated === false, `Uncalibrated target rule score computed: ${mcTest.tpProbabilityPercent}/100 (${mcTest.confidenceRating})`);
+  assert(mcTest.slRiskPercent === Number((100 - mcTest.tpProbabilityPercent).toFixed(1)), 'Target rule score and caution score preserve 100-point parity');
 
   // =========================================================================
   // SECTION 40: DETERMINISTIC COUNTER-ARGUMENT & ORDER-FLOW RULES
@@ -761,7 +753,7 @@ async function runTests() {
   const debateTest = evaluateAdversarialDebate(patterns, regimeTest, mockMT5Packet.dom_depth, 42, 2748.50);
   assert(debateTest.bullAdvocate.arguments.length > 0, 'Bull Advocate generated bullish thesis arguments');
   assert(debateTest.bearSkeptic.arguments.length > 0, 'Bear Skeptic generated counter-arguments & risk scrutiny');
-  assert(debateTest.whaleSpecialist.verdict.includes('WHALE'), `Order-flow rule classified the supplied mock DOM packet: ${debateTest.whaleSpecialist.verdict}`);
+  assert(debateTest.whaleSpecialist.source === 'UNVERIFIED_EXTERNAL_PACKET', 'Order-flow rule refuses to treat a legacy mock DOM packet as verified whale evidence');
   assert(typeof debateTest.debateOutcome === 'string', `Adversarial debate resolved outcome: ${debateTest.debateOutcome}`);
 
   // =========================================================================
@@ -786,7 +778,7 @@ async function runTests() {
 
   const masteryList = tradingEngine.getSetupMastery();
   assert(Array.isArray(masteryList) && masteryList.length >= 5, `Setup Mastery Matrix evaluated ${masteryList.length} distinct SMC strategies`);
-  assert(masteryList[0].mastery >= 70, `Mastery Leader: ${masteryList[0].name} (${masteryList[0].mastery}% Mastery)`);
+  assert(masteryList.every(item => item.mastery === null), 'Setup matrix does not fabricate mastery percentages');
 
   const profDetails = tradingEngine.getAIProfileDetails();
   assert(profDetails.goldenRules.length >= 5, 'getAIProfileDetails bundles active Golden Rules');
@@ -797,23 +789,19 @@ async function runTests() {
   // SECTION 43: PERSISTENCE & LEVEL 10 PRESERVATION ON RESTART
   // =========================================================================
   console.log('\n[43] Testing Persistence & Level 10 Preservation across Restarts...');
-  tradingEngine.aiStats.samplesStudied = 14971;
-  tradingEngine.aiStats.totalTrades = 349;
-  tradingEngine.aiStats.wins = 243;
-  tradingEngine.aiStats.losses = 106;
-  tradingEngine.aiStats.winRate = 69.6;
-  tradingEngine.aiStats.netPnlUSD = 49834.25;
+  tradingEngine.resetAIMemory();
+  tradingEngine.triggerVerifiedPaperBotKillSwitch({ closeBotPositions: true });
   tradingEngine.saveGymState();
 
-  // Verify storage contains serialized Level 10 state
-  const rawSaved = global.localStorage.getItem('cyber_ai_trading_gym_state');
-  assert(rawSaved && rawSaved.includes('14971'), 'Gym state saved synchronously to localStorage with 14,971 samples');
+  // Verify storage contains the truthful zero baseline and safety state.
+  const rawSaved = global.localStorage.getItem(tradingEngine.getGymStorageKey());
+  assert(rawSaved && rawSaved.includes('VERIFIED_PAPER_BOT_V1'), 'Gym state saves the Verified Paper Bot safety contract');
 
   // Instantiate brand new fresh AITradingEngine (simulating page refresh / browser restart)
   const freshEngine = new AITradingEngine({ sound: mockSound, toasts: null });
-  assert(freshEngine.aiStats.samplesStudied === 14971, `Fresh engine restored 14,971 samples (got: ${freshEngine.aiStats.samplesStudied})`);
-  assert(freshEngine.aiStats.adaptationLevel === 10, `Fresh engine preserved Level 10 on reload (got: Level ${freshEngine.aiStats.adaptationLevel})`);
-  assert(freshEngine.getAIProfileDetails().rankTitle === 'LEVEL 10 // APEX PAPER-QUANT RULE ENGINE', 'Rank title remains explicit about the paper-quant rule engine');
+  assert(freshEngine.aiStats.samplesStudied === 0 && freshEngine.aiStats.totalTrades === 0, 'Fresh engine restores the truthful zero observation baseline');
+  assert(freshEngine.verifiedPaperBotState.killSwitch === true && freshEngine.verifiedPaperBotState.enabled === false, 'Fresh engine preserves the Paper Bot kill switch across restart');
+  assert(freshEngine.getAIProfileDetails().rankTitle === 'LEVEL 1 // HEURISTIC ROOKIE', 'Unobserved profile remains Level 1 instead of fabricating mastery');
 
   // =========================================================================
   // SECTION 44: SECURE SHUTDOWN DATABASE AUDIT & FLUSH VERIFICATION
@@ -868,7 +856,8 @@ async function runTests() {
   assert(assistant.lastSpokenText.includes('คุณอนันต์'), `Speech balloon updated: "${assistant.lastSpokenText}"`);
 
   assistant.reportAIGym();
-  assert(assistant.lastSpokenText.includes('KRONOS') && (assistant.lastSpokenText.includes('10') || assistant.lastSpokenText.includes('Apex Sovereign')), `AI Gym Telemetry vocal report in Thai: "${assistant.lastSpokenText}"`);
+  assert(assistant.lastSpokenText.includes('KRONOS') && assistant.lastSpokenText.includes('ระดับ 1')
+    && assistant.lastSpokenText.includes('0 ตัวอย่าง'), `AI Gym Telemetry truthfully reports the zero Paper baseline: "${assistant.lastSpokenText}"`);
 
   await assistant.reportWorldNews();
   assert(assistant.lastSpokenText.includes('รายงาน') || assistant.lastSpokenText.includes('ข่าว'), `World News Wire report in Thai: "${assistant.lastSpokenText}"`);

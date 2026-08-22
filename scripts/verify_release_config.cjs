@@ -11,6 +11,10 @@ const check = (condition, message) => {
 const requiredRuntimeFiles = [
   'index.html', 'main.cjs', 'preload.cjs', 'manifest.json', 'sw.js',
   'icon.ico', 'js/app.js', 'js/runtimeConfig.js', 'js/aiTradingEngine.js',
+  'js/core/trading/aiReaderContract.js', 'js/core/trading/verifiedPaperBot.js',
+  'js/core/trading/mt5DemoReadiness.js', 'js/core/trading/mt5DemoExecutionGate.js',
+  'js/core/trading/patternEvidence.js', 'js/core/trading/patternOutcomeResearch.js',
+  'js/core/trading/patternMemoryPromotion.js', 'js/core/trading/marketDataHealth.js',
   'lib/atomicJsonStore.cjs', 'lib/mt5DemoAuth.cjs'
 ];
 for (const relativePath of requiredRuntimeFiles) {
@@ -34,7 +38,7 @@ const runtimeConfig = fs.readFileSync(path.join(root, 'js/runtimeConfig.js'), 'u
 const mainProcess = fs.readFileSync(path.join(root, 'main.cjs'), 'utf8');
 const tradingEngine = fs.readFileSync(path.join(root, 'js/aiTradingEngine.js'), 'utf8');
 const retiredLiveExecutor = fs.readFileSync(path.join(root, 'scripts/mt5_live_executor.py'), 'utf8');
-check(/demoTradingEnabled:\s*false/.test(runtimeConfig), 'Release gate requires demoTradingEnabled=false until authenticated main-process transport exists');
+check(/demoTradingEnabled:\s*false/.test(runtimeConfig), 'Release gate requires demoTradingEnabled=false until real MT5 XDemo certification passes');
 check(/liveTradingEnabled:\s*false/.test(runtimeConfig), 'Release gate requires liveTradingEnabled=false');
 check(/allowSimulatedBrokerFallback:\s*false/.test(runtimeConfig), 'Release gate forbids simulated broker fallback');
 check(/MT5 LIVE EXECUTOR DISABLED/.test(retiredLiveExecutor) && !/order_send\s*\(/.test(retiredLiveExecutor), 'Legacy MT5 live executor must remain non-operational');

@@ -955,10 +955,24 @@
                 <!-- AI Auto-Trading Status Strip -->
                 <div class="ai-auto-toggle-strip">
                   <label class="toggle-chip">
-                    <input type="checkbox" id="chkAIAutoTrader" disabled>
-                    <span style="font-weight: 700; color: #ffaa00;">⚠ LEGACY AUTO SCENARIO — NO TRADE AUTHORITY</span>
+                    <input type="checkbox" id="chkAIAutoTrader">
+                    <span style="font-weight: 700; color: #00ff88;">VERIFIED PAPER BOT — CLOSED BARS ONLY</span>
                   </label>
-                  <span class="ai-status-pulse">● VERIFIED PAPER BOT PENDING</span>
+                  <span class="ai-status-pulse" id="verifiedPaperBotStatus">● OFF • PAPER ONLY</span>
+                  <button class="gym-btn" id="btnVerifiedBotKill">KILL + CLOSE BOT PAPER</button>
+                  <button class="gym-btn" id="btnVerifiedBotReset">RESET SAFETY</button>
+                </div>
+
+                <div class="ml-shadow-card" id="localAIReaderCard">
+                  <div class="ml-shadow-header">
+                    <div>
+                      <strong>REAL LOCAL AI READER (OLLAMA)</strong>
+                      <span>FREE LOCAL MODEL // NO API KEY // CLOSED-BAR EVIDENCE // ZERO TRADE AUTHORITY</span>
+                    </div>
+                    <button class="gym-btn" id="btnRunLocalAIReader">CHECK + READ CURRENT MARKET</button>
+                  </div>
+                  <div class="ml-shadow-status" id="localAIReaderStatus">CHECKING LOCAL AI — SHADOW READER ONLY</div>
+                  <div class="ml-shadow-metrics" id="localAIReaderMetrics">ถ้า Ollama หรือโมเดลยังไม่ได้ติดตั้ง ระบบจะแจ้งตรงๆ และจะไม่ใช้ข้อความจำลองแทน AI จริง</div>
                 </div>
 
                 <div class="ml-shadow-card" id="mlShadowCard">
@@ -971,6 +985,18 @@
                   </div>
                   <div class="ml-shadow-status" id="mlShadowStatus">NO VALIDATED MODEL — SHADOW ONLY</div>
                   <div class="ml-shadow-metrics" id="mlShadowMetrics">Run evaluation to create real local weights. Synthetic Gym data is never used here.</div>
+                </div>
+
+                <div class="ml-shadow-card" id="patternResearchCard">
+                  <div class="ml-shadow-header">
+                    <div>
+                      <strong>PATTERN OUTCOME RESEARCH DATASET</strong>
+                      <span>REAL CLOSED BARS // NEXT-BAR ENTRY // MAE/MFE + COSTS // ZERO TRADE INFLUENCE</span>
+                    </div>
+                    <button class="gym-btn" id="btnRunPatternResearch">BUILD DATASET ~2,000 REAL BARS</button>
+                  </div>
+                  <div class="ml-shadow-status" id="patternResearchStatus">NO PATTERN OUTCOME DATASET — RESEARCH ONLY</div>
+                  <div class="ml-shadow-metrics" id="patternResearchMetrics">No Pattern is called skilled until enough forward-only outcomes have been observed.</div>
                 </div>
 
                 <!-- AI Post-Mortem Trade Journal Stream -->
@@ -1263,6 +1289,10 @@
 
                 <!-- Live Account Summary -->
                 <div class="guardian-account-stats">
+                  <div class="g-acc-row">
+                    <span>MT5 XDEMO READINESS:</span>
+                    <strong id="cockpitMT5Readiness">NOT CHECKED</strong>
+                  </div>
                   <div class="g-acc-row">
                     <span>XM ACCOUNT:</span>
                     <strong id="cockpitAccLogin">UNVERIFIED / DISCONNECTED</strong>

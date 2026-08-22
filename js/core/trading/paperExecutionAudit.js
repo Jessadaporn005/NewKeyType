@@ -1,7 +1,7 @@
 export const PAPER_EXECUTION_AUDIT_VERSION = 'PAPER_EXECUTION_AUDIT_V1';
 
 const EVENT_TYPES = new Set(['OPEN_ACCEPTED', 'OPEN_REJECTED', 'POSITION_CLOSED']);
-const EXECUTION_SOURCES = new Set(['MANUAL_PAPER', 'RULE_AUTO_PAPER']);
+const EXECUTION_SOURCES = new Set(['MANUAL_PAPER', 'RULE_AUTO_PAPER', 'VERIFIED_PAPER_BOT']);
 
 function finiteOrNull(value) {
   const parsed = Number(value);
@@ -34,12 +34,25 @@ export function createPaperExecutionAuditEvent(rawEvent = {}) {
         memoryAccepted: rawEvent.decision.memoryAccepted === true,
         feedMode: shortText(rawEvent.decision.feedMode, 80),
         marketPacketSchema: finiteOrNull(rawEvent.decision.marketPacketSchema),
+        marketPacketSequence: finiteOrNull(rawEvent.decision.marketPacketSequence),
+        marketRequestId: shortText(rawEvent.decision.marketRequestId, 100),
         marketSource: shortText(rawEvent.decision.marketSource, 100),
         marketQuality: shortText(rawEvent.decision.marketQuality, 80),
+        marketHealthStatus: shortText(rawEvent.decision.marketHealthStatus, 80),
         marketDecisionEligible: rawEvent.decision.marketDecisionEligible === true,
         marketDecisionReasons: shortText(rawEvent.decision.marketDecisionReasons, 240),
         dataAgeMs: finiteOrNull(rawEvent.decision.dataAgeMs),
-        candleTime: finiteOrNull(rawEvent.decision.candleTime)
+        candleTime: finiteOrNull(rawEvent.decision.candleTime),
+        botDecisionId: shortText(rawEvent.decision.decisionId, 180),
+        botPolicy: shortText(rawEvent.decision.policy, 120),
+        patternEvidenceIds: Array.isArray(rawEvent.decision.patternEvidenceIds)
+          ? shortText(rawEvent.decision.patternEvidenceIds.slice(0, 12).join('|'), 1200)
+          : null,
+        researchTier: shortText(rawEvent.decision.research?.tier, 100),
+        requestedRiskPercent: finiteOrNull(rawEvent.decision.requestedRiskPercent),
+        aiReaderInfluence: rawEvent.decision.aiReader?.influence === true,
+        paperOnly: rawEvent.decision.authority?.paperOnly === true,
+        liveEligible: rawEvent.decision.authority?.liveEligible === true
       })
     : null;
 

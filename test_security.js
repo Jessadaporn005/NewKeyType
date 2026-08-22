@@ -42,7 +42,11 @@ assert(main.includes('canonicalizePathWithExistingParent') && main.includes('rea
 assert(main.includes('canonicalFilePath') && main.includes('canonicalStaticRoot'), 'Static server rejects symlink traversal outside the app root');
 assert(main.includes("handleTrusted('cyber:fs-read-data-url'"), 'Media preview uses a constrained IPC data channel instead of file URLs');
 assert(main.includes("handleTrusted('cyber:mt5-demo-snapshot'") && preload.includes('getMT5DemoSnapshot'), 'MT5 Demo snapshots cross the sender-validated preload bridge');
-assert(main.includes('!app.isPackaged') && main.includes('CYBERDECK_MT5_DEMO_TOKEN') && main.includes('createMT5DemoRequestAuth') && !main.includes('Authorization: `Bearer'), 'MT5 Demo transport uses developer-only HMAC without sending the raw token');
+assert(!main.includes('!app.isPackaged') && main.includes("CYBERDECK_MT5_DEMO_ENABLED === '1'")
+  && main.includes('CYBERDECK_MT5_DEMO_TOKEN') && main.includes('createMT5DemoRequestAuth')
+  && !main.includes('Authorization: `Bearer'), 'Packaged MT5 Demo observer remains opt-in and uses HMAC without sending the raw token');
+assert(main.includes('hostname: OLLAMA_HOST') && main.includes("OLLAMA_HOST = '127.0.0.1'")
+  && preload.includes('runLocalAIReader') && !main.includes('api.openai.com'), 'Local AI Reader stays on loopback and exposes no paid cloud/API-key route');
 const mt5TestToken = '0123456789abcdef0123456789abcdef';
 const mt5RequestAuth = createMT5DemoRequestAuth(mt5TestToken, { timestamp: 1787200000000, nonce: '00112233445566778899aabbccddeeff' });
 const mt5ResponseBody = Buffer.from('{"ok":true}');

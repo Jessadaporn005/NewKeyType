@@ -29,6 +29,9 @@ contextBridge.exposeInMainWorld('cyberSystemAPI', {
   dbRead: () => ipcRenderer.invoke('cyber:db-read'),
   dbWrite: (data) => ipcRenderer.invoke('cyber:db-write', data),
   getMT5DemoSnapshot: () => ipcRenderer.invoke('cyber:mt5-demo-snapshot'),
+  getMT5DemoReadiness: () => ipcRenderer.invoke('cyber:mt5-demo-readiness'),
+  getLocalAIReaderStatus: () => ipcRenderer.invoke('cyber:local-ai-reader-status'),
+  runLocalAIReader: (input) => ipcRenderer.invoke('cyber:local-ai-reader', input),
   
   // Real Security & Cyber Tools
   shred: (filePath) => ipcRenderer.invoke('cyber:shred', filePath),

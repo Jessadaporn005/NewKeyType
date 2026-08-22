@@ -1,9 +1,9 @@
 /**
- * AI NEURAL QUANTITATIVE TRADING TERMINAL & PATTERN RECOMMENDATION ENGINE
+ * AUDITABLE RULE-BASED TRADING TERMINAL & PATTERN EVIDENCE ENGINE
  * Inspired by TradingView and Binance Pro. Features real-time OHLCV market feeds,
  * technical indicators (EMA Ribbon, Bollinger Bands, RSI, MACD),
- * neural chart pattern recognition (Double Bottom/Top, Engulfing, Head & Shoulders, SMC Order Blocks),
- * real-time deterministic Trade Signals (BUY/SELL with TP/SL & Rule Score),
+ * closed-bar confirmed chart-pattern evidence (Double Bottom/Top, Engulfing, Pin Bars, FVG and Liquidity Sweeps),
+ * deterministic Trade Signals (BUY/SELL with TP/SL & uncalibrated Rule Score),
  * interactive HTML5 Canvas Candlestick Chart with crosshair, and Paper Trading simulator.
  */
 
@@ -34,14 +34,42 @@ import { resolveDecisionNews } from './core/trading/newsInputPolicy.js';
 import { resolveDecisionStrategyMemory } from './core/trading/strategyMemoryPolicy.js';
 import { createPaperExecutionAuditEvent, restorePaperExecutionAudit } from './core/trading/paperExecutionAudit.js';
 import { reconcileMT5DemoAccount, validateMT5DemoPacket } from './core/trading/mt5DemoGateway.js';
+import { assessMT5DemoReadiness } from './core/trading/mt5DemoReadiness.js';
 import { predictMLDirection, restoreMLShadowModel, restoreMLShadowReport, trainAndEvaluateMLShadow } from './core/trading/mlShadowModel.js';
+import { PATTERN_EVIDENCE_SCHEMA, detectConfirmedChartPatterns } from './core/trading/patternEvidence.js';
+import { detectEvidenceBasedMarketRegime } from './core/trading/marketRegime.js';
+import { buildPatternOutcomeResearchDataset, restorePatternOutcomeResearchDataset } from './core/trading/patternOutcomeResearch.js';
+import { promotePatternStrategyMemory } from './core/trading/patternMemoryPromotion.js';
+import { createAIReaderInput, restoreAIReaderReport, validateAIReaderOutput } from './core/trading/aiReaderContract.js';
+import {
+  armVerifiedPaperBotKillSwitch,
+  createVerifiedPaperBotState,
+  evaluateVerifiedPaperBotDecision,
+  recordVerifiedPaperBotDecision,
+  resetVerifiedPaperBotKillSwitch,
+  restoreVerifiedPaperBotState,
+  setVerifiedPaperBotEnabled
+} from './core/trading/verifiedPaperBot.js';
 import {
   MARKET_PACKET_SOURCES,
   createMarketPacket,
   evaluateMarketPacketDecisionEligibility,
   summarizeMarketPacket
 } from './core/trading/marketPacket.js';
-import { fetchHistoricalExchangeCandles as fetchBinanceHistory, fetchRealExchangeCandles as fetchBinanceCandles, getMarketDataDisclosure } from './services/trading/binanceMarketData.js';
+import {
+  MARKET_DATA_ATTEMPT_OUTCOME,
+  beginMarketDataAttempt,
+  calculateMarketDataRefreshDelay,
+  createMarketDataEvidence,
+  createMarketDataHealth,
+  settleMarketDataAttempt
+} from './core/trading/marketDataHealth.js';
+import {
+  fetchHistoricalExchangeCandles as fetchBinanceHistory,
+  fetchRealExchangeCandles as fetchBinanceCandles,
+  getMarketDataDisclosure,
+  hasVerifiedMarketDataAdapter
+} from './services/trading/binanceMarketData.js';
 
 export { MARKET_TYPES, TRADING_ASSETS, TIMEFRAMES };
 export { calculateEMA, calculateBollingerBands, calculateRSI, calculateMACD };
@@ -225,99 +253,8 @@ export async function fetchRealExchangeCandles(symbol = 'BTC/USDT', interval = '
 /**
  * AI Pattern Recognition Engine
  */
-export function detectChartPatterns(candles) {
-  const patterns = [];
-  const len = candles.length;
-  if (len < 10) return patterns;
-
-  const current = candles[len - 1];
-  const prev = candles[len - 2];
-  const prev2 = candles[len - 3];
-
-  // 1. Bullish Engulfing
-  if (prev.close < prev.open && current.close > current.open && current.open <= prev.close && current.close >= prev.open) {
-    patterns.push({
-      type: 'BULLISH_ENGULFING',
-      name: 'Bullish Engulfing (แท่งเทียนกลืนกินขาขึ้น)',
-      sentiment: 'BULLISH',
-      weight: 25,
-      desc: 'แรงซื้อเอาชนะแรงขายอย่างสมบูรณ์ เกิดสัญญาณกลับตัวขึ้นที่แนวรับสำคัญ'
-    });
-  }
-
-  // 2. Bearish Engulfing
-  if (prev.close > prev.open && current.close < current.open && current.open >= prev.close && current.close <= prev.open) {
-    patterns.push({
-      type: 'BEARISH_ENGULFING',
-      name: 'Bearish Engulfing (แท่งเทียนกลืนกินขาลง)',
-      sentiment: 'BEARISH',
-      weight: -25,
-      desc: 'แรงขายเททับแท่งก่อนหน้า ชี้ถึงการปฏิเสธราคาและจุดกลับตัวลง'
-    });
-  }
-
-  // 3. Hammer (Bullish Rejection Pin Bar)
-  const body = Math.abs(current.close - current.open);
-  const lowerWick = Math.min(current.open, current.close) - current.low;
-  const upperWick = current.high - Math.max(current.open, current.close);
-
-  if (lowerWick >= body * 2 && upperWick <= body * 0.5) {
-    patterns.push({
-      type: 'HAMMER_PINBAR',
-      name: 'Bullish Hammer / Pin Bar (แท่งค้อนกลับตัว)',
-      sentiment: 'BULLISH',
-      weight: 20,
-      desc: 'มีการทิ้งไส้ล่างยาว บ่งบอกว่าผู้ซื้อผลักดันราคากลับขึ้นมาอย่างรวดเร็ว'
-    });
-  }
-
-  // 4. Shooting Star (Bearish Pin Bar)
-  if (upperWick >= body * 2 && lowerWick <= body * 0.5) {
-    patterns.push({
-      type: 'SHOOTING_STAR',
-      name: 'Shooting Star (แท่งดาวตกปฏิเสธแนวต้าน)',
-      sentiment: 'BEARISH',
-      weight: -20,
-      desc: 'ไส้บนยาวแสดงถึงแรงเทขายอย่างหนักเมื่อราคาพยายามทดสอบแนวต้าน'
-    });
-  }
-
-  // 5. Double Bottom (W-Pattern) Detection in recent 20 candles
-  if (len >= 20) {
-    const recent = candles.slice(len - 20);
-    const lows = recent.map((c, i) => ({ price: c.low, idx: i }));
-    lows.sort((a, b) => a.price - b.price);
-    const firstLow = lows[0];
-    const secondLow = lows.find(l => Math.abs(l.idx - firstLow.idx) >= 4 && Math.abs(l.price - firstLow.price) / firstLow.price < 0.015);
-
-    if (secondLow) {
-      patterns.push({
-        type: 'DOUBLE_BOTTOM',
-        name: 'Double Bottom (W-Pattern แนวรับสองชั้น)',
-        sentiment: 'BULLISH',
-        weight: 35,
-        desc: 'ราคาลงมาทดสอบแนวรับเดิมสองครั้งแต่ไม่หลุด ยืนยันโซนสะสมพลังของเจ้ามือ (Smart Money Accumulation)'
-      });
-    }
-  }
-
-  // 6. Smart Money Concept: Fair Value Gap / Order Block
-  if (len >= 4) {
-    const c1 = candles[len - 4];
-    const c2 = candles[len - 3];
-    const c3 = candles[len - 2];
-    if (c3.low > c1.high && c2.close > c2.open) {
-      patterns.push({
-        type: 'BULLISH_FVG_OB',
-        name: 'Bullish Order Block & FVG (โซนสภาพคล่องสถาบัน)',
-        sentiment: 'BULLISH',
-        weight: 30,
-        desc: 'เกิดช่องว่างสภาพคล่อง (Fair Value Gap) คาดการณ์ราคาย่อตัวลงมาแตะ Order Block แล้วดีดตัวขึ้นแรง'
-      });
-    }
-  }
-
-  return patterns;
+export function detectChartPatterns(candles = []) {
+  return detectConfirmedChartPatterns(candles);
 }
 
 // Neutral starting weights. Observations are added only by explicit Paper scenarios.
@@ -338,84 +275,8 @@ export const DEFAULT_STRATEGY_WEIGHTS = {
 // =========================================================================
 
 export function detectMarketRegime(candles = [], activeNews = null, spreadInfo = null) {
-  if (!candles || candles.length < 20) {
-    return {
-      type: 'RANGE_COMPRESSION',
-      label: 'RANGE SQUEEZE (ไซด์เวย์บีบตัว)',
-      badgeClass: 'regime-range',
-      icon: '🟡',
-      desc: 'ความผันผวนอยู่ในกรอบแคบ แนะนำเล่นกลยุทธ์ Mean-Reversion เก็บสั้น',
-      volatilityRatio: 1.0,
-      trendStrength: 45
-    };
-  }
-
-  const len = candles.length;
-  const curPrice = candles[len - 1].close;
-  const ema20 = calculateEMA(candles, 20);
-  const ema50 = calculateEMA(candles, 50);
-  const bb = calculateBollingerBands(candles, 20, 2);
-
-  const curEMA20 = ema20[ema20.length - 1] || curPrice;
-  const curEMA50 = ema50[ema50.length - 1] || curPrice;
-  const curBBUpper = bb.upper[bb.upper.length - 1] || curPrice * 1.02;
-  const curBBLower = bb.lower[bb.lower.length - 1] || curPrice * 0.98;
-  const bbWidth = (curBBUpper - curBBLower) / (curPrice || 1);
-
-  // 1. High-spread volatility shock.
-  if (spreadInfo && spreadInfo.isWidened) {
-    return {
-      type: 'MACRO_VOLATILITY_SHOCK',
-      label: 'MACRO VOLATILITY SHOCK (ตลาดข่าวผันผวนสูง)',
-      badgeClass: 'regime-shock',
-      icon: '⚡',
-      desc: 'สเปรดถ่างตัวตามข้อมูล/แบบจำลองที่ระบุแหล่งที่มา แนะนำระงับการเปิดสถานะใหม่',
-      volatilityRatio: 2.5,
-      trendStrength: 85
-    };
-  }
-
-  // 2. Liquidity Hunt (Sharp wicks at edges)
-  const lastCandle = candles[len - 1];
-  const body = Math.abs(lastCandle.close - lastCandle.open);
-  const totalRange = lastCandle.high - lastCandle.low;
-  if (totalRange > 0 && (totalRange - body) / totalRange > 0.65) {
-    return {
-      type: 'LIQUIDITY_HUNT',
-      label: 'LIQUIDITY HUNT (เจ้ามือกวาดสภาพคล่อง)',
-      badgeClass: 'regime-hunt',
-      icon: '🔴',
-      desc: 'เกิดการกวาด Stop Loss เหนือ/ใต้แนวสำคัญ แนะนำตั้งรับลึกๆ ที่ Order Block',
-      volatilityRatio: 1.8,
-      trendStrength: 60
-    };
-  }
-
-  // 3. Trending High Momentum
-  const emaDiff = Math.abs(curEMA20 - curEMA50) / (curPrice || 1);
-  if (emaDiff > 0.0035 && bbWidth > 0.012) {
-    const isBull = curEMA20 > curEMA50;
-    return {
-      type: 'TRENDING_MOMENTUM',
-      label: isBull ? 'BULLISH MOMENTUM TREND (เทรนด์ขาขึ้นแรง)' : 'BEARISH MOMENTUM TREND (เทรนด์ขาลงแรง)',
-      badgeClass: isBull ? 'regime-bull' : 'regime-bear',
-      icon: isBull ? '🟢' : '🔻',
-      desc: isBull ? 'โครงสร้างขาขึ้นแข็งแกร่ง แนะนำเปิด Long รันเทรนด์' : 'โครงสร้างขาลงแข็งแกร่ง แนะนำเปิด Short รันเทรนด์',
-      volatilityRatio: 1.4,
-      trendStrength: 88
-    };
-  }
-
-  // 4. Default Range Squeeze
-  return {
-    type: 'RANGE_COMPRESSION',
-    label: 'RANGE COMPRESSION (ไซด์เวย์สะสมพลัง)',
-    badgeClass: 'regime-range',
-    icon: '🟡',
-    desc: 'Bollinger Bands บีบตัวแคบ กำลังสะสมวอลุ่มเตรียมระเบิดเทรนด์ใหม่',
-    volatilityRatio: 0.8,
-    trendStrength: 35
-  };
+  void activeNews;
+  return detectEvidenceBasedMarketRegime(candles, { spreadInfo });
 }
 
 export function calculateMonteCarloProbability(entry = 0, tp = 0, sl = 0, regime = null, curRSI = 50) {
@@ -487,6 +348,12 @@ export function generateAISignal(candles = [], asset = null, patterns = [], acti
     };
   }
 
+  void patterns;
+  const decisionPatterns = detectConfirmedChartPatterns(candles).filter(pattern => pattern.schema === PATTERN_EVIDENCE_SCHEMA
+    && pattern.confirmed === true
+    && pattern.decisionEligible === true
+    && Number.isFinite(Number(pattern.weight)));
+
   const currentPrice = candles[candles.length - 1].close;
   const ema20 = calculateEMA(candles, 20);
   const ema50 = calculateEMA(candles, 50);
@@ -528,7 +395,7 @@ export function generateAISignal(candles = [], asset = null, patterns = [], acti
   else score -= 15;
 
   // 5. Pattern Multipliers
-  patterns.forEach(p => {
+  decisionPatterns.forEach(p => {
     score += p.weight;
   });
 
@@ -552,8 +419,8 @@ export function generateAISignal(candles = [], asset = null, patterns = [], acti
     scoreAdjustment: 0
   });
   const weights = strategyWeights || DEFAULT_STRATEGY_WEIGHTS;
-  if (patterns.length > 0 && weights) {
-    for (const pat of patterns) {
+  if (decisionPatterns.length > 0 && weights) {
+    for (const pat of decisionPatterns) {
       const matchKey = Object.keys(weights).find(k => pat.name.toLowerCase().includes(k.toLowerCase()) || k.toLowerCase().includes(pat.name.toLowerCase()));
       if (matchKey) {
         const exp = weights[matchKey];
@@ -596,12 +463,12 @@ export function generateAISignal(candles = [], asset = null, patterns = [], acti
   const regime = detectMarketRegime(candles, decisionNews, spreadInfo);
 
   // 9. Deterministic bullish-vs-risk rule countercheck (not independent agents).
-  const countercheckCore = evaluateRuleCountercheckCore(patterns, regime, decisionMT5Data?.dom_depth, curRSI, currentPrice);
-  const debate = evaluateAdversarialDebate(patterns, regime, decisionMT5Data?.dom_depth, curRSI, currentPrice);
+  const countercheckCore = evaluateRuleCountercheckCore(decisionPatterns, regime, decisionMT5Data?.dom_depth, curRSI, currentPrice);
+  const debate = evaluateAdversarialDebate(decisionPatterns, regime, decisionMT5Data?.dom_depth, curRSI, currentPrice);
 
   // 10. Four deterministic analysis modules.
   const smcVote = score >= 35 ? 'BUY 🟢' : score <= -35 ? 'SELL 🔴' : 'HOLD 🟡';
-  const smcHighlight = patterns.length > 0 ? patterns[0].name : (curEMA20 > curEMA50 ? 'EMA Ribbon Uptrend' : 'EMA Downtrend');
+  const smcHighlight = decisionPatterns.length > 0 ? decisionPatterns[0].name : (curEMA20 > curEMA50 ? 'EMA Ribbon Uptrend' : 'EMA Downtrend');
   const smcConfidence = Math.min(99, Math.round(50 + Math.abs(score) / 2));
 
   const newsScore = decisionNews?.sentimentScore || 0;
@@ -609,9 +476,19 @@ export function generateAISignal(candles = [], asset = null, patterns = [], acti
   const macroHeadline = decisionNews?.headline || 'NO VERIFIED NEWS INPUT';
 
   const isSpreadWidened = spreadInfo ? spreadInfo.isWidened : false;
-  const isVetoed = isSpreadWidened && (Math.abs(score) < 60);
-  const croVote = isVetoed ? 'VETO BLOCKED ❌' : 'CLEARED / APPROVED ✅';
-  const croReason = isVetoed ? '⚠️ ระงับการเข้าไม้: สเปรดถ่างสูงและโมเมนตัมไม่หนาแน่นพอ' : '✅ ผ่านเกณฑ์ Risk/Reward และสเปรดปกติ';
+  const isRegimeEvidenceInsufficient = regime.decisionEligible !== true;
+  const isSpreadRiskVetoed = isSpreadWidened && (Math.abs(score) < 60);
+  const isVetoed = isRegimeEvidenceInsufficient || isSpreadRiskVetoed;
+  const croVote = isRegimeEvidenceInsufficient
+    ? 'WAITING FOR EVIDENCE ⏳'
+    : isSpreadRiskVetoed
+      ? 'VETO BLOCKED ❌'
+      : 'CLEARED / APPROVED ✅';
+  const croReason = isRegimeEvidenceInsufficient
+    ? `⏳ ระงับการตัดสินใจ: มีแท่งปิด ${regime.evidence.closedBarCount}/${regime.evidence.requiredClosedBars || 50} แท่ง`
+    : isSpreadRiskVetoed
+      ? '⚠️ ระงับการเข้าไม้: สเปรดถ่างสูงและโมเมนตัมไม่หนาแน่นพอ'
+      : '✅ ผ่านเกณฑ์ Risk/Reward และสเปรดปกติ';
 
   // Determine Action, Exploration Probe, and Consensus
   let action = 'NEUTRAL / HOLD';
@@ -619,7 +496,11 @@ export function generateAISignal(candles = [], asset = null, patterns = [], acti
   let isExplorationProbe = false;
   let consensusType = '3/4 RULE ALIGNMENT';
 
-  if (isVetoed) {
+  if (isRegimeEvidenceInsufficient) {
+    action = 'INSUFFICIENT REGIME DATA / HOLD';
+    badgeClass = 'signal-calc';
+    consensusType = 'REGIME EVIDENCE REQUIRED';
+  } else if (isSpreadRiskVetoed) {
     action = 'RISK VETOED / HOLD';
     badgeClass = 'signal-veto';
     consensusType = 'CRO VETO OVERRIDE ❌';
@@ -652,7 +533,7 @@ export function generateAISignal(candles = [], asset = null, patterns = [], acti
     consensusType,
     isVetoed,
     agents: [
-      { id: 'smc', name: '🏹 PRICE-ACTION RULE', role: 'Price Action & SMC', vote: smcVote, detail: smcHighlight, confidence: `${smcConfidence}% rule score` },
+      { id: 'price_action', name: '🏹 CONFIRMED PRICE-ACTION RULE', role: 'Closed-bar Pattern Evidence', vote: smcVote, detail: smcHighlight, confidence: `${smcConfidence}% rule score` },
       { id: 'macro', name: '⚡ MACRO SCENARIO RULE', role: 'Scenario Sentiment', vote: macroVote, detail: macroHeadline.slice(0, 38) + '...', confidence: `${Math.abs(newsScore)} pts` },
       { id: 'cro', name: '🛡️ RISK GATE', role: 'Spread & Capital Defense', vote: croVote, detail: croReason, isSafe: !isVetoed },
       { id: 'whale', name: '🐋 ORDER-BOOK INPUT CHECK', role: 'External Depth Packet', vote: countercheckCore.orderBook.verdict, detail: countercheckCore.orderBook.description, isSafe: countercheckCore.orderBook.source !== 'UNVERIFIED_EXTERNAL_PACKET' }
@@ -661,9 +542,9 @@ export function generateAISignal(candles = [], asset = null, patterns = [], acti
 
   // Auditable decision-factor nodes
   const cotNodes = [
-    { step: 1, title: '1. MARKET REGIME', desc: `${regime.label} (${regime.desc})`, status: regime.badgeClass, isPass: true },
+    { step: 1, title: '1. MARKET REGIME EVIDENCE', desc: `${regime.label} (${regime.desc})`, status: regime.badgeClass, isPass: regime.decisionEligible === true },
     { step: 2, title: '2. RULE COUNTERCHECK', desc: `${countercheckCore.outcome} • Bullish (${countercheckCore.bullishFactors.length}) vs Risk (${countercheckCore.riskFactors.length})`, status: countercheckCore.outcome, isPass: true },
-    { step: 3, title: '3. SMC & ORDERFLOW', desc: patterns.length > 0 ? patterns[0].name : 'Price Action Structure', status: patterns.length > 0 ? 'CONFIRMED 🟢' : 'NEUTRAL', isPass: patterns.length > 0 },
+    { step: 3, title: '3. CONFIRMED PRICE ACTION', desc: decisionPatterns.length > 0 ? decisionPatterns[0].name : 'NO CONFIRMED PATTERN', status: decisionPatterns.length > 0 ? 'CONFIRMED 🟢' : 'NEUTRAL', isPass: decisionPatterns.length > 0 },
     { step: 4, title: '4. SPREAD & RISK CLEARANCE', desc: croReason, status: isVetoed ? 'VETOED ❌' : 'CLEARED ✅', isPass: !isVetoed },
     { step: 5, title: '5. FINAL DECISION', desc: `Consensus: ${action} (${consensusType})`, status: action, isPass: !isVetoed }
   ];
@@ -700,7 +581,9 @@ export function generateAISignal(candles = [], asset = null, patterns = [], acti
 
   // Thai deterministic rationale breakdown
   let rationale = '';
-  if (isVetoed) {
+  if (isRegimeEvidenceInsufficient) {
+    rationale = `[REGIME EVIDENCE GUARD]: ยังไม่อนุญาตให้กฎออก BUY/SELL เพราะมีแท่งปิด ${regime.evidence.closedBarCount}/${regime.evidence.requiredClosedBars || 50} แท่ง ระบบจะรอหลักฐานครบก่อนประเมินสภาวะตลาด`;
+  } else if (isSpreadRiskVetoed) {
     rationale = `⚠️ [CRO RISK VETO]: หัวหน้าฝ่ายบริหารความเสี่ยง (CRO) สั่งระงับการเข้าเปิดสถานะชั่วคราว เนื่องจากค่า Spread ของโบรกเกอร์เกิดการถ่างออกผิดปกติ (High Volatility Spurt) แนะนำรอให้สเปรดบีบตัวกลับสู่ระดับปกติก่อนเข้าออเดอร์`;
   } else {
     rationale = `ชุดกฎวิเคราะห์ประเมินมติ ${consensusType} สภาวะตลาดอยู่ในช่วง "${regime.label}" ` +
@@ -724,6 +607,7 @@ export function generateAISignal(candles = [], asset = null, patterns = [], acti
     activeNews,
     decisionNewsPolicy: Object.freeze({ accepted: decisionNewsPolicy.accepted, reason: decisionNewsPolicy.reason }),
     decisionMemoryPolicy,
+    patternEvidence: Object.freeze([...decisionPatterns]),
     regime,
     targetScore,
     // Temporary compatibility field for older callers. New UI must use targetScore.
@@ -774,6 +658,20 @@ export class AITradingEngine {
     this.isRealFeed = false;
     this.marketPacket = null;
     this.lastDataSourceStateKey = null;
+    this.marketDataFetch = options.marketDataFetch || fetchBinanceCandles;
+    this.marketDataTimer = null;
+    this.marketDataRefreshEnabled = false;
+    this.marketDataRefreshWasEnabledBeforeReplay = false;
+    this.marketDataStreamGeneration = 0;
+    this.marketDataRequestSequence = 0;
+    this.marketPacketSequence = 0;
+    this.marketDataActiveRequest = null;
+    this.marketDataEvidence = [];
+    this.marketDataHealth = createMarketDataHealth({
+      symbol: this.activeAsset.id,
+      timeframe: this.activeTimeframe.id,
+      adapterSupported: hasVerifiedMarketDataAdapter(this.activeAsset.id)
+    });
 
     // Real-Time News Stream
     this.newsList = LIVE_MARKET_NEWS_FEED.map(item => ({ ...item, provenance: 'SIMULATED_SCENARIO' }));
@@ -804,6 +702,7 @@ export class AITradingEngine {
     this.paperBalanceUSD = 100000.00; // $100,000 Paper Capital
     this.leverage = 10;
     this.paperRiskConfig = Object.freeze({ maxPositions: 3, maxUsedMarginPercent: 50, minimumRiskReward: 1.5 });
+    this.verifiedPaperBotState = createVerifiedPaperBotState(this.paperBalanceUSD);
 
     // AI Continuous Learning Gym & Auto-Trader Sandbox
     this.isAutoTrading = false;
@@ -844,9 +743,15 @@ export class AITradingEngine {
     this.mt5StreamGeneration = 0;
     this.lastReconciledMT5Packet = null;
     this.mt5Reconciliation = null;
+    this.mt5DemoReadiness = assessMT5DemoReadiness({});
     this.mlShadowModel = null;
     this.mlShadowReport = null;
     this.mlShadowPrediction = null;
+    this.patternResearchDataset = null;
+    this.patternResearchGeneration = 0;
+    this.patternMemoryPromotionReport = null;
+    this.aiReaderReport = null;
+    this.aiReaderGeneration = 0;
 
     // Callbacks
     this.onSignalUpdate = options.onSignalUpdate || null;
@@ -859,9 +764,13 @@ export class AITradingEngine {
     this.onMoneyManagementUpdate = options.onMoneyManagementUpdate || null;
     this.onReplayUpdate = options.onReplayUpdate || null;
     this.onMT5DataUpdate = options.onMT5DataUpdate || null;
+    this.onMT5ReadinessUpdate = options.onMT5ReadinessUpdate || null;
     this.onDataSourceUpdate = options.onDataSourceUpdate || null;
     this.onLiveExecutionUpdate = options.onLiveExecutionUpdate || null;
     this.onMLShadowUpdate = options.onMLShadowUpdate || null;
+    this.onPatternResearchUpdate = options.onPatternResearchUpdate || null;
+    this.onAIReaderUpdate = options.onAIReaderUpdate || null;
+    this.onVerifiedPaperBotUpdate = options.onVerifiedPaperBotUpdate || null;
 
     // Load only persisted operator data. New profiles start at a truthful zero baseline.
     this.loadGymState();
@@ -1024,6 +933,25 @@ export class AITradingEngine {
     return true;
   }
 
+  async inspectMT5DemoReadiness() {
+    const readinessReader = typeof window !== 'undefined'
+      ? window.cyberSystemAPI?.getMT5DemoReadiness
+      : null;
+    if (typeof readinessReader !== 'function') {
+      this.mt5DemoReadiness = assessMT5DemoReadiness({});
+      if (this.onMT5ReadinessUpdate) this.onMT5ReadinessUpdate(this.mt5DemoReadiness);
+      return this.mt5DemoReadiness;
+    }
+    try {
+      const raw = await readinessReader();
+      this.mt5DemoReadiness = assessMT5DemoReadiness(raw);
+    } catch (error) {
+      this.mt5DemoReadiness = assessMT5DemoReadiness({});
+    }
+    if (this.onMT5ReadinessUpdate) this.onMT5ReadinessUpdate(this.mt5DemoReadiness);
+    return this.mt5DemoReadiness;
+  }
+
   saveGymState() {
     try {
       const operatorUsername = this.getOperatorUsername();
@@ -1043,6 +971,9 @@ export class AITradingEngine {
           model: this.mlShadowModel,
           report: this.mlShadowReport
         },
+        patternResearch: this.patternResearchDataset,
+        aiReader: this.aiReaderReport,
+        verifiedPaperBot: this.verifiedPaperBotState,
         riskAppetite: this.riskAppetite,
         riskPercent: this.riskPercent,
         savedAt: new Date().toISOString()
@@ -1088,24 +1019,234 @@ export class AITradingEngine {
   publishDataSourceState(now = Date.now()) {
     const packetSummary = summarizeMarketPacket(this.marketPacket, { now });
     const decision = this.getMarketDecisionState(now);
+    const health = this.marketDataHealth || null;
+    const latestEvidence = Array.isArray(this.marketDataEvidence) ? this.marketDataEvidence[0] || null : null;
     const state = Object.freeze({
       ...packetSummary,
       decisionEligible: decision.eligible,
       decisionReasons: decision.reasons,
-      dataAgeMs: decision.dataAgeMs
+      dataAgeMs: decision.dataAgeMs,
+      health,
+      healthStatus: health?.status || 'NOT_STARTED',
+      consecutiveFailures: health?.consecutiveFailures || 0,
+      nextRefreshAtMs: health?.nextRefreshAtMs ?? null,
+      latestEvidence
     });
     const stateKey = JSON.stringify([
       state.source,
+      state.packetSequence,
       state.quality,
       state.decisionEligible,
       state.decisionReasons,
       state.closedBars,
-      state.formingBars
+      state.formingBars,
+      state.healthStatus,
+      state.health?.inFlight,
+      state.consecutiveFailures,
+      state.nextRefreshAtMs,
+      state.latestEvidence?.requestId,
+      state.latestEvidence?.outcome
     ]);
     const changed = stateKey !== this.lastDataSourceStateKey;
     this.lastDataSourceStateKey = stateKey;
     if (changed && this.onDataSourceUpdate) this.onDataSourceUpdate(state);
     return changed;
+  }
+
+  recordMarketDataEvidence(evidence) {
+    if (!evidence) return null;
+    if (!Array.isArray(this.marketDataEvidence)) this.marketDataEvidence = [];
+    this.marketDataEvidence.unshift(evidence);
+    if (this.marketDataEvidence.length > 100) this.marketDataEvidence.length = 100;
+    return evidence;
+  }
+
+  applyMarketPacket(packet) {
+    if (!packet || !Array.isArray(packet.candles)) return false;
+    this.marketPacket = packet;
+    this.candles = packet.candles.map(candle => ({ ...candle }));
+    this.fullHistoricalCandles = packet.decisionCandles.map(candle => ({ ...candle }));
+    this.isRealFeed = packet.provenance?.verified === true && packet.provenance?.simulation !== true;
+    const quoteCandle = this.candles.at(-1);
+    if (quoteCandle) {
+      this.currentSpreadInfo = calculateDynamicSpread(this.activeAsset, quoteCandle.close, quoteCandle, this.activeNews);
+      if (this.onSpreadUpdate) this.onSpreadUpdate(this.currentSpreadInfo);
+    }
+    return true;
+  }
+
+  clearMarketDataRefreshTimer() {
+    if (this.marketDataTimer) clearTimeout(this.marketDataTimer);
+    this.marketDataTimer = null;
+  }
+
+  scheduleMarketDataRefresh(delayOverrideMs = null) {
+    this.clearMarketDataRefreshTimer();
+    if (!this.marketDataRefreshEnabled || this.isReplayMode || this.marketDataHealth?.adapterSupported !== true) return false;
+    const now = Date.now();
+    const calculatedDelay = calculateMarketDataRefreshDelay({
+      timeframeSeconds: this.activeTimeframe.seconds,
+      consecutiveFailures: this.marketDataHealth?.consecutiveFailures || 0,
+      adapterSupported: true
+    });
+    const healthDelay = Number.isFinite(this.marketDataHealth?.nextRefreshAtMs)
+      ? Math.max(0, this.marketDataHealth.nextRefreshAtMs - now)
+      : calculatedDelay;
+    const hasDelayOverride = delayOverrideMs !== null && delayOverrideMs !== undefined && Number.isFinite(Number(delayOverrideMs));
+    const delayMs = hasDelayOverride
+      ? Math.max(0, Number(delayOverrideMs))
+      : healthDelay;
+    if (!Number.isFinite(delayMs)) return false;
+    const generation = this.marketDataStreamGeneration;
+    this.marketDataTimer = setTimeout(() => {
+      this.marketDataTimer = null;
+      void this.refreshMarketDataSnapshot({ generation, allowSimulationFallback: false });
+    }, delayMs);
+    return true;
+  }
+
+  startMarketDataRefreshLoop({ immediate = false } = {}) {
+    this.marketDataRefreshEnabled = true;
+    return this.scheduleMarketDataRefresh(immediate ? 0 : null);
+  }
+
+  stopMarketDataRefreshLoop({ invalidate = true } = {}) {
+    this.marketDataRefreshEnabled = false;
+    this.clearMarketDataRefreshTimer();
+    if (invalidate) this.marketDataStreamGeneration += 1;
+  }
+
+  async refreshMarketDataSnapshot({
+    generation = this.marketDataStreamGeneration,
+    allowSimulationFallback = false
+  } = {}) {
+    if (generation !== this.marketDataStreamGeneration) {
+      return Object.freeze({ success: false, reason: 'SUPERSEDED_MARKET_REQUEST' });
+    }
+    if (this.marketDataActiveRequest?.generation === generation) {
+      return Object.freeze({ success: false, reason: 'REFRESH_ALREADY_IN_FLIGHT' });
+    }
+
+    const asset = this.activeAsset;
+    const timeframe = this.activeTimeframe;
+    const adapterSupported = hasVerifiedMarketDataAdapter(asset.id);
+    const startedAt = Date.now();
+    const requestId = `MKT_${generation}_${++this.marketDataRequestSequence}_${startedAt.toString(36)}`;
+    this.marketDataActiveRequest = Object.freeze({ requestId, generation, symbol: asset.id, timeframe: timeframe.id });
+    this.marketDataHealth = beginMarketDataAttempt(this.marketDataHealth, { requestId, at: startedAt });
+    this.publishDataSourceState(startedAt);
+
+    let realData = null;
+    let fetchReason = null;
+    try {
+      if (adapterSupported) {
+        realData = await this.marketDataFetch(asset.id, timeframe.id, 80);
+      } else {
+        fetchReason = MARKET_DATA_ATTEMPT_OUTCOME.NO_VERIFIED_ADAPTER;
+      }
+    } catch (error) {
+      fetchReason = `FETCH_EXCEPTION_${String(error?.name || 'ERROR').toUpperCase().slice(0, 40)}`;
+    }
+    const finishedAt = Date.now();
+
+    if (generation !== this.marketDataStreamGeneration
+      || this.activeAsset.id !== asset.id
+      || this.activeTimeframe.id !== timeframe.id) {
+      this.recordMarketDataEvidence(createMarketDataEvidence({
+        requestId,
+        generation,
+        source: adapterSupported ? MARKET_PACKET_SOURCES.BINANCE_KLINES_REST : 'NO_VERIFIED_ADAPTER',
+        symbol: asset.id,
+        timeframe: timeframe.id,
+        startedAt,
+        finishedAt,
+        outcome: MARKET_DATA_ATTEMPT_OUTCOME.SUPERSEDED,
+        reason: 'TARGET_CHANGED_BEFORE_RESPONSE',
+        rawCandleCount: Array.isArray(realData) ? realData.length : null
+      }));
+      if (this.marketDataActiveRequest?.requestId === requestId) this.marketDataActiveRequest = null;
+      return Object.freeze({ success: false, reason: 'SUPERSEDED_MARKET_REQUEST' });
+    }
+
+    let outcome = MARKET_DATA_ATTEMPT_OUTCOME.NO_DATA;
+    let reason = fetchReason || 'NO_DATA_FROM_ADAPTER';
+    let candidatePacket = null;
+    let adoptedPacket = null;
+    if (Array.isArray(realData) && realData.length > 0) {
+      candidatePacket = createMarketPacket({
+        source: MARKET_PACKET_SOURCES.BINANCE_KLINES_REST,
+        adapter: getMarketDataDisclosure(asset.id),
+        sequence: ++this.marketPacketSequence,
+        requestId,
+        symbol: asset.id,
+        timeframe: timeframe.id,
+        timeframeSeconds: timeframe.seconds,
+        observedAt: finishedAt,
+        candles: realData
+      });
+      const candidateDecision = evaluateMarketPacketDecisionEligibility(candidatePacket, { now: finishedAt });
+      if (candidatePacket.quality.status === 'VALID' && candidateDecision.eligible) {
+        outcome = MARKET_DATA_ATTEMPT_OUTCOME.SUCCESS;
+        reason = null;
+        adoptedPacket = candidatePacket;
+        this.applyMarketPacket(adoptedPacket);
+      } else {
+        outcome = MARKET_DATA_ATTEMPT_OUTCOME.QUALITY_REJECTED;
+        reason = candidateDecision.reasons.join('|') || `QUALITY_${candidatePacket.quality.status}`;
+      }
+    } else if (!adapterSupported) {
+      outcome = MARKET_DATA_ATTEMPT_OUTCOME.NO_VERIFIED_ADAPTER;
+      reason = MARKET_DATA_ATTEMPT_OUTCOME.NO_VERIFIED_ADAPTER;
+    }
+
+    if (!adoptedPacket && allowSimulationFallback && !this.marketPacket) {
+      this.generateHistoricalCandles();
+      adoptedPacket = createMarketPacket({
+        source: MARKET_PACKET_SOURCES.SIMULATED_FALLBACK,
+        adapter: 'LOCAL_RANDOM_WALK_SIMULATION',
+        sequence: ++this.marketPacketSequence,
+        requestId,
+        symbol: asset.id,
+        timeframe: timeframe.id,
+        timeframeSeconds: timeframe.seconds,
+        observedAt: finishedAt,
+        candles: this.candles
+      });
+      this.applyMarketPacket(adoptedPacket);
+    }
+
+    this.marketDataHealth = settleMarketDataAttempt(this.marketDataHealth, {
+      outcome,
+      reason,
+      at: finishedAt,
+      packetSequence: adoptedPacket?.sequence || this.marketPacket?.sequence || this.marketDataHealth?.packetSequence,
+      timeframeSeconds: timeframe.seconds
+    });
+    this.recordMarketDataEvidence(createMarketDataEvidence({
+      requestId,
+      generation,
+      source: adapterSupported ? MARKET_PACKET_SOURCES.BINANCE_KLINES_REST : 'NO_VERIFIED_ADAPTER',
+      symbol: asset.id,
+      timeframe: timeframe.id,
+      startedAt,
+      finishedAt,
+      outcome,
+      reason,
+      packet: candidatePacket,
+      rawCandleCount: Array.isArray(realData) ? realData.length : null
+    }));
+    if (this.marketDataActiveRequest?.requestId === requestId) this.marketDataActiveRequest = null;
+    this.publishDataSourceState(finishedAt);
+    if (this.candles.length > 0) this.analyzeMarket();
+    if (typeof requestAnimationFrame === 'function') this.requestRender();
+    if (this.marketDataRefreshEnabled) this.scheduleMarketDataRefresh();
+    return Object.freeze({
+      success: outcome === MARKET_DATA_ATTEMPT_OUTCOME.SUCCESS,
+      outcome,
+      reason,
+      requestId,
+      packetSequence: adoptedPacket?.sequence || this.marketPacket?.sequence || 0
+    });
   }
 
   loadGymState() {
@@ -1157,7 +1298,11 @@ export class AITradingEngine {
           this.executionAudit = restorePaperExecutionAudit(state.executionAudit, 250);
           this.mlShadowModel = restoreMLShadowModel(state.mlShadow?.model);
           this.mlShadowReport = restoreMLShadowReport(state.mlShadow?.report);
+          this.patternResearchDataset = restorePatternOutcomeResearchDataset(state.patternResearch);
+          this.aiReaderReport = restoreAIReaderReport(state.aiReader);
+          this.verifiedPaperBotState = restoreVerifiedPaperBotState(state.verifiedPaperBot, { balanceUSD: this.paperBalanceUSD });
         }
+        this.rebuildValidatedPatternMemory();
         if (state.riskAppetite) {
           this.riskAppetite = state.riskAppetite;
         }
@@ -1263,6 +1408,229 @@ export class AITradingEngine {
     return result;
   }
 
+  async runPatternResearchEvaluation(options = {}) {
+    const asset = this.activeAsset;
+    const timeframe = this.activeTimeframe;
+    const researchGeneration = ++this.patternResearchGeneration;
+    const sourceDisclosure = getMarketDataDisclosure(asset.id);
+    if (sourceDisclosure === 'NO VERIFIED ADAPTER') {
+      return { success: false, reason: 'VERIFIED_MARKET_DATA_ADAPTER_REQUIRED' };
+    }
+
+    const requestedBars = Math.min(5000, Math.max(120, Math.floor(Number(options.totalBars) || 2000)));
+    const now = Number(options.now) || Date.now();
+    const fetchedCandles = await fetchBinanceHistory(asset.id, timeframe.id, requestedBars, options.fetchOptions || {});
+    if (researchGeneration !== this.patternResearchGeneration
+      || this.activeAsset?.id !== asset.id
+      || this.activeTimeframe?.id !== timeframe.id) {
+      return { success: false, reason: 'PATTERN_RESEARCH_SUPERSEDED' };
+    }
+    if (!Array.isArray(fetchedCandles) || fetchedCandles.length < 120) {
+      return { success: false, reason: 'REAL_MARKET_HISTORY_UNAVAILABLE' };
+    }
+    const timeframeMs = timeframe.seconds * 1000;
+    const closedCandles = fetchedCandles.filter(candle => {
+      const openTimeMs = Number(candle?.openTimeMs) || Number(candle?.time) * 1000;
+      const closeTimeMs = Number(candle?.closeTimeMs) || (openTimeMs + timeframeMs - 1);
+      return Number.isFinite(closeTimeMs) && closeTimeMs <= now;
+    });
+    if (closedCandles.length < 51) {
+      return { success: false, reason: 'INSUFFICIENT_VERIFIED_CLOSED_HISTORY' };
+    }
+
+    const dataset = buildPatternOutcomeResearchDataset(closedCandles, {
+      source: MARKET_PACKET_SOURCES.BINANCE_KLINES_REST,
+      adapter: sourceDisclosure,
+      assetId: asset.id,
+      timeframe: timeframe.id,
+      timeframeSeconds: timeframe.seconds,
+      collectedAt: now,
+      verified: true,
+      simulation: false
+    }, {
+      horizonBars: options.horizonBars ?? 12,
+      analysisWindowBars: options.analysisWindowBars ?? 80,
+      targetR: options.targetR ?? 2,
+      roundTripCostBps: options.roundTripCostBps ?? (asset.market === MARKET_TYPES.BINANCE ? 12 : 20),
+      slippageBps: options.slippageBps ?? 2,
+      minimumCompletedSamples: options.minimumCompletedSamples ?? 30,
+      maxSamples: options.maxSamples ?? 250
+    });
+    if (!dataset.success) return { success: false, reason: dataset.reason, dataset };
+
+    this.patternResearchDataset = dataset;
+    this.rebuildValidatedPatternMemory();
+    this.saveGymState();
+    if (this.onPatternResearchUpdate) this.onPatternResearchUpdate({ dataset, promotion: this.patternMemoryPromotionReport });
+    return { success: true, dataset, promotion: this.patternMemoryPromotionReport };
+  }
+
+  rebuildValidatedPatternMemory() {
+    const preserved = {};
+    for (const [key, value] of Object.entries(this.strategyWeights || {})) {
+      if (value?.provenance === 'WALK_FORWARD_OUT_OF_SAMPLE_VALIDATED') continue;
+      preserved[key] = value;
+    }
+    this.patternMemoryPromotionReport = promotePatternStrategyMemory(this.patternResearchDataset);
+    this.strategyWeights = {
+      ...DEFAULT_STRATEGY_WEIGHTS,
+      ...preserved,
+      ...(this.patternMemoryPromotionReport.success ? this.patternMemoryPromotionReport.memories : {})
+    };
+    return this.patternMemoryPromotionReport;
+  }
+
+  async getLocalAIReaderStatus() {
+    const statusReader = typeof window !== 'undefined'
+      ? window.cyberSystemAPI?.getLocalAIReaderStatus
+      : null;
+    if (typeof statusReader !== 'function') {
+      return { success: false, provider: 'LOCAL_OLLAMA', error: 'LOCAL_AI_BRIDGE_UNAVAILABLE', apiKeyRequired: false };
+    }
+    try {
+      return await statusReader();
+    } catch (error) {
+      return { success: false, provider: 'LOCAL_OLLAMA', error: 'LOCAL_AI_STATUS_FAILED', apiKeyRequired: false };
+    }
+  }
+
+  async runLocalAIReaderInterpretation(options = {}) {
+    const generation = ++this.aiReaderGeneration;
+    const marketDecision = this.getMarketDecisionState(options.now || Date.now());
+    if (!marketDecision.eligible) {
+      return { success: false, reason: marketDecision.reasons.join('|') || 'VERIFIED_MARKET_DATA_REQUIRED' };
+    }
+    const contract = createAIReaderInput({
+      marketPacket: this.marketPacket,
+      asset: this.activeAsset,
+      timeframe: this.activeTimeframe,
+      signal: this.signal,
+      patterns: this.patterns,
+      patternResearch: this.patternResearchDataset,
+      now: options.now || Date.now()
+    });
+    if (!contract.success) return contract;
+    const runReader = typeof window !== 'undefined'
+      ? window.cyberSystemAPI?.runLocalAIReader
+      : null;
+    if (typeof runReader !== 'function') return { success: false, reason: 'LOCAL_AI_BRIDGE_UNAVAILABLE' };
+    let response = null;
+    try {
+      response = await runReader(contract.input);
+    } catch (error) {
+      return { success: false, reason: 'LOCAL_AI_READER_FAILED_CLOSED' };
+    }
+    if (generation !== this.aiReaderGeneration
+      || this.activeAsset?.id !== contract.input.market.assetId
+      || this.activeTimeframe?.id !== contract.input.market.timeframe
+      || this.marketPacket?.sequence !== contract.input.market.packetSequence) {
+      return { success: false, reason: 'AI_READER_RESULT_SUPERSEDED' };
+    }
+    if (!response?.success) {
+      return { success: false, reason: response?.error || 'LOCAL_AI_READER_UNAVAILABLE', status: response?.status || null };
+    }
+    const validation = validateAIReaderOutput(response.output, contract.input, response.provider);
+    if (!validation.accepted) return { success: false, reason: validation.reason };
+    this.aiReaderReport = validation.report;
+    this.saveGymState();
+    if (this.onAIReaderUpdate) this.onAIReaderUpdate({ report: this.aiReaderReport });
+    return { success: true, report: this.aiReaderReport };
+  }
+
+  toggleVerifiedPaperBot(enabled) {
+    this.verifiedPaperBotState = setVerifiedPaperBotEnabled(this.verifiedPaperBotState, enabled, {
+      balanceUSD: this.paperBalanceUSD,
+      now: Date.now()
+    });
+    this.saveGymState();
+    if (this.onVerifiedPaperBotUpdate) this.onVerifiedPaperBotUpdate({ state: this.verifiedPaperBotState });
+    if (enabled && !this.verifiedPaperBotState.enabled && this.toasts) {
+      this.toasts.show('ERROR', 'VERIFIED PAPER BOT BLOCKED: RESET KILL SWITCH FIRST', 2600);
+    }
+    if (this.verifiedPaperBotState.enabled) this.evaluateVerifiedPaperBot();
+    return this.verifiedPaperBotState.enabled;
+  }
+
+  triggerVerifiedPaperBotKillSwitch({ closeBotPositions = true } = {}) {
+    this.verifiedPaperBotState = armVerifiedPaperBotKillSwitch(this.verifiedPaperBotState, {
+      balanceUSD: this.paperBalanceUSD,
+      now: Date.now()
+    });
+    let closed = 0;
+    if (closeBotPositions) {
+      const ids = this.positions.filter(position => position.executionSource === 'VERIFIED_PAPER_BOT').map(position => position.id);
+      ids.forEach(id => {
+        if (this.closePosition(id, 'VERIFIED_PAPER_BOT_KILL_SWITCH').success) closed += 1;
+      });
+    }
+    this.saveGymState();
+    if (this.onVerifiedPaperBotUpdate) this.onVerifiedPaperBotUpdate({ state: this.verifiedPaperBotState, killed: true, closed });
+    return { success: true, killed: true, closed };
+  }
+
+  resetVerifiedPaperBotSafety() {
+    this.verifiedPaperBotState = resetVerifiedPaperBotKillSwitch(this.verifiedPaperBotState, {
+      balanceUSD: this.paperBalanceUSD,
+      now: Date.now()
+    });
+    this.saveGymState();
+    if (this.onVerifiedPaperBotUpdate) this.onVerifiedPaperBotUpdate({ state: this.verifiedPaperBotState });
+    return this.verifiedPaperBotState;
+  }
+
+  evaluateVerifiedPaperBot(now = Date.now()) {
+    const account = summarizePaperAccount(this.paperBalanceUSD, this.positions);
+    const result = evaluateVerifiedPaperBotDecision({
+      state: this.verifiedPaperBotState,
+      marketPacket: this.marketPacket,
+      marketDecision: this.getMarketDecisionState(now),
+      signal: this.signal,
+      positions: this.positions,
+      paperAccount: account,
+      patternResearch: this.patternResearchDataset,
+      aiReaderReport: this.aiReaderReport,
+      now
+    });
+    if (['MAX_DAILY_LOSS_REACHED', 'MAX_DRAWDOWN_REACHED'].includes(result.reason)) {
+      this.triggerVerifiedPaperBotKillSwitch({ closeBotPositions: true });
+      return result;
+    }
+    if (!result.execute) {
+      this.verifiedPaperBotState = recordVerifiedPaperBotDecision(this.verifiedPaperBotState, result, {
+        balanceUSD: this.paperBalanceUSD,
+        equityUSD: account.equity,
+        now
+      });
+      if (this.onVerifiedPaperBotUpdate) this.onVerifiedPaperBotUpdate({ state: this.verifiedPaperBotState, result });
+      return result;
+    }
+
+    const currentPrice = this.candles.at(-1)?.close;
+    const spreadInfo = this.currentSpreadInfo || calculateDynamicSpread(this.activeAsset, currentPrice, this.candles.at(-1), this.activeNews);
+    const executionPrice = result.decision.side === 'LONG' ? spreadInfo.askPrice : spreadInfo.bidPrice;
+    const sizing = calculatePaperPositionSize({
+      asset: this.activeAsset,
+      entryPrice: executionPrice,
+      stopPrice: this.signal.sl,
+      equityUSD: Math.max(0, account.equity),
+      freeMarginUSD: Math.max(0, account.freeMargin),
+      riskPercent: result.decision.requestedRiskPercent,
+      leverage: this.leverage
+    });
+    const opened = sizing?.requiredMarginUSD > 0
+      ? this.openPosition(result.decision.side, sizing.requiredMarginUSD, 'VERIFIED_PAPER_BOT', result.decision)
+      : { success: false, reason: 'VERIFIED_BOT_POSITION_SIZE_REJECTED' };
+    this.verifiedPaperBotState = recordVerifiedPaperBotDecision(this.verifiedPaperBotState, result, {
+      executed: opened.success === true,
+      balanceUSD: this.paperBalanceUSD,
+      equityUSD: summarizePaperAccount(this.paperBalanceUSD, this.positions).equity,
+      now
+    });
+    this.saveGymState();
+    if (this.onVerifiedPaperBotUpdate) this.onVerifiedPaperBotUpdate({ state: this.verifiedPaperBotState, result, opened });
+    return { ...result, opened };
+  }
+
   runRuleBacktest(options = {}) {
     const sourceCandles = this.fullHistoricalCandles?.length
       ? this.fullHistoricalCandles
@@ -1316,9 +1684,13 @@ export class AITradingEngine {
       }),
       dataProvenance: Object.freeze({
         marketPacketSchema: packetSummary.schemaVersion,
+        marketPacketSequence: packetSummary.packetSequence,
+        marketRequestId: packetSummary.requestId,
         source: packetSummary.source,
         sourceLabel: packetSummary.sourceLabel,
         quality: packetSummary.quality,
+        marketHealthStatus: this.marketDataHealth?.status || 'NOT_STARTED',
+        latestEvidenceOutcome: this.marketDataEvidence?.[0]?.outcome || null,
         simulation: packetSummary.isSimulation,
         decisionEligibleAtRun: packetSummary.decisionEligible,
         decisionReasons: Object.freeze([...packetSummary.decisionReasons]),
@@ -1332,6 +1704,8 @@ export class AITradingEngine {
 
   startReplay() {
     if (this.candles.length < 20) return;
+    this.marketDataRefreshWasEnabledBeforeReplay = this.marketDataRefreshEnabled;
+    this.stopMarketDataRefreshLoop({ invalidate: true });
     this.stopReplayPlayback();
     this.isReplayMode = true;
     if (!this.fullHistoricalCandles || this.fullHistoricalCandles.length === 0) {
@@ -1399,6 +1773,10 @@ export class AITradingEngine {
     this.publishDataSourceState(Date.now());
     this.analyzeMarket();
     this.requestRender();
+    if (this.marketDataRefreshWasEnabledBeforeReplay) {
+      this.marketDataRefreshWasEnabledBeforeReplay = false;
+      this.startMarketDataRefreshLoop({ immediate: true });
+    }
     if (this.onReplayUpdate) {
       this.onReplayUpdate({ isReplay: false, isPlaying: false, index: this.candles.length, total: this.candles.length });
     }
@@ -1440,14 +1818,17 @@ export class AITradingEngine {
     const journalSize = `${(journalBytes / 1024).toFixed(1)} KB`;
 
     const skills = Object.entries(this.strategyWeights).map(([name, data]) => {
-      const isHigh = data.winRate >= 75;
-      const isLow = data.winRate < 50;
+      const observations = (Number(data?.wins) || 0) + (Number(data?.losses) || 0);
+      const isObserved = observations > 0;
+      const isHigh = isObserved && data.winRate >= 75;
+      const isLow = isObserved && data.winRate < 50;
       return {
         name,
-        winRate: data.winRate,
+        observations,
+        winRate: isObserved ? data.winRate : null,
         weight: data.weightMultiplier,
-        status: isHigh ? 'MASTERED' : isLow ? 'CAUTION' : 'ACTIVE',
-        statusClass: isHigh ? 'skill-mastered' : isLow ? 'skill-caution' : 'skill-active'
+        status: !isObserved ? 'UNOBSERVED' : isHigh ? 'PAPER LEADING' : isLow ? 'PAPER CAUTION' : 'PAPER OBSERVED',
+        statusClass: !isObserved ? 'skill-unobserved' : isHigh ? 'skill-mastered' : isLow ? 'skill-caution' : 'skill-active'
       };
     });
 
@@ -1485,15 +1866,17 @@ export class AITradingEngine {
   }
 
   getSetupMastery() {
-    const setups = [
-      { name: 'SMC Order Block & FVG', mastery: 91, count: 18, winRate: 88.2, status: 'MASTERED' },
-      { name: 'Liquidity Sweep Rejection', mastery: 88, count: 15, winRate: 86.7, status: 'MASTERED' },
-      { name: 'Bullish/Bearish Engulfing', mastery: 84, count: 26, winRate: 84.6, status: 'MASTERED' },
-      { name: 'Double Bottom W-Pattern', mastery: 78, count: 11, winRate: 81.8, status: 'ADVANCED' },
-      { name: 'Hammer / Pin Bar Rebound', mastery: 76, count: 13, winRate: 76.9, status: 'ADVANCED' },
-      { name: 'High Volatility Squeeze Breakout', mastery: 64, count: 8, winRate: 62.5, status: 'PRACTICING' }
-    ];
-    return setups;
+    return Object.entries(this.strategyWeights || {}).map(([name, data]) => {
+      const count = (Number(data?.wins) || 0) + (Number(data?.losses) || 0);
+      return Object.freeze({
+        name,
+        mastery: null,
+        count,
+        winRate: count > 0 ? Number(data?.winRate) || 0 : null,
+        calibrated: false,
+        status: count > 0 ? 'PAPER OBSERVED / UNVALIDATED' : 'UNOBSERVED'
+      });
+    });
   }
 
   startKnowledgeStreamLoop() {
@@ -1534,53 +1917,8 @@ export class AITradingEngine {
   }
 
   seedInitialAIJournal() {
-    this.aiJournal = [
-      {
-        id: 'AI_TR_01',
-        assetId: 'BTC/USDT',
-        side: 'LONG',
-        entryPrice: 95400.00,
-        exitPrice: 97320.00,
-        pnlUSD: 1920.00,
-        pnlPercent: 20.12,
-        isWin: true,
-        setupName: 'Double Bottom + Bullish RSI Divergence',
-        exitReason: 'TAKE_PROFIT_HIT',
-        closeTime: '10m ago',
-        postMortem: 'รูปแบบ Double Bottom ยืนยันร่วมกับสัญญาณ Oversold บน RSI (28) และเม็ดเงินไหลเข้า ETF หนุนราคาแตะเป้าหมาย TP1 ($97,320) ได้อย่างสมบูรณ์แบบ',
-        learningLesson: '✅ ปรับเพิ่มค่าน้ำหนัก (Reward Weight +18%): จดจำความแม่นยำของ Double Bottom บริเวณแนวรับสำคัญระดับ Day'
-      },
-      {
-        id: 'AI_TR_02',
-        assetId: 'ETH/USDT',
-        side: 'LONG',
-        entryPrice: 3520.00,
-        exitPrice: 3465.00,
-        pnlUSD: -550.00,
-        pnlPercent: -15.62,
-        isWin: false,
-        setupName: 'Ascending Triangle Breakout',
-        exitReason: 'STOP_LOSS_HIT',
-        closeTime: '24m ago',
-        postMortem: 'ราคาพยายาม Breakout แต่ปริมาณ Volume ไม่หนาแน่นพอ เกิดสัญญาณ False Breakout และมีแรงเทขายสวนทางหลุดแนวรับ Stop Loss ($3,465)',
-        learningLesson: '❌ ถอดบทเรียนความผิดพลาด (Penalty Applied): สั่งปรับเงื่อนไขห้ามเข้าซื้อแบบ Breakout หาก Volume ต่ำกว่าค่าเฉลี่ย 20 แท่ง'
-      },
-      {
-        id: 'AI_TR_03',
-        assetId: 'SOL/USDT',
-        side: 'SHORT',
-        entryPrice: 204.50,
-        exitPrice: 196.80,
-        pnlUSD: 770.00,
-        pnlPercent: 37.65,
-        isWin: true,
-        setupName: 'Bearish Engulfing at Resistance',
-        exitReason: 'TAKE_PROFIT_HIT',
-        closeTime: '42m ago',
-        postMortem: 'ตรวจพบแท่งเทียน Bearish Engulfing ปฏิเสธแนวต้านจิตวิทยา $205 ร่วมกับ RSI Overbought (74) ราคาปรับตัวลงสู่เป้าหมาย TP ($196.80)',
-        learningLesson: '✅ เสริมความจำโมเดล (Reward Weight +15%): เพิ่มความมั่นใจให้กับสัญญาณ Short Rejection เมื่อ RSI > 70'
-      }
-    ];
+    // Fabricated starter trades are intentionally disabled. Evidence begins at zero.
+    return false;
   }
 
   async init() {
@@ -1593,6 +1931,7 @@ export class AITradingEngine {
     this.startNewsStream();
     this.startKnowledgeStreamLoop();
     this.startMT5BackgroundStream();
+    this.startMarketDataRefreshLoop({ immediate: false });
     if (this.onAIProfileUpdate) this.onAIProfileUpdate(this.getAIProfileDetails());
   }
 
@@ -1608,8 +1947,10 @@ export class AITradingEngine {
     if (this.knowledgeStreamInterval) clearInterval(this.knowledgeStreamInterval);
     if (this.mt5PollingInterval) clearInterval(this.mt5PollingInterval);
     this.mt5StreamGeneration += 1;
+    this.patternResearchGeneration += 1;
     if (this.replayInterval) clearInterval(this.replayInterval);
     if (this.animFrameId) cancelAnimationFrame(this.animFrameId);
+    this.stopMarketDataRefreshLoop({ invalidate: true });
     this.pauseLiveAutoExecution();
     this.tickInterval = null;
     this.newsInterval = null;
@@ -1624,6 +1965,7 @@ export class AITradingEngine {
     this.startNewsStream();
     this.startKnowledgeStreamLoop();
     this.startMT5BackgroundStream();
+    this.startMarketDataRefreshLoop({ immediate: true });
   }
 
   async setMarket(marketType) {
@@ -1651,43 +1993,23 @@ export class AITradingEngine {
   }
 
   async loadCandles() {
-    const observedAt = Date.now();
-    // Attempt a verified exchange snapshot first. Canonical decision candles are
-    // created by MarketPacket and never mutated by the visual simulation loop.
-    const realData = await fetchRealExchangeCandles(this.activeAsset.id, this.activeTimeframe.id, 80);
-    if (realData && realData.length > 0) {
-      this.marketPacket = createMarketPacket({
-        source: MARKET_PACKET_SOURCES.BINANCE_KLINES_REST,
-        adapter: getMarketDataDisclosure(this.activeAsset.id),
-        symbol: this.activeAsset.id,
-        timeframe: this.activeTimeframe.id,
-        timeframeSeconds: this.activeTimeframe.seconds,
-        observedAt,
-        candles: realData
-      });
-    } else {
-      this.generateHistoricalCandles();
-      this.marketPacket = createMarketPacket({
-        source: MARKET_PACKET_SOURCES.SIMULATED_FALLBACK,
-        adapter: 'LOCAL_RANDOM_WALK_SIMULATION',
-        symbol: this.activeAsset.id,
-        timeframe: this.activeTimeframe.id,
-        timeframeSeconds: this.activeTimeframe.seconds,
-        observedAt,
-        candles: this.candles
-      });
-    }
-    this.candles = this.marketPacket.candles.map(candle => ({ ...candle }));
-    this.fullHistoricalCandles = this.marketPacket.decisionCandles.map(candle => ({ ...candle }));
-    this.isRealFeed = this.marketPacket.provenance.verified === true
-      && this.marketPacket.provenance.simulation !== true;
-    const quoteCandle = this.candles.at(-1);
-    if (quoteCandle) {
-      this.currentSpreadInfo = calculateDynamicSpread(this.activeAsset, quoteCandle.close, quoteCandle, this.activeNews);
-      if (this.onSpreadUpdate) this.onSpreadUpdate(this.currentSpreadInfo);
-    }
-    this.publishDataSourceState(observedAt);
-    this.analyzeMarket();
+    this.clearMarketDataRefreshTimer();
+    const generation = ++this.marketDataStreamGeneration;
+    const adapterSupported = hasVerifiedMarketDataAdapter(this.activeAsset.id);
+    this.marketPacket = null;
+    this.candles = [];
+    this.fullHistoricalCandles = [];
+    this.isRealFeed = false;
+    this.marketDataActiveRequest = null;
+    this.marketDataHealth = createMarketDataHealth({
+      symbol: this.activeAsset.id,
+      timeframe: this.activeTimeframe.id,
+      adapterSupported,
+      now: Date.now()
+    });
+    this.lastDataSourceStateKey = null;
+    this.publishDataSourceState(Date.now());
+    return this.refreshMarketDataSnapshot({ generation, allowSimulationFallback: true });
   }
 
   startNewsStream() {
@@ -1809,6 +2131,7 @@ export class AITradingEngine {
     if (this.onDebateUpdate && this.signal.ruleCountercheck) {
       this.onDebateUpdate(this.signal.ruleCountercheck);
     }
+    if (this.verifiedPaperBotState?.enabled) this.evaluateVerifiedPaperBot();
   }
 
   // =========================================================================
@@ -2385,8 +2708,11 @@ export class AITradingEngine {
       memoryAccepted: this.signal?.decisionMemoryPolicy?.accepted === true,
       feedMode: marketState.isRealFeed ? 'REAL_MARKET_FEED' : (this.activeAsset?.dataMode || 'SIMULATED_OR_UNKNOWN_FEED'),
       marketPacketSchema: marketState.schemaVersion,
+      marketPacketSequence: marketState.packetSequence,
+      marketRequestId: marketState.requestId,
       marketSource: marketState.source,
       marketQuality: marketState.quality,
+      marketHealthStatus: this.marketDataHealth?.status || 'NOT_STARTED',
       marketDecisionEligible: marketDecision.eligible,
       marketDecisionReasons: marketDecision.reasons.join('|'),
       dataAgeMs: marketDecision.dataAgeMs,
@@ -2418,14 +2744,17 @@ export class AITradingEngine {
       executionSource: context.executionSource,
       assetId: this.activeAsset?.id,
       side: context.side,
-      marginUSD: context.marginUSD
+      marginUSD: context.marginUSD,
+      decision: context.decision || null
     });
     this.saveGymState();
     return { success: false, reason };
   }
 
-  openPosition(side = 'LONG', amountUSD = 1000, executionSource = 'MANUAL_PAPER') {
-    const normalizedExecutionSource = executionSource === 'RULE_AUTO_PAPER' ? 'RULE_AUTO_PAPER' : 'MANUAL_PAPER';
+  openPosition(side = 'LONG', amountUSD = 1000, executionSource = 'MANUAL_PAPER', decisionContext = null) {
+    const normalizedExecutionSource = ['RULE_AUTO_PAPER', 'VERIFIED_PAPER_BOT'].includes(executionSource)
+      ? executionSource
+      : 'MANUAL_PAPER';
     const marketDecisionState = this.getMarketDecisionState(Date.now());
     if (!marketDecisionState.eligible) {
       const guardReason = marketDecisionState.reasons.join('|') || 'MARKET_DATA_NOT_DECISION_ELIGIBLE';
@@ -2434,10 +2763,11 @@ export class AITradingEngine {
         side,
         marginUSD: amountUSD,
         executionSource: normalizedExecutionSource,
-        riskGateReason: guardReason
+        riskGateReason: guardReason,
+        decision: decisionContext
       });
     }
-    if (this.candles.length === 0) return this.rejectPaperOpen('NO_MARKET_DATA', { side, marginUSD: amountUSD, executionSource: normalizedExecutionSource });
+    if (this.candles.length === 0) return this.rejectPaperOpen('NO_MARKET_DATA', { side, marginUSD: amountUSD, executionSource: normalizedExecutionSource, decision: decisionContext });
     const currentPrice = this.candles[this.candles.length - 1].close;
     const spreadInfo = this.currentSpreadInfo || calculateDynamicSpread(this.activeAsset, currentPrice, this.candles[this.candles.length - 1], this.activeNews);
 
@@ -2452,7 +2782,7 @@ export class AITradingEngine {
     });
     if (!riskGate.allowed) {
       if (this.toasts) this.toasts.show('ERROR', `PAPER RISK GATE: ${riskGate.reason}`, 2200);
-      return this.rejectPaperOpen(riskGate.reason, { side, marginUSD, executionSource: normalizedExecutionSource, riskGateReason: riskGate.reason });
+      return this.rejectPaperOpen(riskGate.reason, { side, marginUSD, executionSource: normalizedExecutionSource, riskGateReason: riskGate.reason, decision: decisionContext });
     }
 
     const isLong = side.toUpperCase() === 'LONG';
@@ -2466,7 +2796,7 @@ export class AITradingEngine {
     });
     if (!protectiveOrders) {
       if (this.toasts) this.toasts.show('ERROR', 'PAPER RISK GATE: INVALID PROTECTIVE ORDERS', 2200);
-      return this.rejectPaperOpen('INVALID_PROTECTIVE_ORDERS', { side, marginUSD, executionSource: normalizedExecutionSource });
+      return this.rejectPaperOpen('INVALID_PROTECTIVE_ORDERS', { side, marginUSD, executionSource: normalizedExecutionSource, decision: decisionContext });
     }
 
     const basePosition = createPaperPosition({
@@ -2483,7 +2813,7 @@ export class AITradingEngine {
     });
     const immediateExitPrice = isLong ? spreadInfo.bidPrice : spreadInfo.askPrice;
     const markedPosition = markPaperPosition(basePosition, immediateExitPrice);
-    if (!markedPosition) return this.rejectPaperOpen('POSITION_MARK_FAILED', { side, marginUSD, executionSource: normalizedExecutionSource });
+    if (!markedPosition) return this.rejectPaperOpen('POSITION_MARK_FAILED', { side, marginUSD, executionSource: normalizedExecutionSource, decision: decisionContext });
     const pos = {
       ...markedPosition,
       executionSource: normalizedExecutionSource,
@@ -2505,7 +2835,8 @@ export class AITradingEngine {
       stopPrice: pos.sl,
       targetPrice: pos.tp,
       pnlUSD: pos.pnlUSD,
-      balanceAfterUSD: this.paperBalanceUSD
+      balanceAfterUSD: this.paperBalanceUSD,
+      decision: decisionContext
     });
     if (auditEvent) pos.decisionAuditId = auditEvent.eventId;
     this.saveGymState();

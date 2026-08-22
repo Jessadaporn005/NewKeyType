@@ -13,6 +13,10 @@ const BINANCE_INTERVALS = Object.freeze({
   '1D': '1d'
 });
 
+export function hasVerifiedMarketDataAdapter(symbol) {
+  return Object.prototype.hasOwnProperty.call(BINANCE_SYMBOLS, symbol);
+}
+
 function parseCandle(item) {
   if (!Array.isArray(item) || item.length < 6) return null;
   const openTimeMs = Number(item[0]);
@@ -94,5 +98,5 @@ export async function fetchHistoricalExchangeCandles(symbol = 'BTC/USDT', interv
 
 export function getMarketDataDisclosure(symbol) {
   if (symbol === 'XAU/USD') return 'BINANCE PAXG/USDT PROXY — NOT XAU/USD SPOT';
-  return BINANCE_SYMBOLS[symbol] ? 'BINANCE KLINES' : 'NO VERIFIED ADAPTER';
+  return hasVerifiedMarketDataAdapter(symbol) ? 'BINANCE KLINES' : 'NO VERIFIED ADAPTER';
 }

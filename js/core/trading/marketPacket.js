@@ -107,6 +107,8 @@ export function evaluateMarketPacketDecisionEligibility(packet, {
 export function createMarketPacket({
   source,
   adapter = null,
+  sequence = 0,
+  requestId = null,
   symbol,
   timeframe,
   timeframeSeconds,
@@ -171,6 +173,8 @@ export function createMarketPacket({
   });
   const packet = {
     schemaVersion: MARKET_PACKET_SCHEMA_VERSION,
+    sequence: Math.max(0, Number.parseInt(sequence, 10) || 0),
+    requestId: typeof requestId === 'string' ? requestId.slice(0, 100) : null,
     source,
     adapter: typeof adapter === 'string' ? adapter.slice(0, 120) : null,
     symbol: String(symbol || ''),
@@ -199,6 +203,8 @@ export function summarizeMarketPacket(packet, { now = Date.now() } = {}) {
   const decision = evaluateMarketPacketDecisionEligibility(packet, { now });
   return Object.freeze({
     schemaVersion: packet?.schemaVersion ?? null,
+    packetSequence: packet?.sequence ?? 0,
+    requestId: packet?.requestId || null,
     source: packet?.source || 'NO_SOURCE',
     sourceLabel: packet?.provenance?.label || 'NO VERIFIED SOURCE',
     symbol: packet?.symbol || null,

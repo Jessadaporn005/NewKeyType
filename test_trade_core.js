@@ -27,10 +27,52 @@ import {
   evaluateMarketPacketDecisionEligibility,
   summarizeMarketPacket
 } from './js/core/trading/marketPacket.js';
+import {
+  MARKET_DATA_ATTEMPT_OUTCOME,
+  MARKET_DATA_HEALTH_STATUS,
+  beginMarketDataAttempt,
+  calculateMarketDataRefreshDelay,
+  createMarketDataEvidence,
+  createMarketDataHealth,
+  settleMarketDataAttempt
+} from './js/core/trading/marketDataHealth.js';
 import { MT5_DEMO_PACKET_SOURCE, reconcileMT5DemoAccount, validateMT5DemoPacket } from './js/core/trading/mt5DemoGateway.js';
 import { certifyMT5DemoTelemetrySession } from './js/core/trading/mt5DemoCertification.js';
+import { assessMT5DemoReadiness } from './js/core/trading/mt5DemoReadiness.js';
+import {
+  MT5_DEMO_ORDER_ACK_SCHEMA,
+  armMT5DemoExecutionKillSwitch,
+  createMT5DemoExecutionState,
+  createMT5DemoOrderIntent,
+  recordMT5DemoOrderAcknowledgement,
+  unlockMT5DemoExecution,
+  validateMT5DemoOrderAcknowledgement
+} from './js/core/trading/mt5DemoExecutionGate.js';
 import { extractMLFeatures, predictMLDirection, restoreMLShadowModel, restoreMLShadowReport, trainAndEvaluateMLShadow } from './js/core/trading/mlShadowModel.js';
-import { fetchHistoricalExchangeCandles, fetchRealExchangeCandles, getMarketDataDisclosure } from './js/services/trading/binanceMarketData.js';
+import { PATTERN_EVIDENCE_SCHEMA, detectConfirmedChartPatterns } from './js/core/trading/patternEvidence.js';
+import { MARKET_REGIME_SCHEMA, detectEvidenceBasedMarketRegime } from './js/core/trading/marketRegime.js';
+import {
+  PATTERN_RESEARCH_METHOD,
+  PATTERN_RESEARCH_STAGE,
+  buildPatternOutcomeResearchDataset,
+  restorePatternOutcomeResearchDataset
+} from './js/core/trading/patternOutcomeResearch.js';
+import { PATTERN_MEMORY_PROMOTION_POLICY, promotePatternStrategyMemory } from './js/core/trading/patternMemoryPromotion.js';
+import {
+  AI_READER_POLICY,
+  createAIReaderInput,
+  restoreAIReaderReport,
+  validateAIReaderOutput
+} from './js/core/trading/aiReaderContract.js';
+import {
+  VERIFIED_PAPER_BOT_POLICY,
+  armVerifiedPaperBotKillSwitch,
+  createVerifiedPaperBotState,
+  evaluateVerifiedPaperBotDecision,
+  recordVerifiedPaperBotDecision,
+  setVerifiedPaperBotEnabled
+} from './js/core/trading/verifiedPaperBot.js';
+import { fetchHistoricalExchangeCandles, fetchRealExchangeCandles, getMarketDataDisclosure, hasVerifiedMarketDataAdapter } from './js/services/trading/binanceMarketData.js';
 import { AITradingEngine, DEFAULT_STRATEGY_WEIGHTS, calculateDynamicSpread as calculateLegacySpread, generateAISignal, TRADING_ASSETS as LEGACY_ASSET_EXPORT } from './js/aiTradingEngine.js';
 import { resolveRuntimeCapabilities } from './js/runtimeConfig.js';
 
@@ -95,6 +137,8 @@ const packetCandles = makeMarketPacketCandles(packetObservedAt);
 const verifiedPacket = createMarketPacket({
   source: MARKET_PACKET_SOURCES.BINANCE_KLINES_REST,
   adapter: 'BINANCE KLINES',
+  sequence: 7,
+  requestId: 'MKT_TEST_7',
   symbol: 'BTC/USDT',
   timeframe: '5m',
   timeframeSeconds: 300,
@@ -181,7 +225,236 @@ const futurePacket = createMarketPacket({
 });
 assert(futurePacket.quality.status === 'FUTURE_CANDLES' && !futurePacket.decision.eligible, 'MarketPacket rejects candles whose open time is in the future');
 const packetSummary = summarizeMarketPacket(verifiedPacket, { now: packetObservedAt });
-assert(packetSummary.decisionEligible && packetSummary.sourceLabel === 'BINANCE KLINES' && packetSummary.closedBars === 60, 'MarketPacket summary exposes truthful source and closed-bar status for the UI');
+assert(packetSummary.decisionEligible && packetSummary.sourceLabel === 'BINANCE KLINES' && packetSummary.closedBars === 60 && packetSummary.packetSequence === 7 && packetSummary.requestId === 'MKT_TEST_7', 'MarketPacket summary exposes truthful source, sequence, and closed-bar status for the UI');
+
+const aiReaderInputResult = createAIReaderInput({
+  marketPacket: verifiedPacket,
+  asset: { id: 'BTC/USDT' },
+  timeframe: { id: '5m' },
+  signal: {
+    action: 'BUY', confidence: 64, rationale: 'Rule evidence only', entry: 101, sl: 99, tp1: 105,
+    regime: { schema: 'MARKET_REGIME_V1', type: 'TREND', direction: 'BULLISH', label: 'Bullish trend', confidenceScore: 60, evidence: ['EMA slope positive'] }
+  },
+  patterns: [{
+    id: 'PATTERN_EVIDENCE_V1:TEST:1', type: 'TEST_CONFIRMED', name: 'Test evidence', sentiment: 'BULLISH',
+    confirmed: true, status: 'CONFIRMED', confirmation: { barTime: 1, method: 'CLOSED_BAR' },
+    invalidation: { condition: 'CLOSE_BELOW_LOW', price: 99 }, ruleAlignmentScore: 70
+  }],
+  now: packetObservedAt
+});
+assert(aiReaderInputResult.success && aiReaderInputResult.input.authority.executionInfluence === false
+  && aiReaderInputResult.input.candles.length === 40 && Object.isFrozen(aiReaderInputResult.input), 'AI Reader accepts only a bounded immutable verified closed-bar contract with zero authority');
+const aiReaderValidation = validateAIReaderOutput({
+  stance: 'BULLISH', summary: 'Closed-bar evidence leans upward.', interpretation: 'Trend evidence is aligned but remains uncertain.',
+  uncertainties: ['The next closed bar can invalidate the pattern.'], citedEvidenceIds: ['PATTERN_EVIDENCE_V1:TEST:1']
+}, aiReaderInputResult.input, { type: 'LOCAL_OLLAMA', model: 'local-test-model', generatedAt: packetObservedAt });
+assert(aiReaderValidation.accepted && aiReaderValidation.report.provider.realLLM === true
+  && aiReaderValidation.report.authority.mayIssueOrders === false, 'AI Reader validates a real local-LLM shadow report without granting order authority');
+assert(!validateAIReaderOutput({
+  stance: 'BULLISH', summary: 'Unsafe', interpretation: 'Unsafe', uncertainties: ['Risk'], citedEvidenceIds: [], action: 'BUY'
+}, aiReaderInputResult.input, { type: 'LOCAL_OLLAMA', model: 'local-test-model', generatedAt: packetObservedAt }).accepted, 'AI Reader rejects order-like fields even when a model attempts to emit them');
+assert(restoreAIReaderReport(aiReaderValidation.report)?.policy === AI_READER_POLICY
+  && restoreAIReaderReport({ ...aiReaderValidation.report, authority: { ...aiReaderValidation.report.authority, executionInfluence: true } }) === null,
+  'Persisted AI Reader reports restore only with shadow-only authority intact');
+
+const paperBotPattern = {
+  id: 'PATTERN_EVIDENCE_V1:BOT:1', type: 'BOT_PATTERN', sentiment: 'BULLISH', confirmed: true, decisionEligible: true
+};
+const paperBotSignal = {
+  action: 'STRONG BUY', ruleScore: 82, isExplorationProbe: false, entry: 101, sl: 99, tp1: 105,
+  regime: { decisionEligible: true, direction: 'BULLISH' }, patternEvidence: [paperBotPattern]
+};
+const paperBotMarketDecision = evaluateMarketPacketDecisionEligibility(verifiedPacket, { now: packetObservedAt });
+const paperBotAccount = { balance: 100000, equity: 100000, freeMargin: 100000 };
+const disabledPaperBotState = createVerifiedPaperBotState(100000, packetObservedAt);
+assert(evaluateVerifiedPaperBotDecision({ state: disabledPaperBotState, marketPacket: verifiedPacket, marketDecision: paperBotMarketDecision,
+  signal: paperBotSignal, paperAccount: paperBotAccount, now: packetObservedAt }).reason === 'BOT_DISABLED', 'Verified Paper Bot starts disabled and cannot self-enable');
+const enabledPaperBotState = setVerifiedPaperBotEnabled(disabledPaperBotState, true, { balanceUSD: 100000, now: packetObservedAt });
+const paperBotDecision = evaluateVerifiedPaperBotDecision({
+  state: enabledPaperBotState,
+  marketPacket: verifiedPacket,
+  marketDecision: paperBotMarketDecision,
+  signal: paperBotSignal,
+  positions: [],
+  paperAccount: paperBotAccount,
+  aiReaderReport: aiReaderValidation.report,
+  now: packetObservedAt
+});
+assert(paperBotDecision.execute && paperBotDecision.decision.policy === VERIFIED_PAPER_BOT_POLICY
+  && paperBotDecision.decision.requestedRiskPercent === 0.25 && paperBotDecision.decision.aiReader.influence === false
+  && paperBotDecision.decision.authority.liveEligible === false, 'Verified Paper Bot admits a confirmed closed-bar setup at exploratory Paper risk while AI remains advisory-only');
+const recordedPaperBotState = recordVerifiedPaperBotDecision(enabledPaperBotState, paperBotDecision, {
+  executed: true, balanceUSD: 100000, equityUSD: 100000, now: packetObservedAt
+});
+assert(evaluateVerifiedPaperBotDecision({ state: recordedPaperBotState, marketPacket: verifiedPacket, marketDecision: paperBotMarketDecision,
+  signal: paperBotSignal, paperAccount: paperBotAccount, now: packetObservedAt }).reason === 'CANDLE_ALREADY_EVALUATED', 'Verified Paper Bot cannot duplicate a decision on the same closed candle');
+const dailyLossBotDecision = evaluateVerifiedPaperBotDecision({
+  state: enabledPaperBotState, marketPacket: verifiedPacket, marketDecision: paperBotMarketDecision, signal: paperBotSignal,
+  paperAccount: { balance: 100000, equity: 97000, freeMargin: 97000 }, now: packetObservedAt
+});
+assert(dailyLossBotDecision.reason === 'MAX_DAILY_LOSS_REACHED', 'Verified Paper Bot trips before entry after the Paper daily-loss limit');
+const killedPaperBotState = armVerifiedPaperBotKillSwitch(enabledPaperBotState, { balanceUSD: 100000, now: packetObservedAt });
+assert(killedPaperBotState.killSwitch && !killedPaperBotState.enabled
+  && evaluateVerifiedPaperBotDecision({ state: killedPaperBotState, marketPacket: verifiedPacket, marketDecision: paperBotMarketDecision,
+    signal: paperBotSignal, paperAccount: paperBotAccount, now: packetObservedAt }).reason === 'KILL_SWITCH_ARMED', 'Verified Paper Bot kill switch persists off-state and blocks all new Paper decisions');
+
+const missingMT5Readiness = assessMT5DemoReadiness({});
+assert(missingMT5Readiness.status === 'MT5_XDEMO_NOT_INSTALLED' && !missingMT5Readiness.readyForDemoOrderCertification,
+  'MT5 readiness reports a truthful installation gate when no terminal evidence exists');
+const uncertifiedMT5Readiness = assessMT5DemoReadiness({
+  terminalInstalled: true, terminalRunning: true, pythonBridgeDependencyAvailable: true, bridgeScriptPresent: true,
+  gatewayEnabled: true, accessTokenConfigured: true, demoAccountObserved: true,
+  account: { server: 'XMGlobal-Demo', loginSuffix: '1234', tradeMode: 'DEMO' }, telemetryCertified: false
+});
+assert(uncertifiedMT5Readiness.status === 'CONTINUOUS_TELEMETRY_CERTIFICATION_REQUIRED'
+  && uncertifiedMT5Readiness.authority.executionInfluence === false, 'MT5 readiness cannot skip the continuous authenticated telemetry certification gate');
+const readyMT5Readiness = assessMT5DemoReadiness({
+  terminalInstalled: true, terminalRunning: true, pythonBridgeDependencyAvailable: true, bridgeScriptPresent: true,
+  gatewayEnabled: true, accessTokenConfigured: true, demoAccountObserved: true,
+  account: { server: 'XMGlobal-Demo', loginSuffix: '1234', tradeMode: 'DEMO' }, telemetryCertified: true
+});
+assert(readyMT5Readiness.readyForDemoOrderCertification && readyMT5Readiness.authority.liveEligible === false,
+  'Completing observer readiness permits only the next Demo certification stage and never Live authority');
+const lockedDemoExecution = unlockMT5DemoExecution(createMT5DemoExecutionState(), {
+  readiness: readyMT5Readiness,
+  certification: {
+    policy: 'CONTINUOUS_AUTHENTICATED_DEMO_TELEMETRY_V1', certified: true,
+    sessionId: '0123456789abcdef0123456789abcdef', account: { tradeMode: 'DEMO' }
+  },
+  runtimeDemoCapability: false,
+  operatorConfirmedDemo: true,
+  now: packetObservedAt
+});
+assert(!lockedDemoExecution.success && lockedDemoExecution.state.killSwitch, 'MT5 Demo execution stays kill-switched while the release capability is disabled');
+const unlockedDemoExecution = unlockMT5DemoExecution(createMT5DemoExecutionState(), {
+  readiness: readyMT5Readiness,
+  certification: {
+    policy: 'CONTINUOUS_AUTHENTICATED_DEMO_TELEMETRY_V1', certified: true,
+    sessionId: '0123456789abcdef0123456789abcdef', account: { tradeMode: 'DEMO' }
+  },
+  runtimeDemoCapability: true,
+  operatorConfirmedDemo: true,
+  now: packetObservedAt
+});
+const demoIntentResult = createMT5DemoOrderIntent({
+  state: unlockedDemoExecution.state,
+  paperBotDecision: paperBotDecision.decision,
+  symbol: 'BTCUSD.demo',
+  approvedSymbolMap: { 'BTC/USDT': 'BTCUSD.demo' },
+  volume: 0.1,
+  quote: { bid: 100.9, ask: 101 },
+  stopPrice: 99,
+  targetPrice: 105,
+  now: packetObservedAt,
+  nonce: '00112233445566778899aabbccddeeff'
+});
+assert(unlockedDemoExecution.success && demoIntentResult.success && demoIntentResult.intent.mode === 'DEMO'
+  && demoIntentResult.intent.liveEligible === false && demoIntentResult.intent.simulatedFallbackAllowed === false,
+  'Certified MT5 Demo gate creates only short-lived allowlisted Demo intents with no fallback or Live authority');
+const demoAckValidation = validateMT5DemoOrderAcknowledgement({
+  schemaVersion: MT5_DEMO_ORDER_ACK_SCHEMA,
+  source: MT5_DEMO_PACKET_SOURCE,
+  mode: 'DEMO',
+  intentId: demoIntentResult.intent.intentId,
+  nonce: demoIntentResult.intent.nonce,
+  accepted: true,
+  ticket: '900001',
+  symbol: 'BTCUSD.demo',
+  side: 'BUY',
+  volume: 0.1,
+  acceptedPrice: 101,
+  stopPrice: 99,
+  targetPrice: 105,
+  magic: 99001
+}, demoIntentResult.intent, { transportAuthenticated: true, now: packetObservedAt + 1000 });
+const demoExecutionAfterAck = recordMT5DemoOrderAcknowledgement(unlockedDemoExecution.state, demoAckValidation);
+assert(demoAckValidation.accepted && demoExecutionAfterAck.expectedTickets.includes('900001'), 'Authenticated MT5 Demo acknowledgement becomes an expected reconciliation ticket');
+assert(!createMT5DemoOrderIntent({ state: armMT5DemoExecutionKillSwitch(), paperBotDecision: paperBotDecision.decision }).success,
+  'MT5 Demo kill switch blocks intent creation before any broker request can exist');
+
+assert(hasVerifiedMarketDataAdapter('BTC/USDT') && !hasVerifiedMarketDataAdapter('EUR/USD'), 'Market adapter registry distinguishes verified exchange routes from Simulation-only assets');
+assert(calculateMarketDataRefreshDelay({ timeframeSeconds: 60 }) === 15000 && calculateMarketDataRefreshDelay({ timeframeSeconds: 300 }) === 60000, 'Healthy refresh cadence is bounded to protect the source from excessive polling');
+assert(calculateMarketDataRefreshDelay({ consecutiveFailures: 1 }) === 5000 && calculateMarketDataRefreshDelay({ consecutiveFailures: 2 }) === 10000 && calculateMarketDataRefreshDelay({ adapterSupported: false }) === null, 'Failed refresh attempts use bounded exponential backoff and unsupported assets do not poll');
+
+let healthState = createMarketDataHealth({ symbol: 'BTC/USDT', timeframe: '5m', now: packetObservedAt });
+healthState = beginMarketDataAttempt(healthState, { requestId: 'health-1', at: packetObservedAt + 1 });
+healthState = settleMarketDataAttempt(healthState, { outcome: MARKET_DATA_ATTEMPT_OUTCOME.SUCCESS, at: packetObservedAt + 2, packetSequence: 1, timeframeSeconds: 300 });
+assert(healthState.status === MARKET_DATA_HEALTH_STATUS.HEALTHY && healthState.successCount === 1 && healthState.consecutiveFailures === 0, 'Source health becomes healthy only after a successful verified packet');
+healthState = beginMarketDataAttempt(healthState, { requestId: 'health-2', at: packetObservedAt + 3 });
+healthState = settleMarketDataAttempt(healthState, { outcome: MARKET_DATA_ATTEMPT_OUTCOME.NO_DATA, reason: 'NO_DATA_FROM_ADAPTER', at: packetObservedAt + 4, timeframeSeconds: 300 });
+assert(healthState.status === MARKET_DATA_HEALTH_STATUS.DEGRADED && healthState.consecutiveFailures === 1 && healthState.nextRefreshAtMs === packetObservedAt + 5004, 'A failed refresh degrades a previously healthy source and schedules the first retry');
+
+const healthEvidence = createMarketDataEvidence({
+  requestId: 'evidence-1', generation: 2, source: MARKET_PACKET_SOURCES.BINANCE_KLINES_REST,
+  symbol: 'BTC/USDT', timeframe: '5m', startedAt: packetObservedAt, finishedAt: packetObservedAt + 25,
+  outcome: MARKET_DATA_ATTEMPT_OUTCOME.SUCCESS, packet: verifiedPacket, rawCandleCount: packetCandles.length
+});
+assert(Object.isFrozen(healthEvidence) && healthEvidence.durationMs === 25 && healthEvidence.packetSequence === 7 && healthEvidence.rawCandleCount === 61, 'Each refresh produces immutable bounded request evidence without storing credentials');
+
+const pipelineNow = Date.now();
+const pipelineCandles = makeMarketPacketCandles(pipelineNow, 80);
+let pipelineFetchCalls = 0;
+const pipelineEngine = new AITradingEngine({
+  marketDataFetch: async () => {
+    pipelineFetchCalls += 1;
+    return pipelineCandles;
+  }
+});
+pipelineEngine.requestRender = () => {};
+const initialPipelineLoad = await pipelineEngine.loadCandles();
+assert(initialPipelineLoad.success && pipelineFetchCalls === 1 && pipelineEngine.marketDataHealth.status === MARKET_DATA_HEALTH_STATUS.HEALTHY, 'Engine initial load adopts one verified snapshot and marks the source healthy');
+assert(pipelineEngine.marketPacket.sequence === 1 && pipelineEngine.marketDataEvidence[0]?.outcome === MARKET_DATA_ATTEMPT_OUTCOME.SUCCESS, 'Engine links the active packet to its successful request evidence');
+
+const retainedVerifiedPacket = pipelineEngine.marketPacket;
+pipelineEngine.marketDataFetch = async () => null;
+const degradedRefresh = await pipelineEngine.refreshMarketDataSnapshot();
+assert(!degradedRefresh.success && pipelineEngine.marketDataHealth.status === MARKET_DATA_HEALTH_STATUS.DEGRADED && pipelineEngine.marketPacket === retainedVerifiedPacket, 'Transient source failure retains the last immutable verified packet instead of replacing it with random data');
+assert(pipelineEngine.marketDataHealth.consecutiveFailures === 1 && pipelineEngine.marketDataEvidence[0]?.outcome === MARKET_DATA_ATTEMPT_OUTCOME.NO_DATA, 'Transient failure records evidence and begins exponential retry state');
+
+pipelineEngine.marketDataFetch = async () => makeMarketPacketCandles(Date.now(), 80);
+const recoveredRefresh = await pipelineEngine.refreshMarketDataSnapshot();
+assert(recoveredRefresh.success && pipelineEngine.marketDataHealth.status === MARKET_DATA_HEALTH_STATUS.HEALTHY && pipelineEngine.marketDataHealth.consecutiveFailures === 0 && pipelineEngine.marketPacket.sequence > retainedVerifiedPacket.sequence, 'A later verified response recovers health and advances packet sequence monotonically');
+assert(pipelineEngine.startMarketDataRefreshLoop({ immediate: false }) && pipelineEngine.marketDataTimer, 'Healthy source starts one automatic refresh timer');
+pipelineEngine.stopMarketDataRefreshLoop({ invalidate: false });
+assert(pipelineEngine.marketDataTimer === null && pipelineEngine.marketDataRefreshEnabled === false, 'Automatic source refresh timer stops cleanly with the Trade view');
+pipelineEngine.startMarketDataRefreshLoop({ immediate: false });
+pipelineEngine.startReplay();
+assert(pipelineEngine.isReplayMode && pipelineEngine.marketDataTimer === null && pipelineEngine.marketDataRefreshEnabled === false, 'Chart replay invalidates pending source refresh so a live response cannot overwrite historical candles');
+pipelineEngine.exitReplay();
+assert(!pipelineEngine.isReplayMode && pipelineEngine.marketDataRefreshEnabled && pipelineEngine.marketDataTimer, 'Leaving chart replay resumes verified source refresh immediately');
+pipelineEngine.stopMarketDataRefreshLoop({ invalidate: false });
+
+let resolveOverlapFetch;
+let overlapFetchCalls = 0;
+const overlapEngine = new AITradingEngine({
+  marketDataFetch: () => {
+    overlapFetchCalls += 1;
+    return new Promise(resolve => { resolveOverlapFetch = resolve; });
+  }
+});
+overlapEngine.requestRender = () => {};
+const overlapPending = overlapEngine.loadCandles();
+const overlapRejected = await overlapEngine.refreshMarketDataSnapshot();
+assert(overlapRejected.reason === 'REFRESH_ALREADY_IN_FLIGHT' && overlapFetchCalls === 1, 'Automatic pipeline cannot issue overlapping requests for the same market generation');
+resolveOverlapFetch(pipelineCandles);
+await overlapPending;
+
+let unsupportedFetchCalls = 0;
+const unsupportedPipelineEngine = new AITradingEngine({ marketDataFetch: async () => { unsupportedFetchCalls += 1; return pipelineCandles; } });
+unsupportedPipelineEngine.requestRender = () => {};
+unsupportedPipelineEngine.activeAsset = findTradingAsset('EUR/USD');
+const unsupportedLoad = await unsupportedPipelineEngine.loadCandles();
+assert(!unsupportedLoad.success && unsupportedFetchCalls === 0 && unsupportedPipelineEngine.marketPacket.provenance.simulation === true, 'Assets without a verified adapter enter Simulation Lab without making a misleading exchange request');
+assert(unsupportedPipelineEngine.marketDataHealth.status === MARKET_DATA_HEALTH_STATUS.SIMULATION && unsupportedPipelineEngine.marketDataHealth.nextRefreshAtMs === null, 'Simulation-only source health is explicit and does not schedule futile retries');
+
+let resolveSupersededFetch;
+const supersededEngine = new AITradingEngine({ marketDataFetch: () => new Promise(resolve => { resolveSupersededFetch = resolve; }) });
+supersededEngine.requestRender = () => {};
+const supersededPending = supersededEngine.loadCandles();
+supersededEngine.marketDataStreamGeneration += 1;
+resolveSupersededFetch(pipelineCandles);
+const supersededResult = await supersededPending;
+assert(supersededResult.reason === 'SUPERSEDED_MARKET_REQUEST' && supersededEngine.marketPacket === null && supersededEngine.marketDataEvidence[0]?.outcome === MARKET_DATA_ATTEMPT_OUTCOME.SUPERSEDED, 'A late response from an older generation cannot overwrite the active market target');
 
 const paginationUrls = [];
 const paginatedCandles = await fetchHistoricalExchangeCandles('BTC/USDT', '5m', 700, {
@@ -247,6 +520,11 @@ const operatorB = Object.create(AITradingEngine.prototype);
 operatorB.app = { username: 'Trader_B' };
 assert(operatorA.getGymStorageKey() !== operatorB.getGymStorageKey(), 'Paper Trade browser storage is isolated per operator');
 assert(Object.values(DEFAULT_STRATEGY_WEIGHTS).every(weight => weight.wins === 0 && weight.losses === 0 && weight.weightMultiplier === 1), 'New operators start with neutral strategy weights and no fabricated trade history');
+const evidenceProfileEngine = Object.create(AITradingEngine.prototype);
+evidenceProfileEngine.strategyWeights = JSON.parse(JSON.stringify(DEFAULT_STRATEGY_WEIGHTS));
+evidenceProfileEngine.aiJournal = [];
+assert(evidenceProfileEngine.getSetupMastery().every(setup => setup.count === 0 && setup.mastery === null && setup.status === 'UNOBSERVED'), 'Pattern profile exposes zero observations instead of fabricated mastery percentages');
+assert(evidenceProfileEngine.seedInitialAIJournal() === false && evidenceProfileEngine.aiJournal.length === 0, 'Fabricated starter journal seeding is disabled');
 
 const legacyDemoState = {
   stats: { totalTrades: 18, wins: 14, losses: 4, winRate: 77.8, netPnlUSD: 8420.5, samplesStudied: 3420 },
@@ -267,9 +545,212 @@ const signalCandles = Array.from({ length: 80 }, (_, index) => {
 });
 const signalAsset = findTradingAsset('BTC/USDT');
 const signalSpread = calculateCoreSpread(signalAsset, signalCandles.at(-1).close, signalCandles.at(-1), null, () => 0.5);
+
+const confirmedEngulfingCandles = Array.from({ length: 60 }, (_, index) => {
+  const open = 100 + (index % 2) * 0.03;
+  const close = open + 0.02;
+  return { time: 1720000000000 + index * 300000, open, high: open + 0.3, low: open - 0.3, close, volume: 100 + index };
+});
+confirmedEngulfingCandles[57] = { ...confirmedEngulfingCandles[57], open: 100.4, high: 100.6, low: 99.2, close: 99.5 };
+confirmedEngulfingCandles[58] = { ...confirmedEngulfingCandles[58], open: 99.4, high: 100.8, low: 99.2, close: 100.6 };
+confirmedEngulfingCandles[59] = { ...confirmedEngulfingCandles[59], open: 100.6, high: 101.2, low: 100.5, close: 101.0 };
+const confirmedEngulfingPatterns = detectConfirmedChartPatterns(confirmedEngulfingCandles);
+const confirmedEngulfing = confirmedEngulfingPatterns.find(pattern => pattern.type === 'BULLISH_ENGULFING_CONFIRMED');
+assert(confirmedEngulfing?.schema === PATTERN_EVIDENCE_SCHEMA && confirmedEngulfing.confirmed && confirmedEngulfing.decisionEligible, 'Pattern engine admits a bullish engulfing only after the next closed bar confirms above the setup high');
+assert(Object.isFrozen(confirmedEngulfingPatterns) && Object.isFrozen(confirmedEngulfing) && Object.isFrozen(confirmedEngulfing.evidence) && Object.isFrozen(confirmedEngulfing.confirmation) && Object.isFrozen(confirmedEngulfing.invalidation), 'Confirmed pattern evidence, confirmation, and invalidation contracts are immutable');
+assert(detectConfirmedChartPatterns(confirmedEngulfingCandles).find(pattern => pattern.type === 'BULLISH_ENGULFING_CONFIRMED')?.id === confirmedEngulfing.id, 'Confirmed pattern IDs are deterministic for the same closed-bar evidence');
+const earlierPatternPrefix = Array.from({ length: 5 }, (_, index) => ({
+  time: confirmedEngulfingCandles[0].time - (5 - index) * 300000,
+  open: 100,
+  high: 100.3,
+  low: 99.7,
+  close: 100.02,
+  volume: 80 + index
+}));
+assert(detectConfirmedChartPatterns([...earlierPatternPrefix, ...confirmedEngulfingCandles]).find(pattern => pattern.type === 'BULLISH_ENGULFING_CONFIRMED')?.id === confirmedEngulfing.id, 'Pattern ID remains stable when older history is prepended because anchors use exchange times, not array positions');
+
+const unconfirmedEngulfingCandles = confirmedEngulfingCandles.map(candle => ({ ...candle }));
+unconfirmedEngulfingCandles[59] = { ...unconfirmedEngulfingCandles[59], open: 100.6, high: 100.75, low: 100.5, close: 100.7 };
+assert(!detectConfirmedChartPatterns(unconfirmedEngulfingCandles).some(pattern => pattern.type === 'BULLISH_ENGULFING_CONFIRMED'), 'A visually plausible engulfing setup has zero decision authority before confirmation closes above its high');
+const formingConfirmationCandles = confirmedEngulfingCandles.map((candle, index) => index === 59 ? { ...candle, barClosed: false } : { ...candle });
+assert(!detectConfirmedChartPatterns(formingConfirmationCandles).some(pattern => pattern.type === 'BULLISH_ENGULFING_CONFIRMED'), 'A still-forming confirmation bar cannot confirm a chart pattern');
+const interleavedFormingCandles = confirmedEngulfingCandles.map((candle, index) => index === 58 ? { ...candle, barClosed: false } : { ...candle });
+assert(detectConfirmedChartPatterns(interleavedFormingCandles).length === 0, 'Pattern evidence fails closed when a forming bar appears inside the closed-bar sequence');
+const duplicatePatternTimeCandles = confirmedEngulfingCandles.map((candle, index) => index === 59 ? { ...candle, time: confirmedEngulfingCandles[58].time } : { ...candle });
+assert(detectConfirmedChartPatterns(duplicatePatternTimeCandles).length === 0 && detectEvidenceBasedMarketRegime(duplicatePatternTimeCandles).type === 'INVALID_EVIDENCE', 'Duplicate or out-of-order timestamps invalidate Pattern and Regime evidence');
+
+const doubleBottomCandles = Array.from({ length: 30 }, (_, index) => ({
+  time: 1730000000000 + index * 300000,
+  open: 104,
+  high: 104.5,
+  low: 103.5,
+  close: 104.1,
+  volume: 200 + index
+}));
+doubleBottomCandles[8] = { ...doubleBottomCandles[8], open: 102, high: 102.5, low: 100, close: 101.5 };
+doubleBottomCandles[12] = { ...doubleBottomCandles[12], open: 104.5, high: 106, low: 104, close: 105.5 };
+doubleBottomCandles[18] = { ...doubleBottomCandles[18], open: 102, high: 102.4, low: 100.1, close: 101.7 };
+doubleBottomCandles[28] = { ...doubleBottomCandles[28], open: 105, high: 105.8, low: 104.8, close: 105.5 };
+doubleBottomCandles[29] = { ...doubleBottomCandles[29], open: 105.5, high: 106, low: 105.3, close: 105.9 };
+assert(!detectConfirmedChartPatterns(doubleBottomCandles).some(pattern => pattern.type === 'DOUBLE_BOTTOM_BREAKOUT_CONFIRMED'), 'Two similar lows alone are not mislabeled as a confirmed Double Bottom without a neckline breakout');
+const confirmedDoubleBottomCandles = doubleBottomCandles.map(candle => ({ ...candle }));
+confirmedDoubleBottomCandles[29] = { ...confirmedDoubleBottomCandles[29], open: 105.8, high: 106.7, low: 105.7, close: 106.5 };
+assert(detectConfirmedChartPatterns(confirmedDoubleBottomCandles).some(pattern => pattern.type === 'DOUBLE_BOTTOM_BREAKOUT_CONFIRMED'), 'Double Bottom gains decision authority only after a closed-bar neckline breakout');
+
+const insufficientRegime = detectEvidenceBasedMarketRegime(confirmedEngulfingCandles.slice(0, 49));
+assert(insufficientRegime.schema === MARKET_REGIME_SCHEMA && insufficientRegime.type === 'INSUFFICIENT_EVIDENCE' && insufficientRegime.decisionEligible === false, 'Market regime fails closed instead of inventing a Range classification below 50 closed bars');
+const trendingRegime = detectEvidenceBasedMarketRegime(signalCandles);
+assert(trendingRegime.schema === MARKET_REGIME_SCHEMA && trendingRegime.type === 'TRENDING_MOMENTUM' && trendingRegime.direction === 'BULLISH' && trendingRegime.decisionEligible, 'EMA separation, slope, band width, and five-bar alignment confirm a bullish trend regime');
+assert(Object.isFrozen(trendingRegime) && Object.isFrozen(trendingRegime.evidence) && Object.isFrozen(trendingRegime.invalidation), 'Market regime evidence and invalidation contracts are immutable');
+const formingOutlierCandles = [...signalCandles, { time: signalCandles.at(-1).time + 300000, open: 116, high: 250, low: 20, close: 30, volume: 9999, barClosed: false }];
+assert(detectEvidenceBasedMarketRegime(formingOutlierCandles).id === trendingRegime.id, 'A forming-bar outlier cannot repaint the confirmed market regime');
+const widenedSpreadRegime = detectEvidenceBasedMarketRegime(signalCandles, { spreadInfo: { isWidened: true, source: 'TEST_SPREAD' } });
+assert(widenedSpreadRegime.type === trendingRegime.type && widenedSpreadRegime.evidence.spreadInfluence === false && widenedSpreadRegime.evidence.executionSpreadWidened === true, 'Execution spread is recorded but cannot masquerade as price-derived market regime evidence');
+const malformedRegimeCandles = signalCandles.map((candle, index) => index === 30 ? { ...candle, high: candle.low - 1 } : { ...candle });
+assert(detectEvidenceBasedMarketRegime(malformedRegimeCandles).type === 'INVALID_EVIDENCE' && detectEvidenceBasedMarketRegime(malformedRegimeCandles).decisionEligible === false, 'Malformed closed bars invalidate the entire regime window instead of being silently skipped');
+const bearishRegimeCandles = Array.from({ length: 80 }, (_, index) => {
+  const open = 120 - index * 0.2;
+  const close = open - 0.1;
+  return { time: 1735000000000 + index * 300000, open, high: open + 0.2, low: close - 0.2, close, volume: 250 + index };
+});
+const bearishRegime = detectEvidenceBasedMarketRegime(bearishRegimeCandles);
+const bearishRegimeCountercheck = evaluateRuleCountercheck([], bearishRegime, null, 50, bearishRegimeCandles.at(-1).close);
+assert(bearishRegime.direction === 'BEARISH' && bearishRegimeCountercheck.riskFactors.some(factor => factor.includes('Bearish Momentum Trend')), 'Bearish trend evidence is treated as risk, never as a bullish factor');
+const flatRegimeCandles = Array.from({ length: 80 }, (_, index) => {
+  const open = 100 + (index % 2 === 0 ? -0.01 : 0.01);
+  const close = 100 + (index % 3 === 0 ? 0.01 : -0.01);
+  return { time: 1740000000000 + index * 300000, open, high: Math.max(open, close) + 0.02, low: Math.min(open, close) - 0.02, close, volume: 300 + index };
+});
+assert(detectEvidenceBasedMarketRegime(flatRegimeCandles).type === 'RANGE_COMPRESSION', 'Low band width and flat EMA evidence classify a closed-bar Range Compression');
+
 const integratedSignal = generateAISignal(signalCandles, signalAsset, [], null, DEFAULT_STRATEGY_WEIGHTS, signalSpread, null, 'balanced');
 assert(integratedSignal.targetScore?.calibrated === false && integratedSignal.ruleCountercheck?.independentAgents === false, 'Integrated signal path returns the truthful rule-score and single countercheck contracts');
 assert(integratedSignal.quantDesk?.agents?.length === 4, 'Integrated signal path completes all four deterministic analysis modules');
+const injectedLegacyPatternSignal = generateAISignal(signalCandles, signalAsset, [{ name: 'Injected Pattern', weight: 999999 }], null, DEFAULT_STRATEGY_WEIGHTS, signalSpread, null, 'balanced');
+const injectedCounterfeitPatternSignal = generateAISignal(signalCandles, signalAsset, [{ schema: PATTERN_EVIDENCE_SCHEMA, id: 'FAKE', confirmed: true, decisionEligible: true, name: 'Counterfeit', weight: 999999 }], null, DEFAULT_STRATEGY_WEIGHTS, signalSpread, null, 'balanced');
+assert(injectedLegacyPatternSignal.action === integratedSignal.action && injectedLegacyPatternSignal.ruleScore === integratedSignal.ruleScore && injectedCounterfeitPatternSignal.ruleScore === integratedSignal.ruleScore, 'Caller-supplied legacy or counterfeit patterns cannot inject score; the signal independently derives evidence from candles');
+const integratedConfirmedPatternSignal = generateAISignal(confirmedEngulfingCandles, signalAsset, [], null, DEFAULT_STRATEGY_WEIGHTS, signalSpread, null, 'balanced');
+assert(integratedConfirmedPatternSignal.patternEvidence.some(pattern => pattern.id === confirmedEngulfing.id), 'Integrated signal exposes the exact confirmed pattern evidence it used');
+const insufficientRegimeSignal = generateAISignal(signalCandles.slice(0, 49), signalAsset, [], null, DEFAULT_STRATEGY_WEIGHTS, signalSpread, null, 'balanced');
+assert(insufficientRegimeSignal.action === 'INSUFFICIENT REGIME DATA / HOLD' && insufficientRegimeSignal.regime.decisionEligible === false && insufficientRegimeSignal.targetScore.valid === false, 'Signal and target score fail closed until the market regime has 50 closed bars');
+
+const patternResearchCandles = confirmedEngulfingCandles.map(candle => ({ ...candle }));
+patternResearchCandles.push(
+  { time: confirmedEngulfingCandles.at(-1).time + 300000, open: 101, high: 102, low: 100.5, close: 101.8, volume: 500 },
+  { time: confirmedEngulfingCandles.at(-1).time + 600000, open: 101.8, high: 105, low: 101.5, close: 104.8, volume: 520 }
+);
+for (let index = 62; index < 80; index += 1) {
+  patternResearchCandles.push({
+    time: confirmedEngulfingCandles[0].time + index * 300000,
+    open: 104.8,
+    high: 105,
+    low: 104.6,
+    close: 104.85,
+    volume: 500 + index
+  });
+}
+const researchMetadata = {
+  source: 'BINANCE_KLINES_REST',
+  adapter: 'TEST VERIFIED HISTORY',
+  assetId: 'BTC/USDT',
+  timeframe: '5m',
+  timeframeSeconds: 300,
+  collectedAt: patternResearchCandles.at(-1).time + 300000,
+  verified: true,
+  simulation: false
+};
+const patternResearch = buildPatternOutcomeResearchDataset(patternResearchCandles, researchMetadata, {
+  horizonBars: 5,
+  targetR: 2,
+  roundTripCostBps: 10,
+  slippageBps: 0
+});
+const engulfingResearchSample = patternResearch.samples.find(sample => sample.pattern.id === confirmedEngulfing.id);
+assert(patternResearch.success && patternResearch.method === PATTERN_RESEARCH_METHOD && patternResearch.stage === PATTERN_RESEARCH_STAGE && patternResearch.decisionEligible === false && patternResearch.weightInfluence === false, 'Pattern outcome dataset is explicitly Research Shadow with zero decision and weight authority');
+assert(engulfingResearchSample?.status === 'COMPLETED' && engulfingResearchSample.outcome.code === 'TARGET_HIT' && engulfingResearchSample.entryIndex === 60 && engulfingResearchSample.exitIndex === 61, 'Confirmed Pattern enters only at the next bar open and labels the first future target hit');
+assert(engulfingResearchSample.signalTime < engulfingResearchSample.entryTime && engulfingResearchSample.entryTime <= engulfingResearchSample.labelTime && engulfingResearchSample.leakageAudit.historyEndsAtSignal, 'Pattern label records an auditable no-lookahead signal, entry, and label timeline');
+assert(engulfingResearchSample.outcome.maximumFavorableExcursionR >= 2 && engulfingResearchSample.outcome.maximumAdverseExcursionR >= 0 && engulfingResearchSample.outcome.netReturnR < 2, 'Pattern research records MFE/MAE and subtracts configured costs from R outcome');
+assert(Object.isFrozen(patternResearch) && Object.isFrozen(patternResearch.samples) && Object.isFrozen(engulfingResearchSample.outcome) && patternResearch.summary.promotionEligible === false, 'Research dataset, outcomes, and descriptive summaries are immutable and cannot self-promote');
+
+const researchPrefix = buildPatternOutcomeResearchDataset(patternResearchCandles.slice(0, 62), {
+  ...researchMetadata,
+  collectedAt: patternResearchCandles[61].time + 300000
+}, { horizonBars: 5, targetR: 2, roundTripCostBps: 10, slippageBps: 0 });
+const prefixSample = researchPrefix.samples.find(sample => sample.pattern.id === confirmedEngulfing.id);
+assert(prefixSample?.outcome.code === engulfingResearchSample.outcome.code && prefixSample.outcome.netReturnR === engulfingResearchSample.outcome.netReturnR && prefixSample.labelTime === engulfingResearchSample.labelTime, 'A label resolved at an early barrier is identical when later candles are unavailable');
+
+const mutatedAfterLabelCandles = patternResearchCandles.map((candle, index) => index > 61
+  ? { ...candle, open: 80, high: 81, low: 79, close: 80.5 }
+  : { ...candle });
+const mutatedAfterLabelResearch = buildPatternOutcomeResearchDataset(mutatedAfterLabelCandles, researchMetadata, { horizonBars: 5, targetR: 2, roundTripCostBps: 10, slippageBps: 0 });
+const mutatedAfterLabelSample = mutatedAfterLabelResearch.samples.find(sample => sample.pattern.id === confirmedEngulfing.id);
+assert(mutatedAfterLabelSample?.outcome.netReturnR === engulfingResearchSample.outcome.netReturnR && mutatedAfterLabelSample.exitTime === engulfingResearchSample.exitTime, 'Changing candles after a resolved label cannot rewrite the earlier Pattern outcome');
+
+const pendingResearch = buildPatternOutcomeResearchDataset(patternResearchCandles.slice(0, 61), {
+  ...researchMetadata,
+  collectedAt: patternResearchCandles[60].time + 300000
+}, { horizonBars: 5, targetR: 2, roundTripCostBps: 10, slippageBps: 0 });
+assert(pendingResearch.samples.find(sample => sample.pattern.id === confirmedEngulfing.id)?.status === 'PENDING', 'Right-edge Pattern remains pending when neither barrier nor the full horizon is available');
+
+const collisionCandlesResearch = patternResearchCandles.map(candle => ({ ...candle }));
+collisionCandlesResearch[60] = { ...collisionCandlesResearch[60], open: 101, high: 105, low: 98, close: 101 };
+const collisionResearch = buildPatternOutcomeResearchDataset(collisionCandlesResearch, researchMetadata, { horizonBars: 5, targetR: 2, roundTripCostBps: 0, slippageBps: 0 });
+assert(collisionResearch.samples.find(sample => sample.pattern.id === confirmedEngulfing.id)?.outcome.exitReason === 'STOP_AND_TARGET_SAME_BAR_CONSERVATIVE_STOP', 'Ambiguous same-bar Pattern target/stop collision is labeled as the conservative stop');
+
+const rejectedResearchSource = buildPatternOutcomeResearchDataset(patternResearchCandles, { ...researchMetadata, verified: false }, { horizonBars: 5 });
+assert(!rejectedResearchSource.success && rejectedResearchSource.status === 'SOURCE_REJECTED' && rejectedResearchSource.samples.length === 0, 'Pattern research rejects unverified or Simulation market history');
+const tamperedResearch = JSON.parse(JSON.stringify(patternResearch));
+tamperedResearch.decisionEligible = true;
+tamperedResearch.weightInfluence = true;
+tamperedResearch.summary.promotionEligible = true;
+tamperedResearch.samples[0].decisionEligible = true;
+const restoredResearch = restorePatternOutcomeResearchDataset(tamperedResearch);
+assert(restoredResearch?.decisionEligible === false && restoredResearch.weightInfluence === false && restoredResearch.summary.promotionEligible === false && restoredResearch.samples.every(sample => sample.decisionEligible === false), 'Persisted Pattern research is revalidated and cannot restore forged trading authority');
+
+const engineResearchStart = 1755000000000;
+const engineResearchNow = engineResearchStart + 120 * 300000;
+let engineResearchCallbackCount = 0;
+const engineResearch = new AITradingEngine({
+  onPatternResearchUpdate: () => { engineResearchCallbackCount += 1; }
+});
+engineResearch.saveGymState = () => {};
+const engineResearchResult = await engineResearch.runPatternResearchEvaluation({
+  totalBars: 120,
+  now: engineResearchNow,
+  fetchOptions: {
+    fetchImpl: async url => {
+      const limit = Number(new URL(url).searchParams.get('limit'));
+      const payload = Array.from({ length: limit }, (_, index) => {
+        const openTime = engineResearchStart + index * 300000;
+        return [openTime, '100', '100.3', '99.7', '100.02', '10', openTime + 299999];
+      });
+      return { ok: true, json: async () => payload };
+    }
+  }
+});
+assert(engineResearchResult.success && engineResearch.patternResearchDataset === engineResearchResult.dataset && engineResearchCallbackCount === 1, 'Trade engine can fetch verified closed history, build the Research Dataset, and publish it without execution authority');
+let resolveResearchFetch;
+const supersededPatternResearchEngine = new AITradingEngine();
+supersededPatternResearchEngine.saveGymState = () => {};
+const supersededPatternResearchPending = supersededPatternResearchEngine.runPatternResearchEvaluation({
+  totalBars: 120,
+  now: engineResearchNow,
+  fetchOptions: {
+    fetchImpl: () => new Promise(resolve => {
+      resolveResearchFetch = () => resolve({
+        ok: true,
+        json: async () => Array.from({ length: 120 }, (_, index) => {
+          const openTime = engineResearchStart + index * 300000;
+          return [openTime, '100', '100.3', '99.7', '100.02', '10', openTime + 299999];
+        })
+      });
+    })
+  }
+});
+supersededPatternResearchEngine.patternResearchGeneration += 1;
+resolveResearchFetch();
+const supersededPatternResearchResult = await supersededPatternResearchPending;
+assert(!supersededPatternResearchResult.success && supersededPatternResearchResult.reason === 'PATTERN_RESEARCH_SUPERSEDED' && supersededPatternResearchEngine.patternResearchDataset === null, 'A superseded Pattern research request cannot overwrite the active market research state');
 
 const paperEngine = Object.create(AITradingEngine.prototype);
 const paperPacketObservedAt = Date.now();
@@ -325,9 +806,12 @@ paperEngine.marketPacket = verifiedPaperPacket;
 const validAuditEvent = createPaperExecutionAuditEvent({
   eventId: 'audit-1', at: '2026-08-20T00:00:00.000Z', eventType: 'OPEN_REJECTED',
   executionSource: 'MANUAL_PAPER', reason: 'MAX_OPEN_POSITIONS', assetId: 'BTC/USDT', side: 'LONG',
-  decision: { marketPacketSchema: 1, marketSource: 'BINANCE_KLINES_REST', marketQuality: 'VALID', marketDecisionEligible: true }
+  decision: {
+    marketPacketSchema: 1, marketPacketSequence: 9, marketRequestId: 'MKT_AUDIT_9',
+    marketSource: 'BINANCE_KLINES_REST', marketQuality: 'VALID', marketHealthStatus: 'HEALTHY', marketDecisionEligible: true
+  }
 });
-assert(validAuditEvent?.decision?.marketSource === 'BINANCE_KLINES_REST' && restorePaperExecutionAudit([validAuditEvent, validAuditEvent, { eventType: 'UNKNOWN' }]).length === 1, 'Paper audit preserves data provenance while rejecting invalid events and duplicate IDs');
+assert(validAuditEvent?.decision?.marketSource === 'BINANCE_KLINES_REST' && validAuditEvent?.decision?.marketPacketSequence === 9 && validAuditEvent?.decision?.marketHealthStatus === 'HEALTHY' && restorePaperExecutionAudit([validAuditEvent, validAuditEvent, { eventType: 'UNKNOWN' }]).length === 1, 'Paper audit preserves packet and health provenance while rejecting invalid events and duplicate IDs');
 
 const persistedPosition = {
   id: 'persisted-1', assetId: 'BTC/USDT', side: 'LONG', entryPrice: 100,
@@ -456,9 +940,53 @@ const validatedMemory = resolveDecisionStrategyMemory({
   losses: 6,
   provenance: VALIDATED_MEMORY_PROVENANCE,
   outOfSampleValidated: true,
-  trainedAt: new Date(fixedDecisionTime - 1000).toISOString()
+  trainedAt: new Date(fixedDecisionTime - 1000).toISOString(),
+  validationEvidence: {
+    policy: PATTERN_MEMORY_PROMOTION_POLICY,
+    passed: true,
+    datasetId: 'verified-dataset',
+    candleFingerprint: 'abcdef12',
+    independentSamples: 30,
+    foldCount: 4,
+    positiveFolds: 3,
+    lookaheadVerified: true,
+    overlapPurged: true
+  }
 }, { decisionTime: fixedDecisionTime });
 assert(validatedMemory.accepted === true && validatedMemory.observations === 30 && validatedMemory.winRate === 80, 'Sufficient out-of-sample strategy memory passes the decision policy');
+assert(resolveDecisionStrategyMemory({
+  wins: 24, losses: 6, provenance: VALIDATED_MEMORY_PROVENANCE, outOfSampleValidated: true,
+  trainedAt: new Date(fixedDecisionTime - 1000).toISOString()
+}, { decisionTime: fixedDecisionTime }).reason === 'VALIDATION_EVIDENCE_REQUIRED', 'A provenance label alone cannot forge validated strategy memory');
+
+const promotionSamples = Array.from({ length: 64 }, (_, index) => ({
+  status: 'COMPLETED',
+  signalTime: 1700000000000 + index * 600000,
+  labelTime: 1700000000000 + index * 600000 + 300000,
+  pattern: { type: 'BULLISH_ENGULFING_CONFIRMED' },
+  outcome: { netReturnR: index % 4 === 3 ? -0.05 : 0.2 }
+}));
+const promotionDataset = {
+  success: true,
+  method: PATTERN_RESEARCH_METHOD,
+  datasetId: 'promotion-dataset',
+  generatedAt: fixedDecisionTime - 1000,
+  provenance: { verified: true, simulation: false, candleFingerprint: 'promotion12' },
+  lookaheadAudit: {
+    patternDetectionUsesHistoryThroughSignalOnly: true,
+    entryBeginsOnNextBar: true,
+    labelsReadForwardOnlyAfterSignal: true
+  },
+  samples: promotionSamples
+};
+const promotionReport = promotePatternStrategyMemory(promotionDataset);
+assert(promotionReport.promotedCount === 1 && promotionReport.memories['Bullish Engulfing']?.validationEvidence.overlapPurged === true,
+  'Pattern memory promotes only after non-overlapping outcomes pass four chronological evidence folds');
+const overlappingPromotionReport = promotePatternStrategyMemory({
+  ...promotionDataset,
+  samples: promotionSamples.map((sample, index) => ({ ...sample, signalTime: 1700000000000 + index * 1000, labelTime: 1700000000000 + index * 1000 + 300000 }))
+});
+assert(overlappingPromotionReport.promotedCount === 0, 'Overlapping outcome labels are purged and cannot inflate Pattern memory observations');
 const memoryPattern = [{ name: 'EMA Ribbon Uptrend', weight: 0 }];
 const matchingSyntheticWeights = { 'EMA Ribbon Uptrend': syntheticMemory };
 const signalWithoutMemory = generateAISignal(signalCandles, signalAsset, memoryPattern, null, null, signalSpread, null, 'balanced', fixedDecisionTime);

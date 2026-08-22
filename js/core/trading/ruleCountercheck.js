@@ -1,7 +1,9 @@
 export const RULE_COUNTERCHECK_METHOD = 'DETERMINISTIC_BULL_BEAR_RULE_COUNTERCHECK_V1';
 
 export function evaluateRuleCountercheck(patterns = [], marketRegime = null, orderBookData = null, rsi = 50, currentPrice = 0) {
-  const safePatterns = Array.isArray(patterns) ? patterns : [];
+  const safePatterns = Array.isArray(patterns)
+    ? patterns.filter(pattern => pattern?.confirmed === true && pattern?.decisionEligible === true)
+    : [];
   const safeRsi = Number.isFinite(Number(rsi)) ? Number(rsi) : 50;
   const safePrice = Number.isFinite(Number(currentPrice)) ? Number(currentPrice) : 0;
   const bullishFactors = [];
@@ -10,13 +12,15 @@ export function evaluateRuleCountercheck(patterns = [], marketRegime = null, ord
   if (safeRsi < 45) bullishFactors.push(`RSI (${safeRsi.toFixed(1)}) อยู่ในโซนสะสมราคา มีพื้นที่ให้ราคาฟื้นตัว`);
   const bullishPattern = safePatterns.find(pattern => pattern?.sentiment === 'BULLISH');
   if (bullishPattern) bullishFactors.push(`ตรวจพบรูปแบบฝั่งบวก: ${bullishPattern.name}`);
-  if (marketRegime?.type === 'TRENDING_MOMENTUM') bullishFactors.push('กฎ Market Regime ระบุว่าเป็น Momentum Trend');
+  if (marketRegime?.type === 'TRENDING_MOMENTUM' && marketRegime?.direction === 'BULLISH') bullishFactors.push('หลักฐาน Market Regime ยืนยัน Bullish Momentum Trend');
   if (bullishFactors.length === 0) bullishFactors.push('ยังไม่มีปัจจัยฝั่งบวกที่เด่นชัด');
 
   if (safeRsi > 65) riskFactors.push(`RSI (${safeRsi.toFixed(1)}) เข้าใกล้ Overbought เสี่ยงเกิดแรงขายทำกำไร`);
   const bearishPattern = safePatterns.find(pattern => pattern?.sentiment === 'BEARISH');
   if (bearishPattern) riskFactors.push(`ตรวจพบรูปแบบฝั่งลบ: ${bearishPattern.name}`);
-  if (marketRegime?.type === 'LIQUIDITY_HUNT') riskFactors.push('กฎ Market Regime เตือนความเสี่ยงจาก Liquidity Hunt / Bull Trap');
+  if (marketRegime?.type === 'TRENDING_MOMENTUM' && marketRegime?.direction === 'BEARISH') riskFactors.push('หลักฐาน Market Regime ยืนยัน Bearish Momentum Trend');
+  if (marketRegime?.type === 'VOLATILITY_EXPANSION') riskFactors.push('หลักฐาน Market Regime เตือน Volatility Expansion ที่ยังไม่มีทิศทางยืนยัน');
+  if (marketRegime?.decisionEligible === false) riskFactors.push('หลักฐาน Market Regime ยังไม่ครบขั้นต่ำสำหรับการตัดสินใจ');
   if (riskFactors.length === 0) riskFactors.push('ยังไม่พบปัจจัยลบรุนแรง แต่ยังต้องใช้ Stop Loss');
 
   const walls = Array.isArray(orderBookData?.whale_walls) ? orderBookData.whale_walls : [];

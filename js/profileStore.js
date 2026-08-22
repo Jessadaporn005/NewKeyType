@@ -8,9 +8,12 @@ import { createZeroPaperGymStats, migrateLegacyDemoSeed } from './core/trading/g
 import { PAPER_ACCOUNT_MODEL, normalizeRiskPercent, restorePaperPositions, restorePaperTradeHistory } from './core/trading/paperAccount.js';
 import { restorePaperExecutionAudit } from './core/trading/paperExecutionAudit.js';
 import { restoreMLShadowModel, restoreMLShadowReport } from './core/trading/mlShadowModel.js';
+import { restorePatternOutcomeResearchDataset } from './core/trading/patternOutcomeResearch.js';
+import { restoreAIReaderReport } from './core/trading/aiReaderContract.js';
+import { createVerifiedPaperBotState, restoreVerifiedPaperBotState } from './core/trading/verifiedPaperBot.js';
 
 const STORAGE_KEY = 'CYBERTYPE_OPERATOR_PROFILES_V1';
-export const PROFILE_SCHEMA_VERSION = 6;
+export const PROFILE_SCHEMA_VERSION = 8;
 const CREDENTIAL_KDF = 'PBKDF2-SHA256';
 const CREDENTIAL_ITERATIONS = 210000;
 
@@ -87,6 +90,9 @@ const DEFAULT_PROFILE = {
       tradeHistory: [],
       executionAudit: [],
       mlShadow: { model: null, report: null },
+      patternResearch: null,
+      aiReader: null,
+      verifiedPaperBot: createVerifiedPaperBotState(100000),
       riskAppetite: 'balanced',
       riskPercent: 2
     },
@@ -255,7 +261,12 @@ export function migrateProfile(rawProfile = {}, username = 'Anan') {
         mlShadow: {
           model: restoreMLShadowModel(sourcePaper.mlShadow?.model),
           report: restoreMLShadowReport(sourcePaper.mlShadow?.report)
-        }
+        },
+        patternResearch: restorePatternOutcomeResearchDataset(sourcePaper.patternResearch),
+        aiReader: restoreAIReaderReport(sourcePaper.aiReader),
+        verifiedPaperBot: restoreVerifiedPaperBotState(sourcePaper.verifiedPaperBot, {
+          balanceUSD: Number(sourcePaper.paperBalanceUSD) || 100000
+        })
       },
       live: {
         ...defaults.tradingData.live,
@@ -389,7 +400,13 @@ class ProfileStore {
       mlShadow: {
         model: restoreMLShadowModel(incoming.mlShadow?.model) || restoreMLShadowModel(currentPaper.mlShadow?.model),
         report: restoreMLShadowReport(incoming.mlShadow?.report) || restoreMLShadowReport(currentPaper.mlShadow?.report)
-      }
+      },
+      patternResearch: restorePatternOutcomeResearchDataset(incoming.patternResearch)
+        || restorePatternOutcomeResearchDataset(currentPaper.patternResearch),
+      aiReader: restoreAIReaderReport(incoming.aiReader) || restoreAIReaderReport(currentPaper.aiReader),
+      verifiedPaperBot: restoreVerifiedPaperBotState(incoming.verifiedPaperBot || currentPaper.verifiedPaperBot, {
+        balanceUSD: Number.isFinite(balance) && balance >= 0 ? balance : currentPaper.paperBalanceUSD
+      })
     };
     return this.saveAllAsync();
   }

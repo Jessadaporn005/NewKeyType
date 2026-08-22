@@ -171,8 +171,11 @@ trading.startMT5BackgroundStream();
 await new Promise(resolve => setTimeout(resolve, 0));
 assert(trading.mt5Status.status === 'DEMO_GATEWAY_DISABLED' && trading.mt5PollingInterval === null, 'Disabled MT5 Demo gateway does not leave a polling loop running');
 delete globalThis.window.cyberSystemAPI;
+trading.marketDataRefreshEnabled = true;
+trading.marketDataTimer = setTimeout(() => {}, 1000);
+const marketGenerationBeforePause = trading.marketDataStreamGeneration;
 trading.pauseStreams();
-assert(!trading.tickInterval && !trading.newsInterval && !trading.knowledgeStreamInterval && !trading.mt5PollingInterval, 'Trade background streams stop on view exit');
+assert(!trading.tickInterval && !trading.newsInterval && !trading.knowledgeStreamInterval && !trading.mt5PollingInterval && !trading.marketDataTimer && !trading.marketDataRefreshEnabled && trading.marketDataStreamGeneration === marketGenerationBeforePause + 1, 'Trade background streams and pending market refresh stop on view exit');
 
 profileStore.destroy();
 console.log(`RUNTIME STABILITY: ${passed} passed, ${failed} failed`);
