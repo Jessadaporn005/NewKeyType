@@ -20,6 +20,7 @@ let MT5_DEMO_ACCESS_TOKEN = MT5_DEMO_EXTERNAL_ACCESS_TOKEN;
 let MT5_DEMO_GATEWAY_ENABLED = MT5_DEMO_EXTERNAL_GATEWAY_ENABLED;
 const MT5_DEMO_OBSERVER_SCRIPT_SHA256 = '73e5b0eae10f08210ff548af61f6c54cc922979a1af779d398f928232d3cd649';
 const MT5_DEMO_PREFLIGHT_SCRIPT_SHA256 = 'b66a5d2c3ae436f9c7a0f52513d3217f77cacdedb819151f66fc84a46e241bec';
+const MT5_DEMO_CANARY_EXECUTOR_SCRIPT_SHA256 = '3d35a7d550881a61033584a82ea222a2682b0c40473b1416b7622a0b07c28c2d';
 const MT5_DEMO_OBSERVER_PORT = 5055;
 const MT5_DEMO_EXPECTED_COMPANY = 'XM Global Limited';
 const MT5_DEMO_EXPECTED_SERVER_PREFIX = 'XMGlobal-';
@@ -31,6 +32,10 @@ const MT5_DEMO_MARKET_MAP = Object.freeze({
   USOIL: 'OILCash'
 });
 const MT5_DEMO_MARKET_TIMEFRAMES = Object.freeze(['1m', '5m', '15m', '1h', '1D']);
+const MT5_DEMO_EXECUTION_RUNTIME_ENABLED = true;
+const MT5_DEMO_CANARY_VOLUME = 0.01;
+const MT5_DEMO_CANARY_MAGIC = 99001;
+const MT5_DEMO_OPERATOR_CONFIRMATION = 'XM DEMO 0.01';
 const OLLAMA_HOST = '127.0.0.1';
 const OLLAMA_PORT = 11434;
 const OLLAMA_CONFIGURED_MODEL = String(process.env.CYBERDECK_OLLAMA_MODEL || '').trim();
@@ -55,6 +60,14 @@ let mt5TelemetryLastSessionId = null;
 let mt5TelemetryConsecutiveErrors = 0;
 let mt5DemoPreflightInFlight = false;
 let mt5DemoPreflightLastAt = 0;
+let mt5DemoCanaryExecutorInFlight = false;
+let mt5DemoCanaryUsedThisSession = false;
+let mt5DemoCanaryReceipts = new Map();
+let mt5DemoCanaryArm = null;
+let mt5DemoExecutionKillSwitch = true;
+let mt5DemoExecutionLockReason = 'APPLICATION_STARTED_LOCKED';
+let mt5DemoLastAcknowledgement = null;
+let mt5DemoKnownTickets = [];
 let mt5TelemetryCertification = Object.freeze({
   certified: false,
   packetCount: 0,
@@ -194,6 +207,12 @@ function getMT5PreflightScriptPath() {
     : path.join(__dirname, 'scripts', 'mt5_demo_preflight.py');
 }
 
+function getMT5CanaryExecutorScriptPath() {
+  return app.isPackaged
+    ? path.join(process.resourcesPath, 'mt5-observer', 'mt5_demo_canary_executor.py')
+    : path.join(__dirname, 'scripts', 'mt5_demo_canary_executor.py');
+}
+
 function verifyMT5ObserverScriptIntegrity() {
   const scriptPath = getMT5ObserverScriptPath();
   if (!fs.existsSync(scriptPath)) {
@@ -220,6 +239,17 @@ function verifyMT5PreflightScriptIntegrity() {
   }
 }
 
+function verifyMT5CanaryExecutorScriptIntegrity() {
+  const scriptPath = getMT5CanaryExecutorScriptPath();
+  if (!fs.existsSync(scriptPath)) return false;
+  try {
+    const scriptHash = crypto.createHash('sha256').update(fs.readFileSync(scriptPath)).digest('hex');
+    return scriptHash === MT5_DEMO_CANARY_EXECUTOR_SCRIPT_SHA256;
+  } catch (error) {
+    return false;
+  }
+}
+
 function observerProcessRunning() {
   return Boolean(mt5ObserverProcess && mt5ObserverProcess.exitCode === null && !mt5ObserverProcess.killed);
 }
@@ -230,6 +260,7 @@ function sanitizeObserverError(value, fallback = 'MT5_OBSERVER_UNAVAILABLE') {
 }
 
 function resetMT5Telemetry(reason = 'NOT_STARTED') {
+  lockMT5DemoExecution(`TELEMETRY_RESET:${reason}`);
   mt5TelemetryRecords = [];
   mt5TelemetryLastSequence = 0;
   mt5TelemetryLastSessionId = null;
@@ -364,6 +395,102 @@ function runMT5DemoPreflight(payload, terminalPath) {
   });
 }
 
+function buildMT5CanaryEnvironment(terminalPath, expectedLogin) {
+  return {
+    ...buildMT5PreflightEnvironment(terminalPath),
+    CYBERDECK_MT5_EXPECTED_LOGIN: String(expectedLogin || '')
+  };
+}
+
+function runMT5DemoCanaryExecutor(intent, terminalPath, expectedLogin) {
+  return new Promise((resolve, reject) => {
+    const scriptPath = getMT5CanaryExecutorScriptPath();
+    const expiresAtMs = Date.parse(intent?.expiresAt);
+    const payload = { ...intent, expiresAtMs };
+    const child = spawn(resolveMT5PythonExecutable(), [scriptPath], {
+      cwd: path.dirname(scriptPath),
+      env: buildMT5CanaryEnvironment(terminalPath, expectedLogin),
+      windowsHide: true,
+      shell: false,
+      stdio: ['pipe', 'pipe', 'pipe']
+    });
+    let settled = false;
+    let stdout = Buffer.alloc(0);
+    let stderr = Buffer.alloc(0);
+    const finish = (error, result = null) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      if (error) reject(error);
+      else resolve(result);
+    };
+    const timeout = setTimeout(() => {
+      child.kill();
+      finish(new Error('MT5_DEMO_CANARY_RESULT_AMBIGUOUS_TIMEOUT_LOCKED'));
+    }, 15_000);
+    child.stdout?.on('data', chunk => {
+      stdout = Buffer.concat([stdout, chunk]);
+      if (stdout.length > 64 * 1024) {
+        child.kill();
+        finish(new Error('MT5_DEMO_CANARY_RESPONSE_TOO_LARGE_LOCKED'));
+      }
+    });
+    child.stderr?.on('data', chunk => {
+      if (stderr.length <= 8 * 1024) stderr = Buffer.concat([stderr, chunk]).subarray(0, 8 * 1024);
+    });
+    child.once('error', error => finish(error));
+    child.once('close', () => {
+      try {
+        finish(null, JSON.parse(stdout.toString('utf8').trim()));
+      } catch (error) {
+        finish(new Error(sanitizeObserverError(stderr.toString('utf8'), 'MT5_DEMO_CANARY_INVALID_RESPONSE_LOCKED')));
+      }
+    });
+    child.stdin.end(JSON.stringify(payload), 'utf8');
+  });
+}
+
+function lockMT5DemoExecution(reason = 'OPERATOR_KILL_SWITCH') {
+  mt5DemoCanaryArm = null;
+  mt5DemoExecutionKillSwitch = true;
+  mt5DemoExecutionLockReason = sanitizeObserverError(reason, 'DEMO_EXECUTION_LOCKED');
+}
+
+function pruneMT5DemoCanaryReceipts(now = Date.now()) {
+  for (const [receiptId, receipt] of mt5DemoCanaryReceipts.entries()) {
+    if (!receipt || Number(receipt.expiresAt) <= now || receipt.used === true) mt5DemoCanaryReceipts.delete(receiptId);
+  }
+}
+
+function getLatestCertifiedMT5Packet(now = Date.now()) {
+  if (mt5TelemetryCertification.certified !== true) return null;
+  const latestRecord = mt5TelemetryRecords.at(-1);
+  const packet = latestRecord?.packet;
+  const packetTime = Date.parse(packet?.timestamp);
+  if (!packet || packet.sessionId !== mt5TelemetryCertification.sessionId
+    || packet.mode !== 'DEMO' || packet.account?.tradeMode !== 'DEMO'
+    || !Number.isFinite(packetTime) || now - packetTime > 2_000 || packetTime > now + 500) return null;
+  return packet;
+}
+
+function getMT5DemoExecutionStatus(now = Date.now()) {
+  const armed = mt5DemoCanaryArm && mt5DemoCanaryArm.expiresAt > now && mt5DemoExecutionKillSwitch === false;
+  return {
+    schemaVersion: 'MT5_DEMO_CANARY_STATUS_V1',
+    runtimeEnabled: MT5_DEMO_EXECUTION_RUNTIME_ENABLED,
+    mode: 'DEMO_CANARY_ONLY',
+    canaryVolume: MT5_DEMO_CANARY_VOLUME,
+    liveEligible: false,
+    killSwitch: mt5DemoExecutionKillSwitch,
+    lockReason: mt5DemoExecutionLockReason,
+    armed: Boolean(armed),
+    armExpiresAt: armed ? new Date(mt5DemoCanaryArm.expiresAt).toISOString() : null,
+    usedThisApplicationSession: mt5DemoCanaryUsedThisSession,
+    executorInFlight: mt5DemoCanaryExecutorInFlight,
+    lastAcknowledgement: mt5DemoLastAcknowledgement
+  };
+}
+
 async function pollMT5TelemetryCertification() {
   if (!MT5_DEMO_GATEWAY_ENABLED || mt5TelemetryPollInFlight) return;
   mt5TelemetryPollInFlight = true;
@@ -414,7 +541,10 @@ async function pollMT5TelemetryCertification() {
     }
 
     const { certifyMT5DemoTelemetrySession } = await getMT5CertificationModule();
-    const certification = certifyMT5DemoTelemetrySession(mt5TelemetryRecords, { expectedMagic: 99001 });
+    const certification = certifyMT5DemoTelemetrySession(mt5TelemetryRecords, {
+      expectedMagic: MT5_DEMO_CANARY_MAGIC,
+      allowedSystemTickets: mt5DemoKnownTickets
+    });
     mt5TelemetryCertification = certification;
     if (!certification.certified
       && !certification.reasons.some(reason => String(reason).startsWith('INSUFFICIENT_DURATION'))) {
@@ -721,13 +851,205 @@ handleTrusted('cyber:mt5-demo-order-preflight', async (event, rawRequest) => {
       && (preflight?.targetPrice === undefined || Number(preflight.targetPrice) === targetPrice)
       && (preflight?.account === undefined || preflight.account?.tradeMode === 'DEMO');
     if (!contractValid) return { success: false, error: 'MT5_DEMO_PREFLIGHT_CONTRACT_MISMATCH' };
-    return { success: true, preflight };
+    let executionReceipt = null;
+    const latestPacket = getLatestCertifiedMT5Packet();
+    const canIssueReceipt = MT5_DEMO_EXECUTION_RUNTIME_ENABLED
+      && preflight?.success === true
+      && preflight?.preflightApproved === true
+      && preflight?.assetId === assetId
+      && preflight?.brokerSymbol === MT5_DEMO_MARKET_MAP[assetId]
+      && preflight?.side === side
+      && Number(preflight?.volume) === MT5_DEMO_CANARY_VOLUME
+      && Number(preflight?.stopPrice) === stopPrice
+      && Number(preflight?.targetPrice) === targetPrice
+      && latestPacket?.account?.positions?.length === 0
+      && mt5DemoCanaryUsedThisSession === false;
+    if (canIssueReceipt) {
+      const now = Date.now();
+      pruneMT5DemoCanaryReceipts(now);
+      mt5DemoCanaryReceipts.clear();
+      const receiptId = crypto.randomBytes(24).toString('hex');
+      const expiresAt = now + 90_000;
+      mt5DemoCanaryReceipts.set(receiptId, Object.freeze({
+        receiptId,
+        assetId,
+        brokerSymbol: MT5_DEMO_MARKET_MAP[assetId],
+        side,
+        volume,
+        stopPrice,
+        targetPrice,
+        certificationSessionId: latestPacket.sessionId,
+        accountLogin: String(latestPacket.account.login),
+        terminalPath,
+        createdAt: now,
+        expiresAt,
+        used: false
+      }));
+      executionReceipt = Object.freeze({
+        receiptId,
+        expiresAt: new Date(expiresAt).toISOString(),
+        canaryVolume: MT5_DEMO_CANARY_VOLUME,
+        mode: 'DEMO_CANARY_ONLY',
+        liveEligible: false
+      });
+    }
+    return { success: true, preflight, executionReceipt };
   } catch (error) {
     return { success: false, error: sanitizeObserverError(error?.message, 'MT5_DEMO_PREFLIGHT_FAILED') };
   } finally {
     mt5DemoPreflightInFlight = false;
   }
 });
+
+handleTrusted('cyber:mt5-demo-canary-arm', async (_event, rawRequest) => {
+  const now = Date.now();
+  pruneMT5DemoCanaryReceipts(now);
+  lockMT5DemoExecution('ARM_VALIDATION_STARTED_LOCKED');
+  if (!MT5_DEMO_EXECUTION_RUNTIME_ENABLED) return { success: false, error: 'MT5_DEMO_EXECUTION_RUNTIME_DISABLED', status: getMT5DemoExecutionStatus(now) };
+  if (!rawRequest || typeof rawRequest !== 'object' || Array.isArray(rawRequest)) {
+    return { success: false, error: 'INVALID_MT5_DEMO_CANARY_ARM_REQUEST', status: getMT5DemoExecutionStatus(now) };
+  }
+  if (rawRequest.operatorConfirmation !== MT5_DEMO_OPERATOR_CONFIRMATION) {
+    return { success: false, error: 'EXACT_DEMO_CONFIRMATION_REQUIRED', status: getMT5DemoExecutionStatus(now) };
+  }
+  if (mt5DemoCanaryUsedThisSession) return { success: false, error: 'DEMO_CANARY_ALREADY_USED_THIS_APPLICATION_SESSION', status: getMT5DemoExecutionStatus(now) };
+  if (mt5DemoCanaryExecutorInFlight) return { success: false, error: 'MT5_DEMO_CANARY_ALREADY_RUNNING', status: getMT5DemoExecutionStatus(now) };
+  const receiptId = typeof rawRequest.receiptId === 'string' ? rawRequest.receiptId : '';
+  const receipt = mt5DemoCanaryReceipts.get(receiptId);
+  const intent = rawRequest.intent;
+  const latestPacket = getLatestCertifiedMT5Packet(now);
+  if (!receipt || receipt.expiresAt <= now || receipt.used === true) {
+    return { success: false, error: 'VALID_UNEXPIRED_PREFLIGHT_RECEIPT_REQUIRED', status: getMT5DemoExecutionStatus(now) };
+  }
+  if (!latestPacket || latestPacket.sessionId !== receipt.certificationSessionId
+    || String(latestPacket.account?.login || '') !== receipt.accountLogin
+    || latestPacket.account?.positions?.length !== 0) {
+    return { success: false, error: 'FRESH_EMPTY_CERTIFIED_DEMO_ACCOUNT_REQUIRED', status: getMT5DemoExecutionStatus(now) };
+  }
+  const intentExpiresAt = Date.parse(intent?.expiresAt);
+  const intentValid = intent?.schemaVersion === 'MT5_DEMO_ORDER_INTENT_V1'
+    && intent?.policy === 'CERTIFIED_DEMO_ONLY_FAIL_CLOSED_V1'
+    && intent?.source === 'CYBERDECK_CERTIFIED_MT5_DEMO_ORDER'
+    && intent?.mode === 'DEMO'
+    && intent?.liveEligible === false
+    && intent?.simulatedFallbackAllowed === false
+    && typeof intent?.intentId === 'string' && intent.intentId.startsWith('MT5D:CYBERDECK:VPB:')
+    && typeof intent?.paperBotDecisionId === 'string' && intent.paperBotDecisionId.startsWith('VPB:')
+    && typeof intent?.nonce === 'string' && /^[a-f0-9]{32}$/i.test(intent.nonce)
+    && intent?.certificationSessionId === receipt.certificationSessionId
+    && intent?.assetId === receipt.assetId
+    && intent?.symbol === receipt.brokerSymbol
+    && intent?.side === receipt.side
+    && Number(intent?.volume) === MT5_DEMO_CANARY_VOLUME
+    && Number(intent?.stopPrice) === receipt.stopPrice
+    && Number(intent?.targetPrice) === receipt.targetPrice
+    && Number(intent?.magic) === MT5_DEMO_CANARY_MAGIC
+    && Number(intent?.deviationPoints) === 10
+    && Number.isFinite(intentExpiresAt) && intentExpiresAt > now && intentExpiresAt <= now + 30_000;
+  if (!intentValid) return { success: false, error: 'CERTIFIED_PAPER_BOT_CANARY_INTENT_REQUIRED', status: getMT5DemoExecutionStatus(now) };
+  if (!verifyMT5CanaryExecutorScriptIntegrity()) {
+    return { success: false, error: 'MT5_DEMO_CANARY_EXECUTOR_INTEGRITY_FAILED', status: getMT5DemoExecutionStatus(now) };
+  }
+  const armToken = crypto.randomBytes(24).toString('hex');
+  const expiresAt = Math.min(intentExpiresAt, now + 30_000);
+  mt5DemoCanaryArm = Object.freeze({ armToken, receiptId, intent, expiresAt, certificationSessionId: receipt.certificationSessionId });
+  mt5DemoExecutionKillSwitch = false;
+  mt5DemoExecutionLockReason = 'OPERATOR_CONFIRMED_ONE_SHOT_DEMO_CANARY';
+  return {
+    success: true,
+    reason: 'XM_DEMO_CANARY_ARMED_NOT_SENT',
+    armToken,
+    expiresAt: new Date(expiresAt).toISOString(),
+    status: getMT5DemoExecutionStatus(now)
+  };
+});
+
+handleTrusted('cyber:mt5-demo-canary-send', async (_event, rawArmToken) => {
+  const now = Date.now();
+  const armToken = typeof rawArmToken === 'string' ? rawArmToken : '';
+  const arm = mt5DemoCanaryArm;
+  if (!arm || mt5DemoExecutionKillSwitch !== false || arm.armToken !== armToken || arm.expiresAt <= now) {
+    lockMT5DemoExecution('INVALID_OR_EXPIRED_DEMO_CANARY_ARM');
+    return { success: false, error: 'VALID_ARMED_DEMO_CANARY_REQUIRED', status: getMT5DemoExecutionStatus(now) };
+  }
+  if (mt5DemoCanaryUsedThisSession || mt5DemoCanaryExecutorInFlight) {
+    lockMT5DemoExecution('DUPLICATE_DEMO_CANARY_BLOCKED');
+    return { success: false, error: 'DEMO_CANARY_ONE_SHOT_LIMIT_REACHED', status: getMT5DemoExecutionStatus(now) };
+  }
+  const receipt = mt5DemoCanaryReceipts.get(arm.receiptId);
+  const latestPacket = getLatestCertifiedMT5Packet(now);
+  const runningTerminalPaths = await inspectRunningMT5TerminalPaths();
+  const terminalPath = findRunningKnownMT5TerminalPath(runningTerminalPaths);
+  if (!receipt || receipt.used === true || receipt.expiresAt <= now
+    || !latestPacket || latestPacket.sessionId !== arm.certificationSessionId
+    || String(latestPacket.account?.login || '') !== receipt.accountLogin
+    || latestPacket.account?.positions?.length !== 0
+    || !terminalPath || path.resolve(terminalPath) !== path.resolve(receipt.terminalPath)
+    || !verifyMT5CanaryExecutorScriptIntegrity()) {
+    lockMT5DemoExecution('FINAL_DEMO_CANARY_GATE_FAILED');
+    return { success: false, error: 'FINAL_CERTIFIED_DEMO_CANARY_GATE_FAILED', status: getMT5DemoExecutionStatus(now) };
+  }
+
+  mt5DemoCanaryExecutorInFlight = true;
+  mt5DemoCanaryUsedThisSession = true;
+  mt5DemoCanaryReceipts.set(receipt.receiptId, Object.freeze({ ...receipt, used: true }));
+  mt5DemoCanaryArm = null;
+  mt5DemoExecutionKillSwitch = true;
+  mt5DemoExecutionLockReason = 'ONE_SHOT_CONSUMED_AWAITING_ACK';
+  try {
+    const acknowledgement = await runMT5DemoCanaryExecutor(arm.intent, terminalPath, receipt.accountLogin);
+    const { validateMT5DemoOrderAcknowledgement } = await import(
+      pathToFileURL(path.join(__dirname, 'js', 'core', 'trading', 'mt5DemoExecutionGate.js')).href
+    );
+    const validation = validateMT5DemoOrderAcknowledgement(acknowledgement, arm.intent, {
+      transportAuthenticated: true,
+      now: Date.now()
+    });
+    const acceptedAndReconciled = acknowledgement?.success === true
+      && acknowledgement?.executionAttempted === true
+      && acknowledgement?.reconciliation?.positionObserved === true
+      && acknowledgement?.reconciliation?.protectionObserved === true
+      && validation.accepted === true;
+    mt5DemoLastAcknowledgement = Object.freeze({
+      success: acceptedAndReconciled,
+      reason: acceptedAndReconciled ? 'XM_DEMO_CANARY_CERTIFIED' : sanitizeObserverError(acknowledgement?.reason, validation.reason),
+      ticket: acceptedAndReconciled ? String(validation.acknowledgement.ticket) : null,
+      brokerRetcode: Number.isFinite(Number(acknowledgement?.brokerRetcode)) ? Number(acknowledgement.brokerRetcode) : null,
+      receivedAt: new Date().toISOString(),
+      executionAttempted: acknowledgement?.executionAttempted === true,
+      liveEligible: false
+    });
+    if (!acceptedAndReconciled) {
+      lockMT5DemoExecution(mt5DemoLastAcknowledgement.reason);
+      return { success: false, error: mt5DemoLastAcknowledgement.reason, acknowledgement: mt5DemoLastAcknowledgement, status: getMT5DemoExecutionStatus() };
+    }
+    mt5DemoKnownTickets = [...new Set([...mt5DemoKnownTickets, mt5DemoLastAcknowledgement.ticket])].slice(-100);
+    resetMT5Telemetry('POST_CANARY_RECERTIFICATION_REQUIRED');
+    return { success: true, acknowledgement: mt5DemoLastAcknowledgement, status: getMT5DemoExecutionStatus() };
+  } catch (error) {
+    lockMT5DemoExecution(error?.message || 'MT5_DEMO_CANARY_AMBIGUOUS_FAILURE_LOCKED');
+    mt5DemoLastAcknowledgement = Object.freeze({
+      success: false,
+      reason: mt5DemoExecutionLockReason,
+      ticket: null,
+      brokerRetcode: null,
+      receivedAt: new Date().toISOString(),
+      executionAttempted: true,
+      liveEligible: false
+    });
+    return { success: false, error: mt5DemoExecutionLockReason, acknowledgement: mt5DemoLastAcknowledgement, status: getMT5DemoExecutionStatus() };
+  } finally {
+    mt5DemoCanaryExecutorInFlight = false;
+  }
+});
+
+handleTrusted('cyber:mt5-demo-canary-kill', async () => {
+  lockMT5DemoExecution('OPERATOR_KILL_SWITCH');
+  mt5DemoCanaryReceipts.clear();
+  return { success: true, reason: 'NEW_DEMO_ORDERS_LOCKED_EXISTING_POSITIONS_UNCHANGED', status: getMT5DemoExecutionStatus() };
+});
+
+handleTrusted('cyber:mt5-demo-canary-status', async () => ({ success: true, status: getMT5DemoExecutionStatus() }));
 
 function requestLocalOllama(requestPath, { method = 'GET', body = null, timeoutMs = 1500 } = {}) {
   return new Promise((resolve, reject) => {
@@ -1234,9 +1556,17 @@ handleTrusted('cyber:mt5-demo-readiness', async () => {
         ? mt5TelemetryCertification.reasons.slice(0, 5).map(reason => String(reason).slice(0, 160))
         : []
     },
+    certification: mt5TelemetryCertification.certified === true ? {
+      policy: mt5TelemetryCertification.policy,
+      certified: true,
+      sessionId: mt5TelemetryCertification.sessionId,
+      account: mt5TelemetryCertification.account,
+      lastObservedAt: mt5TelemetryCertification.lastObservedAt
+    } : null,
+    demoExecution: getMT5DemoExecutionStatus(),
     observerError: mt5ObserverLastError,
     decisionInfluence: false,
-    executionInfluence: false
+    executionInfluence: MT5_DEMO_EXECUTION_RUNTIME_ENABLED
   };
 });
 

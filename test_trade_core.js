@@ -81,7 +81,7 @@ import {
 } from './js/core/trading/xmMarketDataGateway.js';
 import { fetchXMMarketCandles, getXMMarketDataDisclosure } from './js/services/trading/xmMT5MarketData.js';
 import { AITradingEngine, DEFAULT_STRATEGY_WEIGHTS, calculateDynamicSpread as calculateLegacySpread, generateAISignal, TRADING_ASSETS as LEGACY_ASSET_EXPORT } from './js/aiTradingEngine.js';
-import { resolveRuntimeCapabilities } from './js/runtimeConfig.js';
+import { RUNTIME_CAPABILITIES, resolveRuntimeCapabilities } from './js/runtimeConfig.js';
 
 let passed = 0;
 let failed = 0;
@@ -116,7 +116,7 @@ function makeMarketPacketCandles(observedAtMs, count = 61, timeframeMs = 300000)
 }
 
 const attemptedCapabilityOverride = resolveRuntimeCapabilities({ demoTradingEnabled: true, liveTradingEnabled: true, allowSimulatedBrokerFallback: true });
-assert(attemptedCapabilityOverride.demoTradingEnabled === false && attemptedCapabilityOverride.liveTradingEnabled === false && attemptedCapabilityOverride.allowSimulatedBrokerFallback === false, 'Renderer overrides cannot enable broker execution capabilities');
+assert(attemptedCapabilityOverride.demoTradingEnabled === true && attemptedCapabilityOverride.liveTradingEnabled === false && attemptedCapabilityOverride.allowSimulatedBrokerFallback === false, 'Runtime exposes only the reviewed Demo canary capability while renderer overrides cannot enable Live or fallback execution');
 
 assert(MARKET_TYPES.BINANCE === 'binance' && MARKET_TYPES.XM === 'xm', 'Market catalog exposes stable market identifiers');
 assert(TRADING_ASSETS.every(asset => asset.executionMode === 'PAPER_ONLY'), 'Every catalog asset is explicitly Paper-only');
@@ -381,9 +381,16 @@ const readyMT5Readiness = assessMT5DemoReadiness({
   terminalInstalled: true, terminalRunning: true, pythonBridgeDependencyAvailable: true, bridgeScriptPresent: true,
   scriptIntegrityVerified: true, observerEnabled: true, observerProcessRunning: true,
   gatewayEnabled: true, accessTokenConfigured: true, demoAccountObserved: true,
-  account: { server: 'XMGlobal-Demo', loginSuffix: '1234', tradeMode: 'DEMO' }, telemetryCertified: true
+  account: { server: 'XMGlobal-Demo', loginSuffix: '1234', tradeMode: 'DEMO' }, telemetryCertified: true,
+  certification: {
+    policy: 'CONTINUOUS_AUTHENTICATED_DEMO_TELEMETRY_V1', certified: true,
+    sessionId: '0123456789abcdef0123456789abcdef',
+    account: { server: 'XMGlobal-Demo', loginSuffix: '1234', currency: 'USD', tradeMode: 'DEMO' }
+  },
+  demoExecution: { runtimeEnabled: true, mode: 'DEMO_CANARY_ONLY', canaryVolume: 0.01, killSwitch: true }
 });
-assert(readyMT5Readiness.readyForDemoOrderCertification && readyMT5Readiness.authority.liveEligible === false,
+assert(readyMT5Readiness.readyForDemoOrderCertification && readyMT5Readiness.authority.liveEligible === false
+  && readyMT5Readiness.certification?.certified === true && readyMT5Readiness.demoExecution?.canaryVolume === 0.01,
   'Completing observer readiness permits only the next Demo certification stage and never Live authority');
 const lockedDemoExecution = unlockMT5DemoExecution(createMT5DemoExecutionState(), {
   readiness: readyMT5Readiness,
@@ -419,6 +426,8 @@ const demoIntentResult = createMT5DemoOrderIntent({
   nonce: '00112233445566778899aabbccddeeff'
 });
 assert(unlockedDemoExecution.success && demoIntentResult.success && demoIntentResult.intent.mode === 'DEMO'
+  && demoIntentResult.intent.intentId.startsWith('MT5D:CYBERDECK:VPB:')
+  && Date.parse(demoIntentResult.intent.expiresAt) - Date.parse(demoIntentResult.intent.createdAt) === 30000
   && demoIntentResult.intent.liveEligible === false && demoIntentResult.intent.simulatedFallbackAllowed === false,
   'Certified MT5 Demo gate creates only short-lived allowlisted Demo intents with no fallback or Live authority');
 const demoAckValidation = validateMT5DemoOrderAcknowledgement({
@@ -544,10 +553,16 @@ globalThis.window = {
           schemaVersion: 'CYBERDECK_XM_DEMO_PREFLIGHT_V1', mode: 'DEMO_PREFLIGHT',
           executionAttempted: false, liveEligible: false, preflightApproved: true,
           assetId: 'XAU/USD', brokerSymbol: 'GOLD', side: 'BUY', volume: request.volume,
-          estimatedStopLoss: 49.98, estimatedMargin: 4.5, reason: 'BROKER_PREFLIGHT_APPROVED'
-        }
+          stopPrice: request.stopPrice, targetPrice: request.targetPrice,
+          estimatedStopLoss: request.volume === 0.01 ? 1 : 49.98, estimatedMargin: 4.5, reason: 'BROKER_PREFLIGHT_APPROVED'
+        },
+        executionReceipt: request.volume === 0.01
+          ? { receiptId: 'a'.repeat(48), expiresAt: new Date(xmPipelineNow + 90000).toISOString(), canaryVolume: 0.01, mode: 'DEMO_CANARY_ONLY', liveEligible: false }
+          : null
       };
-    }
+    },
+    armMT5DemoCanary: async request => ({ success: request.operatorConfirmation === 'XM DEMO 0.01', armToken: 'b'.repeat(48), expiresAt: new Date(xmPipelineNow + 30000).toISOString(), status: { armed: true } }),
+    sendMT5DemoCanary: async token => ({ success: token === 'b'.repeat(48), acknowledgement: { ticket: '700001', success: true }, status: { usedThisApplicationSession: true } })
   }
 };
 xmPipelineEngine.mt5DemoReadiness = { readyForDemoOrderCertification: true };
@@ -556,6 +571,24 @@ xmPipelineEngine.signal = { action: 'BUY', sl: 99, tp1: 102 };
 const xmSignalPreflight = await xmPipelineEngine.runCurrentXMOrderPreflight({ now: xmPipelineNow, riskPercent: 0.5 });
 assert(xmSignalPreflight.success && xmSignalPreflight.executionAttempted === false
   && capturedXMPreflightRequest?.volume <= 0.5 && capturedXMPreflightRequest?.side === 'BUY', 'Current XM signal reaches broker preflight with capped risk and still sends no order');
+xmPipelineEngine.capabilities = resolveRuntimeCapabilities(RUNTIME_CAPABILITIES);
+xmPipelineEngine.demoTradingEnabled = xmPipelineEngine.capabilities.demoTradingEnabled;
+xmPipelineEngine.mt5DemoReadiness = readyMT5Readiness;
+xmPipelineEngine.mt5DemoCertification = readyMT5Readiness.certification;
+xmPipelineEngine.getCurrentVerifiedPaperBotCanaryDecision = () => ({
+  success: true,
+  execute: true,
+  decision: {
+    decisionId: 'VPB:XAU/USD:5m:1:LONG', executionMode: 'PAPER_ONLY', side: 'LONG', assetId: 'XAU/USD',
+    authority: { decisionEligible: true, liveEligible: false }
+  }
+});
+const xmCanaryPreflight = await xmPipelineEngine.runCurrentXMOrderPreflight({ now: xmPipelineNow, riskPercent: 0.5, canary: true });
+const xmCanaryArmed = await xmPipelineEngine.armCurrentXMCanary('XM DEMO 0.01', xmPipelineNow);
+const xmCanarySent = await xmPipelineEngine.sendArmedXMCanary();
+assert(xmCanaryPreflight.success && capturedXMPreflightRequest.volume === 0.01 && xmCanaryArmed.success
+  && xmCanarySent.success && xmCanarySent.acknowledgement.ticket === '700001',
+  'Renderer requires an exact 0.01 preflight receipt, verified Paper decision, Arm phrase, and separate one-shot Send acknowledgement');
 delete globalThis.window;
 const staleXMNow = Date.now();
 const staleXMEngine = new AITradingEngine({
@@ -1156,6 +1189,8 @@ const unexpectedSystemPacket = validateMT5DemoPacket({
   }
 }, { now: fixedDecisionTime, transportAuthenticated: true }).packet;
 assert(reconcileMT5DemoAccount(null, unexpectedSystemPacket, { expectedMagic: 99001 }).reconciled === false, 'Demo reconciliation blocks unexpected system-owned broker positions');
+assert(reconcileMT5DemoAccount(null, unexpectedSystemPacket, { expectedMagic: 99001, allowedSystemTickets: ['99001'] }).reconciled === true,
+  'A previously acknowledged Demo ticket can be allowlisted without requiring it to remain open forever');
 const shadowSignal = generateAISignal(signalCandles, signalAsset, [], null, null, signalSpread, validatedDemo.packet, 'balanced', fixedDecisionTime);
 assert(shadowSignal.ruleScore === signalWithoutNews.ruleScore && shadowSignal.mt5Intel?.decisionInfluence === false, 'MT5 Demo shadow telemetry cannot change the Trade signal');
 
@@ -1176,6 +1211,15 @@ assert(demoTelemetryCertification.certified === true
   && demoTelemetryCertification.packetCount === 31
   && demoTelemetryCertification.durationMs === 30000
   && demoTelemetryCertification.decisionEligible === false, 'MT5 Demo certification requires a continuous reconciled 30-second Shadow session');
+const knownCanaryTelemetry = demoTelemetryRecords.map(record => ({
+  ...record,
+  packet: {
+    ...record.packet,
+    account: unexpectedSystemPacket.account
+  }
+}));
+assert(certifyMT5DemoTelemetrySession(knownCanaryTelemetry, { allowedSystemTickets: ['99001'] }).certified === true,
+  'Continuous Demo certification accepts only an explicitly acknowledged protected system ticket');
 const sequenceGapRecords = demoTelemetryRecords.map((record, index) => index === 12
   ? { ...record, packet: { ...record.packet, sequence: record.packet.sequence + 1 } }
   : record);

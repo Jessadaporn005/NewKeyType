@@ -3,7 +3,7 @@
 ## Current channel
 
 - Windows x64 only.
-- Paper-only trading. Demo and Live broker execution are disabled. The packaged XM resources are limited to a reviewed read-only observer and a non-executing Demo preflight checker.
+- Paper remains the automatic default. The only broker mutation route is a manually confirmed, one-shot 0.01-lot XM Demo canary. Live and autonomous broker execution are disabled.
 - Releases are manual and unsigned. There is no auto-update channel yet.
 - `release-manifest.json` records SHA-256 hashes and explicitly declares that code signing and auto-update are disabled.
 - User data remains outside the installation directory in Electron's `userData` directory and is not deleted by the NSIS uninstaller.
@@ -21,6 +21,6 @@ npm run build:portable
 
 ## Release gate
 
-`npm run verify:release` fails when Demo/Live trading is enabled, simulated broker fallback is enabled, the retired live executor becomes operational, an unreviewed MT5 resource enters the artifact, a reviewed resource hash changes, runtime files are missing, or the reviewed tool versions drift.
+`npm run verify:release` fails when Live trading or simulated broker fallback is enabled, the retired live executor becomes operational, the Demo executor exceeds one `order_send`, the 0.01-lot/Demo/reconciliation gates disappear, an unreviewed MT5 resource enters the artifact, a reviewed resource hash changes, runtime files are missing, or the reviewed tool versions drift.
 
 Before public distribution, add Authenticode code signing and a verified release provider. Do not label the developer launcher or Service Worker as an auto-updater.

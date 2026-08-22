@@ -12,6 +12,7 @@ const toast = read('./js/toastManager.js');
 const liveExecutor = read('./scripts/mt5_live_executor.py');
 const mt5Observer = read('./scripts/mt5_silent_bridge.py');
 const mt5Preflight = read('./scripts/mt5_demo_preflight.py');
+const mt5CanaryExecutor = read('./scripts/mt5_demo_canary_executor.py');
 const tradingEngine = read('./js/aiTradingEngine.js');
 const intel = read('./js/cyberIntelFeed.js');
 const hologram = read('./js/hologramAssistant.js');
@@ -73,6 +74,17 @@ assert(mt5Observer.includes('copy_rates_from_pos(broker_symbol, timeframe_value,
 assert(mt5Preflight.includes('order_check(') && mt5Preflight.includes('order_calc_profit(')
   && !mt5Preflight.includes('order_send(') && mt5Preflight.includes('MAX_VOLUME = 0.5')
   && preload.includes('runMT5DemoOrderPreflight'), 'Demo preflight is broker-calculated, volume-capped, sender-validated, and contains no execution primitive');
+assert((mt5CanaryExecutor.match(/order_send\s*\(/g) || []).length === 1
+  && mt5CanaryExecutor.includes('CANARY_VOLUME = 0.01')
+  && mt5CanaryExecutor.includes('ACCOUNT_TRADE_MODE_DEMO')
+  && mt5CanaryExecutor.includes('CANARY_REQUIRES_ZERO_OPEN_POSITIONS')
+  && mt5CanaryExecutor.includes('FILLED_ORDER_NOT_RECONCILED_LOCKED')
+  && !mt5CanaryExecutor.includes('CYBERDECK_MT5_PASSWORD'), 'The only execution primitive is confined to a one-shot, 0.01-lot, Demo-only reconciled canary');
+assert(main.includes("handleTrusted('cyber:mt5-demo-canary-arm'")
+  && main.includes("handleTrusted('cyber:mt5-demo-canary-send'")
+  && main.includes("MT5_DEMO_OPERATOR_CONFIRMATION = 'XM DEMO 0.01'")
+  && main.includes('mt5DemoCanaryUsedThisSession = true')
+  && preload.includes('armMT5DemoCanary') && preload.includes('sendMT5DemoCanary'), 'Demo execution requires a host-held receipt, exact operator phrase, separate Arm/Send steps, and one-shot session consumption');
 assert(!main.includes("connect-src 'self' https: http://127.0.0.1:5055") && !main.includes('http://127.0.0.1:5056'), 'Renderer CSP cannot call legacy broker localhost ports directly');
 assert(liveExecutor.includes('MT5 LIVE EXECUTOR DISABLED') && !liveExecutor.includes('order_send('), 'Legacy unauthenticated MT5 live executor is non-operational');
 assert(!tradingEngine.includes('127.0.0.1:5056') && !tradingEngine.includes('/api/live/'), 'Renderer has no direct legacy live-broker network route');

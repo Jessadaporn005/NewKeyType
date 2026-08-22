@@ -129,7 +129,8 @@ export function validateMT5DemoPacket(rawPacket, {
 
 export function reconcileMT5DemoAccount(previousPacket, currentPacket, {
   expectedMagic = null,
-  expectedOpenTickets = []
+  expectedOpenTickets = [],
+  allowedSystemTickets = []
 } = {}) {
   if (currentPacket?.validation?.accepted !== true || currentPacket.mode !== 'DEMO') {
     return Object.freeze({ reconciled: false, reasons: ['CURRENT_PACKET_NOT_VALIDATED_DEMO'] });
@@ -158,7 +159,10 @@ export function reconcileMT5DemoAccount(previousPacket, currentPacket, {
         .filter(item => item.magic === Number(expectedMagic))
         .map(item => item.ticket)
     );
-    const explicitlyExpectedTickets = new Set(expectedOpenTickets.map(String));
+    const explicitlyExpectedTickets = new Set([
+      ...expectedOpenTickets.map(String),
+      ...(Array.isArray(allowedSystemTickets) ? allowedSystemTickets.map(String) : [])
+    ]);
     for (const position of systemPositions) {
       if (!previousSystemTickets.has(position.ticket) && !explicitlyExpectedTickets.has(position.ticket)) {
         reasons.push(`UNEXPECTED_SYSTEM_POSITION:${position.ticket}`);

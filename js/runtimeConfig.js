@@ -1,11 +1,11 @@
 /**
  * Runtime capability gates.
  *
- * Financial execution stays disabled until the broker gateway, reconciliation,
- * and independent risk controls have passed the Demo certification phase.
+ * Only the manually confirmed, one-shot 0.01-lot Demo canary route is enabled.
+ * Autonomous and Live execution remain unavailable.
  */
 export const RUNTIME_CAPABILITIES = Object.freeze({
-  demoTradingEnabled: false,
+  demoTradingEnabled: true,
   liveTradingEnabled: false,
   allowSimulatedBrokerFallback: false
 });

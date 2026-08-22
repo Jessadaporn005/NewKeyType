@@ -121,7 +121,7 @@ export function createMT5DemoOrderIntent({
   const referencePrice = side === 'BUY' ? ask : bid;
   const geometryValid = side === 'BUY' ? sl < referencePrice && tp > referencePrice : sl > referencePrice && tp < referencePrice;
   if (!geometryValid) return deepFreeze({ success: false, reason: 'INVALID_DEMO_PROTECTIVE_GEOMETRY' });
-  const intentId = `MT5D:${paperBotDecision.decisionId}:${safeNonce}`;
+  const intentId = `MT5D:CYBERDECK:${paperBotDecision.decisionId}:${safeNonce}`;
   if (state.processedIntentIds.includes(intentId)) return deepFreeze({ success: false, reason: 'DUPLICATE_DEMO_INTENT' });
   return deepFreeze({
     success: true,
@@ -134,7 +134,7 @@ export function createMT5DemoOrderIntent({
       intentId,
       nonce: safeNonce.toLowerCase(),
       createdAt: new Date(createdAt).toISOString(),
-      expiresAt: new Date(createdAt + 5000).toISOString(),
+      expiresAt: new Date(createdAt + 30_000).toISOString(),
       certificationSessionId: state.certificationSessionId,
       paperBotDecisionId: paperBotDecision.decisionId,
       assetId: paperBotDecision.assetId,

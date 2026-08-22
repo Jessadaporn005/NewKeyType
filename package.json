@@ -1,6 +1,6 @@
 {
   "name": "cyberdeck",
-  "version": "4.4.0",
+  "version": "4.5.0",
   "description": "CyberDeck Terminal Native Desktop Application with Hacky Roguelite Mode",
   "type": "module",
   "main": "main.cjs",
@@ -65,6 +65,10 @@
       {
         "from": "scripts/mt5_demo_preflight.py",
         "to": "mt5-observer/mt5_demo_preflight.py"
+      },
+      {
+        "from": "scripts/mt5_demo_canary_executor.py",
+        "to": "mt5-observer/mt5_demo_canary_executor.py"
       }
     ],
     "win": {

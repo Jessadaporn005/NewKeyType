@@ -55,6 +55,38 @@ export function assessMT5DemoReadiness(raw = {}) {
           tradeMode: 'DEMO'
         }
       : null,
+    certification: checks.telemetryCertified && raw.certification?.certified === true
+      && typeof raw.certification.sessionId === 'string'
+      ? {
+          policy: typeof raw.certification.policy === 'string' ? raw.certification.policy.slice(0, 120) : null,
+          certified: true,
+          sessionId: raw.certification.sessionId.slice(0, 100),
+          account: raw.certification.account?.tradeMode === 'DEMO'
+            ? {
+                loginSuffix: typeof raw.certification.account.loginSuffix === 'string' ? raw.certification.account.loginSuffix.slice(-4) : null,
+                server: typeof raw.certification.account.server === 'string' ? raw.certification.account.server.slice(0, 120) : null,
+                currency: typeof raw.certification.account.currency === 'string' ? raw.certification.account.currency.slice(0, 16) : null,
+                tradeMode: 'DEMO'
+              }
+            : null,
+          lastObservedAt: typeof raw.certification.lastObservedAt === 'string' ? raw.certification.lastObservedAt.slice(0, 40) : null
+        }
+      : null,
+    demoExecution: raw.demoExecution && typeof raw.demoExecution === 'object'
+      ? {
+          runtimeEnabled: raw.demoExecution.runtimeEnabled === true,
+          mode: raw.demoExecution.mode === 'DEMO_CANARY_ONLY' ? 'DEMO_CANARY_ONLY' : 'LOCKED',
+          canaryVolume: Number(raw.demoExecution.canaryVolume) === 0.01 ? 0.01 : null,
+          liveEligible: false,
+          killSwitch: raw.demoExecution.killSwitch !== false,
+          lockReason: typeof raw.demoExecution.lockReason === 'string' ? raw.demoExecution.lockReason.slice(0, 160) : null,
+          armed: raw.demoExecution.armed === true,
+          armExpiresAt: typeof raw.demoExecution.armExpiresAt === 'string' ? raw.demoExecution.armExpiresAt.slice(0, 40) : null,
+          usedThisApplicationSession: raw.demoExecution.usedThisApplicationSession === true,
+          executorInFlight: raw.demoExecution.executorInFlight === true,
+          lastAcknowledgement: raw.demoExecution.lastAcknowledgement || null
+        }
+      : null,
     authority: {
       observerOnly: true,
       decisionInfluence: false,

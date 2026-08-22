@@ -1309,15 +1309,27 @@
                     <span>DEMO ORDER PREFLIGHT:</span>
                     <strong id="cockpitDemoPreflight">NOT RUN • NO ORDER SENT</strong>
                   </div>
+                  <div class="g-acc-row">
+                    <span>DEMO EXECUTION GATE:</span>
+                    <strong id="cockpitDemoExecution">LOCKED • 0.01 LOT ONLY</strong>
+                  </div>
                 </div>
 
-                <!-- Live Action Trigger Buttons -->
+                <div class="guardian-field">
+                  <label class="g-lbl">🔐 ยืนยันการทดสอบ XM DEMO</label>
+                  <input type="text" class="g-input" id="mt5DemoConfirmation" maxlength="20" autocomplete="off" spellcheck="false" placeholder="พิมพ์ XM DEMO 0.01">
+                  <span class="g-hint">ต้องผ่าน Paper Bot + preflight ก่อน • จำกัด 0.01 lot • หนึ่งครั้งต่อการเปิดโปรแกรม</span>
+                </div>
+
+                <!-- Demo certification and permanently locked Live controls -->
                 <div class="guardian-action-buttons">
                   <button class="btn-cockpit-start" id="btnMT5ObserverToggle">🔌 CONNECT XM DEMO OBSERVER</button>
-                  <button class="btn-cockpit-start" id="btnMT5DemoPreflight">🧪 CHECK CURRENT SIGNAL • NO ORDER</button>
+                  <button class="btn-cockpit-start" id="btnMT5DemoPreflight">🧪 CHECK 0.01 CANARY • NO ORDER</button>
+                  <button class="btn-cockpit-start" id="btnMT5DemoCanaryArm" disabled>🔐 ARM XM DEMO CANARY</button>
+                  <button class="btn-cockpit-start" id="btnMT5DemoCanarySend" disabled>🚫 SEND DISABLED UNTIL ARMED</button>
                   <button class="btn-cockpit-start" id="btnCockpitStart">🔒 LIVE EXECUTION DISABLED</button>
                   <button class="btn-cockpit-pause hidden" id="btnCockpitPause">⏸️ PAUSE ENGINE</button>
-                  <button class="btn-cockpit-kill" id="btnCockpitEmergencyKill">🚨 EMERGENCY KILL-SWITCH</button>
+                  <button class="btn-cockpit-kill" id="btnCockpitEmergencyKill">🚨 LOCK NEW DEMO ORDERS</button>
                 </div>
               </div>
             </div>

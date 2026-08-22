@@ -868,6 +868,10 @@ class WindowsTerminalApp {
             this.updateMT5PreflightUI(preflight);
           };
 
+          this.tradingEngine.onMT5DemoExecutionUpdate = (execution) => {
+            this.updateMT5DemoExecutionUI(execution);
+          };
+
           this.tradingEngine.onDataSourceUpdate = (dataSource) => {
             const badge = document.getElementById('tradingDataSourceBadge');
             if (!badge || !dataSource) return;
@@ -1581,6 +1585,9 @@ class WindowsTerminalApp {
     const btnCockpitKill = document.getElementById('btnCockpitEmergencyKill');
     const btnMT5ObserverToggle = document.getElementById('btnMT5ObserverToggle');
     const btnMT5DemoPreflight = document.getElementById('btnMT5DemoPreflight');
+    const btnMT5DemoCanaryArm = document.getElementById('btnMT5DemoCanaryArm');
+    const btnMT5DemoCanarySend = document.getElementById('btnMT5DemoCanarySend');
+    const mt5DemoConfirmation = document.getElementById('mt5DemoConfirmation');
 
     if (btnMT5ObserverToggle) {
       btnMT5ObserverToggle.addEventListener('click', async () => {
@@ -1608,12 +1615,12 @@ class WindowsTerminalApp {
         btnMT5DemoPreflight.disabled = true;
         btnMT5DemoPreflight.textContent = 'CHECKING XM DEMO RULES...';
         try {
-          const result = await this.tradingEngine.runCurrentXMOrderPreflight();
+          const result = await this.tradingEngine.runCurrentXMOrderPreflight({ canary: true });
           if (this.toasts) {
             this.toasts.show(
               result?.success ? 'SUCCESS' : 'WARNING',
               result?.success
-                ? '✅ XM Demo preflight ผ่าน — ยังไม่มีการส่งคำสั่งซื้อขาย'
+                ? '✅ XM Demo preflight 0.01 lot ผ่าน — ยังไม่มีการส่งคำสั่งซื้อขาย'
                 : `🛑 Demo preflight ไม่ผ่าน: ${result?.reason || 'BLOCKED'}`,
               3500
             );
@@ -1622,8 +1629,59 @@ class WindowsTerminalApp {
           this.updateMT5PreflightUI({ success: false, reason: 'MT5_DEMO_PREFLIGHT_FAILED' });
         } finally {
           btnMT5DemoPreflight.disabled = this.tradingEngine.mt5DemoReadiness?.readyForDemoOrderCertification !== true;
-          btnMT5DemoPreflight.textContent = '🧪 CHECK CURRENT SIGNAL • NO ORDER';
+          btnMT5DemoPreflight.textContent = '🧪 CHECK 0.01 CANARY • NO ORDER';
+          if (btnMT5DemoCanaryArm && mt5DemoConfirmation) {
+            btnMT5DemoCanaryArm.disabled = !(mt5DemoConfirmation.value === 'XM DEMO 0.01'
+              && this.tradingEngine?.mt5DemoCanaryPreflight?.executionReceipt?.receiptId);
+          }
         }
+      });
+    }
+
+    if (mt5DemoConfirmation && btnMT5DemoCanaryArm) {
+      const updateArmAvailability = () => {
+        const phraseReady = mt5DemoConfirmation.value === 'XM DEMO 0.01';
+        const receiptReady = Boolean(this.tradingEngine?.mt5DemoCanaryPreflight?.executionReceipt?.receiptId);
+        btnMT5DemoCanaryArm.disabled = !(phraseReady && receiptReady && RUNTIME_CAPABILITIES.demoTradingEnabled);
+      };
+      mt5DemoConfirmation.addEventListener('input', updateArmAvailability);
+      btnMT5DemoPreflight?.addEventListener('click', () => setTimeout(updateArmAvailability, 0));
+      btnMT5DemoCanaryArm.addEventListener('click', async () => {
+        btnMT5DemoCanaryArm.disabled = true;
+        btnMT5DemoCanaryArm.textContent = 'VALIDATING DEMO ARM...';
+        try {
+          const result = await this.tradingEngine.armCurrentXMCanary(mt5DemoConfirmation.value);
+          if (result?.success) {
+            btnMT5DemoCanarySend.disabled = false;
+            btnMT5DemoCanarySend.textContent = '⚠️ SEND ONE 0.01 LOT XM DEMO ORDER';
+            mt5DemoConfirmation.value = '';
+          }
+          if (this.toasts) this.toasts.show(
+            result?.success ? 'WARNING' : 'DANGER',
+            result?.success ? '⚠️ XM Demo 0.01 lot ถูก ARM แล้ว แต่ยังไม่ได้ส่งคำสั่ง' : `🛑 ARM ไม่ผ่าน: ${result?.reason || 'BLOCKED'}`,
+            4500
+          );
+        } finally {
+          btnMT5DemoCanaryArm.textContent = '🔐 ARM XM DEMO CANARY';
+          updateArmAvailability();
+        }
+      });
+    }
+
+    if (btnMT5DemoCanarySend) {
+      btnMT5DemoCanarySend.addEventListener('click', async () => {
+        if (!this.tradingEngine || btnMT5DemoCanarySend.disabled) return;
+        btnMT5DemoCanarySend.disabled = true;
+        btnMT5DemoCanarySend.textContent = 'SENDING ONCE • DO NOT RETRY...';
+        const result = await this.tradingEngine.sendArmedXMCanary();
+        btnMT5DemoCanarySend.textContent = '🚫 ONE-SHOT CONSUMED / LOCKED';
+        if (this.toasts) this.toasts.show(
+          result?.success ? 'SUCCESS' : 'DANGER',
+          result?.success
+            ? `✅ XM Demo canary ผ่านและตรวจพบ Position #${result.acknowledgement?.ticket || 'VERIFIED'}`
+            : `🚨 Demo canary ถูกล็อก: ${result?.reason || 'UNKNOWN RESULT — CHECK MT5'}`,
+          6000
+        );
       });
     }
 
@@ -1638,9 +1696,9 @@ class WindowsTerminalApp {
         tag.style.borderColor = '#ffd700';
       }
       if (btnCockpitKill) {
-        btnCockpitKill.disabled = true;
-        btnCockpitKill.textContent = '🔒 KILL-SWITCH — NO VERIFIED BROKER';
-        btnCockpitKill.title = 'No authenticated broker execution session exists.';
+        btnCockpitKill.disabled = !RUNTIME_CAPABILITIES.demoTradingEnabled;
+        btnCockpitKill.textContent = '🚨 LOCK NEW DEMO ORDERS';
+        btnCockpitKill.title = 'ล็อกคำสั่ง Demo ใหม่ทันที โดยไม่ปิด Position ที่เปิดอยู่ใน MT5';
       }
     }
 
@@ -1694,21 +1752,21 @@ class WindowsTerminalApp {
     if (btnCockpitKill) {
       btnCockpitKill.addEventListener('click', async () => {
         const result = this.tradingEngine
-          ? await this.tradingEngine.emergencyKillAll()
+          ? await this.tradingEngine.lockMT5DemoExecution()
           : { success: false, reason: 'TRADING_ENGINE_UNAVAILABLE' };
         if (btnCockpitPause) btnCockpitPause.classList.add('hidden');
         if (btnCockpitStart) btnCockpitStart.classList.remove('hidden');
         const tag = document.getElementById('cockpitLiveStatusTag');
         if (tag) {
-          tag.textContent = result?.success ? 'KILL-SWITCH VERIFIED' : 'KILL-SWITCH UNVERIFIED';
+          tag.textContent = result?.success ? 'DEMO ORDERS LOCKED' : 'LOCK UNVERIFIED';
           tag.style.color = '#ff4466';
           tag.style.borderColor = '#ff4466';
         }
         if (this.audio && this.audio.playError) this.audio.playError();
         if (this.toasts) {
           const message = result?.success
-            ? '🚨 EMERGENCY KILL-SWITCH VERIFIED: BROKER CONFIRMED'
-            : `⚠️ KILL-SWITCH NOT VERIFIED: ${result?.reason || 'BROKER UNREACHABLE'}`;
+            ? '🚨 ล็อกคำสั่ง Demo ใหม่แล้ว • Position ที่มีอยู่ไม่ถูกปิดอัตโนมัติ'
+            : `⚠️ DEMO LOCK NOT VERIFIED: ${result?.reason || 'HOST UNREACHABLE'}`;
           this.toasts.show(result?.success ? 'DANGER' : 'WARNING', message, 5000);
         }
       });
@@ -1920,9 +1978,39 @@ class WindowsTerminalApp {
       XM_MARKET_DATA_NOT_DECISION_ELIGIBLE: 'MARKET CLOSED OR DATA STALE',
       ACTIONABLE_RULE_SIGNAL_REQUIRED: 'WAITING FOR BUY/SELL RULE SIGNAL',
       RISK_BUDGET_BELOW_MINIMUM_BROKER_VOLUME: 'RISK LIMIT IS BELOW XM MINIMUM LOT',
-      BROKER_PREFLIGHT_REJECTED: 'XM BROKER RULE CHECK REJECTED'
+      BROKER_PREFLIGHT_REJECTED: 'XM BROKER RULE CHECK REJECTED',
+      CANARY_EXECUTION_RECEIPT_NOT_ISSUED: 'PREFLIGHT PASSED BUT CANARY GATE REMAINS LOCKED'
     };
     element.textContent = `${labels[result.reason] || result.reason || 'BLOCKED'} • NO ORDER SENT`;
+    element.style.color = '#ffaa00';
+  }
+
+  updateMT5DemoExecutionUI(result = {}) {
+    const element = document.getElementById('cockpitDemoExecution');
+    if (!element) return;
+    const status = result.status || {};
+    const sendButton = document.getElementById('btnMT5DemoCanarySend');
+    if (result.success && result.reason === 'XM_DEMO_CANARY_CERTIFIED') {
+      const ticket = result.acknowledgement?.ticket || status.lastAcknowledgement?.ticket || 'VERIFIED';
+      element.textContent = `CERTIFIED • POSITION #${ticket} • NEW ORDERS LOCKED`;
+      element.style.color = '#00ff88';
+      if (sendButton) {
+        sendButton.disabled = true;
+        sendButton.textContent = '✅ CANARY CERTIFIED • SESSION LOCKED';
+      }
+      return;
+    }
+    if (result.success && (result.reason === 'XM_DEMO_CANARY_ARMED_NOT_SENT' || status.armed)) {
+      element.textContent = 'ARMED • 0.01 LOT • NOT SENT • EXPIRES IN 30s';
+      element.style.color = '#ff4466';
+      return;
+    }
+    if (status.usedThisApplicationSession) {
+      element.textContent = `${status.lastAcknowledgement?.success ? 'CERTIFIED' : 'ONE-SHOT USED'} • NEW ORDERS LOCKED`;
+      element.style.color = status.lastAcknowledgement?.success ? '#00ff88' : '#ff4466';
+      return;
+    }
+    element.textContent = `${result.reason || status.lockReason || 'LOCKED'} • 0.01 LOT ONLY`;
     element.style.color = '#ffaa00';
   }
 
@@ -1961,10 +2049,11 @@ class WindowsTerminalApp {
         ? 'ตรวจขนาดล็อต, Margin, SL/TP และกฎของ XM เท่านั้น — ไม่ส่งคำสั่ง'
         : 'ต้องรอให้ XM Demo observer ผ่านการตรวจต่อเนื่องก่อน';
     }
+    this.updateMT5DemoExecutionUI({ status: readiness.demoExecution || {}, reason: readiness.demoExecution?.lockReason || 'LOCKED' });
     const cockpitBadge = document.querySelector('#liveCockpitModal .cockpit-badge');
-    if (cockpitBadge) {
+      if (cockpitBadge) {
       cockpitBadge.textContent = readiness.readyForDemoOrderCertification
-        ? 'XM DEMO OBSERVER VERIFIED // EXECUTION LOCKED'
+        ? (RUNTIME_CAPABILITIES.demoTradingEnabled ? 'XM DEMO VERIFIED // 0.01 CANARY GATED' : 'XM DEMO OBSERVER VERIFIED // EXECUTION LOCKED')
         : 'PAPER-ONLY // DEMO OBSERVER CHECKING';
     }
     const accountElement = document.getElementById('cockpitAccLogin');
@@ -1980,7 +2069,7 @@ class WindowsTerminalApp {
       `Demo account observed: ${checks.demoAccountObserved ? 'YES' : 'NO'}`,
       `30-second telemetry certified: ${checks.telemetryCertified ? 'YES' : `NO (${telemetry.packetCount || 0}/31)`}`,
       `Observer error: ${readiness.observerError || 'NONE'}`,
-      'Authority: READ ONLY / ZERO ORDER EXECUTION'
+      `Authority: ${RUNTIME_CAPABILITIES.demoTradingEnabled ? 'ONE-SHOT 0.01 DEMO CANARY ONLY' : 'READ ONLY / ZERO ORDER EXECUTION'} • LIVE ALWAYS LOCKED`
     ].join(' | ');
   }
 

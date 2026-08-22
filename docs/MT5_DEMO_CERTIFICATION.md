@@ -1,6 +1,6 @@
 # MT5 Demo telemetry certification
 
-เครื่องมือนี้รับรองเฉพาะ read-only Demo telemetry Shadow ไม่ได้เปิด Demo order, ไม่ให้ decision authority และไม่ใช่การรับรอง Live
+เครื่องมือนี้รับรองเฉพาะ read-only Demo telemetry Shadow และไม่ให้ decision authority หรือ Live authority รุ่น 4.5.0 ใช้ผลนี้เป็นหนึ่งในหลาย Gate สำหรับ canary 0.01 lot แต่ผล telemetry เพียงอย่างเดียวไม่สามารถเปิดหรือส่ง order ได้
 
 ## เงื่อนไข
 

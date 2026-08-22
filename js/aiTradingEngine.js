@@ -35,6 +35,12 @@ import { resolveDecisionStrategyMemory } from './core/trading/strategyMemoryPoli
 import { createPaperExecutionAuditEvent, restorePaperExecutionAudit } from './core/trading/paperExecutionAudit.js';
 import { reconcileMT5DemoAccount, validateMT5DemoPacket } from './core/trading/mt5DemoGateway.js';
 import { assessMT5DemoReadiness } from './core/trading/mt5DemoReadiness.js';
+import {
+  armMT5DemoExecutionKillSwitch,
+  createMT5DemoExecutionState,
+  createMT5DemoOrderIntent,
+  unlockMT5DemoExecution
+} from './core/trading/mt5DemoExecutionGate.js';
 import { calculateXMConservativeRiskSize, XM_MARKET_PACKET_SOURCE } from './core/trading/xmMarketDataGateway.js';
 import { predictMLDirection, restoreMLShadowModel, restoreMLShadowReport, trainAndEvaluateMLShadow } from './core/trading/mlShadowModel.js';
 import { PATTERN_EVIDENCE_SCHEMA, detectConfirmedChartPatterns } from './core/trading/patternEvidence.js';
@@ -77,6 +83,9 @@ import {
   getXMMarketDataDisclosure,
   hasXMMarketAdapter
 } from './services/trading/xmMT5MarketData.js';
+
+const MT5_DEMO_CANARY_VOLUME = 0.01;
+const MT5_DEMO_OPERATOR_CONFIRMATION = 'XM DEMO 0.01';
 
 function hasVerifiedMarketDataAdapter(assetId) {
   return hasXMMarketAdapter(assetId) || hasBinanceMarketDataAdapter(assetId);
@@ -676,6 +685,7 @@ export class AITradingEngine {
     this.toasts = options.toasts || null;
     this.capabilities = resolveRuntimeCapabilities(options.capabilities);
     this.liveTradingEnabled = this.capabilities.liveTradingEnabled === true;
+    this.demoTradingEnabled = this.capabilities.demoTradingEnabled === true;
     this.lastLiveError = null;
 
     // DOM Elements
@@ -780,6 +790,10 @@ export class AITradingEngine {
     this.lastReconciledMT5Packet = null;
     this.mt5Reconciliation = null;
     this.mt5DemoReadiness = assessMT5DemoReadiness({});
+    this.mt5DemoCertification = null;
+    this.mt5DemoExecutionState = createMT5DemoExecutionState();
+    this.mt5DemoCanaryPreflight = null;
+    this.mt5DemoCanaryArmToken = null;
     this.mlShadowModel = null;
     this.mlShadowReport = null;
     this.mlShadowPrediction = null;
@@ -802,6 +816,7 @@ export class AITradingEngine {
     this.onMT5DataUpdate = options.onMT5DataUpdate || null;
     this.onMT5ReadinessUpdate = options.onMT5ReadinessUpdate || null;
     this.onMT5PreflightUpdate = options.onMT5PreflightUpdate || null;
+    this.onMT5DemoExecutionUpdate = options.onMT5DemoExecutionUpdate || null;
     this.onDataSourceUpdate = options.onDataSourceUpdate || null;
     this.onLiveExecutionUpdate = options.onLiveExecutionUpdate || null;
     this.onMLShadowUpdate = options.onMLShadowUpdate || null;
@@ -986,8 +1001,10 @@ export class AITradingEngine {
     try {
       const raw = await readinessReader();
       this.mt5DemoReadiness = assessMT5DemoReadiness(raw);
+      this.mt5DemoCertification = this.mt5DemoReadiness.certification;
     } catch (error) {
       this.mt5DemoReadiness = assessMT5DemoReadiness({});
+      this.mt5DemoCertification = null;
     }
     if (this.onMT5ReadinessUpdate) this.onMT5ReadinessUpdate(this.mt5DemoReadiness);
     return this.mt5DemoReadiness;
@@ -1024,6 +1041,7 @@ export class AITradingEngine {
   }
 
   async runCurrentXMOrderPreflight(options = {}) {
+    if (options.canary === true) this.mt5DemoCanaryPreflight = null;
     const preflightReader = typeof window !== 'undefined'
       ? window.cyberSystemAPI?.runMT5DemoOrderPreflight
       : null;
@@ -1062,10 +1080,12 @@ export class AITradingEngine {
       maximumVolume: 0.5
     });
     if (!sizing.success) return fail(sizing.reason, { sizing });
+    const requestedVolume = options.canary === true ? MT5_DEMO_CANARY_VOLUME : sizing.volume;
+    if (requestedVolume > sizing.volume) return fail('CANARY_VOLUME_EXCEEDS_APPROVED_RISK_SIZE', { sizing });
     const response = await preflightReader({
       assetId: this.activeAsset.id,
       side,
-      volume: sizing.volume,
+      volume: requestedVolume,
       stopPrice,
       targetPrice
     });
@@ -1074,22 +1094,165 @@ export class AITradingEngine {
     if (preflight.executionAttempted !== false || preflight.liveEligible !== false
       || preflight.preflightApproved !== true || preflight.assetId !== this.activeAsset.id
       || preflight.brokerSymbol !== this.activeAsset.brokerSymbol || preflight.side !== side
-      || Number(preflight.volume) !== sizing.volume) {
+      || Number(preflight.volume) !== requestedVolume) {
       return fail(preflight.reason || 'BROKER_PREFLIGHT_REJECTED', { sizing, preflight });
     }
     if (!Number.isFinite(Number(preflight.estimatedStopLoss))
       || Number(preflight.estimatedStopLoss) > sizing.riskBudget * 1.02) {
       return fail('BROKER_RISK_EXCEEDS_APPROVED_BUDGET', { sizing, preflight });
     }
+    if (options.canary === true && !response.executionReceipt?.receiptId) {
+      return fail('CANARY_EXECUTION_RECEIPT_NOT_ISSUED', { sizing, preflight });
+    }
     const result = Object.freeze({
       success: true,
       reason: 'XM_DEMO_PREFLIGHT_APPROVED_NO_ORDER_SENT',
       sizing,
       preflight,
+      executionReceipt: response.executionReceipt || null,
       executionAttempted: false,
       liveEligible: false
     });
+    if (options.canary === true) this.mt5DemoCanaryPreflight = result.executionReceipt ? result : null;
     if (this.onMT5PreflightUpdate) this.onMT5PreflightUpdate(result);
+    return result;
+  }
+
+  getCurrentVerifiedPaperBotCanaryDecision(now = Date.now()) {
+    const account = summarizePaperAccount(this.paperBalanceUSD, this.positions);
+    const evaluated = evaluateVerifiedPaperBotDecision({
+      state: this.verifiedPaperBotState,
+      marketPacket: this.marketPacket,
+      marketDecision: this.getMarketDecisionState(now),
+      signal: this.signal,
+      positions: this.positions,
+      paperAccount: account,
+      patternResearch: this.patternResearchDataset,
+      aiReaderReport: this.aiReaderReport,
+      now
+    });
+    if (evaluated.execute === true && evaluated.decision) return evaluated;
+    const lastDecision = this.verifiedPaperBotState?.lastDecision;
+    const lastClosedCandle = this.marketPacket?.decisionCandles?.at(-1);
+    const lastClosedCandleTime = Number(lastClosedCandle?.openTimeMs
+      ?? (Number.isFinite(Number(lastClosedCandle?.time)) ? Number(lastClosedCandle.time) * 1000 : NaN));
+    const reusableLastDecision = this.verifiedPaperBotState?.enabled === true
+      && this.verifiedPaperBotState?.killSwitch !== true
+      && lastDecision?.authority?.decisionEligible === true
+      && lastDecision?.authority?.liveEligible === false
+      && lastDecision?.assetId === this.marketPacket?.symbol
+      && lastDecision?.timeframe === this.marketPacket?.timeframe
+      && Number(lastDecision?.candleTime) === lastClosedCandleTime;
+    return reusableLastDecision
+      ? Object.freeze({ success: true, execute: true, reason: 'CURRENT_RECORDED_VERIFIED_PAPER_DECISION', decision: lastDecision })
+      : evaluated;
+  }
+
+  async armCurrentXMCanary(operatorConfirmation, now = Date.now()) {
+    const fail = (reason, details = {}) => {
+      this.mt5DemoExecutionState = armMT5DemoExecutionKillSwitch();
+      this.mt5DemoCanaryArmToken = null;
+      const result = Object.freeze({ success: false, reason, liveEligible: false, ...details });
+      if (this.onMT5DemoExecutionUpdate) this.onMT5DemoExecutionUpdate(result);
+      return result;
+    };
+    if (!this.demoTradingEnabled) return fail('MT5_DEMO_EXECUTION_RUNTIME_DISABLED');
+    if (operatorConfirmation !== MT5_DEMO_OPERATOR_CONFIRMATION) return fail('EXACT_DEMO_CONFIRMATION_REQUIRED');
+    const receipt = this.mt5DemoCanaryPreflight?.executionReceipt;
+    const preflight = this.mt5DemoCanaryPreflight?.preflight;
+    if (!receipt?.receiptId || Number(preflight?.volume) !== MT5_DEMO_CANARY_VOLUME) {
+      return fail('APPROVED_001_LOT_PREFLIGHT_RECEIPT_REQUIRED');
+    }
+    const paperDecisionResult = this.getCurrentVerifiedPaperBotCanaryDecision(now);
+    if (paperDecisionResult?.execute !== true || !paperDecisionResult.decision) {
+      return fail(paperDecisionResult?.reason || 'VERIFIED_PAPER_BOT_DECISION_REQUIRED');
+    }
+    const unlocked = unlockMT5DemoExecution(this.mt5DemoExecutionState, {
+      readiness: this.mt5DemoReadiness,
+      certification: this.mt5DemoCertification,
+      runtimeDemoCapability: this.demoTradingEnabled,
+      operatorConfirmedDemo: true,
+      now
+    });
+    if (!unlocked.success) return fail(unlocked.reason, { checks: unlocked.checks });
+    const nonceBytes = new Uint8Array(16);
+    if (!globalThis.crypto?.getRandomValues) return fail('SECURE_CANARY_NONCE_UNAVAILABLE');
+    globalThis.crypto.getRandomValues(nonceBytes);
+    const nonce = [...nonceBytes].map(value => value.toString(16).padStart(2, '0')).join('');
+    const intentResult = createMT5DemoOrderIntent({
+      state: unlocked.state,
+      paperBotDecision: paperDecisionResult.decision,
+      symbol: preflight.brokerSymbol,
+      approvedSymbolMap: { [preflight.assetId]: preflight.brokerSymbol },
+      volume: MT5_DEMO_CANARY_VOLUME,
+      quote: this.marketPacket?.brokerQuote,
+      stopPrice: preflight.stopPrice,
+      targetPrice: preflight.targetPrice,
+      magic: 99001,
+      now,
+      nonce
+    });
+    if (!intentResult.success) return fail(intentResult.reason);
+    const arm = typeof window !== 'undefined' ? window.cyberSystemAPI?.armMT5DemoCanary : null;
+    if (typeof arm !== 'function') return fail('MT5_DEMO_CANARY_ARM_BRIDGE_UNAVAILABLE');
+    const response = await arm({
+      receiptId: receipt.receiptId,
+      operatorConfirmation,
+      intent: intentResult.intent
+    });
+    if (response?.success !== true || typeof response.armToken !== 'string') {
+      return fail(response?.error || 'MT5_DEMO_CANARY_ARM_FAILED', { status: response?.status });
+    }
+    this.mt5DemoExecutionState = unlocked.state;
+    this.mt5DemoCanaryArmToken = response.armToken;
+    const result = Object.freeze({
+      success: true,
+      reason: 'XM_DEMO_CANARY_ARMED_NOT_SENT',
+      expiresAt: response.expiresAt,
+      status: response.status,
+      liveEligible: false
+    });
+    if (this.onMT5DemoExecutionUpdate) this.onMT5DemoExecutionUpdate(result);
+    return result;
+  }
+
+  async sendArmedXMCanary() {
+    const token = this.mt5DemoCanaryArmToken;
+    this.mt5DemoCanaryArmToken = null;
+    if (!token) {
+      const result = Object.freeze({ success: false, reason: 'XM_DEMO_CANARY_NOT_ARMED', liveEligible: false });
+      if (this.onMT5DemoExecutionUpdate) this.onMT5DemoExecutionUpdate(result);
+      return result;
+    }
+    const sender = typeof window !== 'undefined' ? window.cyberSystemAPI?.sendMT5DemoCanary : null;
+    if (typeof sender !== 'function') return { success: false, reason: 'MT5_DEMO_CANARY_SEND_BRIDGE_UNAVAILABLE', liveEligible: false };
+    const response = await sender(token);
+    this.mt5DemoExecutionState = armMT5DemoExecutionKillSwitch();
+    this.mt5DemoCanaryPreflight = null;
+    const result = Object.freeze({
+      success: response?.success === true,
+      reason: response?.success === true ? 'XM_DEMO_CANARY_CERTIFIED' : response?.error || 'XM_DEMO_CANARY_FAILED_LOCKED',
+      acknowledgement: response?.acknowledgement || null,
+      status: response?.status || null,
+      liveEligible: false
+    });
+    if (this.onMT5DemoExecutionUpdate) this.onMT5DemoExecutionUpdate(result);
+    return result;
+  }
+
+  async lockMT5DemoExecution() {
+    const killer = typeof window !== 'undefined' ? window.cyberSystemAPI?.killMT5DemoCanary : null;
+    this.mt5DemoExecutionState = armMT5DemoExecutionKillSwitch();
+    this.mt5DemoCanaryPreflight = null;
+    this.mt5DemoCanaryArmToken = null;
+    const response = typeof killer === 'function' ? await killer() : { success: false, error: 'MT5_DEMO_KILL_BRIDGE_UNAVAILABLE' };
+    const result = Object.freeze({
+      success: response?.success === true,
+      reason: response?.reason || response?.error || 'NEW_DEMO_ORDERS_LOCKED',
+      status: response?.status || null,
+      liveEligible: false
+    });
+    if (this.onMT5DemoExecutionUpdate) this.onMT5DemoExecutionUpdate(result);
     return result;
   }
 

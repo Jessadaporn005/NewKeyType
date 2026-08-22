@@ -32,7 +32,8 @@ function result({ certified = false, reasons = [], ...details } = {}) {
 
 export function certifyMT5DemoTelemetrySession(records, {
   expectedMagic = 99001,
-  expectedOpenTickets = []
+  expectedOpenTickets = [],
+  allowedSystemTickets = []
 } = {}) {
   if (!Array.isArray(records)) return result({ reasons: ['TRACE_ARRAY_REQUIRED'] });
   if (records.length < MINIMUM_PACKETS) {
@@ -43,6 +44,9 @@ export function certifyMT5DemoTelemetrySession(records, {
   }
   if (!Array.isArray(expectedOpenTickets) || expectedOpenTickets.length > 100) {
     return result({ reasons: ['INVALID_EXPECTED_TICKETS'] });
+  }
+  if (!Array.isArray(allowedSystemTickets) || allowedSystemTickets.length > 100) {
+    return result({ reasons: ['INVALID_ALLOWED_SYSTEM_TICKETS'] });
   }
 
   const reasons = [];
@@ -107,7 +111,11 @@ export function certifyMT5DemoTelemetrySession(records, {
       reasons.push(`SYMBOL_CHANGED:${index}`);
       break;
     }
-    const reconciliation = reconcileMT5DemoAccount(previousPacket, packet, { expectedMagic, expectedOpenTickets });
+    const reconciliation = reconcileMT5DemoAccount(previousPacket, packet, {
+      expectedMagic,
+      expectedOpenTickets,
+      allowedSystemTickets
+    });
     if (!reconciliation.reconciled) {
       reasons.push(...reconciliation.reasons.map(reason => `RECONCILIATION_FAILED:${index}:${reason}`));
       break;
