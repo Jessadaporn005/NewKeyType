@@ -35,6 +35,7 @@ import { resolveDecisionStrategyMemory } from './core/trading/strategyMemoryPoli
 import { createPaperExecutionAuditEvent, restorePaperExecutionAudit } from './core/trading/paperExecutionAudit.js';
 import { reconcileMT5DemoAccount, validateMT5DemoPacket } from './core/trading/mt5DemoGateway.js';
 import { assessMT5DemoReadiness } from './core/trading/mt5DemoReadiness.js';
+import { calculateXMConservativeRiskSize, XM_MARKET_PACKET_SOURCE } from './core/trading/xmMarketDataGateway.js';
 import { predictMLDirection, restoreMLShadowModel, restoreMLShadowReport, trainAndEvaluateMLShadow } from './core/trading/mlShadowModel.js';
 import { PATTERN_EVIDENCE_SCHEMA, detectConfirmedChartPatterns } from './core/trading/patternEvidence.js';
 import { detectEvidenceBasedMarketRegime } from './core/trading/marketRegime.js';
@@ -67,9 +68,43 @@ import {
 import {
   fetchHistoricalExchangeCandles as fetchBinanceHistory,
   fetchRealExchangeCandles as fetchBinanceCandles,
-  getMarketDataDisclosure,
-  hasVerifiedMarketDataAdapter
+  getMarketDataDisclosure as getBinanceMarketDataDisclosure,
+  hasVerifiedMarketDataAdapter as hasBinanceMarketDataAdapter
 } from './services/trading/binanceMarketData.js';
+import {
+  fetchHistoricalXMMarketCandles,
+  fetchXMMarketCandles,
+  getXMMarketDataDisclosure,
+  hasXMMarketAdapter
+} from './services/trading/xmMT5MarketData.js';
+
+function hasVerifiedMarketDataAdapter(assetId) {
+  return hasXMMarketAdapter(assetId) || hasBinanceMarketDataAdapter(assetId);
+}
+
+function getMarketDataDisclosure(assetId) {
+  return hasXMMarketAdapter(assetId)
+    ? getXMMarketDataDisclosure(assetId)
+    : getBinanceMarketDataDisclosure(assetId);
+}
+
+function getMarketDataPacketSource(assetId) {
+  return hasXMMarketAdapter(assetId)
+    ? MARKET_PACKET_SOURCES.XM_MT5_DEMO_BARS
+    : MARKET_PACKET_SOURCES.BINANCE_KLINES_REST;
+}
+
+async function fetchVerifiedMarketCandles(assetId, timeframe, limit, options = {}) {
+  return hasXMMarketAdapter(assetId)
+    ? fetchXMMarketCandles(assetId, timeframe, limit, options)
+    : fetchBinanceCandles(assetId, timeframe, limit, options);
+}
+
+async function fetchVerifiedMarketHistory(assetId, timeframe, limit, options = {}) {
+  return hasXMMarketAdapter(assetId)
+    ? fetchHistoricalXMMarketCandles(assetId, timeframe, limit, options)
+    : fetchBinanceHistory(assetId, timeframe, limit, options);
+}
 
 export { MARKET_TYPES, TRADING_ASSETS, TIMEFRAMES };
 export { calculateEMA, calculateBollingerBands, calculateRSI, calculateMACD };
@@ -658,7 +693,7 @@ export class AITradingEngine {
     this.isRealFeed = false;
     this.marketPacket = null;
     this.lastDataSourceStateKey = null;
-    this.marketDataFetch = options.marketDataFetch || fetchBinanceCandles;
+    this.marketDataFetch = options.marketDataFetch || fetchVerifiedMarketCandles;
     this.marketDataTimer = null;
     this.marketDataRefreshEnabled = false;
     this.marketDataRefreshWasEnabledBeforeReplay = false;
@@ -766,6 +801,7 @@ export class AITradingEngine {
     this.onReplayUpdate = options.onReplayUpdate || null;
     this.onMT5DataUpdate = options.onMT5DataUpdate || null;
     this.onMT5ReadinessUpdate = options.onMT5ReadinessUpdate || null;
+    this.onMT5PreflightUpdate = options.onMT5PreflightUpdate || null;
     this.onDataSourceUpdate = options.onDataSourceUpdate || null;
     this.onLiveExecutionUpdate = options.onLiveExecutionUpdate || null;
     this.onMLShadowUpdate = options.onMLShadowUpdate || null;
@@ -987,6 +1023,76 @@ export class AITradingEngine {
     return response;
   }
 
+  async runCurrentXMOrderPreflight(options = {}) {
+    const preflightReader = typeof window !== 'undefined'
+      ? window.cyberSystemAPI?.runMT5DemoOrderPreflight
+      : null;
+    const fail = (reason, details = {}) => {
+      const result = Object.freeze({ success: false, reason, executionAttempted: false, liveEligible: false, ...details });
+      if (this.onMT5PreflightUpdate) this.onMT5PreflightUpdate(result);
+      return result;
+    };
+    if (typeof preflightReader !== 'function') return fail('MT5_DEMO_PREFLIGHT_UNAVAILABLE');
+    if (this.mt5DemoReadiness?.readyForDemoOrderCertification !== true) return fail('CERTIFIED_MT5_DEMO_SESSION_REQUIRED');
+    if (this.marketPacket?.source !== XM_MARKET_PACKET_SOURCE
+      || this.marketPacket?.provenance?.brokerMode !== 'DEMO'
+      || this.marketPacket?.provenance?.brokerSymbol !== this.activeAsset?.brokerSymbol) {
+      return fail('VERIFIED_XM_MARKET_PACKET_REQUIRED');
+    }
+    const marketDecision = this.getMarketDecisionState(options.now || Date.now());
+    if (!marketDecision.eligible) return fail('XM_MARKET_DATA_NOT_DECISION_ELIGIBLE', { reasons: marketDecision.reasons });
+    if (this.mt5Status?.account?.tradeMode !== 'DEMO') return fail('VERIFIED_XM_DEMO_ACCOUNT_REQUIRED');
+
+    const signal = options.signal || this.signal;
+    const action = String(signal?.action || '').toUpperCase();
+    const side = action.includes('BUY') ? 'BUY' : action.includes('SELL') ? 'SELL' : null;
+    if (!side) return fail('ACTIONABLE_RULE_SIGNAL_REQUIRED');
+    const quote = this.marketPacket.brokerQuote;
+    const entryPrice = side === 'BUY' ? Number(quote?.ask) : Number(quote?.bid);
+    const stopPrice = Number(options.stopPrice ?? signal?.sl);
+    const targetPrice = Number(options.targetPrice ?? signal?.tp1);
+    const equity = Number(options.equity ?? this.mt5Status.account.equity);
+    const riskPercent = Math.min(0.5, Math.max(0.1, Number(options.riskPercent ?? this.riskPercent) || 0.5));
+    const sizing = calculateXMConservativeRiskSize({
+      contract: this.marketPacket.brokerContract,
+      entryPrice,
+      stopPrice,
+      equity,
+      riskPercent,
+      maximumVolume: 0.5
+    });
+    if (!sizing.success) return fail(sizing.reason, { sizing });
+    const response = await preflightReader({
+      assetId: this.activeAsset.id,
+      side,
+      volume: sizing.volume,
+      stopPrice,
+      targetPrice
+    });
+    if (response?.success !== true || !response.preflight) return fail(response?.error || 'MT5_DEMO_PREFLIGHT_FAILED', { sizing });
+    const preflight = response.preflight;
+    if (preflight.executionAttempted !== false || preflight.liveEligible !== false
+      || preflight.preflightApproved !== true || preflight.assetId !== this.activeAsset.id
+      || preflight.brokerSymbol !== this.activeAsset.brokerSymbol || preflight.side !== side
+      || Number(preflight.volume) !== sizing.volume) {
+      return fail(preflight.reason || 'BROKER_PREFLIGHT_REJECTED', { sizing, preflight });
+    }
+    if (!Number.isFinite(Number(preflight.estimatedStopLoss))
+      || Number(preflight.estimatedStopLoss) > sizing.riskBudget * 1.02) {
+      return fail('BROKER_RISK_EXCEEDS_APPROVED_BUDGET', { sizing, preflight });
+    }
+    const result = Object.freeze({
+      success: true,
+      reason: 'XM_DEMO_PREFLIGHT_APPROVED_NO_ORDER_SENT',
+      sizing,
+      preflight,
+      executionAttempted: false,
+      liveEligible: false
+    });
+    if (this.onMT5PreflightUpdate) this.onMT5PreflightUpdate(result);
+    return result;
+  }
+
   saveGymState() {
     try {
       const operatorUsername = this.getOperatorUsername();
@@ -1171,11 +1277,26 @@ export class AITradingEngine {
     this.marketDataHealth = beginMarketDataAttempt(this.marketDataHealth, { requestId, at: startedAt });
     this.publishDataSourceState(startedAt);
 
+    let marketResponse = null;
     let realData = null;
+    let marketSource = getMarketDataPacketSource(asset.id);
+    let marketAdapter = getMarketDataDisclosure(asset.id);
+    let brokerMetadata = null;
     let fetchReason = null;
     try {
       if (adapterSupported) {
-        realData = await this.marketDataFetch(asset.id, timeframe.id, 80);
+        marketResponse = await this.marketDataFetch(asset.id, timeframe.id, 80);
+        if (Array.isArray(marketResponse)) {
+          realData = marketResponse;
+        } else if (Array.isArray(marketResponse?.candles)) {
+          if (marketResponse.source && marketResponse.source !== marketSource) {
+            fetchReason = 'MARKET_SOURCE_CONTRACT_MISMATCH';
+          } else {
+            realData = marketResponse.candles;
+            marketAdapter = marketResponse.adapter || marketAdapter;
+            brokerMetadata = marketResponse;
+          }
+        }
       } else {
         fetchReason = MARKET_DATA_ATTEMPT_OUTCOME.NO_VERIFIED_ADAPTER;
       }
@@ -1190,7 +1311,7 @@ export class AITradingEngine {
       this.recordMarketDataEvidence(createMarketDataEvidence({
         requestId,
         generation,
-        source: adapterSupported ? MARKET_PACKET_SOURCES.BINANCE_KLINES_REST : 'NO_VERIFIED_ADAPTER',
+        source: adapterSupported ? marketSource : 'NO_VERIFIED_ADAPTER',
         symbol: asset.id,
         timeframe: timeframe.id,
         startedAt,
@@ -1209,18 +1330,26 @@ export class AITradingEngine {
     let adoptedPacket = null;
     if (Array.isArray(realData) && realData.length > 0) {
       candidatePacket = createMarketPacket({
-        source: MARKET_PACKET_SOURCES.BINANCE_KLINES_REST,
-        adapter: getMarketDataDisclosure(asset.id),
+        source: marketSource,
+        adapter: marketAdapter,
         sequence: ++this.marketPacketSequence,
         requestId,
         symbol: asset.id,
         timeframe: timeframe.id,
         timeframeSeconds: timeframe.seconds,
         observedAt: finishedAt,
-        candles: realData
+        candles: realData,
+        brokerSymbol: brokerMetadata?.brokerSymbol || null,
+        brokerMode: brokerMetadata?.brokerMode || null,
+        brokerQuote: brokerMetadata?.quote || null,
+        contract: brokerMetadata?.contract || null
       });
       const candidateDecision = evaluateMarketPacketDecisionEligibility(candidatePacket, { now: finishedAt });
-      if (candidatePacket.quality.status === 'VALID' && candidateDecision.eligible) {
+      const qualityAccepted = candidatePacket.quality.status === 'VALID'
+        || (candidatePacket.quality.status === 'VALID_WITH_SESSION_GAPS'
+          && candidatePacket.provenance.sessionGapsAllowed === true);
+      if (qualityAccepted && candidatePacket.provenance.verified === true
+        && candidatePacket.provenance.simulation !== true) {
         outcome = MARKET_DATA_ATTEMPT_OUTCOME.SUCCESS;
         reason = null;
         adoptedPacket = candidatePacket;
@@ -1260,7 +1389,7 @@ export class AITradingEngine {
     this.recordMarketDataEvidence(createMarketDataEvidence({
       requestId,
       generation,
-      source: adapterSupported ? MARKET_PACKET_SOURCES.BINANCE_KLINES_REST : 'NO_VERIFIED_ADAPTER',
+      source: adapterSupported ? marketSource : 'NO_VERIFIED_ADAPTER',
       symbol: asset.id,
       timeframe: timeframe.id,
       startedAt,
@@ -1418,12 +1547,13 @@ export class AITradingEngine {
       return { success: false, reason: 'VERIFIED_MARKET_DATA_ADAPTER_REQUIRED' };
     }
 
-    const fetchedCandles = await fetchBinanceHistory(asset.id, timeframe.id, 2000, options.fetchOptions || {});
+    const fetchedCandles = await fetchVerifiedMarketHistory(asset.id, timeframe.id, 2000, options.fetchOptions || {});
     if (!Array.isArray(fetchedCandles) || fetchedCandles.length < 121) {
       return { success: false, reason: 'REAL_MARKET_HISTORY_UNAVAILABLE' };
     }
-    // Binance may include the currently forming bar. Train/evaluate on closed bars only.
-    const closedCandles = fetchedCandles.slice(0, -1);
+    // The XM adapter excludes MT5 position zero; Binance history may still contain
+    // the currently forming exchange bar.
+    const closedCandles = hasXMMarketAdapter(asset.id) ? fetchedCandles : fetchedCandles.slice(0, -1);
     const result = trainAndEvaluateMLShadow(closedCandles, {
       assetId: asset.id,
       timeframe: timeframe.id,
@@ -1454,7 +1584,7 @@ export class AITradingEngine {
 
     const requestedBars = Math.min(5000, Math.max(120, Math.floor(Number(options.totalBars) || 2000)));
     const now = Number(options.now) || Date.now();
-    const fetchedCandles = await fetchBinanceHistory(asset.id, timeframe.id, requestedBars, options.fetchOptions || {});
+    const fetchedCandles = await fetchVerifiedMarketHistory(asset.id, timeframe.id, requestedBars, options.fetchOptions || {});
     if (researchGeneration !== this.patternResearchGeneration
       || this.activeAsset?.id !== asset.id
       || this.activeTimeframe?.id !== timeframe.id) {
@@ -1474,7 +1604,7 @@ export class AITradingEngine {
     }
 
     const dataset = buildPatternOutcomeResearchDataset(closedCandles, {
-      source: MARKET_PACKET_SOURCES.BINANCE_KLINES_REST,
+      source: getMarketDataPacketSource(asset.id),
       adapter: sourceDisclosure,
       assetId: asset.id,
       timeframe: timeframe.id,

@@ -2,6 +2,7 @@ export const MARKET_PACKET_SCHEMA_VERSION = 1;
 
 export const MARKET_PACKET_SOURCES = Object.freeze({
   BINANCE_KLINES_REST: 'BINANCE_KLINES_REST',
+  XM_MT5_DEMO_BARS: 'XM_MT5_DEMO_BARS',
   SIMULATED_FALLBACK: 'SIMULATED_FALLBACK'
 });
 
@@ -9,12 +10,20 @@ const SOURCE_POLICY = Object.freeze({
   [MARKET_PACKET_SOURCES.BINANCE_KLINES_REST]: Object.freeze({
     verified: true,
     simulation: false,
-    label: 'BINANCE KLINES'
+    label: 'BINANCE KLINES',
+    sessionGapsAllowed: false
+  }),
+  [MARKET_PACKET_SOURCES.XM_MT5_DEMO_BARS]: Object.freeze({
+    verified: true,
+    simulation: false,
+    label: 'XM MT5 DEMO — CLOSED BARS',
+    sessionGapsAllowed: true
   }),
   [MARKET_PACKET_SOURCES.SIMULATED_FALLBACK]: Object.freeze({
     verified: false,
     simulation: true,
-    label: 'SIMULATION LAB'
+    label: 'SIMULATION LAB',
+    sessionGapsAllowed: false
   })
 });
 
@@ -36,6 +45,7 @@ function freezeCandle(rawCandle, timeframeSeconds, observedAtMs) {
   const low = finite(rawCandle?.low);
   const close = finite(rawCandle?.close);
   const volume = finite(rawCandle?.volume);
+  const spreadPoints = finite(rawCandle?.spreadPoints);
   if (openTimeMs === null || open === null || high === null || low === null || close === null || volume === null) return null;
   if (open <= 0 || high <= 0 || low <= 0 || close <= 0 || volume < 0) return null;
   if (high < low || high < Math.max(open, close) || low > Math.min(open, close)) return null;
@@ -55,8 +65,26 @@ function freezeCandle(rawCandle, timeframeSeconds, observedAtMs) {
     low,
     close,
     volume,
+    spreadPoints: spreadPoints === null ? null : Math.max(0, Math.round(spreadPoints)),
     barClosed
   });
+}
+
+function freezeBrokerContract(raw) {
+  if (!raw || typeof raw !== 'object' || raw.tradeMode !== 'FULL') return null;
+  const numericKeys = ['digits', 'point', 'tickSize', 'tickValueProfit', 'tickValueLoss', 'contractSize',
+    'volumeMin', 'volumeMax', 'volumeStep', 'stopsLevel', 'freezeLevel', 'executionMode', 'fillingMode', 'orderMode'];
+  const contract = { tradeMode: 'FULL' };
+  for (const key of numericKeys) {
+    const parsed = finite(raw[key]);
+    if (parsed === null || parsed < 0 || (['point', 'tickSize', 'tickValueProfit', 'tickValueLoss', 'contractSize', 'volumeMin', 'volumeMax', 'volumeStep'].includes(key) && parsed <= 0)) return null;
+    contract[key] = parsed;
+  }
+  for (const key of ['currencyBase', 'currencyProfit', 'currencyMargin']) {
+    if (typeof raw[key] !== 'string' || !raw[key].trim()) return null;
+    contract[key] = raw[key].trim().slice(0, 16);
+  }
+  return Object.freeze(contract);
 }
 
 function uniqueReasons(reasons) {
@@ -76,8 +104,16 @@ export function evaluateMarketPacketDecisionEligibility(packet, {
   if (!packet || packet.schemaVersion !== MARKET_PACKET_SCHEMA_VERSION) reasons.push('INVALID_MARKET_PACKET');
   if (packet?.provenance?.verified !== true) reasons.push('UNVERIFIED_SOURCE');
   if (packet?.provenance?.simulation === true) reasons.push('SIMULATED_SOURCE');
-  if (packet?.quality?.status !== 'VALID') reasons.push(`QUALITY_${packet?.quality?.status || 'UNKNOWN'}`);
+  const acceptedQuality = packet?.quality?.status === 'VALID'
+    || (packet?.quality?.status === 'VALID_WITH_SESSION_GAPS' && packet?.provenance?.sessionGapsAllowed === true);
+  if (!acceptedQuality) reasons.push(`QUALITY_${packet?.quality?.status || 'UNKNOWN'}`);
   if (!Array.isArray(packet?.decisionCandles) || packet.decisionCandles.length < minimumBars) reasons.push('INSUFFICIENT_CLOSED_BARS');
+  if (packet?.source === MARKET_PACKET_SOURCES.XM_MT5_DEMO_BARS) {
+    const quoteTimeMs = finite(packet?.brokerQuote?.timeMs);
+    if (quoteTimeMs === null) reasons.push('MISSING_BROKER_QUOTE_TIME');
+    else if (nowMs !== null && nowMs - quoteTimeMs > 120000) reasons.push('BROKER_MARKET_NOT_FRESH');
+    else if (nowMs !== null && quoteTimeMs > nowMs + 1000) reasons.push('FUTURE_BROKER_QUOTE');
+  }
 
   const lastClosed = Array.isArray(packet?.decisionCandles) ? packet.decisionCandles.at(-1) : null;
   const lastClosedAtMs = finite(lastClosed?.closeTimeMs);
@@ -114,10 +150,15 @@ export function createMarketPacket({
   timeframeSeconds,
   observedAt = Date.now(),
   candles,
+  brokerSymbol = null,
+  brokerMode = null,
+  brokerQuote = null,
+  contract = null,
   minimumDecisionCandles = 50,
   maxDecisionAgeMs = null
 } = {}) {
   const sourcePolicy = SOURCE_POLICY[source] || Object.freeze({ verified: false, simulation: false, label: 'UNVERIFIED SOURCE' });
+  const brokerContract = freezeBrokerContract(contract);
   const observedAtMs = timeMs(observedAt);
   const safeTimeframeSeconds = Math.max(1, Number.parseInt(timeframeSeconds, 10) || 0);
   const minimumBars = Math.max(20, Number.parseInt(minimumDecisionCandles, 10) || 50);
@@ -156,8 +197,13 @@ export function createMarketPacket({
   else if (malformedCount > 0) qualityStatus = 'MALFORMED_CANDLES';
   else if (duplicateCount > 0) qualityStatus = 'DUPLICATE_CANDLES';
   else if (!chronological) qualityStatus = 'OUT_OF_ORDER';
-  else if (gapCount > 0) qualityStatus = 'GAPPED_CANDLES';
   else if (futureOpenCount > 0) qualityStatus = 'FUTURE_CANDLES';
+  else if (gapCount > 0 && sourcePolicy.sessionGapsAllowed !== true) qualityStatus = 'GAPPED_CANDLES';
+  else if (gapCount > 0) qualityStatus = 'VALID_WITH_SESSION_GAPS';
+  if (source === MARKET_PACKET_SOURCES.XM_MT5_DEMO_BARS
+    && (brokerMode !== 'DEMO' || typeof brokerSymbol !== 'string' || !brokerSymbol || !brokerContract)) {
+    qualityStatus = 'INVALID_BROKER_METADATA';
+  }
 
   const quality = Object.freeze({
     status: qualityStatus,
@@ -188,8 +234,16 @@ export function createMarketPacket({
       source,
       label: sourcePolicy.label,
       verified: sourcePolicy.verified,
-      simulation: sourcePolicy.simulation
+      simulation: sourcePolicy.simulation,
+      brokerMode: brokerMode === 'DEMO' ? 'DEMO' : null,
+      brokerSymbol: typeof brokerSymbol === 'string' ? brokerSymbol.slice(0, 40) : null,
+      sessionGapsAllowed: sourcePolicy.sessionGapsAllowed === true
     }),
+    brokerContract,
+    brokerQuote: brokerMode === 'DEMO' && finite(brokerQuote?.bid) !== null
+      && finite(brokerQuote?.ask) !== null && finite(brokerQuote?.timeMs) !== null
+      ? Object.freeze({ bid: finite(brokerQuote.bid), ask: finite(brokerQuote.ask), timeMs: finite(brokerQuote.timeMs) })
+      : null,
     quality,
     candles: Object.freeze(normalized),
     decisionCandles,

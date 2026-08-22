@@ -1,8 +1,7 @@
 const BINANCE_SYMBOLS = Object.freeze({
   'BTC/USDT': 'BTCUSDT',
   'ETH/USDT': 'ETHUSDT',
-  'SOL/USDT': 'SOLUSDT',
-  'XAU/USD': 'PAXGUSDT'
+  'SOL/USDT': 'SOLUSDT'
 });
 
 const BINANCE_INTERVALS = Object.freeze({
@@ -97,6 +96,5 @@ export async function fetchHistoricalExchangeCandles(symbol = 'BTC/USDT', interv
 }
 
 export function getMarketDataDisclosure(symbol) {
-  if (symbol === 'XAU/USD') return 'BINANCE PAXG/USDT PROXY — NOT XAU/USD SPOT';
   return hasVerifiedMarketDataAdapter(symbol) ? 'BINANCE KLINES' : 'NO VERIFIED ADAPTER';
 }

@@ -29,6 +29,8 @@ contextBridge.exposeInMainWorld('cyberSystemAPI', {
   dbRead: () => ipcRenderer.invoke('cyber:db-read'),
   dbWrite: (data) => ipcRenderer.invoke('cyber:db-write', data),
   getMT5DemoSnapshot: () => ipcRenderer.invoke('cyber:mt5-demo-snapshot'),
+  getMT5DemoMarketSnapshot: (assetId, timeframe, limit) => ipcRenderer.invoke('cyber:mt5-demo-market-snapshot', assetId, timeframe, limit),
+  runMT5DemoOrderPreflight: (request) => ipcRenderer.invoke('cyber:mt5-demo-order-preflight', request),
   getMT5DemoReadiness: () => ipcRenderer.invoke('cyber:mt5-demo-readiness'),
   setMT5DemoObserverEnabled: (enabled) => ipcRenderer.invoke('cyber:mt5-demo-observer-control', enabled === true),
   getLocalAIReaderStatus: () => ipcRenderer.invoke('cyber:local-ai-reader-status'),

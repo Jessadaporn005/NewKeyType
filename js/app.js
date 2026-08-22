@@ -864,6 +864,10 @@ class WindowsTerminalApp {
             this.updateMT5ReadinessUI(readiness);
           };
 
+          this.tradingEngine.onMT5PreflightUpdate = (preflight) => {
+            this.updateMT5PreflightUI(preflight);
+          };
+
           this.tradingEngine.onDataSourceUpdate = (dataSource) => {
             const badge = document.getElementById('tradingDataSourceBadge');
             if (!badge || !dataSource) return;
@@ -1576,6 +1580,7 @@ class WindowsTerminalApp {
     const btnCockpitPause = document.getElementById('btnCockpitPause');
     const btnCockpitKill = document.getElementById('btnCockpitEmergencyKill');
     const btnMT5ObserverToggle = document.getElementById('btnMT5ObserverToggle');
+    const btnMT5DemoPreflight = document.getElementById('btnMT5DemoPreflight');
 
     if (btnMT5ObserverToggle) {
       btnMT5ObserverToggle.addEventListener('click', async () => {
@@ -1593,6 +1598,31 @@ class WindowsTerminalApp {
         } finally {
           btnMT5ObserverToggle.disabled = false;
           this.updateMT5ReadinessUI(this.tradingEngine.mt5DemoReadiness);
+        }
+      });
+    }
+
+    if (btnMT5DemoPreflight) {
+      btnMT5DemoPreflight.addEventListener('click', async () => {
+        if (!this.tradingEngine || btnMT5DemoPreflight.disabled) return;
+        btnMT5DemoPreflight.disabled = true;
+        btnMT5DemoPreflight.textContent = 'CHECKING XM DEMO RULES...';
+        try {
+          const result = await this.tradingEngine.runCurrentXMOrderPreflight();
+          if (this.toasts) {
+            this.toasts.show(
+              result?.success ? 'SUCCESS' : 'WARNING',
+              result?.success
+                ? '✅ XM Demo preflight ผ่าน — ยังไม่มีการส่งคำสั่งซื้อขาย'
+                : `🛑 Demo preflight ไม่ผ่าน: ${result?.reason || 'BLOCKED'}`,
+              3500
+            );
+          }
+        } catch (error) {
+          this.updateMT5PreflightUI({ success: false, reason: 'MT5_DEMO_PREFLIGHT_FAILED' });
+        } finally {
+          btnMT5DemoPreflight.disabled = this.tradingEngine.mt5DemoReadiness?.readyForDemoOrderCertification !== true;
+          btnMT5DemoPreflight.textContent = '🧪 CHECK CURRENT SIGNAL • NO ORDER';
         }
       });
     }
@@ -1873,6 +1903,29 @@ class WindowsTerminalApp {
     this.dom.verifiedPaperBotStatus.style.color = '#94a3b8';
   }
 
+  updateMT5PreflightUI(result) {
+    const element = document.getElementById('cockpitDemoPreflight');
+    if (!element || !result) return;
+    if (result.success) {
+      const volume = Number(result.preflight?.volume);
+      const stopLoss = Number(result.preflight?.estimatedStopLoss);
+      const margin = Number(result.preflight?.estimatedMargin);
+      element.textContent = `APPROVED • ${Number.isFinite(volume) ? volume.toFixed(2) : '--'} LOT • RISK $${Number.isFinite(stopLoss) ? stopLoss.toFixed(2) : '--'} • MARGIN $${Number.isFinite(margin) ? margin.toFixed(2) : '--'} • NO ORDER SENT`;
+      element.style.color = '#00ff88';
+      return;
+    }
+    const labels = {
+      CERTIFIED_MT5_DEMO_SESSION_REQUIRED: 'WAITING FOR CERTIFIED XM DEMO SESSION',
+      VERIFIED_XM_MARKET_PACKET_REQUIRED: 'SELECT AN XM MARKET WITH VERIFIED DATA',
+      XM_MARKET_DATA_NOT_DECISION_ELIGIBLE: 'MARKET CLOSED OR DATA STALE',
+      ACTIONABLE_RULE_SIGNAL_REQUIRED: 'WAITING FOR BUY/SELL RULE SIGNAL',
+      RISK_BUDGET_BELOW_MINIMUM_BROKER_VOLUME: 'RISK LIMIT IS BELOW XM MINIMUM LOT',
+      BROKER_PREFLIGHT_REJECTED: 'XM BROKER RULE CHECK REJECTED'
+    };
+    element.textContent = `${labels[result.reason] || result.reason || 'BLOCKED'} • NO ORDER SENT`;
+    element.style.color = '#ffaa00';
+  }
+
   updateMT5ReadinessUI(readiness) {
     const element = document.getElementById('cockpitMT5Readiness');
     if (!element || !readiness) return;
@@ -1900,6 +1953,13 @@ class WindowsTerminalApp {
       observerButton.title = checks.observerEnabled
         ? 'หยุดเฉพาะช่องอ่านข้อมูล XM Demo; ไม่มีผลต่อบัญชีหรือ MT5'
         : 'เชื่อมผ่าน MT5 ที่ล็อกอินอยู่แล้ว โดยไม่ใช้หรือเก็บรหัสผ่าน XM';
+    }
+    const preflightButton = document.getElementById('btnMT5DemoPreflight');
+    if (preflightButton) {
+      preflightButton.disabled = readiness.readyForDemoOrderCertification !== true;
+      preflightButton.title = readiness.readyForDemoOrderCertification
+        ? 'ตรวจขนาดล็อต, Margin, SL/TP และกฎของ XM เท่านั้น — ไม่ส่งคำสั่ง'
+        : 'ต้องรอให้ XM Demo observer ผ่านการตรวจต่อเนื่องก่อน';
     }
     const cockpitBadge = document.querySelector('#liveCockpitModal .cockpit-badge');
     if (cockpitBadge) {

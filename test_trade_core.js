@@ -73,6 +73,13 @@ import {
   setVerifiedPaperBotEnabled
 } from './js/core/trading/verifiedPaperBot.js';
 import { fetchHistoricalExchangeCandles, fetchRealExchangeCandles, getMarketDataDisclosure, hasVerifiedMarketDataAdapter } from './js/services/trading/binanceMarketData.js';
+import {
+  XM_MARKET_PACKET_SOURCE,
+  calculateXMConservativeRiskSize,
+  hasXMMarketAdapter,
+  validateXMMarketSnapshot
+} from './js/core/trading/xmMarketDataGateway.js';
+import { fetchXMMarketCandles, getXMMarketDataDisclosure } from './js/services/trading/xmMT5MarketData.js';
 import { AITradingEngine, DEFAULT_STRATEGY_WEIGHTS, calculateDynamicSpread as calculateLegacySpread, generateAISignal, TRADING_ASSETS as LEGACY_ASSET_EXPORT } from './js/aiTradingEngine.js';
 import { resolveRuntimeCapabilities } from './js/runtimeConfig.js';
 
@@ -115,7 +122,9 @@ assert(MARKET_TYPES.BINANCE === 'binance' && MARKET_TYPES.XM === 'xm', 'Market c
 assert(TRADING_ASSETS.every(asset => asset.executionMode === 'PAPER_ONLY'), 'Every catalog asset is explicitly Paper-only');
 assert(LEGACY_ASSET_EXPORT === TRADING_ASSETS, 'Legacy facade and new core share one immutable asset catalog');
 assert(findTradingAsset('CYBER/USDT')?.dataMode === 'SIMULATED_ONLY', 'Fictional assets are marked simulated-only');
-assert(getMarketDataDisclosure('XAU/USD').includes('PROXY') && getMarketDataDisclosure('XAU/USD').includes('NOT XAU/USD SPOT'), 'Gold adapter discloses the PAXG proxy');
+assert(!hasVerifiedMarketDataAdapter('XAU/USD') && hasXMMarketAdapter('XAU/USD')
+  && getXMMarketDataDisclosure('XAU/USD').includes('GOLD'), 'Gold uses the exact approved XM broker symbol instead of a token proxy');
+assert(findTradingAsset('XAU/USD')?.dataMode === 'XM_MT5_DEMO_OR_SIMULATED', 'XM catalog instruments disclose their Demo terminal data mode');
 
 const deterministicSpread = calculateCoreSpread(findTradingAsset('BTC/USDT'), 100, null, null, () => 0.5);
 assert(deterministicSpread.source === 'SIMULATED_SPREAD_MODEL' && deterministicSpread.bidPrice < deterministicSpread.askPrice, 'Spread model is labeled and produces valid bid/ask ordering');
@@ -134,6 +143,46 @@ assert(await fetchRealExchangeCandles('EUR/USD', '5m', 80, { fetchImpl: async ()
 
 const packetObservedAt = 1760000000000;
 const packetCandles = makeMarketPacketCandles(packetObservedAt);
+const xmContractFixture = {
+  digits: 2, point: 0.01, tickSize: 0.01, tickValueProfit: 1, tickValueLoss: 1,
+  contractSize: 100, volumeMin: 0.01, volumeMax: 50, volumeStep: 0.01,
+  stopsLevel: 0, freezeLevel: 0, tradeMode: 'FULL', executionMode: 2,
+  fillingMode: 2, orderMode: 127, currencyBase: 'USD', currencyProfit: 'USD', currencyMargin: 'USD'
+};
+const xmClosedBarsFixture = packetCandles.slice(0, -1).map(candle => ({ ...candle, spreadPoints: 22, closed: true }));
+const xmSnapshotFixture = {
+  schemaVersion: 'CYBERDECK_XM_MARKET_SNAPSHOT_V1',
+  source: XM_MARKET_PACKET_SOURCE,
+  mode: 'DEMO_MARKET_DATA',
+  capturedAt: new Date(packetObservedAt).toISOString(),
+  status: 'VERIFIED_CLOSED_BARS',
+  assetId: 'XAU/USD', brokerSymbol: 'GOLD', timeframe: '5m', timeframeSeconds: 300,
+  formingBarExcluded: true,
+  account: { loginSuffix: '1234', server: 'XMGlobal-MT5 9', company: 'XM Global Limited', tradeMode: 'DEMO' },
+  quote: { bid: 100, ask: 100.02, timeMs: packetObservedAt - 1000 },
+  contract: xmContractFixture,
+  closedBars: xmClosedBarsFixture,
+  authority: { paperDecisionInfluence: true, demoExecutionInfluence: false, liveEligible: false }
+};
+const validatedXMSnapshot = validateXMMarketSnapshot(xmSnapshotFixture, {
+  expectedAssetId: 'XAU/USD', expectedTimeframe: '5m', transportAuthenticated: true, now: packetObservedAt
+});
+assert(validatedXMSnapshot.accepted && validatedXMSnapshot.snapshot.closedBars.length === 60
+  && validatedXMSnapshot.snapshot.formingBarExcluded, 'XM gateway accepts only authenticated exact-symbol closed bars from a verified Demo account');
+assert(validateXMMarketSnapshot({ ...xmSnapshotFixture, brokerSymbol: 'GOLD#' }, {
+  expectedAssetId: 'XAU/USD', expectedTimeframe: '5m', transportAuthenticated: true, now: packetObservedAt
+}).reason === 'UNAPPROVED_MARKET_MAPPING', 'XM gateway rejects broker-symbol substitution outside the exact allowlist');
+const xmFetchFixture = await fetchXMMarketCandles('XAU/USD', '5m', 80, {
+  now: packetObservedAt,
+  gateway: { getMT5DemoMarketSnapshot: async () => ({ success: true, transportAuthenticated: true, packet: xmSnapshotFixture }) }
+});
+assert(xmFetchFixture?.source === XM_MARKET_PACKET_SOURCE && xmFetchFixture?.brokerMode === 'DEMO'
+  && xmFetchFixture?.candles.length === 60, 'XM service preserves authenticated contract metadata alongside closed bars');
+const xmRiskSize = calculateXMConservativeRiskSize({
+  contract: xmContractFixture, entryPrice: 4600, stopPrice: 4595, equity: 10000, riskPercent: 0.5
+});
+assert(xmRiskSize.success && xmRiskSize.volume === 0.1 && xmRiskSize.estimatedStopLoss === 50
+  && xmRiskSize.preflightRequired && xmRiskSize.executionEligible === false, 'XM risk sizing floors volume to the broker step and still requires broker preflight');
 const verifiedPacket = createMarketPacket({
   source: MARKET_PACKET_SOURCES.BINANCE_KLINES_REST,
   adapter: 'BINANCE KLINES',
@@ -148,6 +197,25 @@ const verifiedPacket = createMarketPacket({
 assert(verifiedPacket.decision.eligible && verifiedPacket.decisionCandles.length === 60 && verifiedPacket.formingCandles.length === 1, 'MarketPacket admits only verified closed bars to the decision dataset');
 assert(Object.isFrozen(verifiedPacket) && Object.isFrozen(verifiedPacket.candles) && Object.isFrozen(verifiedPacket.candles[0]), 'MarketPacket and normalized candles are immutable');
 assert(evaluateMarketPacketDecisionEligibility(verifiedPacket, { now: packetObservedAt + 700000 }).eligible === false, 'MarketPacket rejects stale snapshots at decision time');
+const xmMarketPacket = createMarketPacket({
+  source: MARKET_PACKET_SOURCES.XM_MT5_DEMO_BARS,
+  adapter: 'XM MT5 DEMO GOLD — CLOSED BARS',
+  sequence: 8,
+  requestId: 'XM_MKT_TEST_8',
+  symbol: 'XAU/USD',
+  timeframe: '5m',
+  timeframeSeconds: 300,
+  observedAt: packetObservedAt,
+  candles: xmClosedBarsFixture,
+  brokerSymbol: 'GOLD',
+  brokerMode: 'DEMO',
+  brokerQuote: xmSnapshotFixture.quote,
+  contract: xmContractFixture
+});
+assert(xmMarketPacket.decision.eligible && xmMarketPacket.provenance.brokerMode === 'DEMO'
+  && xmMarketPacket.brokerContract.contractSize === 100, 'Verified XM closed bars can influence Paper decisions while retaining the real broker contract');
+assert(!evaluateMarketPacketDecisionEligibility(xmMarketPacket, { now: packetObservedAt + 121000 }).eligible
+  && evaluateMarketPacketDecisionEligibility(xmMarketPacket, { now: packetObservedAt + 121000 }).reasons.includes('BROKER_MARKET_NOT_FRESH'), 'XM market decisions fail closed when the broker quote stops updating');
 
 const falselyClaimedClosedCandles = packetCandles.map((candle, index) => index === packetCandles.length - 1 ? { ...candle, barClosed: true } : candle);
 const falselyClaimedClosedPacket = createMarketPacket({
@@ -444,10 +512,67 @@ await overlapPending;
 let unsupportedFetchCalls = 0;
 const unsupportedPipelineEngine = new AITradingEngine({ marketDataFetch: async () => { unsupportedFetchCalls += 1; return pipelineCandles; } });
 unsupportedPipelineEngine.requestRender = () => {};
-unsupportedPipelineEngine.activeAsset = findTradingAsset('EUR/USD');
+unsupportedPipelineEngine.activeAsset = findTradingAsset('NVDA/USD');
 const unsupportedLoad = await unsupportedPipelineEngine.loadCandles();
 assert(!unsupportedLoad.success && unsupportedFetchCalls === 0 && unsupportedPipelineEngine.marketPacket.provenance.simulation === true, 'Assets without a verified adapter enter Simulation Lab without making a misleading exchange request');
 assert(unsupportedPipelineEngine.marketDataHealth.status === MARKET_DATA_HEALTH_STATUS.SIMULATION && unsupportedPipelineEngine.marketDataHealth.nextRefreshAtMs === null, 'Simulation-only source health is explicit and does not schedule futile retries');
+
+const xmPipelineNow = Date.now();
+const xmPipelineCandles = makeMarketPacketCandles(xmPipelineNow).slice(0, -1).map(candle => ({ ...candle, spreadPoints: 20 }));
+const xmPipelineEngine = new AITradingEngine({
+  marketDataFetch: async () => ({
+    candles: xmPipelineCandles,
+    source: MARKET_PACKET_SOURCES.XM_MT5_DEMO_BARS,
+    adapter: 'XM MT5 DEMO GOLD — CLOSED BARS',
+    brokerSymbol: 'GOLD', brokerMode: 'DEMO', contract: xmContractFixture,
+    quote: { bid: 100, ask: 100.02, timeMs: xmPipelineNow - 1000 }
+  })
+});
+xmPipelineEngine.requestRender = () => {};
+xmPipelineEngine.activeAsset = findTradingAsset('XAU/USD');
+const xmPipelineLoad = await xmPipelineEngine.loadCandles();
+assert(xmPipelineLoad.success && xmPipelineEngine.marketPacket.source === MARKET_PACKET_SOURCES.XM_MT5_DEMO_BARS
+  && xmPipelineEngine.marketPacket.provenance.brokerSymbol === 'GOLD', 'Trade pipeline adopts exact-symbol XM Demo bars only with contract and fresh quote evidence');
+let capturedXMPreflightRequest = null;
+globalThis.window = {
+  cyberSystemAPI: {
+    runMT5DemoOrderPreflight: async request => {
+      capturedXMPreflightRequest = request;
+      return {
+        success: true,
+        preflight: {
+          schemaVersion: 'CYBERDECK_XM_DEMO_PREFLIGHT_V1', mode: 'DEMO_PREFLIGHT',
+          executionAttempted: false, liveEligible: false, preflightApproved: true,
+          assetId: 'XAU/USD', brokerSymbol: 'GOLD', side: 'BUY', volume: request.volume,
+          estimatedStopLoss: 49.98, estimatedMargin: 4.5, reason: 'BROKER_PREFLIGHT_APPROVED'
+        }
+      };
+    }
+  }
+};
+xmPipelineEngine.mt5DemoReadiness = { readyForDemoOrderCertification: true };
+xmPipelineEngine.mt5Status = { account: { tradeMode: 'DEMO', equity: 10000 } };
+xmPipelineEngine.signal = { action: 'BUY', sl: 99, tp1: 102 };
+const xmSignalPreflight = await xmPipelineEngine.runCurrentXMOrderPreflight({ now: xmPipelineNow, riskPercent: 0.5 });
+assert(xmSignalPreflight.success && xmSignalPreflight.executionAttempted === false
+  && capturedXMPreflightRequest?.volume <= 0.5 && capturedXMPreflightRequest?.side === 'BUY', 'Current XM signal reaches broker preflight with capped risk and still sends no order');
+delete globalThis.window;
+const staleXMNow = Date.now();
+const staleXMEngine = new AITradingEngine({
+  marketDataFetch: async () => ({
+    candles: makeMarketPacketCandles(staleXMNow).slice(0, -1),
+    source: MARKET_PACKET_SOURCES.XM_MT5_DEMO_BARS,
+    adapter: 'XM MT5 DEMO GOLD — CLOSED BARS',
+    brokerSymbol: 'GOLD', brokerMode: 'DEMO', contract: xmContractFixture,
+    quote: { bid: 100, ask: 100.02, timeMs: staleXMNow - 180000 }
+  })
+});
+staleXMEngine.requestRender = () => {};
+staleXMEngine.activeAsset = findTradingAsset('XAU/USD');
+const staleXMLoad = await staleXMEngine.loadCandles();
+assert(staleXMLoad.success && staleXMEngine.marketPacket.provenance.verified
+  && !staleXMEngine.getMarketDecisionState(staleXMNow).eligible
+  && staleXMEngine.getMarketDecisionState(staleXMNow).reasons.includes('BROKER_MARKET_NOT_FRESH'), 'Closed XM history stays visible while a stale broker quote blocks every Paper decision instead of showing a fake chart');
 
 let resolveSupersededFetch;
 const supersededEngine = new AITradingEngine({ marketDataFetch: () => new Promise(resolve => { resolveSupersededFetch = resolve; }) });

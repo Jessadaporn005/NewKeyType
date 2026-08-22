@@ -599,13 +599,13 @@ async function runTests() {
   assert(xmAssets.length >= 4, `XM Global catalog contains ${xmAssets.length} assets (XAU/USD Gold, EUR/USD, GBP/USD, USOIL)`);
 
   const goldAsset = TRADING_ASSETS.find(a => a.id === 'XAU/USD');
-  assert(goldAsset && goldAsset.lotSize === 100 && goldAsset.pipValue === 10, 'XAU/USD Gold configured with standard XM 100oz Lot and $10 Pip value');
+  assert(goldAsset && goldAsset.lotSize === 100 && goldAsset.minTick === 0.01 && goldAsset.pipValue === 1, 'XAU/USD Gold catalog matches the observed XM 100oz contract and $1 minimum-tick value');
 
   await tradingEngine.setMarket('xm');
   assert(tradingEngine.activeMarket === 'xm' && tradingEngine.activeAsset.id === 'XAU/USD', 'Switched trading market to XM Global and activated Gold (XAU/USD)');
 
   await tradingEngine.setAsset('EUR/USD');
-  assert(tradingEngine.activeAsset.id === 'EUR/USD' && tradingEngine.activeAsset.digits === 4, 'Switched to EUR/USD with 4-decimal precision');
+  assert(tradingEngine.activeAsset.id === 'EUR/USD' && tradingEngine.activeAsset.digits === 5, 'Switched to EUR/USD with observed XM 5-decimal precision');
 
   // =========================================================================
   // SECTION 30: INFINITE KNOWLEDGE MATRIX & ADAPTIVE EXPERIENCE REPLAY

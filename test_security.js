@@ -11,6 +11,7 @@ const wifi = read('./js/cyberWifi.js');
 const toast = read('./js/toastManager.js');
 const liveExecutor = read('./scripts/mt5_live_executor.py');
 const mt5Observer = read('./scripts/mt5_silent_bridge.py');
+const mt5Preflight = read('./scripts/mt5_demo_preflight.py');
 const tradingEngine = read('./js/aiTradingEngine.js');
 const intel = read('./js/cyberIntelFeed.js');
 const hologram = read('./js/hologramAssistant.js');
@@ -42,7 +43,8 @@ assert(main.includes("CYBERDECK_HOST_MUTATIONS === '1'"), 'Host mutations are op
 assert(main.includes('canonicalizePathWithExistingParent') && main.includes('realpathSync.native'), 'File roots are checked through canonical paths to block junction traversal');
 assert(main.includes('canonicalFilePath') && main.includes('canonicalStaticRoot'), 'Static server rejects symlink traversal outside the app root');
 assert(main.includes("handleTrusted('cyber:fs-read-data-url'"), 'Media preview uses a constrained IPC data channel instead of file URLs');
-assert(main.includes("handleTrusted('cyber:mt5-demo-snapshot'") && preload.includes('getMT5DemoSnapshot'), 'MT5 Demo snapshots cross the sender-validated preload bridge');
+assert(main.includes("handleTrusted('cyber:mt5-demo-snapshot'") && preload.includes('getMT5DemoSnapshot')
+  && main.includes("handleTrusted('cyber:mt5-demo-market-snapshot'") && preload.includes('getMT5DemoMarketSnapshot'), 'MT5 Demo telemetry and market snapshots cross the sender-validated preload bridge');
 assert(!main.includes('!app.isPackaged') && main.includes("handleTrusted('cyber:mt5-demo-observer-control'")
   && main.includes("crypto.randomBytes(32).toString('hex')") && main.includes('createMT5DemoRequestAuth')
   && preload.includes('setMT5DemoObserverEnabled') && !preload.includes('CYBERDECK_MT5_DEMO_TOKEN')
@@ -51,18 +53,26 @@ assert(main.includes('hostname: OLLAMA_HOST') && main.includes("OLLAMA_HOST = '1
   && preload.includes('runLocalAIReader') && !main.includes('api.openai.com'), 'Local AI Reader stays on loopback and exposes no paid cloud/API-key route');
 const mt5TestToken = '0123456789abcdef0123456789abcdef';
 const mt5RequestAuth = createMT5DemoRequestAuth(mt5TestToken, { timestamp: 1787200000000, nonce: '00112233445566778899aabbccddeeff' });
+const mt5MarketPath = '/api/mt5/demo/market?asset=XAU%2FUSD&timeframe=5m&limit=80';
+const mt5MarketAuth = createMT5DemoRequestAuth(mt5TestToken, { requestPath: mt5MarketPath, timestamp: 1787200000000, nonce: '00112233445566778899aabbccddeeff' });
 const mt5ResponseBody = Buffer.from('{"ok":true}');
 const mt5ResponseSignature = createMT5DemoResponseSignature(mt5TestToken, mt5RequestAuth.nonce, mt5ResponseBody);
 assert(mt5RequestAuth.authorization.startsWith('CyberDeck-HMAC ') && !mt5RequestAuth.authorization.includes(mt5TestToken), 'MT5 request authentication does not disclose its shared secret');
 assert(mt5RequestAuth.signature === '0971ec641a11e9652880eb5032b438c9f4097eb85f6c2c8424751f3569ebdb2d', 'MT5 request HMAC matches the cross-language protocol vector');
+assert(mt5MarketAuth.signature === '70bc27ae912e84272ae306b0cf71af5e2510ab009d7c4ab37211f1798045f14f', 'MT5 market HMAC binds the exact approved path and query');
 assert(verifyMT5DemoResponseSignature(mt5TestToken, mt5RequestAuth.nonce, mt5ResponseBody, mt5ResponseSignature)
   && !verifyMT5DemoResponseSignature(mt5TestToken, mt5RequestAuth.nonce, Buffer.from('{"ok":false}'), mt5ResponseSignature), 'MT5 response authentication detects body tampering');
 assert(mt5CaptureScript.includes('verifyMT5DemoResponseSignature')
   && !mt5CaptureScript.includes('Bearer ')
   && !mt5CaptureScript.includes('order_send'), 'MT5 Demo trace capture verifies HMAC and remains read-only');
 assert(mt5Observer.includes('READ_ONLY_DEMO_OBSERVER') && mt5Observer.includes('EXPECTED_COMPANY')
-  && mt5Observer.includes('TERMINAL_PATH') && !mt5Observer.includes('order_send(')
-  && !mt5Observer.includes('CYBERDECK_MT5_PASSWORD'), 'Packaged MT5 observer is bound to the selected broker terminal and contains no password or order route');
+   && mt5Observer.includes('TERMINAL_PATH') && !mt5Observer.includes('order_send(')
+   && !mt5Observer.includes('CYBERDECK_MT5_PASSWORD'), 'Packaged MT5 observer is bound to the selected broker terminal and contains no password or order route');
+assert(mt5Observer.includes('copy_rates_from_pos(broker_symbol, timeframe_value, 1, limit)')
+  && mt5Observer.includes('APPROVED_MARKETS') && mt5Observer.includes('"loginSuffix"'), 'XM market adapter excludes forming bar zero, uses an exact allowlist, and exposes only an account suffix');
+assert(mt5Preflight.includes('order_check(') && mt5Preflight.includes('order_calc_profit(')
+  && !mt5Preflight.includes('order_send(') && mt5Preflight.includes('MAX_VOLUME = 0.5')
+  && preload.includes('runMT5DemoOrderPreflight'), 'Demo preflight is broker-calculated, volume-capped, sender-validated, and contains no execution primitive');
 assert(!main.includes("connect-src 'self' https: http://127.0.0.1:5055") && !main.includes('http://127.0.0.1:5056'), 'Renderer CSP cannot call legacy broker localhost ports directly');
 assert(liveExecutor.includes('MT5 LIVE EXECUTOR DISABLED') && !liveExecutor.includes('order_send('), 'Legacy unauthenticated MT5 live executor is non-operational');
 assert(!tradingEngine.includes('127.0.0.1:5056') && !tradingEngine.includes('/api/live/'), 'Renderer has no direct legacy live-broker network route');

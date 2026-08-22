@@ -18,11 +18,19 @@ const MT5_DEMO_EXTERNAL_GATEWAY_ENABLED = process.env.CYBERDECK_MT5_DEMO_ENABLED
   && MT5_DEMO_EXTERNAL_ACCESS_TOKEN.length >= 32;
 let MT5_DEMO_ACCESS_TOKEN = MT5_DEMO_EXTERNAL_ACCESS_TOKEN;
 let MT5_DEMO_GATEWAY_ENABLED = MT5_DEMO_EXTERNAL_GATEWAY_ENABLED;
-const MT5_DEMO_OBSERVER_SCRIPT_SHA256 = '7390ec9d9cdb0312a884ef90e5d71ca730e62d5898f0b6d8e00fdbca1f62304d';
+const MT5_DEMO_OBSERVER_SCRIPT_SHA256 = '73e5b0eae10f08210ff548af61f6c54cc922979a1af779d398f928232d3cd649';
+const MT5_DEMO_PREFLIGHT_SCRIPT_SHA256 = 'b66a5d2c3ae436f9c7a0f52513d3217f77cacdedb819151f66fc84a46e241bec';
 const MT5_DEMO_OBSERVER_PORT = 5055;
 const MT5_DEMO_EXPECTED_COMPANY = 'XM Global Limited';
 const MT5_DEMO_EXPECTED_SERVER_PREFIX = 'XMGlobal-';
 const MT5_DEMO_SYMBOLS = Object.freeze(['GOLD', 'XAUUSD', 'GOLD#']);
+const MT5_DEMO_MARKET_MAP = Object.freeze({
+  'XAU/USD': 'GOLD',
+  'EUR/USD': 'EURUSD',
+  'GBP/USD': 'GBPUSD',
+  USOIL: 'OILCash'
+});
+const MT5_DEMO_MARKET_TIMEFRAMES = Object.freeze(['1m', '5m', '15m', '1h', '1D']);
 const OLLAMA_HOST = '127.0.0.1';
 const OLLAMA_PORT = 11434;
 const OLLAMA_CONFIGURED_MODEL = String(process.env.CYBERDECK_OLLAMA_MODEL || '').trim();
@@ -45,6 +53,8 @@ let mt5TelemetryRecords = [];
 let mt5TelemetryLastSequence = 0;
 let mt5TelemetryLastSessionId = null;
 let mt5TelemetryConsecutiveErrors = 0;
+let mt5DemoPreflightInFlight = false;
+let mt5DemoPreflightLastAt = 0;
 let mt5TelemetryCertification = Object.freeze({
   certified: false,
   packetCount: 0,
@@ -178,6 +188,12 @@ function getMT5ObserverScriptPath() {
     : path.join(__dirname, 'scripts', 'mt5_silent_bridge.py');
 }
 
+function getMT5PreflightScriptPath() {
+  return app.isPackaged
+    ? path.join(process.resourcesPath, 'mt5-observer', 'mt5_demo_preflight.py')
+    : path.join(__dirname, 'scripts', 'mt5_demo_preflight.py');
+}
+
 function verifyMT5ObserverScriptIntegrity() {
   const scriptPath = getMT5ObserverScriptPath();
   if (!fs.existsSync(scriptPath)) {
@@ -191,6 +207,17 @@ function verifyMT5ObserverScriptIntegrity() {
     mt5ObserverScriptIntegrityVerified = false;
   }
   return mt5ObserverScriptIntegrityVerified;
+}
+
+function verifyMT5PreflightScriptIntegrity() {
+  const scriptPath = getMT5PreflightScriptPath();
+  if (!fs.existsSync(scriptPath)) return false;
+  try {
+    const scriptHash = crypto.createHash('sha256').update(fs.readFileSync(scriptPath)).digest('hex');
+    return scriptHash === MT5_DEMO_PREFLIGHT_SCRIPT_SHA256;
+  } catch (error) {
+    return false;
+  }
 }
 
 function observerProcessRunning() {
@@ -268,6 +295,73 @@ function buildObserverEnvironment(token, terminalPath) {
     CYBERDECK_MT5_EXPECTED_SERVER_PREFIX: MT5_DEMO_EXPECTED_SERVER_PREFIX,
     CYBERDECK_MT5_DEMO_SYMBOLS: MT5_DEMO_SYMBOLS.join(',')
   };
+}
+
+function buildMT5PreflightEnvironment(terminalPath) {
+  const allowedEnvironmentKeys = [
+    'SystemRoot', 'WINDIR', 'PATH', 'PATHEXT', 'TEMP', 'TMP',
+    'USERPROFILE', 'APPDATA', 'LOCALAPPDATA'
+  ];
+  const environment = {};
+  for (const key of allowedEnvironmentKeys) {
+    if (typeof process.env[key] === 'string') environment[key] = process.env[key];
+  }
+  return {
+    ...environment,
+    PYTHONUTF8: '1',
+    CYBERDECK_MT5_TERMINAL_PATH: terminalPath,
+    CYBERDECK_MT5_EXPECTED_COMPANY: MT5_DEMO_EXPECTED_COMPANY,
+    CYBERDECK_MT5_EXPECTED_SERVER_PREFIX: MT5_DEMO_EXPECTED_SERVER_PREFIX
+  };
+}
+
+function runMT5DemoPreflight(payload, terminalPath) {
+  return new Promise((resolve, reject) => {
+    const scriptPath = getMT5PreflightScriptPath();
+    const child = spawn(resolveMT5PythonExecutable(), [scriptPath], {
+      cwd: path.dirname(scriptPath),
+      env: buildMT5PreflightEnvironment(terminalPath),
+      windowsHide: true,
+      shell: false,
+      stdio: ['pipe', 'pipe', 'pipe']
+    });
+    let settled = false;
+    let stdout = Buffer.alloc(0);
+    let stderr = Buffer.alloc(0);
+    const finish = (error, result = null) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      if (error) reject(error);
+      else resolve(result);
+    };
+    const timeout = setTimeout(() => {
+      child.kill();
+      finish(new Error('MT5_DEMO_PREFLIGHT_TIMEOUT'));
+    }, 7000);
+    child.stdout?.on('data', chunk => {
+      stdout = Buffer.concat([stdout, chunk]);
+      if (stdout.length > 64 * 1024) {
+        child.kill();
+        finish(new Error('MT5_DEMO_PREFLIGHT_RESPONSE_TOO_LARGE'));
+      }
+    });
+    child.stderr?.on('data', chunk => {
+      if (stderr.length <= 8 * 1024) stderr = Buffer.concat([stderr, chunk]).subarray(0, 8 * 1024);
+    });
+    child.once('error', error => finish(error));
+    child.once('close', () => {
+      let result = null;
+      try {
+        result = JSON.parse(stdout.toString('utf8').trim());
+      } catch (error) {
+        finish(new Error(sanitizeObserverError(stderr.toString('utf8'), 'MT5_DEMO_PREFLIGHT_INVALID_RESPONSE')));
+        return;
+      }
+      finish(null, result);
+    });
+    child.stdin.end(JSON.stringify(payload), 'utf8');
+  });
 }
 
 async function pollMT5TelemetryCertification() {
@@ -492,9 +586,8 @@ function shutdownMT5ObserverManager() {
   stopManagedMT5Observer('APPLICATION_EXITING');
 }
 
-function fetchAuthenticatedMT5DemoSnapshot() {
+function fetchAuthenticatedMT5DemoRequest(requestPath, { timeoutMs = 1500 } = {}) {
   return new Promise((resolve, reject) => {
-    const requestPath = '/api/mt5/demo/stream';
     const requestAuth = createMT5DemoRequestAuth(MT5_DEMO_ACCESS_TOKEN, { requestPath });
     const request = http.request({
       hostname: '127.0.0.1',
@@ -507,7 +600,7 @@ function fetchAuthenticatedMT5DemoSnapshot() {
         'X-CyberDeck-Nonce': requestAuth.nonce,
         Accept: 'application/json'
       },
-      timeout: 1500
+      timeout: timeoutMs
     }, response => {
       const chunks = [];
       let totalBytes = 0;
@@ -551,6 +644,10 @@ function fetchAuthenticatedMT5DemoSnapshot() {
   });
 }
 
+function fetchAuthenticatedMT5DemoSnapshot() {
+  return fetchAuthenticatedMT5DemoRequest('/api/mt5/demo/stream');
+}
+
 handleTrusted('cyber:mt5-demo-snapshot', async () => {
   if (!MT5_DEMO_GATEWAY_ENABLED) {
     return { success: false, error: 'MT5_DEMO_GATEWAY_DISABLED' };
@@ -560,6 +657,75 @@ handleTrusted('cyber:mt5-demo-snapshot', async () => {
     return { success: true, transportAuthenticated: true, packet };
   } catch (error) {
     return { success: false, error: error?.message || 'MT5_DEMO_GATEWAY_UNAVAILABLE' };
+  }
+});
+
+handleTrusted('cyber:mt5-demo-market-snapshot', async (event, assetId, timeframe, requestedLimit) => {
+  if (!MT5_DEMO_GATEWAY_ENABLED) return { success: false, error: 'MT5_DEMO_GATEWAY_DISABLED' };
+  if (typeof assetId !== 'string' || !Object.prototype.hasOwnProperty.call(MT5_DEMO_MARKET_MAP, assetId)
+    || typeof timeframe !== 'string' || !MT5_DEMO_MARKET_TIMEFRAMES.includes(timeframe)) {
+    return { success: false, error: 'UNAPPROVED_MT5_MARKET_REQUEST' };
+  }
+  const limit = Number.parseInt(requestedLimit, 10);
+  if (!Number.isSafeInteger(limit) || limit < 20 || limit > 5000) {
+    return { success: false, error: 'INVALID_MT5_MARKET_LIMIT' };
+  }
+  const query = new URLSearchParams({ asset: assetId, timeframe, limit: String(limit) });
+  const requestPath = `/api/mt5/demo/market?${query.toString()}`;
+  try {
+    const packet = await fetchAuthenticatedMT5DemoRequest(requestPath, { timeoutMs: 5000 });
+    return { success: true, transportAuthenticated: true, packet };
+  } catch (error) {
+    return { success: false, error: error?.message || 'MT5_DEMO_MARKET_UNAVAILABLE' };
+  }
+});
+
+handleTrusted('cyber:mt5-demo-order-preflight', async (event, rawRequest) => {
+  if (!MT5_DEMO_GATEWAY_ENABLED || mt5TelemetryCertification.certified !== true) {
+    return { success: false, error: 'CERTIFIED_MT5_DEMO_SESSION_REQUIRED' };
+  }
+  if (!rawRequest || typeof rawRequest !== 'object' || Array.isArray(rawRequest)) {
+    return { success: false, error: 'INVALID_MT5_DEMO_PREFLIGHT_REQUEST' };
+  }
+  const assetId = typeof rawRequest.assetId === 'string' ? rawRequest.assetId : '';
+  const side = rawRequest.side === 'BUY' || rawRequest.side === 'SELL' ? rawRequest.side : null;
+  const volume = Number(rawRequest.volume);
+  const stopPrice = Number(rawRequest.stopPrice);
+  const targetPrice = Number(rawRequest.targetPrice);
+  if (!Object.prototype.hasOwnProperty.call(MT5_DEMO_MARKET_MAP, assetId) || !side
+    || !Number.isFinite(volume) || volume <= 0 || volume > 0.5
+    || !Number.isFinite(stopPrice) || stopPrice <= 0 || stopPrice > 1e12
+    || !Number.isFinite(targetPrice) || targetPrice <= 0 || targetPrice > 1e12) {
+    return { success: false, error: 'INVALID_MT5_DEMO_PREFLIGHT_FIELDS' };
+  }
+  if (mt5DemoPreflightInFlight) return { success: false, error: 'MT5_DEMO_PREFLIGHT_ALREADY_RUNNING' };
+  if (Date.now() - mt5DemoPreflightLastAt < 1000) return { success: false, error: 'MT5_DEMO_PREFLIGHT_RATE_LIMITED' };
+  const runningTerminalPaths = await inspectRunningMT5TerminalPaths();
+  const terminalPath = findRunningKnownMT5TerminalPath(runningTerminalPaths);
+  if (!terminalPath) return { success: false, error: 'XM_MT5_TERMINAL_NOT_RUNNING' };
+  if (!verifyMT5PreflightScriptIntegrity()) return { success: false, error: 'MT5_DEMO_PREFLIGHT_INTEGRITY_FAILED' };
+
+  mt5DemoPreflightInFlight = true;
+  mt5DemoPreflightLastAt = Date.now();
+  try {
+    const preflight = await runMT5DemoPreflight({ assetId, side, volume, stopPrice, targetPrice }, terminalPath);
+    const contractValid = preflight?.schemaVersion === 'CYBERDECK_XM_DEMO_PREFLIGHT_V1'
+      && preflight?.mode === 'DEMO_PREFLIGHT'
+      && preflight?.executionAttempted === false
+      && preflight?.liveEligible === false
+      && (preflight?.assetId === undefined || preflight.assetId === assetId)
+      && (preflight?.brokerSymbol === undefined || preflight.brokerSymbol === MT5_DEMO_MARKET_MAP[assetId])
+      && (preflight?.side === undefined || preflight.side === side)
+      && (preflight?.volume === undefined || Number(preflight.volume) === volume)
+      && (preflight?.stopPrice === undefined || Number(preflight.stopPrice) === stopPrice)
+      && (preflight?.targetPrice === undefined || Number(preflight.targetPrice) === targetPrice)
+      && (preflight?.account === undefined || preflight.account?.tradeMode === 'DEMO');
+    if (!contractValid) return { success: false, error: 'MT5_DEMO_PREFLIGHT_CONTRACT_MISMATCH' };
+    return { success: true, preflight };
+  } catch (error) {
+    return { success: false, error: sanitizeObserverError(error?.message, 'MT5_DEMO_PREFLIGHT_FAILED') };
+  } finally {
+    mt5DemoPreflightInFlight = false;
   }
 });
 
