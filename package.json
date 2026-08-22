@@ -1,6 +1,6 @@
 {
   "name": "cyberdeck",
-  "version": "4.3.0",
+  "version": "4.3.1",
   "description": "CyberDeck Terminal Native Desktop Application with Hacky Roguelite Mode",
   "type": "module",
   "main": "main.cjs",
@@ -56,6 +56,12 @@
       "css/**/*",
       "js/**/*",
       "lib/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "scripts/mt5_silent_bridge.py",
+        "to": "mt5-observer/mt5_silent_bridge.py"
+      }
     ],
     "win": {
       "icon": "icon.ico",

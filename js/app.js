@@ -835,8 +835,28 @@ class WindowsTerminalApp {
                 : mt5.status === 'DEMO_GATEWAY_DISABLED'
                   ? 'DEMO GATEWAY DISABLED'
                   : 'DISCONNECTED';
-              badgeTxt.textContent = mt5.mt5_connected ? 'MT5: DEMO SHADOW VERIFIED' : `MT5: ${disconnectedLabel}`;
+              badgeTxt.textContent = mt5.mt5_connected ? 'MT5: XM DEMO OBSERVER VERIFIED' : `MT5: ${disconnectedLabel}`;
               badgeTxt.style.color = mt5.mt5_connected ? '#00ff88' : '#ff4466';
+            }
+            const account = mt5?.mt5_connected ? mt5.account : null;
+            const loginEl = document.getElementById('cockpitAccLogin');
+            const balanceEl = document.getElementById('cockpitAccBalance');
+            const pnlEl = document.getElementById('cockpitDailyPnL');
+            if (loginEl) {
+              const suffix = account?.login ? String(account.login).slice(-4) : null;
+              loginEl.textContent = account
+                ? `XM DEMO • ****${suffix} • ${account.server}`
+                : 'UNVERIFIED / DISCONNECTED';
+            }
+            if (balanceEl) {
+              balanceEl.textContent = account
+                ? `EQUITY $${Number(account.equity).toLocaleString('en-US', { minimumFractionDigits: 2 })} / BAL $${Number(account.balance).toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+                : 'UNVERIFIED';
+            }
+            if (pnlEl) {
+              const openProfit = account?.positions?.reduce((sum, position) => sum + Number(position.profit || 0), 0);
+              pnlEl.textContent = Number.isFinite(openProfit) ? `${openProfit >= 0 ? '+' : ''}$${openProfit.toFixed(2)}` : 'UNVERIFIED';
+              pnlEl.style.color = Number.isFinite(openProfit) && openProfit < 0 ? '#ff4466' : '#00ff88';
             }
           };
 
@@ -1555,6 +1575,27 @@ class WindowsTerminalApp {
     const btnCockpitStart = document.getElementById('btnCockpitStart');
     const btnCockpitPause = document.getElementById('btnCockpitPause');
     const btnCockpitKill = document.getElementById('btnCockpitEmergencyKill');
+    const btnMT5ObserverToggle = document.getElementById('btnMT5ObserverToggle');
+
+    if (btnMT5ObserverToggle) {
+      btnMT5ObserverToggle.addEventListener('click', async () => {
+        if (!this.tradingEngine || btnMT5ObserverToggle.disabled) return;
+        const currentlyEnabled = this.tradingEngine.mt5DemoReadiness?.checks?.observerEnabled === true;
+        btnMT5ObserverToggle.disabled = true;
+        btnMT5ObserverToggle.textContent = currentlyEnabled
+          ? 'STOPPING READ-ONLY OBSERVER...'
+          : 'CONNECTING XM DEMO SAFELY...';
+        try {
+          const result = await this.tradingEngine.setMT5DemoObserverEnabled(!currentlyEnabled);
+          if (!result?.success) btnMT5ObserverToggle.title = result?.error || 'MT5 observer control failed closed.';
+        } catch (error) {
+          btnMT5ObserverToggle.title = 'MT5 observer control failed closed.';
+        } finally {
+          btnMT5ObserverToggle.disabled = false;
+          this.updateMT5ReadinessUI(this.tradingEngine.mt5DemoReadiness);
+        }
+      });
+    }
 
     if (btnCockpitStart && !RUNTIME_CAPABILITIES.liveTradingEnabled) {
       btnCockpitStart.disabled = true;
@@ -1835,16 +1876,51 @@ class WindowsTerminalApp {
   updateMT5ReadinessUI(readiness) {
     const element = document.getElementById('cockpitMT5Readiness');
     if (!element || !readiness) return;
-    element.textContent = readiness.status;
-    element.style.color = readiness.readyForDemoOrderCertification ? '#00ff88' : '#ffaa00';
     const checks = readiness.checks || {};
+    const telemetry = readiness.telemetry || {};
+    const statusLabels = {
+      MT5_XDEMO_NOT_INSTALLED: 'XM MT5 NOT INSTALLED',
+      MT5_PYTHON_BRIDGE_NOT_READY: 'LOCAL CONNECTOR NOT READY',
+      MT5_DEMO_OBSERVER_DISABLED: 'XM DEMO OBSERVER OFF',
+      MT5_TERMINAL_NOT_RUNNING: 'OPEN XM MT5 FIRST',
+      MT5_DEMO_OBSERVER_STARTING: 'STARTING READ-ONLY OBSERVER',
+      AUTHENTICATED_DEMO_GATEWAY_NOT_CONFIGURED: 'SECURE LOCAL GATEWAY STARTING',
+      VERIFIED_DEMO_LOGIN_NOT_OBSERVED: 'WAITING FOR VERIFIED DEMO LOGIN',
+      CONTINUOUS_TELEMETRY_CERTIFICATION_REQUIRED: `VERIFYING TELEMETRY ${telemetry.packetCount || 0}/31`,
+      READY_FOR_DEMO_ORDER_CERTIFICATION: 'XM DEMO OBSERVER CERTIFIED'
+    };
+    element.textContent = statusLabels[readiness.status] || readiness.status;
+    element.style.color = readiness.readyForDemoOrderCertification ? '#00ff88' : '#ffaa00';
+    const observerButton = document.getElementById('btnMT5ObserverToggle');
+    if (observerButton && !observerButton.disabled) {
+      observerButton.textContent = checks.observerEnabled
+        ? '⏹ DISCONNECT READ-ONLY OBSERVER'
+        : '🔌 CONNECT XM DEMO OBSERVER';
+      observerButton.style.borderColor = checks.observerEnabled ? '#00ff88' : '#66ccff';
+      observerButton.title = checks.observerEnabled
+        ? 'หยุดเฉพาะช่องอ่านข้อมูล XM Demo; ไม่มีผลต่อบัญชีหรือ MT5'
+        : 'เชื่อมผ่าน MT5 ที่ล็อกอินอยู่แล้ว โดยไม่ใช้หรือเก็บรหัสผ่าน XM';
+    }
+    const cockpitBadge = document.querySelector('#liveCockpitModal .cockpit-badge');
+    if (cockpitBadge) {
+      cockpitBadge.textContent = readiness.readyForDemoOrderCertification
+        ? 'XM DEMO OBSERVER VERIFIED // EXECUTION LOCKED'
+        : 'PAPER-ONLY // DEMO OBSERVER CHECKING';
+    }
+    const accountElement = document.getElementById('cockpitAccLogin');
+    if (accountElement && readiness.account) {
+      accountElement.textContent = `XM DEMO • ****${readiness.account.loginSuffix || '----'} • ${readiness.account.server || 'SERVER VERIFIED'}`;
+    }
     element.title = [
       `Terminal installed: ${checks.terminalInstalled ? 'YES' : 'NO'}`,
       `Terminal running: ${checks.terminalRunning ? 'YES' : 'NO'}`,
-      `Python bridge: ${checks.pythonBridgeDependencyAvailable && checks.bridgeScriptPresent ? 'READY' : 'NOT READY'}`,
+      `Python bridge: ${checks.pythonBridgeDependencyAvailable && checks.bridgeScriptPresent && checks.scriptIntegrityVerified ? 'READY + HASH VERIFIED' : 'NOT READY'}`,
+      `Observer: ${checks.observerEnabled && checks.observerProcessRunning ? 'RUNNING READ-ONLY' : 'OFF / STARTING'}`,
       `Authenticated gateway: ${checks.gatewayEnabled && checks.accessTokenConfigured ? 'READY' : 'NOT CONFIGURED'}`,
       `Demo account observed: ${checks.demoAccountObserved ? 'YES' : 'NO'}`,
-      `30-second telemetry certified: ${checks.telemetryCertified ? 'YES' : 'NO'}`
+      `30-second telemetry certified: ${checks.telemetryCertified ? 'YES' : `NO (${telemetry.packetCount || 0}/31)`}`,
+      `Observer error: ${readiness.observerError || 'NONE'}`,
+      'Authority: READ ONLY / ZERO ORDER EXECUTION'
     ].join(' | ');
   }
 

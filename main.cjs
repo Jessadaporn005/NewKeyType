@@ -7,13 +7,22 @@ const { exec, execFile, spawn } = require('child_process');
 const crypto = require('crypto');
 const dns = require('dns');
 const net = require('net');
+const { pathToFileURL } = require('url');
 const { AtomicJsonStore } = require('./lib/atomicJsonStore.cjs');
 const { createMT5DemoRequestAuth, verifyMT5DemoResponseSignature } = require('./lib/mt5DemoAuth.cjs');
 
 const IS_PACKAGED_SMOKE_TEST = process.argv.includes('--cyberdeck-smoke-test');
-const MT5_DEMO_ACCESS_TOKEN = process.env.CYBERDECK_MT5_DEMO_TOKEN || '';
-const MT5_DEMO_GATEWAY_ENABLED = process.env.CYBERDECK_MT5_DEMO_ENABLED === '1'
-  && MT5_DEMO_ACCESS_TOKEN.length >= 32;
+const IS_MT5_OBSERVER_SMOKE_TEST = process.argv.includes('--cyberdeck-mt5-observer-smoke-test');
+const MT5_DEMO_EXTERNAL_ACCESS_TOKEN = process.env.CYBERDECK_MT5_DEMO_TOKEN || '';
+const MT5_DEMO_EXTERNAL_GATEWAY_ENABLED = process.env.CYBERDECK_MT5_DEMO_ENABLED === '1'
+  && MT5_DEMO_EXTERNAL_ACCESS_TOKEN.length >= 32;
+let MT5_DEMO_ACCESS_TOKEN = MT5_DEMO_EXTERNAL_ACCESS_TOKEN;
+let MT5_DEMO_GATEWAY_ENABLED = MT5_DEMO_EXTERNAL_GATEWAY_ENABLED;
+const MT5_DEMO_OBSERVER_SCRIPT_SHA256 = '7390ec9d9cdb0312a884ef90e5d71ca730e62d5898f0b6d8e00fdbca1f62304d';
+const MT5_DEMO_OBSERVER_PORT = 5055;
+const MT5_DEMO_EXPECTED_COMPANY = 'XM Global Limited';
+const MT5_DEMO_EXPECTED_SERVER_PREFIX = 'XMGlobal-';
+const MT5_DEMO_SYMBOLS = Object.freeze(['GOLD', 'XAUUSD', 'GOLD#']);
 const OLLAMA_HOST = '127.0.0.1';
 const OLLAMA_PORT = 11434;
 const OLLAMA_CONFIGURED_MODEL = String(process.env.CYBERDECK_OLLAMA_MODEL || '').trim();
@@ -21,6 +30,30 @@ const MAX_AI_READER_INPUT_BYTES = 64 * 1024;
 
 const DB_PATH = path.join(app.getPath('userData'), 'cyber_db.json');
 const profileDatabase = new AtomicJsonStore(DB_PATH);
+const MT5_OBSERVER_SETTINGS_PATH = path.join(app.getPath('userData'), 'mt5_demo_observer.json');
+const mt5ObserverSettingsStore = new AtomicJsonStore(MT5_OBSERVER_SETTINGS_PATH, { maxBytes: 64 * 1024 });
+let mt5ObserverSettings = Object.freeze({ enabled: false });
+let mt5ObserverProcess = null;
+let mt5ObserverMonitorInterval = null;
+let mt5TelemetryInterval = null;
+let mt5TelemetryPollInFlight = false;
+let mt5ObserverStartInFlight = false;
+let mt5ObserverLastStartAt = 0;
+let mt5ObserverLastError = null;
+let mt5ObserverScriptIntegrityVerified = false;
+let mt5TelemetryRecords = [];
+let mt5TelemetryLastSequence = 0;
+let mt5TelemetryLastSessionId = null;
+let mt5TelemetryConsecutiveErrors = 0;
+let mt5TelemetryCertification = Object.freeze({
+  certified: false,
+  packetCount: 0,
+  validatedPacketCount: 0,
+  durationMs: 0,
+  maximumObservedGapMs: 0,
+  reasons: Object.freeze(['NOT_STARTED'])
+});
+let mt5CertificationModulePromise = null;
 const HOST_MUTATIONS_ENABLED = process.env.CYBERDECK_HOST_MUTATIONS === '1';
 const FILE_ROOTS = [
   process.cwd(),
@@ -139,13 +172,333 @@ function handleTrusted(channel, handler) {
   });
 }
 
+function getMT5ObserverScriptPath() {
+  return app.isPackaged
+    ? path.join(process.resourcesPath, 'mt5-observer', 'mt5_silent_bridge.py')
+    : path.join(__dirname, 'scripts', 'mt5_silent_bridge.py');
+}
+
+function verifyMT5ObserverScriptIntegrity() {
+  const scriptPath = getMT5ObserverScriptPath();
+  if (!fs.existsSync(scriptPath)) {
+    mt5ObserverScriptIntegrityVerified = false;
+    return false;
+  }
+  try {
+    const scriptHash = crypto.createHash('sha256').update(fs.readFileSync(scriptPath)).digest('hex');
+    mt5ObserverScriptIntegrityVerified = scriptHash === MT5_DEMO_OBSERVER_SCRIPT_SHA256;
+  } catch (error) {
+    mt5ObserverScriptIntegrityVerified = false;
+  }
+  return mt5ObserverScriptIntegrityVerified;
+}
+
+function observerProcessRunning() {
+  return Boolean(mt5ObserverProcess && mt5ObserverProcess.exitCode === null && !mt5ObserverProcess.killed);
+}
+
+function sanitizeObserverError(value, fallback = 'MT5_OBSERVER_UNAVAILABLE') {
+  const text = String(value || '').replace(/[\r\n\0]+/g, ' ').trim().slice(0, 160);
+  return text || fallback;
+}
+
+function resetMT5Telemetry(reason = 'NOT_STARTED') {
+  mt5TelemetryRecords = [];
+  mt5TelemetryLastSequence = 0;
+  mt5TelemetryLastSessionId = null;
+  mt5TelemetryConsecutiveErrors = 0;
+  mt5TelemetryCertification = Object.freeze({
+    certified: false,
+    packetCount: 0,
+    validatedPacketCount: 0,
+    durationMs: 0,
+    maximumObservedGapMs: 0,
+    reasons: Object.freeze([reason])
+  });
+}
+
+function getMT5CertificationModule() {
+  if (!mt5CertificationModulePromise) {
+    const modulePath = pathToFileURL(path.join(__dirname, 'js', 'core', 'trading', 'mt5DemoCertification.js')).href;
+    mt5CertificationModulePromise = import(modulePath);
+  }
+  return mt5CertificationModulePromise;
+}
+
+function isLoopbackPortOccupied(port) {
+  return new Promise(resolve => {
+    const socket = net.createConnection({ host: '127.0.0.1', port });
+    let settled = false;
+    const finish = occupied => {
+      if (settled) return;
+      settled = true;
+      socket.destroy();
+      resolve(occupied);
+    };
+    socket.once('connect', () => finish(true));
+    socket.once('error', error => finish(error?.code !== 'ECONNREFUSED'));
+    socket.setTimeout(750, () => finish(true));
+  });
+}
+
+function resolveMT5PythonExecutable() {
+  const candidates = [
+    'C:\\Python311\\python.exe',
+    'C:\\Python312\\python.exe',
+    'C:\\Python310\\python.exe'
+  ];
+  return candidates.find(candidate => fs.existsSync(candidate)) || 'python.exe';
+}
+
+function buildObserverEnvironment(token, terminalPath) {
+  const allowedEnvironmentKeys = [
+    'SystemRoot', 'WINDIR', 'PATH', 'PATHEXT', 'TEMP', 'TMP',
+    'USERPROFILE', 'APPDATA', 'LOCALAPPDATA'
+  ];
+  const environment = {};
+  for (const key of allowedEnvironmentKeys) {
+    if (typeof process.env[key] === 'string') environment[key] = process.env[key];
+  }
+  return {
+    ...environment,
+    PYTHONUTF8: '1',
+    CYBERDECK_MT5_DEMO_TOKEN: token,
+    CYBERDECK_MT5_TERMINAL_PATH: terminalPath,
+    CYBERDECK_MT5_EXPECTED_COMPANY: MT5_DEMO_EXPECTED_COMPANY,
+    CYBERDECK_MT5_EXPECTED_SERVER_PREFIX: MT5_DEMO_EXPECTED_SERVER_PREFIX,
+    CYBERDECK_MT5_DEMO_SYMBOLS: MT5_DEMO_SYMBOLS.join(',')
+  };
+}
+
+async function pollMT5TelemetryCertification() {
+  if (!MT5_DEMO_GATEWAY_ENABLED || mt5TelemetryPollInFlight) return;
+  mt5TelemetryPollInFlight = true;
+  try {
+    const packet = await fetchAuthenticatedMT5DemoSnapshot();
+    const observedAt = Date.now();
+    const sequence = Number(packet?.sequence);
+    const sessionId = typeof packet?.sessionId === 'string' ? packet.sessionId : null;
+    if (packet?.connected !== true || packet?.mode !== 'DEMO' || packet?.account?.tradeMode !== 'DEMO') {
+      throw new Error(packet?.reason || 'VERIFIED_DEMO_ACCOUNT_REQUIRED');
+    }
+    if (!Number.isSafeInteger(sequence) || sequence < 1 || !sessionId) {
+      throw new Error('INVALID_MT5_TELEMETRY_IDENTITY');
+    }
+    mt5ObserverLastError = null;
+    if (sequence === mt5TelemetryLastSequence && sessionId === mt5TelemetryLastSessionId) {
+      mt5TelemetryConsecutiveErrors = 0;
+      return;
+    }
+    if (mt5TelemetryLastSequence > 0
+      && (sessionId !== mt5TelemetryLastSessionId || sequence !== mt5TelemetryLastSequence + 1)) {
+      resetMT5Telemetry(sessionId !== mt5TelemetryLastSessionId ? 'SESSION_CHANGED' : 'SEQUENCE_GAP');
+    }
+    mt5TelemetryLastSequence = sequence;
+    mt5TelemetryLastSessionId = sessionId;
+    mt5TelemetryConsecutiveErrors = 0;
+    mt5TelemetryRecords.push({ observedAt, transportAuthenticated: true, packet });
+    if (mt5TelemetryRecords.length > 60) mt5TelemetryRecords = mt5TelemetryRecords.slice(-60);
+
+    const firstObservedAt = Number(mt5TelemetryRecords[0]?.observedAt || observedAt);
+    let maximumObservedGapMs = 0;
+    for (let index = 1; index < mt5TelemetryRecords.length; index++) {
+      maximumObservedGapMs = Math.max(
+        maximumObservedGapMs,
+        mt5TelemetryRecords[index].observedAt - mt5TelemetryRecords[index - 1].observedAt
+      );
+    }
+    if (mt5TelemetryRecords.length < 31) {
+      mt5TelemetryCertification = Object.freeze({
+        certified: false,
+        packetCount: mt5TelemetryRecords.length,
+        validatedPacketCount: 0,
+        durationMs: observedAt - firstObservedAt,
+        maximumObservedGapMs,
+        reasons: Object.freeze([`COLLECTING:${mt5TelemetryRecords.length}/31`])
+      });
+      return;
+    }
+
+    const { certifyMT5DemoTelemetrySession } = await getMT5CertificationModule();
+    const certification = certifyMT5DemoTelemetrySession(mt5TelemetryRecords, { expectedMagic: 99001 });
+    mt5TelemetryCertification = certification;
+    if (!certification.certified
+      && !certification.reasons.some(reason => String(reason).startsWith('INSUFFICIENT_DURATION'))) {
+      const latestRecord = mt5TelemetryRecords.at(-1);
+      resetMT5Telemetry(certification.reasons[0] || 'CERTIFICATION_FAILED');
+      mt5TelemetryRecords = latestRecord ? [latestRecord] : [];
+      mt5TelemetryLastSequence = Number(latestRecord?.packet?.sequence || 0);
+      mt5TelemetryLastSessionId = latestRecord?.packet?.sessionId || null;
+    }
+  } catch (error) {
+    mt5TelemetryConsecutiveErrors += 1;
+    mt5ObserverLastError = sanitizeObserverError(error?.message, 'MT5_TELEMETRY_UNAVAILABLE');
+    if (mt5TelemetryConsecutiveErrors >= 3) resetMT5Telemetry(mt5ObserverLastError);
+  } finally {
+    mt5TelemetryPollInFlight = false;
+  }
+}
+
+function startMT5TelemetryMonitor() {
+  if (mt5TelemetryInterval) return;
+  pollMT5TelemetryCertification().catch(() => {});
+  mt5TelemetryInterval = setInterval(() => {
+    pollMT5TelemetryCertification().catch(() => {});
+  }, 500);
+}
+
+function stopMT5TelemetryMonitor(reason = 'OBSERVER_STOPPED') {
+  if (mt5TelemetryInterval) clearInterval(mt5TelemetryInterval);
+  mt5TelemetryInterval = null;
+  mt5TelemetryPollInFlight = false;
+  resetMT5Telemetry(reason);
+}
+
+async function startManagedMT5Observer() {
+  if (MT5_DEMO_EXTERNAL_GATEWAY_ENABLED) {
+    MT5_DEMO_GATEWAY_ENABLED = true;
+    MT5_DEMO_ACCESS_TOKEN = MT5_DEMO_EXTERNAL_ACCESS_TOKEN;
+    startMT5TelemetryMonitor();
+    return true;
+  }
+  if (!mt5ObserverSettings.enabled || observerProcessRunning() || mt5ObserverStartInFlight) {
+    return observerProcessRunning();
+  }
+  if (Date.now() - mt5ObserverLastStartAt < 2500) return false;
+  mt5ObserverStartInFlight = true;
+  mt5ObserverLastStartAt = Date.now();
+  try {
+    if (process.platform !== 'win32') throw new Error('MT5_OBSERVER_WINDOWS_ONLY');
+    const [runningTerminalPaths, pythonReady] = await Promise.all([
+      inspectRunningMT5TerminalPaths(),
+      inspectMT5PythonDependency()
+    ]);
+    if (!pythonReady) throw new Error('METATRADER5_PYTHON_PACKAGE_NOT_INSTALLED');
+    const terminalPath = findRunningKnownMT5TerminalPath(runningTerminalPaths);
+    if (!terminalPath) throw new Error('XM_MT5_TERMINAL_NOT_RUNNING');
+
+    const scriptPath = getMT5ObserverScriptPath();
+    if (!fs.existsSync(scriptPath)) throw new Error('MT5_OBSERVER_SCRIPT_MISSING');
+    if (!verifyMT5ObserverScriptIntegrity()) throw new Error('MT5_OBSERVER_SCRIPT_INTEGRITY_FAILED');
+    if (await isLoopbackPortOccupied(MT5_DEMO_OBSERVER_PORT)) throw new Error('MT5_OBSERVER_PORT_IN_USE');
+
+    const token = crypto.randomBytes(32).toString('hex');
+    const child = spawn(resolveMT5PythonExecutable(), [scriptPath], {
+      cwd: path.dirname(scriptPath),
+      env: buildObserverEnvironment(token, terminalPath),
+      windowsHide: true,
+      shell: false,
+      stdio: ['ignore', 'pipe', 'pipe']
+    });
+    mt5ObserverProcess = child;
+    MT5_DEMO_ACCESS_TOKEN = token;
+    MT5_DEMO_GATEWAY_ENABLED = true;
+    mt5ObserverLastError = null;
+    child.stdout?.on('data', () => {});
+    child.stderr?.on('data', chunk => {
+      mt5ObserverLastError = sanitizeObserverError(chunk.toString('utf8'), 'MT5_OBSERVER_STDERR');
+    });
+    child.once('error', error => {
+      mt5ObserverLastError = sanitizeObserverError(error?.message, 'MT5_OBSERVER_PROCESS_ERROR');
+    });
+    child.once('exit', (code, signal) => {
+      if (mt5ObserverProcess === child) mt5ObserverProcess = null;
+      MT5_DEMO_GATEWAY_ENABLED = MT5_DEMO_EXTERNAL_GATEWAY_ENABLED;
+      MT5_DEMO_ACCESS_TOKEN = MT5_DEMO_EXTERNAL_ACCESS_TOKEN;
+      stopMT5TelemetryMonitor('OBSERVER_PROCESS_EXITED');
+      if (mt5ObserverSettings.enabled) {
+        mt5ObserverLastError ||= `MT5_OBSERVER_EXITED:${code ?? 'NULL'}:${signal || 'NONE'}`;
+      }
+    });
+    startMT5TelemetryMonitor();
+    return true;
+  } catch (error) {
+    mt5ObserverLastError = sanitizeObserverError(error?.message);
+    MT5_DEMO_GATEWAY_ENABLED = MT5_DEMO_EXTERNAL_GATEWAY_ENABLED;
+    MT5_DEMO_ACCESS_TOKEN = MT5_DEMO_EXTERNAL_ACCESS_TOKEN;
+    return false;
+  } finally {
+    mt5ObserverStartInFlight = false;
+  }
+}
+
+function stopManagedMT5Observer(reason = 'OBSERVER_DISABLED') {
+  const child = mt5ObserverProcess;
+  mt5ObserverProcess = null;
+  if (child && child.exitCode === null && !child.killed) {
+    try { child.kill(); } catch (error) {}
+  }
+  MT5_DEMO_GATEWAY_ENABLED = MT5_DEMO_EXTERNAL_GATEWAY_ENABLED;
+  MT5_DEMO_ACCESS_TOKEN = MT5_DEMO_EXTERNAL_ACCESS_TOKEN;
+  mt5ObserverLastError = reason;
+  stopMT5TelemetryMonitor(reason);
+}
+
+async function loadMT5ObserverSettings() {
+  try {
+    const result = await mt5ObserverSettingsStore.read();
+    mt5ObserverSettings = Object.freeze({ enabled: result.data?.enabled === true });
+  } catch (error) {
+    mt5ObserverSettings = Object.freeze({ enabled: false });
+    mt5ObserverLastError = 'MT5_OBSERVER_SETTINGS_RECOVERY_FAILED';
+  }
+  return mt5ObserverSettings;
+}
+
+async function setMT5ObserverEnabled(enabled) {
+  mt5ObserverSettings = Object.freeze({ enabled: enabled === true });
+  await mt5ObserverSettingsStore.write({
+    enabled: mt5ObserverSettings.enabled,
+    updatedAt: new Date().toISOString(),
+    mode: 'DEMO_SHADOW_READ_ONLY'
+  });
+  if (mt5ObserverSettings.enabled) await startManagedMT5Observer();
+  else stopManagedMT5Observer('OBSERVER_DISABLED_BY_USER');
+  return mt5ObserverSettings.enabled;
+}
+
+async function monitorMT5ObserverLifecycle() {
+  if (MT5_DEMO_EXTERNAL_GATEWAY_ENABLED) {
+    startMT5TelemetryMonitor();
+    return;
+  }
+  if (!mt5ObserverSettings.enabled) {
+    if (observerProcessRunning()) stopManagedMT5Observer('OBSERVER_DISABLED_BY_USER');
+    return;
+  }
+  const runningTerminalPaths = await inspectRunningMT5TerminalPaths();
+  const terminalPath = findRunningKnownMT5TerminalPath(runningTerminalPaths);
+  if (!terminalPath) {
+    if (observerProcessRunning()) stopManagedMT5Observer('MT5_TERMINAL_NOT_RUNNING');
+    else mt5ObserverLastError = 'MT5_TERMINAL_NOT_RUNNING';
+    return;
+  }
+  if (!observerProcessRunning()) await startManagedMT5Observer();
+}
+
+async function initializeMT5ObserverManager() {
+  await loadMT5ObserverSettings();
+  await monitorMT5ObserverLifecycle();
+  if (!mt5ObserverMonitorInterval) {
+    mt5ObserverMonitorInterval = setInterval(() => {
+      monitorMT5ObserverLifecycle().catch(() => {});
+    }, 3000);
+  }
+}
+
+function shutdownMT5ObserverManager() {
+  if (mt5ObserverMonitorInterval) clearInterval(mt5ObserverMonitorInterval);
+  mt5ObserverMonitorInterval = null;
+  stopManagedMT5Observer('APPLICATION_EXITING');
+}
+
 function fetchAuthenticatedMT5DemoSnapshot() {
   return new Promise((resolve, reject) => {
     const requestPath = '/api/mt5/demo/stream';
     const requestAuth = createMT5DemoRequestAuth(MT5_DEMO_ACCESS_TOKEN, { requestPath });
     const request = http.request({
       hostname: '127.0.0.1',
-      port: 5055,
+      port: MT5_DEMO_OBSERVER_PORT,
       path: requestPath,
       method: 'GET',
       headers: {
@@ -621,12 +974,13 @@ function runPowerShellJson(script) {
   });
 }
 
-function inspectMT5TerminalProcess() {
-  return new Promise(resolve => {
-    execFile('tasklist.exe', ['/FI', 'IMAGENAME eq terminal64.exe', '/FO', 'CSV', '/NH'], {
-      encoding: 'utf8', windowsHide: true, timeout: 5000, maxBuffer: 256 * 1024
-    }, (error, stdout) => resolve(!error && /"terminal64\.exe"/i.test(stdout || '')));
-  });
+async function inspectRunningMT5TerminalPaths() {
+  const result = await runPowerShellJson(
+    "@(Get-Process -Name terminal64 -ErrorAction SilentlyContinue | ForEach-Object { $_.Path } | Where-Object { $_ }) | ConvertTo-Json -Compress"
+  );
+  if (!result.success) return [];
+  const values = Array.isArray(result.data) ? result.data : [result.data];
+  return values.filter(value => typeof value === 'string' && value.trim()).map(value => path.resolve(value));
 }
 
 function inspectMT5PythonDependency() {
@@ -637,34 +991,55 @@ function inspectMT5PythonDependency() {
   });
 }
 
-function hasKnownMT5TerminalInstall() {
+function knownMT5TerminalCandidates() {
   const programFiles = process.env.ProgramFiles || 'C:\\Program Files';
   const programFilesX86 = process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)';
   const localAppData = process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local');
-  const candidates = [
-    path.join(programFiles, 'MetaTrader 5', 'terminal64.exe'),
+  return [
     path.join(programFiles, 'XM Global MT5', 'terminal64.exe'),
     path.join(programFiles, 'XM MT5', 'terminal64.exe'),
-    path.join(programFilesX86, 'MetaTrader 5', 'terminal64.exe'),
     path.join(programFilesX86, 'XM Global MT5', 'terminal64.exe'),
+    path.join(programFilesX86, 'XM MT5', 'terminal64.exe'),
+    path.join(localAppData, 'Programs', 'XM Global MT5', 'terminal64.exe'),
+    path.join(programFiles, 'MetaTrader 5', 'terminal64.exe'),
+    path.join(programFilesX86, 'MetaTrader 5', 'terminal64.exe'),
     path.join(localAppData, 'Programs', 'MetaTrader 5', 'terminal64.exe')
   ];
-  return candidates.some(candidate => fs.existsSync(candidate));
+}
+
+function findKnownMT5TerminalPath() {
+  return knownMT5TerminalCandidates().find(candidate => fs.existsSync(candidate)) || null;
+}
+
+function findRunningKnownMT5TerminalPath(runningPaths = []) {
+  const normalizedRunning = new Set(runningPaths.map(value => normalizePathForComparison(path.resolve(value))));
+  return knownMT5TerminalCandidates().find(candidate => normalizedRunning.has(normalizePathForComparison(path.resolve(candidate)))) || null;
+}
+
+function hasKnownMT5TerminalInstall() {
+  return Boolean(findKnownMT5TerminalPath());
 }
 
 handleTrusted('cyber:mt5-demo-readiness', async () => {
-  const [terminalRunning, pythonBridgeDependencyAvailable] = await Promise.all([
-    inspectMT5TerminalProcess(),
+  const [runningTerminalPaths, pythonBridgeDependencyAvailable] = await Promise.all([
+    inspectRunningMT5TerminalPaths(),
     inspectMT5PythonDependency()
   ]);
+  const terminalRunning = Boolean(findRunningKnownMT5TerminalPath(runningTerminalPaths));
   const terminalInstalled = terminalRunning || hasKnownMT5TerminalInstall();
+  const bridgeScriptPresent = fs.existsSync(getMT5ObserverScriptPath());
+  const scriptIntegrityVerified = bridgeScriptPresent && verifyMT5ObserverScriptIntegrity();
   let demoAccountObserved = false;
   let server = null;
   let loginSuffix = null;
   if (MT5_DEMO_GATEWAY_ENABLED) {
     try {
       const packet = await fetchAuthenticatedMT5DemoSnapshot();
-      demoAccountObserved = packet?.mode === 'DEMO' && packet?.account?.tradeMode === 'DEMO';
+      demoAccountObserved = packet?.connected === true
+        && packet?.mode === 'DEMO'
+        && packet?.account?.tradeMode === 'DEMO'
+        && String(packet?.account?.company || '').toLowerCase() === MT5_DEMO_EXPECTED_COMPANY.toLowerCase()
+        && String(packet?.account?.server || '').toLowerCase().startsWith(MT5_DEMO_EXPECTED_SERVER_PREFIX.toLowerCase());
       server = demoAccountObserved ? String(packet.account.server || '').slice(0, 120) : null;
       loginSuffix = demoAccountObserved ? String(packet.account.login || '').slice(-4) : null;
     } catch (error) {}
@@ -675,15 +1050,44 @@ handleTrusted('cyber:mt5-demo-readiness', async () => {
     terminalInstalled,
     terminalRunning,
     pythonBridgeDependencyAvailable,
-    bridgeScriptPresent: fs.existsSync(path.join(__dirname, 'scripts', 'mt5_silent_bridge.py')),
+    bridgeScriptPresent,
+    scriptIntegrityVerified,
+    observerEnabled: mt5ObserverSettings.enabled || MT5_DEMO_EXTERNAL_GATEWAY_ENABLED,
+    observerProcessRunning: observerProcessRunning() || MT5_DEMO_EXTERNAL_GATEWAY_ENABLED,
     gatewayEnabled: MT5_DEMO_GATEWAY_ENABLED,
     accessTokenConfigured: MT5_DEMO_ACCESS_TOKEN.length >= 32,
     demoAccountObserved,
     account: demoAccountObserved ? { server, loginSuffix, tradeMode: 'DEMO' } : null,
-    telemetryCertified: false,
+    telemetryCertified: mt5TelemetryCertification.certified === true,
+    telemetry: {
+      packetCount: Number(mt5TelemetryCertification.packetCount || 0),
+      validatedPacketCount: Number(mt5TelemetryCertification.validatedPacketCount || 0),
+      durationMs: Number(mt5TelemetryCertification.durationMs || 0),
+      maximumObservedGapMs: Number(mt5TelemetryCertification.maximumObservedGapMs || 0),
+      reasons: Array.isArray(mt5TelemetryCertification.reasons)
+        ? mt5TelemetryCertification.reasons.slice(0, 5).map(reason => String(reason).slice(0, 160))
+        : []
+    },
+    observerError: mt5ObserverLastError,
     decisionInfluence: false,
     executionInfluence: false
   };
+});
+
+handleTrusted('cyber:mt5-demo-observer-control', async (event, requestedState) => {
+  if (typeof requestedState !== 'boolean') return { success: false, error: 'BOOLEAN_STATE_REQUIRED' };
+  try {
+    await setMT5ObserverEnabled(requestedState);
+    return {
+      success: true,
+      enabled: mt5ObserverSettings.enabled,
+      mode: 'DEMO_SHADOW_READ_ONLY',
+      decisionInfluence: false,
+      executionInfluence: false
+    };
+  } catch (error) {
+    return { success: false, error: sanitizeObserverError(error?.message, 'MT5_OBSERVER_CONTROL_FAILED') };
+  }
 });
 
 handleTrusted('cyber:process-list', async () => {
@@ -1130,6 +1534,53 @@ server.listen(0, '127.0.0.1', () => {
     return;
   }
 
+  if (IS_MT5_OBSERVER_SMOKE_TEST) {
+    app.whenReady().then(async () => {
+      mt5ObserverSettings = Object.freeze({ enabled: true });
+      const started = await startManagedMT5Observer();
+      const deadline = Date.now() + 50_000;
+      const finish = code => {
+        const summary = {
+          started,
+          processRunning: observerProcessRunning(),
+          gatewayEnabled: MT5_DEMO_GATEWAY_ENABLED,
+          scriptIntegrityVerified: mt5ObserverScriptIntegrityVerified,
+          certification: {
+            certified: mt5TelemetryCertification.certified === true,
+            packetCount: Number(mt5TelemetryCertification.packetCount || 0),
+            durationMs: Number(mt5TelemetryCertification.durationMs || 0),
+            maximumObservedGapMs: Number(mt5TelemetryCertification.maximumObservedGapMs || 0),
+            reasons: Array.isArray(mt5TelemetryCertification.reasons) ? mt5TelemetryCertification.reasons : []
+          },
+          error: mt5ObserverLastError
+        };
+        process.stdout.write(`${JSON.stringify(summary)}\n`);
+        shutdownMT5ObserverManager();
+        try { server.close(); } catch (error) {}
+        app.exit(code);
+      };
+      if (!started) {
+        finish(1);
+        return;
+      }
+      const statusInterval = setInterval(() => {
+        if (mt5TelemetryCertification.certified === true) {
+          clearInterval(statusInterval);
+          finish(0);
+        } else if (Date.now() >= deadline) {
+          clearInterval(statusInterval);
+          finish(1);
+        }
+      }, 250);
+    }).catch(error => {
+      process.stderr.write(`MT5_OBSERVER_SMOKE_FAILED:${sanitizeObserverError(error?.message)}\n`);
+      shutdownMT5ObserverManager();
+      try { server.close(); } catch (closeError) {}
+      app.exit(1);
+    });
+    return;
+  }
+
   function getOrCreateGhostWindow() {
     if (ghostWindow && !ghostWindow.isDestroyed()) return ghostWindow;
 
@@ -1267,7 +1718,8 @@ server.listen(0, '127.0.0.1', () => {
     startUsbDetection(mainWindow);
   }
 
-  app.whenReady().then(() => {
+  app.whenReady().then(async () => {
+    await initializeMT5ObserverManager();
     createWindow();
     setupGhostShortcut();
 
@@ -1302,6 +1754,7 @@ server.listen(0, '127.0.0.1', () => {
   });
 
   app.on('will-quit', () => {
+    shutdownMT5ObserverManager();
     globalShortcut.unregisterAll();
   });
 });

@@ -741,6 +741,7 @@ export class AITradingEngine {
     this.lastMT5SessionId = null;
     this.lastMT5Sequence = 0;
     this.mt5StreamGeneration = 0;
+    this.mt5ReadinessInterval = null;
     this.lastReconciledMT5Packet = null;
     this.mt5Reconciliation = null;
     this.mt5DemoReadiness = assessMT5DemoReadiness({});
@@ -882,6 +883,10 @@ export class AITradingEngine {
             reason: response?.error || 'MT5_DEMO_GATEWAY_UNAVAILABLE'
           };
           if (this.onMT5DataUpdate) this.onMT5DataUpdate(this.mt5Status);
+          if (isDisabled && this.mt5PollingInterval) {
+            clearInterval(this.mt5PollingInterval);
+            this.mt5PollingInterval = null;
+          }
           return !isDisabled;
         }
 
@@ -950,6 +955,36 @@ export class AITradingEngine {
     }
     if (this.onMT5ReadinessUpdate) this.onMT5ReadinessUpdate(this.mt5DemoReadiness);
     return this.mt5DemoReadiness;
+  }
+
+  startMT5ReadinessPolling() {
+    if (this.mt5ReadinessInterval) clearInterval(this.mt5ReadinessInterval);
+    this.mt5ReadinessInterval = setInterval(() => {
+      this.inspectMT5DemoReadiness().catch(() => {});
+    }, 5000);
+    this.inspectMT5DemoReadiness().catch(() => {});
+  }
+
+  async setMT5DemoObserverEnabled(enabled) {
+    const observerControl = typeof window !== 'undefined'
+      ? window.cyberSystemAPI?.setMT5DemoObserverEnabled
+      : null;
+    if (typeof observerControl !== 'function') {
+      return { success: false, error: 'MT5_OBSERVER_CONTROL_UNAVAILABLE' };
+    }
+    const response = await observerControl(enabled === true);
+    await this.inspectMT5DemoReadiness();
+    if (enabled === true) {
+      this.startMT5BackgroundStream();
+    } else if (response?.success) {
+      if (this.mt5PollingInterval) clearInterval(this.mt5PollingInterval);
+      this.mt5PollingInterval = null;
+      this.mt5StreamGeneration += 1;
+      this.mt5Data = null;
+      this.mt5Status = { status: 'DEMO_GATEWAY_DISABLED', mt5_connected: false, decisionInfluence: false };
+      if (this.onMT5DataUpdate) this.onMT5DataUpdate(this.mt5Status);
+    }
+    return response;
   }
 
   saveGymState() {
@@ -1931,6 +1966,7 @@ export class AITradingEngine {
     this.startNewsStream();
     this.startKnowledgeStreamLoop();
     this.startMT5BackgroundStream();
+    this.startMT5ReadinessPolling();
     this.startMarketDataRefreshLoop({ immediate: false });
     if (this.onAIProfileUpdate) this.onAIProfileUpdate(this.getAIProfileDetails());
   }
@@ -1946,6 +1982,7 @@ export class AITradingEngine {
     if (this.newsInterval) clearInterval(this.newsInterval);
     if (this.knowledgeStreamInterval) clearInterval(this.knowledgeStreamInterval);
     if (this.mt5PollingInterval) clearInterval(this.mt5PollingInterval);
+    if (this.mt5ReadinessInterval) clearInterval(this.mt5ReadinessInterval);
     this.mt5StreamGeneration += 1;
     this.patternResearchGeneration += 1;
     if (this.replayInterval) clearInterval(this.replayInterval);
@@ -1956,6 +1993,7 @@ export class AITradingEngine {
     this.newsInterval = null;
     this.knowledgeStreamInterval = null;
     this.mt5PollingInterval = null;
+    this.mt5ReadinessInterval = null;
     this.replayInterval = null;
     this.animFrameId = null;
   }
@@ -1965,6 +2003,7 @@ export class AITradingEngine {
     this.startNewsStream();
     this.startKnowledgeStreamLoop();
     this.startMT5BackgroundStream();
+    this.startMT5ReadinessPolling();
     this.startMarketDataRefreshLoop({ immediate: true });
   }
 

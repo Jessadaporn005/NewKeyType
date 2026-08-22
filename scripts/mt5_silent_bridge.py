@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Authenticated, read-only MT5 Demo observer for developer Shadow testing.
+"""Authenticated, read-only MT5 Demo observer for CyberDeck Shadow telemetry.
 
 The observer never sends, modifies, or closes orders. It emits no simulated
 fallback data and refuses any account that MT5 does not identify as Demo.
-It is excluded from packaged CyberDeck releases.
+It never receives an XM password; it attaches to an already authenticated
+local terminal selected by the Electron host.
 """
 
 from __future__ import annotations
@@ -29,8 +30,15 @@ PORT = 5055
 PACKET_SOURCE = "CYBERDECK_MT5_DEMO_GATEWAY"
 PACKET_SCHEMA = 1
 SESSION_ID = uuid.uuid4().hex
-SYMBOL = os.environ.get("CYBERDECK_MT5_DEMO_SYMBOL", "XAUUSD").strip() or "XAUUSD"
 ACCESS_TOKEN = os.environ.get("CYBERDECK_MT5_DEMO_TOKEN", "")
+TERMINAL_PATH = os.environ.get("CYBERDECK_MT5_TERMINAL_PATH", "").strip()
+EXPECTED_COMPANY = os.environ.get("CYBERDECK_MT5_EXPECTED_COMPANY", "").strip()
+EXPECTED_SERVER_PREFIX = os.environ.get("CYBERDECK_MT5_EXPECTED_SERVER_PREFIX", "").strip()
+SYMBOL_CANDIDATES = tuple(
+    item.strip()
+    for item in os.environ.get("CYBERDECK_MT5_DEMO_SYMBOLS", "GOLD,XAUUSD,GOLD#").split(",")
+    if item.strip() and len(item.strip()) <= 40
+)
 AUTH_SCHEME = "CyberDeck-HMAC"
 AUTH_WINDOW_MS = 5_000
 
@@ -38,6 +46,8 @@ _packet_lock = threading.Lock()
 _nonce_lock = threading.Lock()
 _used_nonces: dict[str, int] = {}
 _sequence = 0
+_active_symbol: str | None = None
+_terminal_initialized = False
 _latest_packet: dict[str, object] = {
     "schemaVersion": PACKET_SCHEMA,
     "source": PACKET_SOURCE,
@@ -124,12 +134,44 @@ def _set_disconnected(reason: str) -> None:
         }
 
 
+def _initialize_terminal() -> bool:
+    global _terminal_initialized
+    if _terminal_initialized:
+        terminal = mt5.terminal_info()
+        return bool(terminal is not None and terminal.connected)
+    if TERMINAL_PATH:
+        if not os.path.isfile(TERMINAL_PATH):
+            return False
+        _terminal_initialized = bool(mt5.initialize(TERMINAL_PATH))
+    else:
+        _terminal_initialized = bool(mt5.initialize())
+    return _terminal_initialized
+
+
+def _select_verified_symbol() -> tuple[str, object] | tuple[None, None]:
+    global _active_symbol
+    candidates = (_active_symbol,) if _active_symbol else SYMBOL_CANDIDATES
+    for candidate in candidates:
+        if not candidate:
+            continue
+        info = mt5.symbol_info(candidate)
+        if info is None:
+            continue
+        if not info.visible:
+            mt5.symbol_select(candidate, True)
+        tick = mt5.symbol_info_tick(candidate)
+        if tick is not None and tick.bid > 0 and tick.ask >= tick.bid:
+            _active_symbol = candidate
+            return candidate, tick
+    return None, None
+
+
 def _capture_demo_snapshot() -> None:
     global _latest_packet, _sequence
     if mt5 is None:
         _set_disconnected("METATRADER5_PYTHON_PACKAGE_NOT_INSTALLED")
         return
-    if not mt5.initialize():
+    if not _initialize_terminal():
         _set_disconnected("MT5_INITIALIZATION_FAILED")
         return
 
@@ -140,14 +182,20 @@ def _capture_demo_snapshot() -> None:
     if account.trade_mode != mt5.ACCOUNT_TRADE_MODE_DEMO:
         _set_disconnected("NON_DEMO_ACCOUNT_BLOCKED")
         return
+    if EXPECTED_COMPANY and str(account.company).casefold() != EXPECTED_COMPANY.casefold():
+        _set_disconnected("UNEXPECTED_BROKER_COMPANY_BLOCKED")
+        return
+    if EXPECTED_SERVER_PREFIX and not str(account.server).casefold().startswith(EXPECTED_SERVER_PREFIX.casefold()):
+        _set_disconnected("UNEXPECTED_BROKER_SERVER_BLOCKED")
+        return
 
-    tick = mt5.symbol_info_tick(SYMBOL)
-    if tick is None or tick.bid <= 0 or tick.ask < tick.bid:
+    symbol, tick = _select_verified_symbol()
+    if symbol is None or tick is None:
         _set_disconnected("VALID_DEMO_QUOTE_UNAVAILABLE")
         return
 
-    mt5.market_book_add(SYMBOL)
-    book = mt5.market_book_get(SYMBOL)
+    mt5.market_book_add(symbol)
+    book = mt5.market_book_get(symbol)
     positions = [_position_to_json(position) for position in (mt5.positions_get() or [])]
     depth = _depth_to_json(book)
     _sequence += 1
@@ -160,14 +208,16 @@ def _capture_demo_snapshot() -> None:
         "timestamp": _utc_now(),
         "status": "DEMO_SHADOW_OBSERVER",
         "connected": True,
-        "symbol": SYMBOL,
-        "quote": {"symbol": SYMBOL, "bid": _safe_float(tick.bid), "ask": _safe_float(tick.ask)},
+        "symbol": symbol,
+        "quote": {"symbol": symbol, "bid": _safe_float(tick.bid), "ask": _safe_float(tick.ask)},
         "depth": depth,
         "account": {
             "login": str(account.login),
             "server": str(account.server),
+            "company": str(account.company),
             "currency": str(account.currency),
             "tradeMode": "DEMO",
+            "leverage": int(account.leverage),
             "balance": _safe_float(account.balance),
             "equity": _safe_float(account.equity),
             "margin": _safe_float(account.margin),
@@ -278,7 +328,8 @@ def main() -> int:
     finally:
         server.server_close()
         try:
-            mt5.market_book_release(SYMBOL)
+            if _active_symbol:
+                mt5.market_book_release(_active_symbol)
             mt5.shutdown()
         except Exception:
             pass

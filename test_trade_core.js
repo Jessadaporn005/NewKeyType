@@ -303,6 +303,7 @@ assert(missingMT5Readiness.status === 'MT5_XDEMO_NOT_INSTALLED' && !missingMT5Re
   'MT5 readiness reports a truthful installation gate when no terminal evidence exists');
 const uncertifiedMT5Readiness = assessMT5DemoReadiness({
   terminalInstalled: true, terminalRunning: true, pythonBridgeDependencyAvailable: true, bridgeScriptPresent: true,
+  scriptIntegrityVerified: true, observerEnabled: true, observerProcessRunning: true,
   gatewayEnabled: true, accessTokenConfigured: true, demoAccountObserved: true,
   account: { server: 'XMGlobal-Demo', loginSuffix: '1234', tradeMode: 'DEMO' }, telemetryCertified: false
 });
@@ -310,6 +311,7 @@ assert(uncertifiedMT5Readiness.status === 'CONTINUOUS_TELEMETRY_CERTIFICATION_RE
   && uncertifiedMT5Readiness.authority.executionInfluence === false, 'MT5 readiness cannot skip the continuous authenticated telemetry certification gate');
 const readyMT5Readiness = assessMT5DemoReadiness({
   terminalInstalled: true, terminalRunning: true, pythonBridgeDependencyAvailable: true, bridgeScriptPresent: true,
+  scriptIntegrityVerified: true, observerEnabled: true, observerProcessRunning: true,
   gatewayEnabled: true, accessTokenConfigured: true, demoAccountObserved: true,
   account: { server: 'XMGlobal-Demo', loginSuffix: '1234', tradeMode: 'DEMO' }, telemetryCertified: true
 });

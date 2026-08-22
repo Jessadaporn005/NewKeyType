@@ -6,6 +6,7 @@ const root = path.resolve(__dirname, '..');
 const appDirectory = path.resolve(root, process.argv[2] || 'release/win-unpacked');
 const executablePath = path.join(appDirectory, 'CyberDeck.exe');
 const asarPath = path.join(appDirectory, 'resources', 'app.asar');
+const observerPath = path.join(appDirectory, 'resources', 'mt5-observer', 'mt5_silent_bridge.py');
 const failures = [];
 const check = (condition, message) => {
   if (!condition) failures.push(message);
@@ -13,6 +14,16 @@ const check = (condition, message) => {
 
 check(fs.existsSync(executablePath), 'CyberDeck.exe is missing');
 check(fs.existsSync(asarPath), 'resources/app.asar is missing');
+check(fs.existsSync(observerPath), 'Packaged read-only MT5 observer is missing');
+
+if (fs.existsSync(observerPath)) {
+  const observer = fs.readFileSync(observerPath);
+  const observerText = observer.toString('utf8');
+  const sourceObserverPath = path.join(root, 'scripts', 'mt5_silent_bridge.py');
+  const sourceObserver = fs.readFileSync(sourceObserverPath);
+  check(observer.equals(sourceObserver), 'Packaged MT5 observer differs from the reviewed source');
+  check(!/order_send\s*\(|TRADE_ACTION_/i.test(observerText), 'Packaged MT5 observer contains execution primitives');
+}
 
 if (fs.existsSync(asarPath)) {
   const files = asar.listPackage(asarPath).map(file => file.replaceAll('\\', '/').toLowerCase());
@@ -49,5 +60,5 @@ if (failures.length > 0) {
   failures.forEach(message => console.error(`- ${message}`));
   process.exitCode = 1;
 } else {
-  console.log('PACKAGED ARTIFACT: PASS (runtime complete, Paper-only, MT5 scripts absent)');
+  console.log('PACKAGED ARTIFACT: PASS (runtime complete, Paper-only, reviewed MT5 observer resource present)');
 }
